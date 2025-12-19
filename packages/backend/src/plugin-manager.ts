@@ -1,4 +1,4 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import path from "node:path";
@@ -129,12 +129,13 @@ export class PluginManager {
     }
 
     // Phase 1: Load Modules & Register Services
-    const pendingInits: Array<{
+    const pendingInits: {
       pluginId: string;
       pluginPath: string;
       deps: Record<string, ServiceRef<unknown>>;
       init: (deps: Record<string, unknown>) => Promise<void>;
-    }> = [];
+      schema?: Record<string, unknown>;
+    }[] = [];
 
     const providedBy = new Map<string, string>(); // ServiceId -> PluginId
 
@@ -162,17 +163,27 @@ export class PluginManager {
 
         // Execute Register
         backendPlugin.register({
-          registerInit: <D extends Deps>(args: {
+          registerInit: <
+            D extends Deps,
+            S extends Record<string, unknown> | undefined = undefined
+          >(args: {
             deps: D;
-            init: (deps: ResolvedDeps<D>) => Promise<void>;
+            schema?: S;
+            init: (
+              deps: ResolvedDeps<D> &
+                (S extends undefined
+                  ? unknown
+                  : { database: NodePgDatabase<NonNullable<S>> })
+            ) => Promise<void>;
           }) => {
             pendingInits.push({
               pluginId: backendPlugin.pluginId,
-              pluginPath: plugin.path,
+              pluginPath: plugin.path, // Retained pluginPath
               deps: args.deps,
-              init: args.init as unknown as (
+              init: args.init as (
                 deps: Record<string, unknown>
               ) => Promise<void>,
+              schema: args.schema,
             });
           },
           registerService: (ref: ServiceRef<unknown>, impl: unknown) => {
@@ -280,20 +291,42 @@ export class PluginManager {
           );
         }
 
-        // Resolve all dependencies
+        // Resolve Dependencies
         const resolvedDeps: Record<string, unknown> = {};
         for (const [key, ref] of Object.entries(p.deps)) {
+          // If schema is present, we skip the standard database resolution
+          // because we will inject the schema-aware DB below.
+          if (key === "database" && p.schema) continue;
+
           resolvedDeps[key] = await this.registry.get(
             ref as ServiceRef<unknown>,
             p.pluginId
           );
         }
 
-        // Init
-        await p.init(resolvedDeps);
-        rootLogger.info(`✅ ${p.pluginId} initialized.`);
+        // Implicit Database Injection (if schema provided)
+        if (p.schema) {
+          const baseUrl = process.env.DATABASE_URL;
+          const assignedSchema = `plugin_${p.pluginId}`;
+          // Force search_path
+          const scopedUrl = `${baseUrl}?options=-c%20search_path%3D${assignedSchema}`;
+          const pluginPool = new Pool({ connectionString: scopedUrl });
+
+          // Create schema-aware Drizzle instance
+          resolvedDeps["database"] = drizzle(pluginPool, { schema: p.schema });
+        }
+
+        try {
+          await p.init(resolvedDeps);
+          rootLogger.info(`   -> Initialized ${p.pluginId}`);
+        } catch (error) {
+          rootLogger.error(`❌ Failed to initialize ${p.pluginId}:`, error);
+        }
       } catch (error) {
-        rootLogger.error(`❌ Failed to initialize ${p.pluginId}:`, error);
+        rootLogger.error(
+          `❌ Critical error loading plugin ${p.pluginId}:`,
+          error
+        );
       }
     }
   }

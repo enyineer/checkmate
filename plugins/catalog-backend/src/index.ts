@@ -14,8 +14,8 @@ export default createBackendPlugin({
     env.registerPermissions(permissionList);
 
     env.registerInit({
+      schema,
       deps: {
-        database: coreServices.database,
         router: coreServices.httpRouter,
         logger: coreServices.logger,
         check: coreServices.permissionCheck,
@@ -24,7 +24,7 @@ export default createBackendPlugin({
         logger.info("Initializing Catalog Backend...");
 
         // Use local db variable for services to import
-        db = database as unknown as NodePgDatabase<typeof schema>;
+        db = database;
 
         // Entities
         router.get("/entities", check("entity.read"), async (c) => {

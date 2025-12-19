@@ -1,3 +1,4 @@
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ServiceRef } from "./service-ref";
 
 export type Deps = Record<string, ServiceRef<unknown>>;
@@ -19,9 +20,18 @@ export type Permission = {
 export type BackendPlugin = {
   pluginId: string;
   register: (env: {
-    registerInit: <D extends Deps>(args: {
+    registerInit: <
+      D extends Deps,
+      S extends Record<string, unknown> | undefined = undefined
+    >(args: {
       deps: D;
-      init: (deps: ResolvedDeps<D>) => Promise<void>;
+      schema?: S;
+      init: (
+        deps: ResolvedDeps<D> &
+          (S extends undefined
+            ? unknown
+            : { database: NodePgDatabase<NonNullable<S>> })
+      ) => Promise<void>;
     }) => void;
     registerService: <S>(ref: ServiceRef<S>, impl: S) => void;
     registerPermissions: (permissions: Permission[]) => void;
