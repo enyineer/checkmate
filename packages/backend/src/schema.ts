@@ -1,5 +1,6 @@
-import { pgTable, serial, text, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, json, serial } from "drizzle-orm/pg-core";
 
+// --- Plugin System Schema ---
 export const plugins = pgTable("plugins", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),

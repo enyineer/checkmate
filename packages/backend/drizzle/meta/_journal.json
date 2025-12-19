@@ -8,6 +8,13 @@
       "when": 1766148834371,
       "tag": "0000_regular_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1766150993236,
+      "tag": "0001_shallow_supernaut",
+      "breakpoints": true
     }
   ]
 }

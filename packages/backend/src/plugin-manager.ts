@@ -4,15 +4,71 @@ import { Pool } from "pg";
 import { join } from "path";
 import { Hono } from "hono";
 import { adminPool, db } from "./db";
-import { initFunction } from "./types";
 import { plugins } from "./schema";
 import { eq } from "drizzle-orm";
+import { ServiceRegistry } from "./services/service-registry";
+import { coreServices } from "./services/core-services";
+import { BackendPlugin, ResolvedDeps } from "./plugin-system";
 
 export class PluginManager {
+  private registry = new ServiceRegistry();
+
+  constructor() {
+    this.registerCoreServices();
+  }
+
+  private registerCoreServices() {
+    // 1. Database Factory (Scoped)
+    this.registry.registerFactory(coreServices.database, async (pluginId) => {
+      const assignedSchema = `plugin_${pluginId}`;
+
+      // Ensure Schema Exists
+      await adminPool.query(`CREATE SCHEMA IF NOT EXISTS "${assignedSchema}"`);
+
+      // Create Scoped Connection
+      const baseUrl = process.env.DATABASE_URL;
+      if (!baseUrl) throw new Error("DATABASE_URL is not defined");
+
+      const connector = baseUrl.includes("?") ? "&" : "?";
+      const scopedUrl = `${baseUrl}${connector}options=-c%20search_path%3D${assignedSchema}`;
+
+      const pluginPool = new Pool({ connectionString: scopedUrl });
+      return drizzle(pluginPool);
+    });
+
+    // 2. HTTP Router Factory (Scoped)
+    // We can't really "return" a router that is already mounted, because we need the rootRouter.
+    // So we will Register a GLOBAL factory that takes the rootRouter?
+    // Actually, simpler: The factory returns a new Hono().
+    // AND we need a way to mount it.
+    // We'll handle mounting separately or pass a "Mount Function"?
+    // Use Case: Plugin asks for 'httpRouter'. It gets a Hono instance.
+    // WHO mounts it?
+    // We can have a side-effect: The Factory mounts it if we have access to rootRouter.
+    // BUT registerCoreServices is called in constructor, before loadPluginsFromDb(rootRouter).
+    // Let's delay router factory registration or use a setter.
+  }
+
   async loadPluginsFromDb(rootRouter: Hono) {
+    // Register Router Factory now that we have rootRouter
+    this.registry.registerFactory(coreServices.httpRouter, (pluginId) => {
+      const pluginRouter = new Hono();
+      rootRouter.route(`/api/${pluginId}`, pluginRouter);
+      return pluginRouter;
+    });
+
+    // Register Logger Factory
+    this.registry.registerFactory(coreServices.logger, (pluginId) => {
+      return {
+        info: (msg, ...args) => console.log(`[${pluginId}] ${msg}`, ...args),
+        error: (msg, ...args) => console.error(`[${pluginId}] ${msg}`, ...args),
+        warn: (msg, ...args) => console.warn(`[${pluginId}] ${msg}`, ...args),
+        debug: (msg, ...args) => console.debug(`[${pluginId}] ${msg}`, ...args),
+      };
+    });
+
     console.log("🔍 Scanning for plugins in database...");
 
-    // Fetch all enabled plugins
     const enabledPlugins = await db
       .select()
       .from(plugins)
@@ -23,96 +79,95 @@ export class PluginManager {
       return;
     }
 
+    // Phase 1: Load Modules & Register Services
+    const pendingInits: Array<{
+      pluginId: string;
+      pluginPath: string;
+      deps: any;
+      init: (deps: any) => Promise<void>;
+    }> = [];
+
     for (const plugin of enabledPlugins) {
-      await this.loadPlugin({
-        pluginName: plugin.name,
-        pluginPath: plugin.path,
-        rootRouter: rootRouter,
-      });
-    }
-  }
+      console.log(`🔌 Loading module ${plugin.name}...`);
 
-  async loadPlugin(props: {
-    pluginName: string;
-    pluginPath: string;
-    rootRouter: Hono;
-  }) {
-    const { pluginName, pluginPath, rootRouter } = props;
-
-    const assignedSchema = `plugin_${pluginName}`;
-
-    console.log(`🔌 Loading ${pluginName} into namespace '${assignedSchema}'`);
-
-    // 1. Ensure Schema Exists
-    await adminPool.query(`CREATE SCHEMA IF NOT EXISTS "${assignedSchema}"`);
-
-    // 2. Create a "Scoped" Connection String
-    const baseUrl = process.env.DATABASE_URL;
-    if (!baseUrl) {
-      throw new Error("DATABASE_URL is not defined");
-    }
-
-    const connector = baseUrl.includes("?") ? "&" : "?";
-    const scopedUrl = `${baseUrl}${connector}options=-c%20search_path%3D${assignedSchema}`;
-
-    // 3. Create the Plugin's Dedicated Pool
-    const pluginPool = new Pool({ connectionString: scopedUrl });
-    const pluginDb = drizzle(pluginPool);
-
-    // 4. Run Migrations
-    // For now we assume the path is absolute or resolvable.
-    // In a real scenario, we might need to resolve this relative to the workspace root or using require.resolve
-    const migrationsFolder = join(pluginPath, "drizzle");
-
-    try {
-      await migrate(pluginDb, {
-        migrationsFolder: migrationsFolder,
-      });
-    } catch (e) {
-      console.warn(
-        `No migrations found or failed to migrate for ${pluginName} at ${migrationsFolder}. Error:`,
-        e
-      );
-    }
-
-    // 5. Create a Sub-router for this plugin
-    const pluginRouter = new Hono();
-
-    // 6. Make the plugin router listen under the /api/<pluginName> path
-    rootRouter.route(`/api/${pluginName}`, pluginRouter);
-
-    // 7. Initialize Plugin
-    try {
-      // Dynamic import
-      // We'll try to import using the plugin name (if it's a package) or the path
-      // If it's a local package in workspace, name is best.
       let pluginModule;
       try {
-        pluginModule = await import(pluginName);
-      } catch (e1) {
-        console.log(
-          `Could not import by name '${pluginName}', trying path '${pluginPath}'`
-        );
         try {
-          pluginModule = await import(pluginPath);
-        } catch (e2) {
-          throw new Error(`Failed to import plugin via name or path: ${e2}`);
+          pluginModule = await import(plugin.name);
+        } catch {
+          pluginModule = await import(plugin.path);
         }
-      }
 
-      if (typeof pluginModule.default === "function") {
-        await (pluginModule.default as initFunction)({
-          database: pluginDb,
-          router: pluginRouter,
+        const backendPlugin: BackendPlugin = pluginModule.default;
+
+        if (!backendPlugin || typeof backendPlugin.register !== "function") {
+          // Fallback for legacy plugins? Or just error.
+          // For now, assume migration.
+          console.warn(`Plugin ${plugin.name} is not using new API. Skipping.`);
+          continue;
+        }
+
+        // Execute Register
+        backendPlugin.register({
+          registerInit: (args: { deps: any; init: any }) => {
+            pendingInits.push({
+              pluginId: backendPlugin.pluginId,
+              pluginPath: plugin.path,
+              deps: args.deps,
+              init: args.init,
+            });
+          },
+          registerService: (ref: any, impl: any) => {
+            this.registry.register(ref, impl);
+            console.log(`   -> Registered service '${ref.id}'`);
+          },
         });
-        console.log(`✅ Plugin ${pluginName} initialized successfully.`);
-      } else {
-        console.error(
-          `Plugin ${pluginName} does not export a default init function.`
-        );
+      } catch (e) {
+        console.error(`Failed to load module for ${plugin.name}:`, e);
       }
-    } catch (e) {
-      console.error(`Failed to initialize plugin ${pluginName}:`, e);
+    }
+
+    // Phase 2: Initialize Plugins (Topological Sort / Dependency Check)
+    // For now, simpler approach: Just iterate. If deps fail, it throws.
+    // If we wanted to be safer, we'd check availability first.
+
+    for (const p of pendingInits) {
+      console.log(`🚀 Initializing ${p.pluginId}...`);
+
+      // 1. Run Migrations (Scoped DB logic is inside Factory, but migrations need path)
+      // We can do migrations here separately or assume the plugin handles it?
+      // Old logic: PluginManager ran migrations.
+      // New logic: PluginManager should still run migrations because it knows the PATH.
+      // BUT it needs the DB.
+      // We can resolve the DB for the plugin.
+
+      try {
+        const pluginDb = await this.registry.get(
+          coreServices.database,
+          p.pluginId
+        );
+
+        // Run Migrations
+        const migrationsFolder = join(p.pluginPath, "drizzle");
+        try {
+          await migrate(pluginDb, { migrationsFolder });
+        } catch (e) {
+          // Ignore no migrations
+        }
+
+        // Resolve all dependencies
+        const resolvedDeps: any = {};
+        for (const [key, ref] of Object.entries(p.deps)) {
+          // @ts-ignore
+          resolvedDeps[key] = await this.registry.get(ref, p.pluginId);
+        }
+
+        // Init
+        await p.init(resolvedDeps);
+        console.log(`✅ ${p.pluginId} initialized.`);
+      } catch (e) {
+        console.error(`❌ Failed to initialize ${p.pluginId}:`, e);
+      }
     }
   }
 }
