@@ -6,7 +6,7 @@
     "plugins/*"
   ],
   "scripts": {
-    "dev": "bun run --filter '*' dev"
+    "dev": "bun run --filter '@checkmate/backend' --filter '@checkmate/frontend' dev"
   },
   "devDependencies": {
     "bun": "^1.0.0"
