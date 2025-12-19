@@ -10,6 +10,7 @@ import { ServiceRegistry } from "./services/service-registry";
 import { coreServices } from "./services/core-services";
 import { BackendPlugin } from "./plugin-system";
 import { rootLogger } from "./logger";
+import { jwtService } from "./services/jwt";
 
 export class PluginManager {
   private registry = new ServiceRegistry();
@@ -49,6 +50,19 @@ export class PluginManager {
     // Register Logger Factory
     this.registry.registerFactory(coreServices.logger, (pluginId) => {
       return rootLogger.child({ plugin: pluginId });
+    });
+
+    // Register Auth Factory (Scoped)
+    this.registry.registerFactory(coreServices.auth, (pluginId) => {
+      return {
+        fetch: async (input, init) => {
+          // Sign token with scoped service name
+          const token = await jwtService.sign({ service: pluginId }, "5m");
+          const headers = new Headers(init?.headers);
+          headers.set("Authorization", `Bearer ${token}`);
+          return fetch(input, { ...init, headers });
+        },
+      };
     });
 
     rootLogger.info("🔍 Scanning for plugins in database...");

@@ -10,9 +10,15 @@ export interface Logger {
   debug(message: string, ...args: any[]): void;
 }
 
+// Define AuthClient interface
+export interface AuthClient {
+  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+}
+
 export const coreServices = {
   database:
     createServiceRef<NodePgDatabase<Record<string, never>>>("core.database"),
   httpRouter: createServiceRef<Hono>("core.httpRouter"),
   logger: createServiceRef<Logger>("core.logger"),
+  auth: createServiceRef<AuthClient>("core.auth"),
 };
