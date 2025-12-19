@@ -18,52 +18,53 @@ export default createBackendPlugin({
         database: coreServices.database,
         router: coreServices.httpRouter,
         logger: coreServices.logger,
+        check: coreServices.permissionCheck,
       },
-      init: async ({ database, router, logger }) => {
+      init: async ({ database, router, logger, check }) => {
         logger.info("Initializing Catalog Backend...");
 
         // Use local db variable for services to import
         db = database as unknown as NodePgDatabase<typeof schema>;
 
         // Entities
-        router.get("/entities", async (c) => {
+        router.get("/entities", check("entity.read"), async (c) => {
           const systems = await entityService.getSystems();
           const groups = await entityService.getGroups();
           return c.json({ systems, groups });
         });
 
-        router.post("/entities/systems", async (c) => {
+        router.post("/entities/systems", check("entity.create"), async (c) => {
           const body = await c.req.json();
           // Validation omitted for brevity, in real app use zod validator
           const system = await entityService.createSystem(body);
           return c.json(system);
         });
 
-        router.post("/entities/groups", async (c) => {
+        router.post("/entities/groups", check("entity.create"), async (c) => {
           const body = await c.req.json();
           const group = await entityService.createGroup(body);
           return c.json(group);
         });
 
         // Views
-        router.get("/views", async (c) => {
+        router.get("/views", check("entity.read"), async (c) => {
           const views = await entityService.getViews();
           return c.json(views);
         });
 
-        router.post("/views", async (c) => {
+        router.post("/views", check("entity.create"), async (c) => {
           const body = await c.req.json();
           const view = await entityService.createView(body);
           return c.json(view);
         });
 
         // Incidents
-        router.get("/incidents", async (c) => {
+        router.get("/incidents", check("incident.manage"), async (c) => {
           const incidents = await operationService.getIncidents();
           return c.json(incidents);
         });
 
-        router.post("/incidents", async (c) => {
+        router.post("/incidents", check("incident.manage"), async (c) => {
           const body = await c.req.json();
           const incident = await operationService.createIncident(body);
           return c.json(incident);

@@ -3,6 +3,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import path from "node:path";
 import { Hono } from "hono";
+import { createMiddleware } from "hono/factory";
 import { adminPool, db } from "./db";
 import { plugins } from "./schema";
 import { eq } from "drizzle-orm";
@@ -78,6 +79,42 @@ export class PluginManager {
       coreServices.healthCheckRegistry,
       () => healthCheckRegistry
     );
+
+    // Register Permission Check Factory (Scoped)
+    this.registry.registerFactory(coreServices.permissionCheck, (pluginId) => {
+      return (permission: string) => {
+        return createMiddleware(async (c, next) => {
+          // Resolve Authentication Service (Late Binding)
+          const authService = await this.registry.get(
+            coreServices.authentication,
+            pluginId
+          );
+
+          if (!authService) {
+            // If no auth backend registered, everything is unauthorized?
+            // Or maybe we skip check? Secure default: Block.
+            return c.text("Authentication Service not available", 500);
+          }
+
+          const user = await authService.validate(c.req.raw);
+          if (!user) {
+            return c.text("Unauthorized", 401);
+          }
+
+          const userPermissions = user.permissions || [];
+          const fullId = `${pluginId}.${permission}`;
+
+          if (
+            !userPermissions.includes("*") &&
+            !userPermissions.includes(fullId)
+          ) {
+            return c.text(`Forbidden: Missing ${fullId}`, 403);
+          }
+
+          await next();
+        });
+      };
+    });
 
     rootLogger.info("🔍 Scanning for plugins in database...");
 
