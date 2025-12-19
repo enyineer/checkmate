@@ -2,18 +2,19 @@ import {
   HealthCheckRegistry,
   HealthCheckStrategy,
 } from "@checkmate/backend-api";
+import { rootLogger } from "../logger";
 
 export class CoreHealthCheckRegistry implements HealthCheckRegistry {
   private strategies = new Map<string, HealthCheckStrategy>();
 
   register(strategy: HealthCheckStrategy) {
     if (this.strategies.has(strategy.id)) {
-      console.warn(
+      rootLogger.warn(
         `HealthCheckStrategy '${strategy.id}' is already registered. Overwriting.`
       );
     }
     this.strategies.set(strategy.id, strategy);
-    console.log(`✅ Registered HealthCheckStrategy: ${strategy.id}`);
+    rootLogger.info(`✅ Registered HealthCheckStrategy: ${strategy.id}`);
   }
 
   getStrategy(id: string) {

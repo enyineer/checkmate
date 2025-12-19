@@ -340,7 +340,7 @@ export class PluginManager {
 
         try {
           await p.init(resolvedDeps);
-          rootLogger.info(`   -> Initialized ${p.pluginId}`);
+          rootLogger.debug(`   -> Initialized ${p.pluginId}`);
         } catch (error) {
           rootLogger.error(`❌ Failed to initialize ${p.pluginId}:`, error);
         }
