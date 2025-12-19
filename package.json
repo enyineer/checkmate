@@ -6,7 +6,8 @@
     "plugins/*"
   ],
   "scripts": {
-    "dev": "bun run --filter '@checkmate/backend' --filter '@checkmate/frontend' dev"
+    "dev": "docker compose up -d && bun run --filter '@checkmate/backend' --filter '@checkmate/frontend' dev",
+    "docker:stop": "docker compose down"
   },
   "devDependencies": {
     "bun": "^1.0.0"

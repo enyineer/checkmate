@@ -3,10 +3,35 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { join } from "path";
 import { Hono } from "hono";
-import { adminPool } from "./db";
+import { adminPool, db } from "./db";
 import { initFunction } from "./types";
+import { plugins } from "./schema";
+import { eq } from "drizzle-orm";
 
 export class PluginManager {
+  async loadPluginsFromDb(rootRouter: Hono) {
+    console.log("🔍 Scanning for plugins in database...");
+
+    // Fetch all enabled plugins
+    const enabledPlugins = await db
+      .select()
+      .from(plugins)
+      .where(eq(plugins.enabled, true));
+
+    if (enabledPlugins.length === 0) {
+      console.log("ℹ️  No enabled plugins found.");
+      return;
+    }
+
+    for (const plugin of enabledPlugins) {
+      await this.loadPlugin({
+        pluginName: plugin.name,
+        pluginPath: plugin.path,
+        rootRouter: rootRouter,
+      });
+    }
+  }
+
   async loadPlugin(props: {
     pluginName: string;
     pluginPath: string;
@@ -27,9 +52,6 @@ export class PluginManager {
       throw new Error("DATABASE_URL is not defined");
     }
 
-    // Append search_path options to the connection string
-    // If the URL already has query params, we might need a more robust parser,
-    // but for now we append options assuming standard postgres:// uri format
     const connector = baseUrl.includes("?") ? "&" : "?";
     const scopedUrl = `${baseUrl}${connector}options=-c%20search_path%3D${assignedSchema}`;
 
@@ -38,13 +60,10 @@ export class PluginManager {
     const pluginDb = drizzle(pluginPool);
 
     // 4. Run Migrations
-    // We expect migrations to be in the 'migrations' folder of the plugin
-    const migrationsFolder = join(pluginPath, "migrations");
+    // For now we assume the path is absolute or resolvable.
+    // In a real scenario, we might need to resolve this relative to the workspace root or using require.resolve
+    const migrationsFolder = join(pluginPath, "drizzle");
 
-    // Check if migrations folder exists before trying to migrate could be good,
-    // but drizzle might handle empty or missing folders gracefully or throw.
-    // For now, we assume if it's a backend plugin with DB needs, it has this.
-    // If not, we might want to wrap in try/catch or file check.
     try {
       await migrate(pluginDb, {
         migrationsFolder: migrationsFolder,
@@ -64,18 +83,29 @@ export class PluginManager {
 
     // 7. Initialize Plugin
     try {
-      // Dynamic import of the plugin module
-      // This assumes the plugin package is available in the node_modules
-      // or at the path resolvable by the runtime.
-      // If pluginPath is a file system path, we might need to rely on Bun's resolution or relative paths.
-      // Ideally, plugins are npm packages installed in the workspace, so we can import by name.
-      const pluginModule = await import(pluginName);
+      // Dynamic import
+      // We'll try to import using the plugin name (if it's a package) or the path
+      // If it's a local package in workspace, name is best.
+      let pluginModule;
+      try {
+        pluginModule = await import(pluginName);
+      } catch (e1) {
+        console.log(
+          `Could not import by name '${pluginName}', trying path '${pluginPath}'`
+        );
+        try {
+          pluginModule = await import(pluginPath);
+        } catch (e2) {
+          throw new Error(`Failed to import plugin via name or path: ${e2}`);
+        }
+      }
 
       if (typeof pluginModule.default === "function") {
         await (pluginModule.default as initFunction)({
           database: pluginDb,
           router: pluginRouter,
         });
+        console.log(`✅ Plugin ${pluginName} initialized successfully.`);
       } else {
         console.error(
           `Plugin ${pluginName} does not export a default init function.`
