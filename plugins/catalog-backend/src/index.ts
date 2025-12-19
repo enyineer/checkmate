@@ -1,4 +1,4 @@
-import { createBackendPlugin } from "@checkmate/backend/src/plugin-system";
+import { createBackendPlugin } from "@checkmate/backend-api";
 import { permissions } from "./permissions";
 import { type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Hono } from "hono";

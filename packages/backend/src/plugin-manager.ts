@@ -8,7 +8,7 @@ import { plugins } from "./schema";
 import { eq } from "drizzle-orm";
 import { ServiceRegistry } from "./services/service-registry";
 import { coreServices } from "@checkmate/backend-api";
-import { BackendPlugin } from "./plugin-system";
+import { BackendPlugin } from "@checkmate/backend-api";
 import { rootLogger } from "./logger";
 import { jwtService } from "./services/jwt";
 import { ServiceRef } from "@checkmate/backend-api";

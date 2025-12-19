@@ -1,4 +1,4 @@
-import { ServiceRef } from "@checkmate/backend-api";
+import { ServiceRef } from "./service-ref";
 
 export type Deps = Record<string, ServiceRef<unknown>>;
 

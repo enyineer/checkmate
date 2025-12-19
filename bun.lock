@@ -46,7 +46,7 @@
       "name": "@checkmate/frontend",
       "version": "0.0.1",
       "dependencies": {
-        "@checkmate/catalog-frontend": "workspace:*",
+        "@checkmate/catalog-frontend-plugin": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "better-auth": "^1.1.8",
         "class-variance-authority": "^0.7.0",
@@ -80,10 +80,9 @@
       },
     },
     "plugins/auth-backend": {
-      "name": "auth-backend",
+      "name": "@checkmate/auth-backend-plugin",
       "version": "0.0.1",
       "dependencies": {
-        "@checkmate/backend": "workspace:*",
         "@checkmate/backend-api": "workspace:*",
         "better-auth": "^1.4.7",
         "drizzle-orm": "^0.30.0",
@@ -97,10 +96,9 @@
       },
     },
     "plugins/catalog-backend": {
-      "name": "catalog-backend",
+      "name": "@checkmate/catalog-backend-plugin",
       "version": "0.0.1",
       "dependencies": {
-        "@checkmate/backend": "workspace:*",
         "@checkmate/backend-api": "workspace:*",
         "drizzle-orm": "^0.30.0",
         "drizzle-zod": "^0.8.3",
@@ -115,7 +113,7 @@
       },
     },
     "plugins/catalog-frontend": {
-      "name": "@checkmate/catalog-frontend",
+      "name": "@checkmate/catalog-frontend-plugin",
       "version": "0.0.1",
       "dependencies": {
         "@checkmate/frontend": "workspace:*",
@@ -179,11 +177,15 @@
 
     "@better-fetch/fetch": ["@better-fetch/fetch@1.1.21", "", {}, "sha512-/ImESw0sskqlVR94jB+5+Pxjf+xBwDZF/N5+y2/q4EqD7IARUTSpPfIo8uf39SYpCxyOCtbyYpUrZ3F/k0zT4A=="],
 
+    "@checkmate/auth-backend-plugin": ["@checkmate/auth-backend-plugin@workspace:plugins/auth-backend"],
+
     "@checkmate/backend": ["@checkmate/backend@workspace:packages/backend"],
 
     "@checkmate/backend-api": ["@checkmate/backend-api@workspace:packages/backend-api"],
 
-    "@checkmate/catalog-frontend": ["@checkmate/catalog-frontend@workspace:plugins/catalog-frontend"],
+    "@checkmate/catalog-backend-plugin": ["@checkmate/catalog-backend-plugin@workspace:plugins/catalog-backend"],
+
+    "@checkmate/catalog-frontend-plugin": ["@checkmate/catalog-frontend-plugin@workspace:plugins/catalog-frontend"],
 
     "@checkmate/frontend": ["@checkmate/frontend@workspace:packages/frontend"],
 
@@ -375,8 +377,6 @@
 
     "async": ["async@3.2.6", "", {}, "sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA=="],
 
-    "auth-backend": ["auth-backend@workspace:plugins/auth-backend"],
-
     "autoprefixer": ["autoprefixer@10.4.23", "", { "dependencies": { "browserslist": "^4.28.1", "caniuse-lite": "^1.0.30001760", "fraction.js": "^5.3.4", "picocolors": "^1.1.1", "postcss-value-parser": "^4.2.0" }, "peerDependencies": { "postcss": "^8.1.0" }, "bin": { "autoprefixer": "bin/autoprefixer" } }, "sha512-YYTXSFulfwytnjAPlw8QHncHJmlvFKtczb8InXaAx9Q0LbfDnfEYDE55omerIJKihhmU61Ft+cAOSzQVaBUmeA=="],
 
     "balanced-match": ["balanced-match@1.0.2", "", {}, "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="],
@@ -406,8 +406,6 @@
     "camelcase-css": ["camelcase-css@2.0.1", "", {}, "sha512-QOSvevhslijgYwRx6Rv7zKdMF8lbRmx+uQGx2+vDc+KI/eBnsy9kit5aj23AgGu3pa4t9AgwbnXWqS+iOY+2aA=="],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001761", "", {}, "sha512-JF9ptu1vP2coz98+5051jZ4PwQgd2ni8A+gYSN7EA7dPKIMf0pDlSUxhdmVOaV3/fYK5uWBkgSXJaRLr4+3A6g=="],
-
-    "catalog-backend": ["catalog-backend@workspace:plugins/catalog-backend"],
 
     "chalk": ["chalk@5.6.2", "", {}, "sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA=="],
 
