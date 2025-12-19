@@ -8,7 +8,8 @@ import { plugins } from "./schema";
 import { eq } from "drizzle-orm";
 import { ServiceRegistry } from "./services/service-registry";
 import { coreServices } from "./services/core-services";
-import { BackendPlugin, ResolvedDeps } from "./plugin-system";
+import { BackendPlugin } from "./plugin-system";
+import { rootLogger } from "./logger";
 
 export class PluginManager {
   private registry = new ServiceRegistry();
@@ -35,18 +36,6 @@ export class PluginManager {
       const pluginPool = new Pool({ connectionString: scopedUrl });
       return drizzle(pluginPool);
     });
-
-    // 2. HTTP Router Factory (Scoped)
-    // We can't really "return" a router that is already mounted, because we need the rootRouter.
-    // So we will Register a GLOBAL factory that takes the rootRouter?
-    // Actually, simpler: The factory returns a new Hono().
-    // AND we need a way to mount it.
-    // We'll handle mounting separately or pass a "Mount Function"?
-    // Use Case: Plugin asks for 'httpRouter'. It gets a Hono instance.
-    // WHO mounts it?
-    // We can have a side-effect: The Factory mounts it if we have access to rootRouter.
-    // BUT registerCoreServices is called in constructor, before loadPluginsFromDb(rootRouter).
-    // Let's delay router factory registration or use a setter.
   }
 
   async loadPluginsFromDb(rootRouter: Hono) {
@@ -59,15 +48,10 @@ export class PluginManager {
 
     // Register Logger Factory
     this.registry.registerFactory(coreServices.logger, (pluginId) => {
-      return {
-        info: (msg, ...args) => console.log(`[${pluginId}] ${msg}`, ...args),
-        error: (msg, ...args) => console.error(`[${pluginId}] ${msg}`, ...args),
-        warn: (msg, ...args) => console.warn(`[${pluginId}] ${msg}`, ...args),
-        debug: (msg, ...args) => console.debug(`[${pluginId}] ${msg}`, ...args),
-      };
+      return rootLogger.child({ plugin: pluginId });
     });
 
-    console.log("🔍 Scanning for plugins in database...");
+    rootLogger.info("🔍 Scanning for plugins in database...");
 
     const enabledPlugins = await db
       .select()
@@ -75,7 +59,7 @@ export class PluginManager {
       .where(eq(plugins.enabled, true));
 
     if (enabledPlugins.length === 0) {
-      console.log("ℹ️  No enabled plugins found.");
+      rootLogger.info("ℹ️  No enabled plugins found.");
       return;
     }
 
@@ -88,7 +72,7 @@ export class PluginManager {
     }> = [];
 
     for (const plugin of enabledPlugins) {
-      console.log(`🔌 Loading module ${plugin.name}...`);
+      rootLogger.info(`🔌 Loading module ${plugin.name}...`);
 
       let pluginModule;
       try {
@@ -103,7 +87,9 @@ export class PluginManager {
         if (!backendPlugin || typeof backendPlugin.register !== "function") {
           // Fallback for legacy plugins? Or just error.
           // For now, assume migration.
-          console.warn(`Plugin ${plugin.name} is not using new API. Skipping.`);
+          rootLogger.warn(
+            `Plugin ${plugin.name} is not using new API. Skipping.`
+          );
           continue;
         }
 
@@ -119,11 +105,11 @@ export class PluginManager {
           },
           registerService: (ref: any, impl: any) => {
             this.registry.register(ref, impl);
-            console.log(`   -> Registered service '${ref.id}'`);
+            rootLogger.debug(`   -> Registered service '${ref.id}'`);
           },
         });
       } catch (e) {
-        console.error(`Failed to load module for ${plugin.name}:`, e);
+        rootLogger.error(`Failed to load module for ${plugin.name}:`, e);
       }
     }
 
@@ -132,7 +118,7 @@ export class PluginManager {
     // If we wanted to be safer, we'd check availability first.
 
     for (const p of pendingInits) {
-      console.log(`🚀 Initializing ${p.pluginId}...`);
+      rootLogger.info(`🚀 Initializing ${p.pluginId}...`);
 
       // 1. Run Migrations (Scoped DB logic is inside Factory, but migrations need path)
       // We can do migrations here separately or assume the plugin handles it?
@@ -164,9 +150,9 @@ export class PluginManager {
 
         // Init
         await p.init(resolvedDeps);
-        console.log(`✅ ${p.pluginId} initialized.`);
+        rootLogger.info(`✅ ${p.pluginId} initialized.`);
       } catch (e) {
-        console.error(`❌ Failed to initialize ${p.pluginId}:`, e);
+        rootLogger.error(`❌ Failed to initialize ${p.pluginId}:`, e);
       }
     }
   }

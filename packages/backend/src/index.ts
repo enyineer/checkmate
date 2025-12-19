@@ -5,6 +5,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { db } from "./db";
 import { join } from "path";
 import { jwtService } from "./services/jwt";
+import { rootLogger } from "./logger";
 
 const app = new Hono();
 const pluginManager = new PluginManager();
@@ -16,15 +17,15 @@ app.get("/", (c) => {
 });
 
 const init = async () => {
-  console.log("🚀 Starting Checkmate Core...");
+  rootLogger.info("🚀 Starting Checkmate Core...");
 
   // 1. Run Core Migrations
-  console.log("🔄 Running core migrations...");
+  rootLogger.info("🔄 Running core migrations...");
   try {
     await migrate(db, { migrationsFolder: join(process.cwd(), "drizzle") });
-    console.log("✅ Core migrations applied.");
+    rootLogger.info("✅ Core migrations applied.");
   } catch (e) {
-    console.error("❌ Failed to apply core migrations:", e);
+    rootLogger.error("❌ Failed to apply core migrations:", e);
     process.exit(1);
   }
 
@@ -64,7 +65,7 @@ const init = async () => {
   // 3. Load Plugins
   await pluginManager.loadPluginsFromDb(app);
 
-  console.log("✅ Checkmate Core initialized.");
+  rootLogger.info("✅ Checkmate Core initialized.");
 };
 
 init();
