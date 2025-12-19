@@ -155,13 +155,13 @@ export class PluginManager {
 
 Every backend plugin CAN provide extension points which will be registered in the core. These types are used to be able to distinguish between what functionality an extension point provides.
 
-### CheckStrategy
+### HealthCheckStrategy
 
-A "CheckStrategy" is an extension which implements a HealthCheck. HealthChecks are being called in configurable intervals and can do specific checks.
+A "HealthCheckStrategy" is an extension which implements a HealthCheck. HealthChecks are being called in configurable intervals and can do specific checks.
 
-The simplest form of a CheckStrategy is a "HTTP Check". This will call a configurable HTTP(S) endpoint, using a configurable method, headers, body and timeout.
+The simplest form of a HealthCheckStrategy is a "HTTP Check". This will call a configurable HTTP(S) endpoint, using a configurable method, headers, body and timeout.
 
-Each CheckStrategy MUST implement a common CheckStrategy-interface and provide a schema for it's configuration. This schema will later automatically generate a configuration form in the frontend that allows it's configuration.
+Each HealthCheckStrategy MUST implement a common HealthCheckStrategy-interface and provide a schema for it's configuration. This schema will later automatically generate a configuration form in the frontend that allows it's configuration.
 
 ### ExporterStrategy
 
