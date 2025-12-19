@@ -55,6 +55,7 @@
       "name": "@checkmate/frontend",
       "version": "0.0.1",
       "dependencies": {
+        "@checkmate/auth-frontend-plugin": "workspace:*",
         "@checkmate/catalog-frontend-plugin": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "better-auth": "^1.1.8",
@@ -102,6 +103,20 @@
       "devDependencies": {
         "@types/node": "^20.0.0",
         "drizzle-kit": "^0.31.8",
+        "typescript": "^5.0.0",
+      },
+    },
+    "plugins/auth-frontend": {
+      "name": "@checkmate/auth-frontend-plugin",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/frontend-api": "workspace:*",
+        "lucide-react": "^0.344.0",
+        "react": "^18.2.0",
+        "react-router-dom": "^6.22.0",
+      },
+      "devDependencies": {
+        "@types/react": "^18.2.0",
         "typescript": "^5.0.0",
       },
     },
@@ -198,6 +213,8 @@
     "@better-fetch/fetch": ["@better-fetch/fetch@1.1.21", "", {}, "sha512-/ImESw0sskqlVR94jB+5+Pxjf+xBwDZF/N5+y2/q4EqD7IARUTSpPfIo8uf39SYpCxyOCtbyYpUrZ3F/k0zT4A=="],
 
     "@checkmate/auth-backend-plugin": ["@checkmate/auth-backend-plugin@workspace:plugins/auth-backend"],
+
+    "@checkmate/auth-frontend-plugin": ["@checkmate/auth-frontend-plugin@workspace:plugins/auth-frontend"],
 
     "@checkmate/backend": ["@checkmate/backend@workspace:packages/backend"],
 

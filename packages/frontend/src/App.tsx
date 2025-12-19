@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ExtensionSlot } from "./components/ExtensionSlot";
 import { pluginRegistry } from "./plugin-registry";
 import {
   ApiProvider,
@@ -38,14 +39,15 @@ for (const plugin of plugins) {
 const apiRegistry = registryBuilder.build();
 
 function App() {
-  const plugins = pluginRegistry.getPlugins();
-
   return (
     <ApiProvider registry={apiRegistry}>
       <BrowserRouter>
         <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-          <header className="p-4 bg-white shadow-sm border-b border-gray-200">
+          <header className="p-4 bg-white shadow-sm border-b border-gray-200 flex justify-between items-center">
             <h1 className="text-xl font-bold text-indigo-600">Checkmate</h1>
+            <div className="flex gap-2">
+              <ExtensionSlot id="core.layout.navbar" />
+            </div>
           </header>
           <main className="p-8 max-w-7xl mx-auto">
             <Routes>
@@ -58,16 +60,8 @@ function App() {
                   </div>
                 }
               />
-              {/* Dynamically register plugin routes */}
-              {plugins.map((plugin) =>
-                plugin.routes?.map((route) => (
-                  <Route
-                    key={`${plugin.name}-${route.path}`}
-                    path={route.path}
-                    element={route.element}
-                  />
-                ))
-              )}
+              {/* Core Routes Extension Point */}
+              <ExtensionSlot id="core.routes" />
             </Routes>
           </main>
         </div>
