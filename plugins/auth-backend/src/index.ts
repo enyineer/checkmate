@@ -7,12 +7,45 @@ import * as schema from "./schema";
 import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { User } from "better-auth/types";
+import { jwtVerify } from "jose";
 
 export default createBackendPlugin({
   pluginId: "auth-backend",
   register(env) {
     let auth: ReturnType<typeof betterAuth> | undefined;
     let db: NodePgDatabase<typeof schema> | undefined;
+
+    const SECRET = new TextEncoder().encode(
+      process.env.JWT_SECRET || "default-secret-do-not-use-in-prod"
+    );
+
+    // Helper: Verify Service Token
+    const verifyServiceToken = async (
+      headers: Headers
+    ): Promise<
+      | {
+          id: string;
+          permissions: string[];
+          roles: string[];
+        }
+      | undefined
+    > => {
+      const authHeader = headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) return undefined;
+
+      const token = authHeader.split(" ")[1];
+      try {
+        const { payload } = await jwtVerify(token, SECRET);
+        // It's a valid service token
+        return {
+          id: (payload.sub as string) || "service",
+          permissions: ["*"], // Grant all permissions
+          roles: ["service"],
+        };
+      } catch {
+        return undefined;
+      }
+    };
 
     // Helper to fetch permissions
     const enrichUser = async (user: User) => {
@@ -67,6 +100,11 @@ export default createBackendPlugin({
         if (!auth) {
           throw new Error("Auth backend not initialized");
         }
+
+        // Try Service Token First
+        const serviceUser = await verifyServiceToken(headers);
+        if (serviceUser) return serviceUser;
+
         const session = await auth.api.getSession({
           headers,
         });
@@ -81,6 +119,11 @@ export default createBackendPlugin({
         if (!auth) {
           return; // Not initialized yet
         }
+
+        // Try Service Token First
+        const serviceUser = await verifyServiceToken(request.headers);
+        if (serviceUser) return serviceUser;
+
         // better-auth needs headers to validate session
         const session = await auth.api.getSession({
           headers: request.headers,
@@ -100,6 +143,8 @@ export default createBackendPlugin({
       },
       init: async ({ database, router, logger }) => {
         logger.info("Initializing Auth Backend...");
+
+        db = database;
 
         auth = betterAuth({
           database: drizzleAdapter(database, {
