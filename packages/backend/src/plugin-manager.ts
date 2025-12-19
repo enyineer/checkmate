@@ -2,6 +2,7 @@ import { drizzle, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import path from "node:path";
+import fs from "node:fs";
 import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { adminPool, db } from "./db";
@@ -291,12 +292,21 @@ export class PluginManager {
 
         // Run Migrations
         const migrationsFolder = path.join(p.pluginPath, "drizzle");
-        try {
-          await migrate(pluginDb, { migrationsFolder });
-        } catch (error) {
-          rootLogger.error(
-            `❌ Failed migration of plugin ${p.pluginId}:`,
-            error
+        if (fs.existsSync(migrationsFolder)) {
+          try {
+            rootLogger.debug(
+              `   -> Running migrations for ${p.pluginId} from ${migrationsFolder}`
+            );
+            await migrate(pluginDb, { migrationsFolder });
+          } catch (error) {
+            rootLogger.error(
+              `❌ Failed migration of plugin ${p.pluginId}:`,
+              error
+            );
+          }
+        } else {
+          rootLogger.debug(
+            `   -> No migrations found for ${p.pluginId} (skipping)`
           );
         }
 
