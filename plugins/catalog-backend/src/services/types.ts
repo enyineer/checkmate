@@ -6,7 +6,7 @@ export const selectSystemSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   owner: z.string().nullable(),
-  metadata: z.record(z.any()).nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -15,7 +15,7 @@ export const insertSystemSchema = selectSystemSchema
   .extend({
     description: z.string().optional(),
     owner: z.string().optional(),
-    metadata: z.record(z.any()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   });
 export type System = z.infer<typeof selectSystemSchema>;
 export type NewSystem = z.infer<typeof insertSystemSchema>;
@@ -25,14 +25,14 @@ export const selectGroupSchema = z.object({
   id: z.string(),
   name: z.string(),
   systemId: z.string(),
-  metadata: z.record(z.any()).nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
 export const insertGroupSchema = selectGroupSchema
   .pick({ id: true, name: true, systemId: true })
   .extend({
-    metadata: z.record(z.any()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   });
 export type Group = z.infer<typeof selectGroupSchema>;
 export type NewGroup = z.infer<typeof insertGroupSchema>;

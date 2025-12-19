@@ -1,5 +1,5 @@
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Hono, MiddlewareHandler } from "hono";
+import { Hono, MiddlewareHandler, Env } from "hono";
 import { createServiceRef } from "./service-ref";
 
 // Define a Logger interface to avoid strict dependency on specific logger lib in types
@@ -10,8 +10,19 @@ export interface Logger {
   debug(message: string, ...args: unknown[]): void;
 }
 
+import { z, ZodSchema } from "zod";
+
 // Permission Check Middleware Factory
 export type PermissionCheck = (permission: string) => MiddlewareHandler;
+
+// Validation Middleware Factory
+export type ValidationCheck = <T extends ZodSchema>(
+  schema: T
+) => MiddlewareHandler<
+  Env,
+  string,
+  { in: { json: z.infer<T> }; out: { json: z.infer<T> } }
+>;
 
 // Define Fetch interface
 export interface Fetch {
@@ -39,6 +50,7 @@ export const coreServices = {
     "core.authentication"
   ),
   permissionCheck: createServiceRef<PermissionCheck>("core.permissionCheck"),
+  validation: createServiceRef<ValidationCheck>("core.validation"),
   healthCheckRegistry: createServiceRef<
     import("./health-check").HealthCheckRegistry
   >("core.healthCheckRegistry"),

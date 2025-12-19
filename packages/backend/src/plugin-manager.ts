@@ -19,6 +19,9 @@ import {
 import { rootLogger } from "./logger";
 import { jwtService } from "./services/jwt";
 import { CoreHealthCheckRegistry } from "./services/health-check-registry";
+import z, { ZodSchema } from "zod";
+import { ValidationCheck } from "@checkmate/backend-api";
+import { zValidator } from "@hono/zod-validator";
 
 export class PluginManager {
   private registry = new ServiceRegistry();
@@ -78,6 +81,12 @@ export class PluginManager {
     this.registry.registerFactory(
       coreServices.healthCheckRegistry,
       () => healthCheckRegistry
+    );
+
+    // Register Validation Factory (Scoped)
+    this.registry.registerFactory(
+      coreServices.validation,
+      (_pluginId) => createValidationMiddleware
     );
 
     // Register Permission Check Factory (Scoped)
@@ -341,3 +350,11 @@ export class PluginManager {
     }
   }
 }
+
+// Direct zValidator fits the signature logic but needs explicit typing for strictness
+const createValidationMiddleware: ValidationCheck = (schema: ZodSchema) =>
+  zValidator("json", schema, (result, c) => {
+    if (!result.success) {
+      return c.json({ error: z.treeifyError(result.error) }, 400);
+    }
+  }) as unknown as ReturnType<ValidationCheck>;

@@ -6,6 +6,8 @@ trigger: always_on
 
 Always run "bun run lint ." in the project root after you've made changes to make sure that you're not breaking any linter rules. If there are linter errors, fix them before considering your changes done.
 
+Setting "eslint-disable-next-line @typescript-eslint/no-explicit-any" is STRICTLY FORBIDDEN. NEVER USE "any" as an explicit type!
+
 # Validation
 
 When type-checking or validation of a type is necessary, ALWAYS use the library "zod" and write zod-schemas.

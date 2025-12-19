@@ -9,8 +9,7 @@ export interface HealthCheckResult {
 
 export interface HealthCheckStrategy<Config = unknown> {
   id: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  configSchema: z.ZodType<Config, any, any>; // Validation schema for the strategy-specific config
+  configSchema: z.ZodType<Config>; // Validation schema for the strategy-specific config
   execute(config: Config): Promise<HealthCheckResult>;
 }
 

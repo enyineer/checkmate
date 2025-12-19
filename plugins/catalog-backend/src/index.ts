@@ -6,6 +6,13 @@ import { EntityService } from "./services/entity-service";
 import { OperationService } from "./services/operation-service";
 import { permissionList } from "./permissions";
 
+import {
+  insertGroupSchema,
+  insertIncidentSchema,
+  insertSystemSchema,
+  insertViewSchema,
+} from "./services/types";
+
 export let db: NodePgDatabase<typeof schema> | undefined;
 
 export default createBackendPlugin({
@@ -19,8 +26,9 @@ export default createBackendPlugin({
         router: coreServices.httpRouter,
         logger: coreServices.logger,
         check: coreServices.permissionCheck,
+        validate: coreServices.validation,
       },
-      init: async ({ database, router, logger, check }) => {
+      init: async ({ database, router, logger, check, validate }) => {
         logger.info("Initializing Catalog Backend...");
 
         const entityService = new EntityService(database);
@@ -33,18 +41,27 @@ export default createBackendPlugin({
           return c.json({ systems, groups });
         });
 
-        router.post("/entities/systems", check("entity.create"), async (c) => {
-          const body = await c.req.json();
-          // Validation omitted for brevity, in real app use zod validator
-          const system = await entityService.createSystem(body);
-          return c.json(system);
-        });
+        router.post(
+          "/entities/systems",
+          check("entity.create"),
+          validate(insertSystemSchema),
+          async (c) => {
+            const body = await c.req.json();
+            const system = await entityService.createSystem(body);
+            return c.json(system);
+          }
+        );
 
-        router.post("/entities/groups", check("entity.create"), async (c) => {
-          const body = await c.req.json();
-          const group = await entityService.createGroup(body);
-          return c.json(group);
-        });
+        router.post(
+          "/entities/groups",
+          check("entity.create"),
+          validate(insertGroupSchema),
+          async (c) => {
+            const body = await c.req.json();
+            const group = await entityService.createGroup(body);
+            return c.json(group);
+          }
+        );
 
         // Views
         router.get("/views", check("entity.read"), async (c) => {
@@ -52,11 +69,16 @@ export default createBackendPlugin({
           return c.json(views);
         });
 
-        router.post("/views", check("entity.create"), async (c) => {
-          const body = await c.req.json();
-          const view = await entityService.createView(body);
-          return c.json(view);
-        });
+        router.post(
+          "/views",
+          check("entity.create"),
+          validate(insertViewSchema),
+          async (c) => {
+            const body = await c.req.json();
+            const view = await entityService.createView(body);
+            return c.json(view);
+          }
+        );
 
         // Incidents
         router.get("/incidents", check("incident.manage"), async (c) => {
@@ -64,11 +86,16 @@ export default createBackendPlugin({
           return c.json(incidents);
         });
 
-        router.post("/incidents", check("incident.manage"), async (c) => {
-          const body = await c.req.json();
-          const incident = await operationService.createIncident(body);
-          return c.json(incident);
-        });
+        router.post(
+          "/incidents",
+          check("incident.manage"),
+          validate(insertIncidentSchema),
+          async (c) => {
+            const body = await c.req.json();
+            const incident = await operationService.createIncident(body);
+            return c.json(incident);
+          }
+        );
 
         logger.info("✅ Catalog Backend initialized.");
       },
