@@ -1,4 +1,4 @@
-import { createServiceRef } from "@checkmate/core-api";
+import { createServiceRef } from "@checkmate/backend-api";
 import { User } from "better-auth/types";
 
 export interface UserInfoService {
