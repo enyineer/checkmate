@@ -1,34 +1,30 @@
+import { Permission } from "@checkmate/backend-api";
+
 export const permissions = {
-  catalog: {
-    entity: {
-      read: {
-        id: "catalog.entity.read",
-        description: "Read Systems and Groups",
-      },
-      create: {
-        id: "catalog.entity.create",
-        description: "Create Systems and Groups",
-      },
-      update: {
-        id: "catalog.entity.update",
-        description: "Update Systems and Groups",
-      },
-      delete: {
-        id: "catalog.entity.delete",
-        description: "Delete Systems and Groups",
-      },
-    },
-    incident: {
-      manage: {
-        id: "catalog.incident.manage",
-        description: "Manage Incidents (Create, Update, Resolve)",
-      },
-    },
-    maintenance: {
-      manage: {
-        id: "catalog.maintenance.manage",
-        description: "Manage Maintenances",
-      },
-    },
+  entityRead: {
+    id: "entity.read",
+    description: "Read Systems and Groups",
   },
-};
+  entityCreate: {
+    id: "entity.create",
+    description: "Create Systems and Groups",
+  },
+  entityUpdate: {
+    id: "entity.update",
+    description: "Update Systems and Groups",
+  },
+  entityDelete: {
+    id: "entity.delete",
+    description: "Delete Systems and Groups",
+  },
+  incidentManage: {
+    id: "incident.manage",
+    description: "Manage Incidents (Create, Update, Resolve)",
+  },
+  maintenanceManage: {
+    id: "maintenance.manage",
+    description: "Manage Maintenances",
+  },
+} satisfies Record<string, Permission>;
+
+export const permissionList = Object.values(permissions);

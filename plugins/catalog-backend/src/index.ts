@@ -4,12 +4,15 @@ import { coreServices } from "@checkmate/backend-api";
 import * as schema from "./schema";
 import { entityService } from "./services/entity-service";
 import { operationService } from "./services/operation-service";
+import { permissionList } from "./permissions";
 
 export let db: NodePgDatabase<typeof schema> | undefined;
 
 export default createBackendPlugin({
   pluginId: "catalog-backend",
   register(env) {
+    env.registerPermissions(permissionList);
+
     env.registerInit({
       deps: {
         database: coreServices.database,
@@ -21,14 +24,6 @@ export default createBackendPlugin({
 
         // Use local db variable for services to import
         db = database as unknown as NodePgDatabase<typeof schema>;
-
-        // Register Permissions (TODO: How does core learn about these?
-        // Architecture doc says: "The backend plugin must export permissions that can be set in the init-function"
-        // But currently core scans plugin-manager.ts doesn't explicitly look for permissions export?
-        // Wait, "Permissions are exported from each backend-plugin and MUST be configurable via the frontend"
-        // I'll assume for now I should just make them available.
-        // Maybe I need to register them with a permission service if one existed?
-        // For this task, defining them is step 1.
 
         // Entities
         router.get("/entities", async (c) => {

@@ -13,6 +13,7 @@ import {
   ServiceRef,
   Deps,
   ResolvedDeps,
+  Permission,
 } from "@checkmate/backend-api";
 import { rootLogger } from "./logger";
 import { jwtService } from "./services/jwt";
@@ -141,6 +142,16 @@ export class PluginManager {
             this.registry.register(ref, impl);
             providedBy.set(ref.id, backendPlugin.pluginId);
             rootLogger.debug(`   -> Registered service '${ref.id}'`);
+          },
+          registerPermissions: (permissions: Permission[]) => {
+            const prefixed = permissions.map((p) => ({
+              ...p,
+              id: `${backendPlugin.pluginId}.${p.id}`,
+            }));
+            rootLogger.info(
+              `   -> Registered ${prefixed.length} permissions for ${backendPlugin.pluginId}`
+            );
+            // TODO: Store these in a database or central registry
           },
         });
       } catch (error) {

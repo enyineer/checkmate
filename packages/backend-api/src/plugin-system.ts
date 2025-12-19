@@ -11,6 +11,11 @@ export type PluginContext = {
   pluginId: string;
 };
 
+export type Permission = {
+  id: string; // e.g. "read-things", will be prefixed: "pluginId.read-things"
+  description?: string;
+};
+
 export type BackendPlugin = {
   pluginId: string;
   register: (env: {
@@ -19,6 +24,7 @@ export type BackendPlugin = {
       init: (deps: ResolvedDeps<D>) => Promise<void>;
     }) => void;
     registerService: <S>(ref: ServiceRef<S>, impl: S) => void;
+    registerPermissions: (permissions: Permission[]) => void;
   }) => void;
 };
 
