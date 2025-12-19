@@ -11,6 +11,7 @@ import { coreServices } from "./services/core-services";
 import { BackendPlugin } from "./plugin-system";
 import { rootLogger } from "./logger";
 import { jwtService } from "./services/jwt";
+import { ServiceRef } from "./services/service-ref";
 
 export class PluginManager {
   private registry = new ServiceRegistry();
@@ -53,7 +54,7 @@ export class PluginManager {
     });
 
     // Register Auth Factory (Scoped)
-    this.registry.registerFactory(coreServices.auth, (pluginId) => {
+    this.registry.registerFactory(coreServices.fetch, (pluginId) => {
       return {
         fetch: async (input, init) => {
           // Sign token with scoped service name
@@ -224,6 +225,13 @@ export class PluginManager {
       } catch (e) {
         rootLogger.error(`❌ Failed to initialize ${p.pluginId}:`, e);
       }
+    }
+  }
+  async getService<T>(ref: ServiceRef<T>): Promise<T | undefined> {
+    try {
+      return await this.registry.get(ref, "core"); // Use 'core' as requester
+    } catch {
+      return undefined;
     }
   }
 }

@@ -6,6 +6,7 @@ import { db } from "./db";
 import { join } from "path";
 import { jwtService } from "./services/jwt";
 import { rootLogger } from "./logger";
+import { coreServices } from "./services/core-services";
 
 const app = new Hono();
 const pluginManager = new PluginManager();
@@ -51,15 +52,32 @@ const init = async () => {
       );
     }
 
-    // Verify token (Service Token or potentially User Token if using same secret/standard)
-    // For now, we strictly verify it using our internal service secret.
-    // If User tokens are signed differently, they will fail here unless we distinguish.
+    // 5. Dual Authentication Strategy
+    // Strategy A: Service Token (Stateless, signed by Core)
     const payload = await jwtService.verify(token);
-    if (!payload) {
-      return c.json({ error: "Unauthorized: Invalid signature" }, 401);
+    if (payload) {
+      // It's a valid Service Token
+      // c.set('jwtPayload', payload); // If we wanted to pass it down
+      return next();
     }
 
-    await next();
+    // Strategy B: User Token (Stateful, validated by Auth Plugin)
+    // We try to retrieve the registered AuthenticationStrategy
+    const authStrategy = await pluginManager.getService(
+      coreServices.authentication
+    );
+
+    if (authStrategy) {
+      const user = await authStrategy.validate(c.req.raw);
+      if (user) {
+        // It's a valid User Session
+        // c.set('user', user); // If we wanted to pass it down
+        return next();
+      }
+    }
+
+    // Both failed
+    return c.json({ error: "Unauthorized: Invalid token or session" }, 401);
   });
 
   // 3. Load Plugins

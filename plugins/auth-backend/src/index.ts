@@ -2,13 +2,42 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createBackendPlugin } from "@checkmate/backend/src/plugin-system";
 import { coreServices } from "@checkmate/backend/src/services/core-services";
-import { jwtService } from "@checkmate/backend/src/services/jwt";
+import { userInfoRef } from "./services/user-info";
 import * as schema from "./schema";
 
 export default createBackendPlugin({
   pluginId: "auth-backend",
   register(env) {
-    // 1. Register Init logic
+    let auth: ReturnType<typeof betterAuth> | undefined;
+
+    // 1. Register User Info Service
+    env.registerService(userInfoRef, {
+      getUser: async (headers: Headers) => {
+        if (!auth) {
+          throw new Error("Auth backend not initialized");
+        }
+        const session = await auth.api.getSession({
+          headers,
+        });
+        return session?.user || null;
+      },
+    });
+
+    // 2. Register Authentication Strategy (for Core Middleware)
+    env.registerService(coreServices.authentication, {
+      validate: async (request: Request) => {
+        if (!auth) {
+          return null; // Not initialized yet
+        }
+        // better-auth needs headers to validate session
+        const session = await auth.api.getSession({
+          headers: request.headers,
+        });
+        return session?.user || null;
+      },
+    });
+
+    // 3. Register Init logic
     env.registerInit({
       deps: {
         database: coreServices.database,
@@ -18,7 +47,7 @@ export default createBackendPlugin({
       init: async ({ database, router, logger }) => {
         logger.info("Initializing Auth Backend...");
 
-        const auth = betterAuth({
+        auth = betterAuth({
           database: drizzleAdapter(database, {
             provider: "pg",
             schema: { ...schema },
@@ -27,7 +56,7 @@ export default createBackendPlugin({
         });
 
         router.on(["POST", "GET"], "/*", (c) => {
-          return auth.handler(c.req.raw);
+          return auth!.handler(c.req.raw);
         });
 
         logger.info("✅ Auth Backend initialized.");

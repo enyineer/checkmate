@@ -10,9 +10,14 @@ export interface Logger {
   debug(message: string, ...args: any[]): void;
 }
 
-// Define AuthClient interface
-export interface AuthClient {
+// Define Fetch interface
+export interface Fetch {
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+}
+
+// Define AuthenticationStrategy interface (for verifying User Sessions)
+export interface AuthenticationStrategy {
+  validate(request: Request): Promise<any | null>; // Returns User or null
 }
 
 export const coreServices = {
@@ -20,5 +25,8 @@ export const coreServices = {
     createServiceRef<NodePgDatabase<Record<string, never>>>("core.database"),
   httpRouter: createServiceRef<Hono>("core.httpRouter"),
   logger: createServiceRef<Logger>("core.logger"),
-  auth: createServiceRef<AuthClient>("core.auth"),
+  fetch: createServiceRef<Fetch>("core.fetch"),
+  authentication: createServiceRef<AuthenticationStrategy>(
+    "core.authentication"
+  ),
 };
