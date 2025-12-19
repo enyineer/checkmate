@@ -9,12 +9,33 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { User } from "better-auth/types";
 import { jwtVerify } from "jose";
 import { hashPassword } from "better-auth/crypto";
+import { createExtensionPoint } from "@checkmate/backend-api";
+
+export interface BetterAuthStrategy {
+  id: string;
+  config: Record<string, unknown>;
+}
+
+export interface BetterAuthExtensionPoint {
+  addStrategy(strategy: BetterAuthStrategy): void;
+}
+
+export const betterAuthExtensionPoint =
+  createExtensionPoint<BetterAuthExtensionPoint>(
+    "auth.betterAuthExtensionPoint"
+  );
 
 export default createBackendPlugin({
   pluginId: "auth-backend",
   register(env) {
     let auth: ReturnType<typeof betterAuth> | undefined;
     let db: NodePgDatabase<typeof schema> | undefined;
+
+    const strategies: BetterAuthStrategy[] = [];
+
+    env.registerExtensionPoint(betterAuthExtensionPoint, {
+      addStrategy: (s) => strategies.push(s),
+    });
 
     const SECRET = new TextEncoder().encode(
       process.env.JWT_SECRET || "default-secret-do-not-use-in-prod"
@@ -147,12 +168,19 @@ export default createBackendPlugin({
 
         db = database;
 
+        const socialProviders: Record<string, unknown> = {};
+        for (const s of strategies) {
+          logger.info(`   -> Adding auth strategy: ${s.id}`);
+          socialProviders[s.id] = s.config;
+        }
+
         auth = betterAuth({
           database: drizzleAdapter(database, {
             provider: "pg",
             schema: { ...schema },
           }),
           emailAndPassword: { enabled: true },
+          socialProviders,
         });
 
         router.on(["POST", "GET"], "/*", (c) => {

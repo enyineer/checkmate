@@ -40,7 +40,6 @@ export interface AuthenticationStrategy {
   validate(request: Request): Promise<AuthUser | undefined>; // Returns User or undefined
 }
 
-// Define PluginInstaller interface
 export interface PluginInstaller {
   install(packageName: string): Promise<{ name: string; path: string }>;
 }

@@ -1,5 +1,6 @@
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ServiceRef } from "./service-ref";
+import { ExtensionPoint } from "./extension-point";
 
 export type Deps = Record<string, ServiceRef<unknown>>;
 
@@ -17,25 +18,29 @@ export type Permission = {
   description?: string;
 };
 
+export type BackendPluginRegistry = {
+  registerInit: <
+    D extends Deps,
+    S extends Record<string, unknown> | undefined = undefined
+  >(args: {
+    deps: D;
+    schema?: S;
+    init: (
+      deps: ResolvedDeps<D> &
+        (S extends undefined
+          ? unknown
+          : { database: NodePgDatabase<NonNullable<S>> })
+    ) => Promise<void>;
+  }) => void;
+  registerService: <S>(ref: ServiceRef<S>, impl: S) => void;
+  registerExtensionPoint: <T>(ref: ExtensionPoint<T>, impl: T) => void;
+  getExtensionPoint: <T>(ref: ExtensionPoint<T>) => T;
+  registerPermissions: (permissions: Permission[]) => void;
+};
+
 export type BackendPlugin = {
   pluginId: string;
-  register: (env: {
-    registerInit: <
-      D extends Deps,
-      S extends Record<string, unknown> | undefined = undefined
-    >(args: {
-      deps: D;
-      schema?: S;
-      init: (
-        deps: ResolvedDeps<D> &
-          (S extends undefined
-            ? unknown
-            : { database: NodePgDatabase<NonNullable<S>> })
-      ) => Promise<void>;
-    }) => void;
-    registerService: <S>(ref: ServiceRef<S>, impl: S) => void;
-    registerPermissions: (permissions: Permission[]) => void;
-  }) => void;
+  register: (env: BackendPluginRegistry) => void;
 };
 
 export function createBackendPlugin(config: BackendPlugin): BackendPlugin {

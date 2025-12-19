@@ -13,6 +13,7 @@ import {
   coreServices,
   BackendPlugin,
   ServiceRef,
+  ExtensionPoint,
   Deps,
   ResolvedDeps,
   Permission,
@@ -33,6 +34,7 @@ interface PluginManifest {
 
 export class PluginManager {
   private registry = new ServiceRegistry();
+  private extensionPointProxies = new Map<string, unknown>();
 
   constructor() {
     this.registerCoreServices();
@@ -56,6 +58,50 @@ export class PluginManager {
       const pluginPool = new Pool({ connectionString: scopedUrl });
       return drizzle(pluginPool);
     });
+  }
+
+  private getExtensionPointProxy<T>(ref: ExtensionPoint<T>): T {
+    let proxy = this.extensionPointProxies.get(ref.id) as T | undefined;
+    if (!proxy) {
+      const buffer: { method: string | symbol; args: unknown[] }[] = [];
+      let implementation: T | undefined;
+
+      proxy = new Proxy(
+        {},
+        {
+          get: (target, prop) => {
+            if (prop === "$$setImplementation") {
+              return (impl: T) => {
+                implementation = impl;
+                for (const call of buffer) {
+                  (
+                    implementation as Record<
+                      string | symbol,
+                      (...args: unknown[]) => unknown
+                    >
+                  )[call.method](...call.args);
+                }
+                buffer.length = 0;
+              };
+            }
+            return (...args: unknown[]) => {
+              if (implementation) {
+                return (
+                  implementation as Record<
+                    string | symbol,
+                    (...args: unknown[]) => unknown
+                  >
+                )[prop](...args);
+              } else {
+                buffer.push({ method: prop, args });
+              }
+            };
+          },
+        }
+      ) as T;
+      this.extensionPointProxies.set(ref.id, proxy);
+    }
+    return proxy;
   }
 
   async loadPlugins(rootRouter: Hono) {
@@ -245,6 +291,16 @@ export class PluginManager {
             this.registry.register(ref, impl);
             providedBy.set(ref.id, backendPlugin.pluginId);
             rootLogger.debug(`   -> Registered service '${ref.id}'`);
+          },
+          registerExtensionPoint: (ref, impl) => {
+            const proxy = this.getExtensionPointProxy(ref);
+            (proxy as Record<string, (...args: unknown[]) => unknown>)[
+              "$$setImplementation"
+            ](impl);
+            rootLogger.info(`   -> Registered extension point '${ref.id}'`);
+          },
+          getExtensionPoint: (ref) => {
+            return this.getExtensionPointProxy(ref);
           },
           registerPermissions: (permissions: Permission[]) => {
             const prefixed = permissions.map((p) => ({
