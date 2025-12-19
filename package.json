@@ -5,6 +5,9 @@
     "packages/*",
     "plugins/*"
   ],
+  "scripts": {
+    "dev": "bun run --filter '*' dev"
+  },
   "devDependencies": {
     "bun": "^1.0.0"
   }

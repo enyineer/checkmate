@@ -2,6 +2,10 @@
 
 Checkmate is a system monitor which allows you to configure Health-Checks and automatically communicate to your users if something breaks.
 
+## Running locally
+
+To run this project in development, run `bun run dev` in the root directory. This will automatically start the front- and backend-packages.
+
 ## License
 
 This project is licensed under the [Elastic License 2.0](LICENSE.md).
