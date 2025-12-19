@@ -19,16 +19,8 @@ export class HttpHealthCheckStrategy
   implements HealthCheckStrategy<HttpHealthCheckConfig>
 {
   id = "http";
-  // using any for Def and Input because of strict Zod type constraints and unexported types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  configSchema: z.ZodType<HttpHealthCheckConfig, any, any> =
-    httpHealthCheckConfigSchema as unknown as z.ZodType<
-      HttpHealthCheckConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any
-    >;
+
+  configSchema = httpHealthCheckConfigSchema;
 
   async execute(config: HttpHealthCheckConfig): Promise<HealthCheckResult> {
     const start = performance.now();
@@ -42,17 +34,19 @@ export class HttpHealthCheckStrategy
       const end = performance.now();
       const latency = Math.round(end - start);
 
-      return response.status === config.expectedStatus ? {
-          status: "healthy",
-          latency,
-          message: `Respond with ${response.status}`,
-          metadata: { statusCode: response.status },
-        } : {
-          status: "unhealthy",
-          latency,
-          message: `Unexpected status code: ${response.status}. Expected: ${config.expectedStatus}`,
-          metadata: { statusCode: response.status },
-        };
+      return response.status === config.expectedStatus
+        ? {
+            status: "healthy",
+            latency,
+            message: `Respond with ${response.status}`,
+            metadata: { statusCode: response.status },
+          }
+        : {
+            status: "unhealthy",
+            latency,
+            message: `Unexpected status code: ${response.status}. Expected: ${config.expectedStatus}`,
+            metadata: { statusCode: response.status },
+          };
     } catch (error: unknown) {
       const end = performance.now();
       const isError = error instanceof Error;
