@@ -1,22 +1,15 @@
 import { FrontendPlugin } from "@checkmate/frontend-api";
-import { Route } from "react-router-dom";
-import { LoginNavbarAction, LoginPage } from "./components/LoginPage";
-
-const AuthRoutes = () => (
-  <>
-    <Route path="/auth/login" element={<LoginPage />} />
-    {/* Register route would go here */}
-  </>
-);
+import { LoginPage, LoginNavbarAction } from "./components/LoginPage";
 
 export const authPlugin: FrontendPlugin = {
   name: "auth-frontend",
-  extensions: [
+  routes: [
     {
-      id: "auth.routes",
-      slotId: "core.routes",
-      component: AuthRoutes,
+      path: "/auth/login",
+      element: <LoginPage />,
     },
+  ],
+  extensions: [
     {
       id: "auth.navbar.action",
       slotId: "core.layout.navbar",
