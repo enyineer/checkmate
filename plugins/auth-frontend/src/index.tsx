@@ -13,6 +13,7 @@ import { authApiRef, AuthApi, AuthSession } from "./api";
 import { authClient } from "./lib/auth-client";
 
 import { usePermissions } from "./hooks/usePermissions";
+import { SLOT_NAVBAR, SLOT_USER_MENU_ITEMS_BOTTOM } from "@checkmate/common";
 
 class AuthPermissionApi implements PermissionApi {
   usePermission(permission: string): boolean {
@@ -104,12 +105,12 @@ export const authPlugin = createFrontendPlugin({
   extensions: [
     {
       id: "auth.navbar.action",
-      slotId: "core.layout.navbar",
+      slotId: SLOT_NAVBAR,
       component: LoginNavbarAction,
     },
     {
       id: "auth.user-menu.logout",
-      slotId: "core.layout.navbar.user-menu.items.bottom",
+      slotId: SLOT_USER_MENU_ITEMS_BOTTOM,
       component: LogoutMenuItem,
     },
   ],

@@ -7,6 +7,7 @@ import { healthCheckApiRef, HealthCheckClient } from "./api";
 import { HealthCheckConfigPage } from "./pages/HealthCheckConfigPage";
 import { HealthCheckMenuItems } from "./components/HealthCheckMenuItems";
 import { permissions } from "@checkmate/healthcheck-common";
+import { SLOT_USER_MENU_ITEMS } from "@checkmate/common";
 
 export default createFrontendPlugin({
   name: "healthcheck-frontend",
@@ -30,7 +31,7 @@ export default createFrontendPlugin({
   extensions: [
     {
       id: "healthcheck.user-menu.items",
-      slotId: "core.layout.navbar.user-menu.items",
+      slotId: SLOT_USER_MENU_ITEMS,
       component: HealthCheckMenuItems,
     },
   ],

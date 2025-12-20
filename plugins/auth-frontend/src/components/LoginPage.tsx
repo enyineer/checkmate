@@ -17,6 +17,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@checkmate/ui";
+import {
+  SLOT_USER_MENU_ITEMS,
+  SLOT_USER_MENU_ITEMS_BOTTOM,
+} from "@checkmate/common";
 
 export const LoginPage = () => {
   // ... existing implementation remains the same
@@ -118,15 +122,15 @@ export const LoginNavbarAction = () => {
   if (session?.user) {
     // Check if we have any bottom items to decide if we need a separator
     const bottomExtensions = pluginRegistry.getExtensions(
-      "core.layout.navbar.user-menu.items.bottom"
+      SLOT_USER_MENU_ITEMS_BOTTOM
     );
     const hasBottomItems = bottomExtensions.length > 0;
 
     return (
       <UserMenu user={session.user}>
-        <ExtensionSlot id="core.layout.navbar.user-menu.items" />
+        <ExtensionSlot id={SLOT_USER_MENU_ITEMS} />
         {hasBottomItems && <DropdownMenuSeparator />}
-        <ExtensionSlot id="core.layout.navbar.user-menu.items.bottom" />
+        <ExtensionSlot id={SLOT_USER_MENU_ITEMS_BOTTOM} />
       </UserMenu>
     );
   }

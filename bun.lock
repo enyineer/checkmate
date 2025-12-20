@@ -67,6 +67,7 @@
       "dependencies": {
         "@checkmate/auth-frontend-plugin": "workspace:*",
         "@checkmate/catalog-frontend-plugin": "workspace:*",
+        "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/ui": "workspace:*",
         "better-auth": "^1.1.8",
@@ -140,6 +141,7 @@
       "name": "@checkmate/auth-frontend-plugin",
       "version": "0.0.1",
       "dependencies": {
+        "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/ui": "workspace:*",
         "better-auth": "^1.1.8",
@@ -184,6 +186,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@checkmate/catalog-common": "workspace:*",
+        "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/ui": "workspace:*",
         "lucide-react": "^0.344.0",
@@ -200,6 +203,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@checkmate/catalog-frontend-plugin": "workspace:*",
+        "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/ui": "workspace:*",
         "lucide-react": "^0.344.0",
@@ -244,6 +248,7 @@
       "name": "@checkmate/healthcheck-frontend-plugin",
       "version": "0.0.1",
       "dependencies": {
+        "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/healthcheck-common": "workspace:*",
         "@checkmate/ui": "workspace:*",

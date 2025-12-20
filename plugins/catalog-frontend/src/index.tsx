@@ -1,4 +1,5 @@
 import { fetchApiRef, ApiRef } from "@checkmate/frontend-api";
+import { SLOT_USER_MENU_ITEMS } from "@checkmate/common";
 import { CatalogClient } from "./client";
 import { catalogApiRef } from "./api";
 import { createFrontendPlugin } from "@checkmate/frontend-api";
@@ -37,7 +38,7 @@ export const catalogPlugin = createFrontendPlugin({
   extensions: [
     {
       id: "catalog.user-menu.items",
-      slotId: "core.layout.navbar.user-menu.items",
+      slotId: SLOT_USER_MENU_ITEMS,
       component: CatalogUserMenuItems,
     },
   ],

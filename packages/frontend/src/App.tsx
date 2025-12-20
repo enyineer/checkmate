@@ -13,6 +13,11 @@ import {
 import { ConsoleLoggerApi } from "./apis/logger-api";
 import { CoreFetchApi } from "./apis/fetch-api";
 import { PermissionDenied } from "@checkmate/ui";
+import {
+  SLOT_DASHBOARD,
+  SLOT_NAVBAR,
+  SLOT_NAVBAR_MAIN,
+} from "@checkmate/common";
 
 const RouteGuard: React.FC<{
   children: React.ReactNode;
@@ -68,11 +73,11 @@ function App() {
             <div className="flex items-center gap-8">
               <h1 className="text-xl font-bold text-indigo-600">Checkmate</h1>
               <nav className="hidden md:flex gap-1">
-                <ExtensionSlot id="core.layout.navbar.main" />
+                <ExtensionSlot id={SLOT_NAVBAR_MAIN} />
               </nav>
             </div>
             <div className="flex gap-2">
-              <ExtensionSlot id="core.layout.navbar" />
+              <ExtensionSlot id={SLOT_NAVBAR} />
             </div>
           </header>
           <main className="p-8 max-w-7xl mx-auto">
@@ -81,7 +86,7 @@ function App() {
                 path="/"
                 element={
                   <div className="space-y-6">
-                    <ExtensionSlot id="dashboard" />
+                    <ExtensionSlot id={SLOT_DASHBOARD} />
                   </div>
                 }
               />

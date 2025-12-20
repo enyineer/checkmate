@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@checkmate/frontend-api": "workspace:*",
+    "@checkmate/common": "workspace:*",
     "@checkmate/healthcheck-common": "workspace:*",
     "@checkmate/ui": "workspace:*",
     "react": "^18.2.0",
