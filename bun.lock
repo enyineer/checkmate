@@ -170,6 +170,22 @@
         "typescript": "^5.0.0",
       },
     },
+    "plugins/dashboard-frontend": {
+      "name": "@checkmate/dashboard-frontend-plugin",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/catalog-frontend-plugin": "workspace:*",
+        "@checkmate/frontend-api": "workspace:*",
+        "@checkmate/ui": "workspace:*",
+        "lucide-react": "^0.344.0",
+        "react": "^18.2.0",
+        "react-router-dom": "^6.22.0",
+      },
+      "devDependencies": {
+        "@types/react": "^18.2.0",
+        "typescript": "^5.0.0",
+      },
+    },
     "plugins/http-healthcheck-backend": {
       "name": "@checkmate/http-healthcheck-backend-plugin",
       "version": "0.0.1",
@@ -243,6 +259,8 @@
     "@checkmate/catalog-backend-plugin": ["@checkmate/catalog-backend-plugin@workspace:plugins/catalog-backend"],
 
     "@checkmate/catalog-frontend-plugin": ["@checkmate/catalog-frontend-plugin@workspace:plugins/catalog-frontend"],
+
+    "@checkmate/dashboard-frontend-plugin": ["@checkmate/dashboard-frontend-plugin@workspace:plugins/dashboard-frontend"],
 
     "@checkmate/frontend": ["@checkmate/frontend@workspace:packages/frontend"],
 

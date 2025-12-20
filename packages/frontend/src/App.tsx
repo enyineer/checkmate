@@ -82,9 +82,8 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <div className="p-4 rounded-lg bg-white shadow">
-                    <h2 className="text-2xl font-semibold mb-4">Dashboard</h2>
-                    <p className="text-gray-600">Welcome to Checkmate Core.</p>
+                  <div className="space-y-6">
+                    <ExtensionSlot id="dashboard" />
                   </div>
                 }
               />
