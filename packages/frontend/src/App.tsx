@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ExtensionSlot } from "./components/ExtensionSlot";
 import { pluginRegistry } from "./plugin-registry";
@@ -10,30 +11,32 @@ import {
 import { ConsoleLoggerApi } from "./apis/logger-api";
 import { CoreFetchApi } from "./apis/fetch-api";
 
-// Initialize API Registry with core apiRefs
-const registryBuilder = new ApiRegistryBuilder()
-  .register(loggerApiRef, new ConsoleLoggerApi())
-  .register(fetchApiRef, new CoreFetchApi());
-
-// Register API factories from plugins
-const plugins = pluginRegistry.getPlugins();
-for (const plugin of plugins) {
-  if (plugin.apis) {
-    for (const api of plugin.apis) {
-      registryBuilder.registerFactory(api.ref, (registry) => {
-        // Adapt registry map to dependency getter
-        const deps = {
-          get: <T,>(ref: { id: string }) => registry.get(ref.id) as T,
-        };
-        return api.factory(deps);
-      });
-    }
-  }
-}
-
-const apiRegistry = registryBuilder.build();
-
 function App() {
+  const apiRegistry = useMemo(() => {
+    // Initialize API Registry with core apiRefs
+    const registryBuilder = new ApiRegistryBuilder()
+      .register(loggerApiRef, new ConsoleLoggerApi())
+      .register(fetchApiRef, new CoreFetchApi());
+
+    // Register API factories from plugins
+    const plugins = pluginRegistry.getPlugins();
+    for (const plugin of plugins) {
+      if (plugin.apis) {
+        for (const api of plugin.apis) {
+          registryBuilder.registerFactory(api.ref, (registry) => {
+            // Adapt registry map to dependency getter
+            const deps = {
+              get: <T,>(ref: { id: string }) => registry.get(ref.id) as T,
+            };
+            return api.factory(deps);
+          });
+        }
+      }
+    }
+
+    return registryBuilder.build();
+  }, []);
+
   return (
     <ApiProvider registry={apiRegistry}>
       <BrowserRouter>
