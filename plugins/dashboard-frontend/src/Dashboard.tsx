@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApi } from "@checkmate/frontend-api";
 import {
   catalogApiRef,
@@ -57,6 +58,7 @@ interface GroupWithSystems extends Group {
 
 export const Dashboard: React.FC = () => {
   const catalogApi = useApi(catalogApiRef);
+  const navigate = useNavigate();
   const [groupsWithSystems, setGroupsWithSystems] = useState<
     GroupWithSystems[]
   >([]);
@@ -85,6 +87,10 @@ export const Dashboard: React.FC = () => {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [catalogApi]);
+
+  const handleSystemClick = (systemId: string) => {
+    navigate(`/system/${systemId}`);
+  };
 
   const renderGroupsContent = () => {
     if (loading) {
@@ -135,6 +141,7 @@ export const Dashboard: React.FC = () => {
                       name={system.name}
                       status={getHealthStatus(system.id)}
                       metadata={getMockMetadata(system.id)}
+                      onClick={() => handleSystemClick(system.id)}
                     />
                   ))}
                 </div>

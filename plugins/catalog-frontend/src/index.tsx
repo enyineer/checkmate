@@ -6,6 +6,7 @@ import { FrontendPlugin } from "@checkmate/frontend-api";
 import { CatalogPage } from "./components/CatalogPage";
 import { CatalogConfigPage } from "./components/CatalogConfigPage";
 import { CatalogUserMenuItems } from "./components/UserMenuItems";
+import { SystemDetailPage } from "./components/SystemDetailPage";
 
 export const catalogPlugin: FrontendPlugin = {
   name: "catalog-frontend",
@@ -27,6 +28,10 @@ export const catalogPlugin: FrontendPlugin = {
       path: "/catalog/config",
       element: <CatalogConfigPage />,
       permission: "catalog.manage",
+    },
+    {
+      path: "/system/:systemId",
+      element: <SystemDetailPage />,
     },
   ],
   extensions: [
