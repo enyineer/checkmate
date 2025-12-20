@@ -20,6 +20,7 @@ import {
   PageContent,
   PermissionDenied,
   LoadingSpinner,
+  ConfirmationModal,
 } from "@checkmate/ui";
 import { Plus } from "lucide-react";
 
@@ -37,6 +38,11 @@ const HealthCheckConfigPageContent = () => {
   const [editingConfig, setEditingConfig] = useState<
     HealthCheckConfiguration | undefined
   >();
+
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [idToDelete, setIdToDelete] = useState<string | undefined>();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchData = async () => {
     const [configs, strats] = await Promise.all([
@@ -61,10 +67,21 @@ const HealthCheckConfigPageContent = () => {
     setIsEditing(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this health check?")) {
-      await api.deleteConfiguration(id);
+  const handleDelete = (id: string) => {
+    setIdToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!idToDelete) return;
+    setIsDeleting(true);
+    try {
+      await api.deleteConfiguration(idToDelete);
       await fetchData();
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setIdToDelete(undefined);
     }
   };
 
@@ -114,6 +131,17 @@ const HealthCheckConfigPageContent = () => {
           />
         )}
       </PageContent>
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Health Check"
+        message="Are you sure you want to delete this health check configuration? This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </Page>
   );
 };
