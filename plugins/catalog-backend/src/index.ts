@@ -76,7 +76,7 @@ export default createBackendPlugin({
 
         router.post(
           "/entities/groups",
-          check("entity.create"),
+          check(permissions.entityCreate.id),
           validate(insertGroupSchema),
           async (c) => {
             const body = await c.req.json();
@@ -140,7 +140,7 @@ export default createBackendPlugin({
 
         router.post(
           "/views",
-          check("entity.create"),
+          check(permissions.entityCreate.id),
           validate(insertViewSchema),
           async (c) => {
             const body = await c.req.json();

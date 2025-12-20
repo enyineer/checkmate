@@ -14,6 +14,7 @@ import {
   LoadingSpinner,
   EmptyState,
   PermissionDenied,
+  EditableText,
 } from "@checkmate/ui";
 import { Plus, Trash2, LayoutGrid, Server, Settings } from "lucide-react";
 
@@ -27,6 +28,7 @@ export const CatalogConfigPage = () => {
   const [loading, setLoading] = useState(true);
 
   const [newSystemName, setNewSystemName] = useState("");
+  const [newSystemDescription, setNewSystemDescription] = useState("");
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedSystemToAdd, setSelectedSystemToAdd] = useState("");
@@ -65,9 +67,11 @@ export const CatalogConfigPage = () => {
       .createSystem({
         id: newSystemName.toLowerCase().replaceAll(/\s+/g, "-"),
         name: newSystemName,
+        description: newSystemDescription || undefined,
       })
       .then(() => {
         setNewSystemName("");
+        setNewSystemDescription("");
         loadData();
       })
       .catch((error) => {
@@ -140,6 +144,39 @@ export const CatalogConfigPage = () => {
     }
   };
 
+  const handleUpdateSystemName = async (id: string, newName: string) => {
+    try {
+      await catalogApi.updateSystem(id, { name: newName });
+      loadData();
+    } catch (error) {
+      console.error("Failed to update system name:", error);
+      throw error;
+    }
+  };
+
+  const handleUpdateSystemDescription = async (
+    id: string,
+    newDescription: string
+  ) => {
+    try {
+      await catalogApi.updateSystem(id, { description: newDescription });
+      loadData();
+    } catch (error) {
+      console.error("Failed to update system description:", error);
+      throw error;
+    }
+  };
+
+  const handleUpdateGroupName = async (id: string, newName: string) => {
+    try {
+      await catalogApi.updateGroup(id, { name: newName });
+      loadData();
+    } catch (error) {
+      console.error("Failed to update group name:", error);
+      throw error;
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
@@ -165,8 +202,8 @@ export const CatalogConfigPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <form onSubmit={handleCreateSystem} className="flex gap-2">
-              <div className="flex-1">
+            <form onSubmit={handleCreateSystem} className="space-y-3">
+              <div>
                 <Input
                   placeholder="New System Name (e.g. Payments)"
                   value={newSystemName}
@@ -175,9 +212,20 @@ export const CatalogConfigPage = () => {
                   }
                 />
               </div>
-              <Button type="submit">
+              <div>
+                <textarea
+                  className="w-full flex min-h-[60px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  placeholder="Description (optional)"
+                  value={newSystemDescription}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setNewSystemDescription(e.target.value)
+                  }
+                  rows={2}
+                />
+              </div>
+              <Button type="submit" className="w-full">
                 <Plus className="w-4 h-4 mr-2" />
-                Add
+                Add System
               </Button>
             </form>
 
@@ -188,15 +236,27 @@ export const CatalogConfigPage = () => {
                 systems.map((system) => (
                   <div
                     key={system.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        {system.name}
-                      </span>
-                      <p className="text-xs text-gray-500 font-mono">
-                        {system.id}
-                      </p>
+                    <div className="flex-1 space-y-1">
+                      <EditableText
+                        value={system.name}
+                        onSave={(newName) =>
+                          handleUpdateSystemName(system.id, newName)
+                        }
+                        className="font-medium text-gray-900"
+                      />
+                      <EditableText
+                        value={system.description || "No description"}
+                        onSave={(newDescription) =>
+                          handleUpdateSystemDescription(
+                            system.id,
+                            newDescription
+                          )
+                        }
+                        className="text-xs text-gray-500 font-mono"
+                        placeholder="Add description..."
+                      />
                     </div>
                     <Button
                       variant="ghost"
@@ -247,10 +307,14 @@ export const CatalogConfigPage = () => {
                     className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          {group.name}
-                        </span>
+                      <div className="flex-1">
+                        <EditableText
+                          value={group.name}
+                          onSave={(newName) =>
+                            handleUpdateGroupName(group.id, newName)
+                          }
+                          className="font-medium text-gray-900"
+                        />
                         <p className="text-xs text-gray-500 font-mono">
                           {group.id}
                         </p>
