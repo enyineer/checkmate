@@ -18,3 +18,4 @@ export * from "./utils";
 export * from "./components/Table";
 export * from "./components/Select";
 export * from "./components/Page";
+export * from "./components/Textarea";

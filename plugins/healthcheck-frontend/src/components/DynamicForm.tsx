@@ -7,6 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea,
 } from "@checkmate/ui";
 
 interface DynamicFormProps {
@@ -17,6 +18,48 @@ interface DynamicFormProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange: (value: any) => void;
 }
+
+const JsonField: React.FC<{
+  id: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onChange: (val: any) => void;
+}> = ({ id, value, onChange }) => {
+  const [internalValue, setInternalValue] = React.useState(
+    JSON.stringify(value || {}, undefined, 2)
+  );
+
+  // Sync internal value when external value changes (e.g. strategy change)
+  React.useEffect(() => {
+    try {
+      const currentParsed = JSON.parse(internalValue);
+      if (JSON.stringify(currentParsed) !== JSON.stringify(value)) {
+        setInternalValue(JSON.stringify(value || {}, undefined, 2));
+      }
+    } catch {
+      setInternalValue(JSON.stringify(value || {}, undefined, 2));
+    }
+  }, [value]);
+
+  return (
+    <Textarea
+      id={id}
+      rows={4}
+      value={internalValue}
+      onChange={(e) => {
+        const newValue = e.target.value;
+        setInternalValue(newValue);
+        try {
+          const parsed = JSON.parse(newValue);
+          onChange(parsed);
+        } catch {
+          // Keep internal state but don't propagate invalid JSON
+        }
+      }}
+    />
+  );
+};
 
 export const DynamicForm: React.FC<DynamicFormProps> = ({
   schema,
@@ -119,34 +162,17 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
             );
           }
 
-          // Dictionary/Record (headers) - Simple implementation
+          // Dictionary/Record (headers) - Fixed with local state string
           if (propSchema.type === "object" && propSchema.additionalProperties) {
             return (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key}>
                   {label} (JSON) {isRequired && "*"}
                 </Label>
-                <textarea
+                <JsonField
                   id={key}
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  rows={4}
-                  value={
-                    typeof value[key] === "object"
-                      ? JSON.stringify(value[key], undefined, 2)
-                      : value[key] || "{}"
-                  }
-                  onChange={(e) => {
-                    try {
-                      handleChange(key, JSON.parse(e.target.value));
-                    } catch {
-                      // Allow typing invalid json, but don't crash.
-                      // Ideally we should manage local state for the string value and only push to parent on valid JSON.
-                      // But for now, we rely on the component handling the object.
-                      // Actually, this simple controlled input approach for JSON is flaky because JSON.stringify(JSON.parse(...)) re-formats input.
-                      // To do it right we need local state.
-                    }
-                  }}
-                  // For now disable editing complex objects via this simple textarea to avoid frustration, or warn.
+                  value={value[key]}
+                  onChange={(val) => handleChange(key, val)}
                 />
                 <p className="text-xs text-muted-foreground">
                   Complex configuration object.
