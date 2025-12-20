@@ -57,5 +57,38 @@ describe("PluginRegistry", () => {
     expect(routes).toHaveLength(2);
     expect(routes.map((r) => r.path)).toContain("/test");
     expect(routes.map((r) => r.path)).toContain("/b");
+    expect(routes.map((r) => r.path)).toContain("/b");
+  });
+
+  it("should allow multiple plugins to register extensions for the same slot", () => {
+    const pluginA: FrontendPlugin = {
+      name: "plugin-a",
+      extensions: [
+        {
+          id: "ext-a",
+          slotId: "shared-slot",
+          component: () => React.createElement("div", null, "A"),
+        },
+      ],
+    };
+
+    const pluginB: FrontendPlugin = {
+      name: "plugin-b",
+      extensions: [
+        {
+          id: "ext-b",
+          slotId: "shared-slot",
+          component: () => React.createElement("div", null, "B"),
+        },
+      ],
+    };
+
+    pluginRegistry.register(pluginA);
+    pluginRegistry.register(pluginB);
+
+    const extensions = pluginRegistry.getExtensions("shared-slot");
+    expect(extensions).toHaveLength(2);
+    expect(extensions.map((e) => e.id)).toContain("ext-a");
+    expect(extensions.map((e) => e.id)).toContain("ext-b");
   });
 });
