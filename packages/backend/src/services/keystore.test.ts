@@ -26,6 +26,9 @@ const mockChain = () => {
   const chain: any = {};
   chain.insert = mock(() => chain);
   chain.values = mock(() => Promise.resolve());
+  chain.update = mock(() => chain);
+  chain.set = mock(() => chain);
+  chain.delete = mock(() => chain);
 
   chain.select = mock(() => chain);
   chain.from = mock(() => chain);
@@ -58,6 +61,10 @@ describe("KeyStore", () => {
     // Reset mocks
     dbMockInstance.select.mockClear();
     dbMockInstance.insert.mockClear();
+    dbMockInstance.update.mockClear();
+    dbMockInstance.set.mockClear();
+    dbMockInstance.delete.mockClear();
+    dbMockInstance.where.mockClear();
 
     // Reset default behavior
     // eslint-disable-next-line unicorn/no-thenable, @typescript-eslint/no-explicit-any
@@ -176,5 +183,16 @@ describe("KeyStore", () => {
 
     expect(result.kid).toBe("new-kid"); // Should return the NEW key
     expect(dbMockInstance.insert).toHaveBeenCalled();
+    expect(dbMockInstance.update).toHaveBeenCalled(); // Should set expiresAt on old key
+    expect(dbMockInstance.set).toHaveBeenCalledWith(
+      expect.objectContaining({ expiresAt: expect.any(String) })
+    );
+  });
+
+  it("should delete expired keys in cleanupKeys", async () => {
+    await store.cleanupKeys();
+
+    expect(dbMockInstance.delete).toHaveBeenCalled();
+    expect(dbMockInstance.where).toHaveBeenCalled();
   });
 });
