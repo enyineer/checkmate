@@ -34,4 +34,16 @@ export class CoreFetchApi implements FetchApi {
       headers,
     });
   }
+
+  forPlugin(pluginId: string): {
+    fetch(path: string, init?: RequestInit): Promise<Response>;
+  } {
+    return {
+      fetch: (path: string, init?: RequestInit) => {
+        const baseUrl =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+        return this.fetch(`${baseUrl}/api/${pluginId}${path}`, init);
+      },
+    };
+  }
 }

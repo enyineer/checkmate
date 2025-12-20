@@ -9,6 +9,9 @@ export interface LoggerApi {
 
 export interface FetchApi {
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+  forPlugin(pluginId: string): {
+    fetch(path: string, init?: RequestInit): Promise<Response>;
+  };
 }
 
 export const loggerApiRef = createApiRef<LoggerApi>("core.logger");

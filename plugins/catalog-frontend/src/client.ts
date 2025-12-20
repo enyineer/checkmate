@@ -5,12 +5,10 @@ export class CatalogClient implements CatalogApi {
   constructor(private fetchApi: FetchApi) {}
 
   private async fetch<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await this.fetchApi.fetch(
-      `${
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
-      }/api/catalog-backend${path}`,
-      init
-    );
+    const response = await this.fetchApi
+      .forPlugin("catalog-backend")
+      .fetch(path, init);
+
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
