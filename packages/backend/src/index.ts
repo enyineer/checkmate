@@ -73,6 +73,11 @@ const init = async () => {
     });
   }
 
+  // 1.5. Ensure JWKS signing keys exist
+  rootLogger.info("🔑 Ensuring JWKS signing keys...");
+  const { keyStore } = await import("./services/keystore");
+  await keyStore.getSigningKey(); // This triggers generation if missing
+
   // 2. Signature Verification Middleware
   // Verify that every request coming to /api/* has a valid signature, unless exempt.
   // The 'auth-backend' plugin routes (/api/auth/*) must be exempt to allow login/signup.
