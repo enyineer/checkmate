@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@checkmate/ui";
+import { DynamicForm } from "./DynamicForm";
 
 interface HealthCheckEditorProps {
   strategies: HealthCheckStrategyDto[];
@@ -38,32 +39,21 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
   const [interval, setInterval] = useState(
     initialData?.intervalSeconds?.toString() || "60"
   );
-  const [config, setConfig] = useState<string>(
-    initialData ? JSON.stringify(initialData.config, undefined, 2) : "{}"
-  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [config, setConfig] = useState<any>(initialData?.config || {});
   const [loading, setLoading] = useState(false);
 
-  // In a real implementation, we would use a dynamic form generator based on strategy.configSchema
-  // For now, we'll use a simple JSON text area.
+  const selectedStrategy = strategies.find((s) => s.id === strategyId);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      let parsedConfig = {};
-      try {
-        parsedConfig = JSON.parse(config);
-      } catch {
-        alert("Invalid JSON config");
-        setLoading(false);
-        return;
-      }
-
       await onSave({
         name,
         strategyId,
         intervalSeconds: Number.parseInt(interval, 10),
-        config: parsedConfig,
+        config,
       });
     } catch (error) {
       console.error(error);
@@ -123,19 +113,17 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="config">Configuration (JSON)</Label>
-            <textarea
-              id="config"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              rows={10}
+          {selectedStrategy ? (
+            <DynamicForm
+              schema={selectedStrategy.configSchema}
               value={config}
-              onChange={(e) => setConfig(e.target.value)}
+              onChange={setConfig}
             />
-            <p className="text-xs text-muted-foreground">
-              Enter valid JSON for the strategy configuration.
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Select a strategy to configure.
             </p>
-          </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>

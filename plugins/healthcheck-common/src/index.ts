@@ -53,7 +53,7 @@ export interface HealthCheckConfiguration {
 export const CreateHealthCheckConfigurationSchema = z.object({
   name: z.string().min(1),
   strategyId: z.string().min(1),
-  config: z.record(z.unknown()),
+  config: z.record(z.string(), z.unknown()),
   intervalSeconds: z.number().min(1),
 });
 

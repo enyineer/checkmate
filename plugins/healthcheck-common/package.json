@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@checkmate/common": "workspace:*",
-    "zod": "^3.22.4"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

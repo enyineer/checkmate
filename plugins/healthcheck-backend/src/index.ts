@@ -12,6 +12,7 @@ import {
   permissions,
 } from "@checkmate/healthcheck-common";
 import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 export default createBackendPlugin({
   pluginId: "healthcheck-backend",
@@ -57,7 +58,7 @@ export default createBackendPlugin({
               id: s.id,
               displayName: s.displayName,
               description: s.description,
-              configSchema: {}, // TODO: Implement Zod to JSON Schema conversion
+              configSchema: z.toJSONSchema(s.configSchema),
             }));
             return c.json(strategies);
           }
