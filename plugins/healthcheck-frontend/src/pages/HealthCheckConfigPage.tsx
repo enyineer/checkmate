@@ -19,13 +19,15 @@ import {
   PageHeader,
   PageContent,
   PermissionDenied,
+  LoadingSpinner,
 } from "@checkmate/ui";
 import { Plus } from "lucide-react";
 
 const HealthCheckConfigPageContent = () => {
   const api = useApi(healthCheckApiRef);
   const permissionApi = useApi(permissionApiRef);
-  const canRead = permissionApi.usePermission(permissions.healthCheckRead.id);
+  const { allowed: canRead, loading: permissionLoading } =
+    permissionApi.usePermission(permissions.healthCheckRead.id);
 
   const [configurations, setConfigurations] = useState<
     HealthCheckConfiguration[]
@@ -73,6 +75,10 @@ const HealthCheckConfigPageContent = () => {
     setIsEditing(false);
     await fetchData();
   };
+
+  if (permissionLoading) {
+    return <LoadingSpinner />;
+  }
 
   if (!canRead) {
     return <PermissionDenied />;

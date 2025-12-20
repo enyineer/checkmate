@@ -16,14 +16,20 @@ import { usePermissions } from "./hooks/usePermissions";
 import { SLOT_NAVBAR, SLOT_USER_MENU_ITEMS_BOTTOM } from "@checkmate/common";
 
 class AuthPermissionApi implements PermissionApi {
-  usePermission(permission: string): boolean {
-    const permissions = usePermissions();
+  usePermission(permission: string): { loading: boolean; allowed: boolean } {
+    const { permissions, loading } = usePermissions();
+
+    if (loading) {
+      return { loading: true, allowed: false };
+    }
 
     // If no user, or user has no permissions, return false
     if (!permissions || permissions.length === 0) {
-      return false;
+      return { loading: false, allowed: false };
     }
-    return permissions.includes("*") || permissions.includes(permission);
+    const allowed =
+      permissions.includes("*") || permissions.includes(permission);
+    return { loading: false, allowed };
   }
 }
 

@@ -28,8 +28,8 @@ export const NavItem: React.FC<NavItemProps> = ({
   // We assume permissionApi is available if we use it. Safe fallback?
   // ApiProvider guarantees it if registered. App.tsx registers a default.
   const permissionApi = useApi(permissionApiRef);
-  const hasPermission = permissionApi.usePermission(permission || "");
-  const hasAccess = permission ? hasPermission : true;
+  const { allowed, loading } = permissionApi.usePermission(permission || "");
+  const hasAccess = permission ? allowed : true;
 
   // Handle click outside for dropdown
   useEffect(() => {
@@ -45,7 +45,7 @@ export const NavItem: React.FC<NavItemProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (!hasAccess) return <></>;
+  if (loading || !hasAccess) return <></>;
 
   const baseClasses = cn(
     "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer",

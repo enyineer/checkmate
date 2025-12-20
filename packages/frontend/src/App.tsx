@@ -12,7 +12,7 @@ import {
 } from "@checkmate/frontend-api";
 import { ConsoleLoggerApi } from "./apis/logger-api";
 import { CoreFetchApi } from "./apis/fetch-api";
-import { PermissionDenied } from "@checkmate/ui";
+import { PermissionDenied, LoadingSpinner } from "@checkmate/ui";
 import {
   SLOT_DASHBOARD,
   SLOT_NAVBAR,
@@ -24,8 +24,17 @@ const RouteGuard: React.FC<{
   permission?: string;
 }> = ({ children, permission }) => {
   const permissionApi = useApi(permissionApiRef);
-  const hasPermission = permissionApi.usePermission(permission || "");
-  const isAllowed = permission ? hasPermission : true;
+  const { allowed, loading } = permissionApi.usePermission(permission || "");
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center p-8">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const isAllowed = permission ? allowed : true;
 
   if (!isAllowed) {
     return <PermissionDenied />;
@@ -40,7 +49,7 @@ function App() {
     const registryBuilder = new ApiRegistryBuilder()
       .register(loggerApiRef, new ConsoleLoggerApi())
       .register(permissionApiRef, {
-        usePermission: () => true, // Default to allow all if no auth plugin present
+        usePermission: () => ({ loading: false, allowed: true }), // Default to allow all if no auth plugin present
       })
       .registerFactory(fetchApiRef, (_registry) => {
         return new CoreFetchApi();

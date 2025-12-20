@@ -7,9 +7,11 @@ import { permissions } from "@checkmate/healthcheck-common";
 
 export const HealthCheckMenuItems = () => {
   const permissionApi = useApi(permissionApiRef);
-  const canRead = permissionApi.usePermission(permissions.healthCheckRead.id);
+  const { allowed: canRead, loading } = permissionApi.usePermission(
+    permissions.healthCheckRead.id
+  );
 
-  if (!canRead) {
+  if (loading || !canRead) {
     return <React.Fragment />;
   }
 

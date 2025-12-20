@@ -7,9 +7,11 @@ import { permissions } from "@checkmate/catalog-common";
 
 export const CatalogUserMenuItems = () => {
   const permissionApi = useApi(permissionApiRef);
-  const canManage = permissionApi.usePermission(permissions.catalogManage.id);
+  const { allowed: canManage, loading } = permissionApi.usePermission(
+    permissions.catalogManage.id
+  );
 
-  if (!canManage) {
+  if (loading || !canManage) {
     return <React.Fragment />;
   }
 
