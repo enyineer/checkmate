@@ -12,9 +12,22 @@ import { plugins } from "./schema";
 import { eq, and } from "drizzle-orm";
 import { PluginLocalInstaller } from "./services/plugin-installer";
 
+import { cors } from "hono/cors";
+
 const app = new Hono();
 const pluginManager = new PluginManager();
 
+app.use(
+  "*",
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    exposeHeaders: ["Content-Length"],
+    maxAge: 600,
+    credentials: true,
+  })
+);
 app.use("*", logger());
 
 app.get("/", (c) => {
@@ -58,7 +71,11 @@ const init = async () => {
   // Verify that every request coming to /api/* has a valid signature, unless exempt.
   // The 'auth-backend' plugin routes (/api/auth/*) must be exempt to allow login/signup.
   // The '/api/plugins' route is exempt to allow frontend bootstrapping.
-  const EXEMPT_PATHS = ["/api/auth", "/api/plugins", "/api/plugins/install"];
+  const EXEMPT_PATHS = [
+    "/api/auth-backend",
+    "/api/plugins",
+    "/api/plugins/install",
+  ];
 
   app.use("/api/*", async (c, next) => {
     const path = c.req.path;

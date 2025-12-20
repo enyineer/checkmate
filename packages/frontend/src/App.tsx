@@ -16,7 +16,11 @@ function App() {
     // Initialize API Registry with core apiRefs
     const registryBuilder = new ApiRegistryBuilder()
       .register(loggerApiRef, new ConsoleLoggerApi())
-      .register(fetchApiRef, new CoreFetchApi());
+      .registerFactory(fetchApiRef, (registry) => {
+        return new CoreFetchApi({
+          get: <T,>(ref: { id: string }) => registry.get(ref.id) as T,
+        });
+      });
 
     // Register API factories from plugins
     const plugins = pluginRegistry.getPlugins();

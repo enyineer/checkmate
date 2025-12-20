@@ -181,9 +181,12 @@ export default createBackendPlugin({
           }),
           emailAndPassword: { enabled: true },
           socialProviders,
+          basePath: "/api/auth-backend",
+          baseURL: process.env.VITE_API_BASE_URL || "http://localhost:3000",
+          trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:5173"],
         });
 
-        router.on(["POST", "GET"], "/*", (c) => {
+        router.on(["POST", "GET"], "/**", (c) => {
           return auth!.handler(c.req.raw);
         });
 

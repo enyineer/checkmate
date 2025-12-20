@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
+import { useApi } from "@checkmate/frontend-api";
+import { authApiRef } from "../api";
 import {
   Button,
   Input,
@@ -16,13 +18,24 @@ import {
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const authApi = useApi(authApiRef);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual login logic via auth-backend
-    console.log("Logging in with:", email, password);
-    navigate("/");
+    setLoading(true);
+    try {
+      const { error } = await authApi.signIn(email, password);
+      if (error) {
+        console.error("Login failed:", error);
+        // TODO: Show toast notification
+      } else {
+        navigate("/");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,8 +70,8 @@ export const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full">
-              Sign In
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
         </CardContent>
@@ -79,6 +92,26 @@ export const LoginPage = () => {
 };
 
 export const LoginNavbarAction = () => {
+  const authApi = useApi(authApiRef);
+  const { data: session, isPending } = authApi.useSession();
+
+  if (isPending) {
+    return <div className="w-20 h-9 bg-gray-100 animate-pulse rounded-md" />;
+  }
+
+  if (session) {
+    return (
+      <Button
+        variant="ghost"
+        className="flex items-center text-gray-600"
+        onClick={() => authApi.signOut()}
+      >
+        <LogOut className="mr-2 h-4 w-4" />
+        Logout ({session.user?.email})
+      </Button>
+    );
+  }
+
   return (
     <Link to="/auth/login">
       <Button variant="outline" className="flex items-center">

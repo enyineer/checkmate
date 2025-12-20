@@ -6,7 +6,9 @@ export class CatalogClient implements CatalogApi {
 
   private async fetch<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await this.fetchApi.fetch(
-      `http://localhost:3000/api/catalog-backend${path}`,
+      `${
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
+      }/api/catalog-backend${path}`,
       init
     );
     if (!response.ok) {

@@ -35,6 +35,7 @@ interface PluginManifest {
 export class PluginManager {
   private registry = new ServiceRegistry();
   private extensionPointProxies = new Map<string, unknown>();
+  private pluginRouters = new Map<string, Hono>();
 
   constructor() {
     this.registerCoreServices();
@@ -108,7 +109,7 @@ export class PluginManager {
     // Register Router Factory now that we have rootRouter
     this.registry.registerFactory(coreServices.httpRouter, (pluginId) => {
       const pluginRouter = new Hono();
-      rootRouter.route(`/api/${pluginId}`, pluginRouter);
+      this.pluginRouters.set(pluginId, pluginRouter);
       return pluginRouter;
     });
 
@@ -442,6 +443,12 @@ export class PluginManager {
         try {
           await p.init(resolvedDeps);
           rootLogger.debug(`   -> Initialized ${p.pluginId}`);
+
+          // Mount router if it was created
+          const pluginRouter = this.pluginRouters.get(p.pluginId);
+          if (pluginRouter) {
+            rootRouter.route(`/api/${p.pluginId}`, pluginRouter);
+          }
         } catch (error) {
           rootLogger.error(`❌ Failed to initialize ${p.pluginId}:`, error);
         }
