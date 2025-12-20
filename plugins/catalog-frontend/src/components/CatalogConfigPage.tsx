@@ -15,6 +15,7 @@ import {
   EmptyState,
   PermissionDenied,
   EditableText,
+  ConfirmationModal,
 } from "@checkmate/ui";
 import { Plus, Trash2, LayoutGrid, Server, Settings } from "lucide-react";
 
@@ -32,6 +33,19 @@ export const CatalogConfigPage = () => {
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedSystemToAdd, setSelectedSystemToAdd] = useState("");
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const loadData = async () => {
     setLoading(true);
@@ -97,28 +111,39 @@ export const CatalogConfigPage = () => {
   };
 
   const handleDeleteSystem = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure? This will remove the system from all groups as well."
-      )
-    )
-      return;
-    try {
-      await catalogApi.deleteSystem(id);
-      loadData();
-    } catch (error) {
-      console.error("Failed to delete system:", error);
-    }
+    const system = systems.find((s) => s.id === id);
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete System",
+      message: `Are you sure you want to delete "${system?.name}"? This will remove the system from all groups as well.`,
+      onConfirm: async () => {
+        try {
+          await catalogApi.deleteSystem(id);
+          setConfirmModal({ ...confirmModal, isOpen: false });
+          loadData();
+        } catch (error) {
+          console.error("Failed to delete system:", error);
+        }
+      },
+    });
   };
 
   const handleDeleteGroup = async (id: string) => {
-    if (!confirm("Are you sure?")) return;
-    try {
-      await catalogApi.deleteGroup(id);
-      loadData();
-    } catch (error) {
-      console.error("Failed to delete group:", error);
-    }
+    const group = groups.find((g) => g.id === id);
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Group",
+      message: `Are you sure you want to delete "${group?.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await catalogApi.deleteGroup(id);
+          setConfirmModal({ ...confirmModal, isOpen: false });
+          loadData();
+        } catch (error) {
+          console.error("Failed to delete group:", error);
+        }
+      },
+    });
   };
 
   const handleAddSystemToGroup = async () => {
@@ -419,6 +444,16 @@ export const CatalogConfigPage = () => {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 };
