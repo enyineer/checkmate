@@ -20,3 +20,4 @@ export * from "./components/Select";
 export * from "./components/Page";
 export * from "./components/Textarea";
 export * from "./components/Tooltip";
+export * from "./components/Checkbox";

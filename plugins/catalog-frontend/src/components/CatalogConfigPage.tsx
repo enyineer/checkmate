@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useApi, permissionApiRef } from "@checkmate/frontend-api";
+import {
+  useApi,
+  permissionApiRef,
+  ExtensionSlot,
+} from "@checkmate/frontend-api";
 import { catalogApiRef, System, Group } from "../api";
 import { permissions } from "@checkmate/catalog-common";
+import { SLOT_CATALOG_SYSTEM_ACTIONS } from "@checkmate/common";
 import {
   SectionHeader,
   Card,
@@ -265,13 +270,19 @@ export const CatalogConfigPage = () => {
                     className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                   >
                     <div className="flex-1 space-y-1">
-                      <EditableText
-                        value={system.name}
-                        onSave={(newName) =>
-                          handleUpdateSystemName(system.id, newName)
-                        }
-                        className="font-medium text-gray-900"
-                      />
+                      <div className="flex items-center justify-between">
+                        <EditableText
+                          value={system.name}
+                          onSave={(newName) =>
+                            handleUpdateSystemName(system.id, newName)
+                          }
+                          className="font-medium text-gray-900"
+                        />
+                        <ExtensionSlot
+                          id={SLOT_CATALOG_SYSTEM_ACTIONS}
+                          context={{ system }}
+                        />
+                      </div>
                       <EditableText
                         value={system.description || "No description"}
                         onSave={(newDescription) =>

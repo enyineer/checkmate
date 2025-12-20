@@ -5,3 +5,4 @@ export const SLOT_USER_MENU_ITEMS = "core.layout.navbar.user-menu.items";
 export const SLOT_USER_MENU_ITEMS_BOTTOM =
   "core.layout.navbar.user-menu.items.bottom";
 export const SLOT_SYSTEM_DETAILS = "plugin.catalog.system-details";
+export const SLOT_CATALOG_SYSTEM_ACTIONS = "plugin.catalog.system-actions";

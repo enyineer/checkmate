@@ -16,41 +16,8 @@ import {
   EmptyState,
   LoadingSpinner,
   SystemHealthItem,
-  HealthStatus,
 } from "@checkmate/ui";
 import { LayoutGrid, Info, Server, Activity } from "lucide-react";
-
-// Mock health status generator based on system ID
-const getHealthStatus = (systemId: string): HealthStatus => {
-  // Simple hash function to get consistent but pseudo-random status
-  let hash = 0;
-  for (let i = 0; i < systemId.length; i++) {
-    hash = (hash << 5) - hash + (systemId.codePointAt(i) ?? 0);
-    hash = hash & hash;
-  }
-  const value = Math.abs(hash) % 10;
-
-  if (value < 7) return "healthy"; // 70% healthy
-  if (value < 9) return "degraded"; // 20% degraded
-  return "unhealthy"; // 10% unhealthy
-};
-
-// Mock metadata generator
-const getMockMetadata = (systemId: string) => {
-  const hash = [...systemId].reduce(
-    (acc, char) => acc + (char.codePointAt(0) ?? 0),
-    0
-  );
-  const latency = 50 + (hash % 200); // Latency between 50-250ms
-  const now = new Date();
-  const lastCheckMinutes = hash % 10; // Last check 0-9 minutes ago
-  now.setMinutes(now.getMinutes() - lastCheckMinutes);
-
-  return {
-    latency,
-    lastCheck: `${lastCheckMinutes}m ago`,
-  };
-};
 
 interface GroupWithSystems extends Group {
   systems: System[];
@@ -139,8 +106,8 @@ export const Dashboard: React.FC = () => {
                     <SystemHealthItem
                       key={system.id}
                       name={system.name}
-                      status={getHealthStatus(system.id)}
-                      metadata={getMockMetadata(system.id)}
+                      status={system.status}
+                      metadata={{}}
                       onClick={() => handleSystemClick(system.id)}
                     />
                   ))}
