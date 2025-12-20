@@ -9,6 +9,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { User } from "better-auth/types";
 import { hashPassword } from "better-auth/crypto";
 import { createExtensionPoint } from "@checkmate/backend-api";
+import { enrichUser } from "./utils/user";
 
 export interface BetterAuthStrategy {
   id: string;
@@ -72,50 +73,9 @@ export default createBackendPlugin({
     };
 
     // Helper to fetch permissions
-    const enrichUser = async (user: User) => {
+    const enrichUserLocal = async (user: User) => {
       if (!db) return user;
-
-      // 1. Get Roles
-      const userRoles = await db
-        .select({
-          roleName: schema.role.name,
-          roleId: schema.role.id,
-        })
-        .from(schema.userRole)
-        .innerJoin(schema.role, eq(schema.role.id, schema.userRole.roleId))
-        .where(eq(schema.userRole.userId, user.id));
-
-      const roles = userRoles.map((r) => r.roleId);
-      const permissions = new Set<string>();
-
-      // 2. Get Permissions for each role
-      for (const roleId of roles) {
-        if (roleId === "admin") {
-          permissions.add("*");
-          continue;
-        }
-
-        const rolePermissions = await db
-          .select({
-            permissionId: schema.permission.id,
-          })
-          .from(schema.rolePermission)
-          .innerJoin(
-            schema.permission,
-            eq(schema.permission.id, schema.rolePermission.permissionId)
-          )
-          .where(eq(schema.rolePermission.roleId, roleId));
-
-        for (const p of rolePermissions) {
-          permissions.add(p.permissionId);
-        }
-      }
-
-      return {
-        ...user,
-        roles,
-        permissions: [...permissions],
-      };
+      return enrichUser(user, db);
     };
 
     // 1. Register User Info Service
@@ -133,7 +93,7 @@ export default createBackendPlugin({
           headers,
         });
         if (!session?.user) return;
-        return enrichUser(session.user);
+        return enrichUserLocal(session.user);
       },
     });
 
@@ -153,7 +113,7 @@ export default createBackendPlugin({
           headers: request.headers,
         });
         if (!session?.user) return;
-        return enrichUser(session.user);
+        return enrichUserLocal(session.user);
       },
     });
 
@@ -202,7 +162,7 @@ export default createBackendPlugin({
                 };
               }) => {
                 if (!session.user) return session;
-                const enriched = await enrichUser(session.user);
+                const enriched = await enrichUserLocal(session.user);
                 return {
                   ...session,
                   user: enriched,

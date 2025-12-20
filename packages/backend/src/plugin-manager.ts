@@ -59,6 +59,76 @@ export class PluginManager {
       const pluginPool = new Pool({ connectionString: scopedUrl });
       return drizzle(pluginPool);
     });
+
+    // 2. Logger Factory
+    this.registry.registerFactory(coreServices.logger, (pluginId) => {
+      return rootLogger.child({ plugin: pluginId });
+    });
+
+    // 3. Auth Factory (Scoped)
+    this.registry.registerFactory(coreServices.fetch, (pluginId) => {
+      return {
+        fetch: async (input, init) => {
+          // Sign token with scoped service name
+          const token = await jwtService.sign({ service: pluginId }, "5m");
+          const headers = new Headers(init?.headers);
+          headers.set("Authorization", `Bearer ${token}`);
+          return fetch(input, { ...init, headers });
+        },
+      };
+    });
+
+    // 4. Token Verification Factory
+    this.registry.registerFactory(coreServices.tokenVerification, () => {
+      return jwtService;
+    });
+
+    // 5. Health Check Registry (Global Singleton)
+    const healthCheckRegistry = new CoreHealthCheckRegistry();
+    this.registry.registerFactory(
+      coreServices.healthCheckRegistry,
+      () => healthCheckRegistry
+    );
+
+    // 6. Validation Factory (Scoped)
+    this.registry.registerFactory(
+      coreServices.validation,
+      (_pluginId) => createValidationMiddleware
+    );
+
+    // 7. Permission Check Factory (Scoped)
+    this.registry.registerFactory(coreServices.permissionCheck, (pluginId) => {
+      return (permission: string) => {
+        return createMiddleware(async (c, next) => {
+          // Resolve Authentication Service (Late Binding)
+          const authService = await this.registry.get(
+            coreServices.authentication,
+            pluginId
+          );
+
+          if (!authService) {
+            return c.text("Authentication Service not available", 500);
+          }
+
+          const user = await authService.validate(c.req.raw);
+          if (!user) {
+            return c.text("Unauthorized", 401);
+          }
+
+          const userPermissions = user.permissions || [];
+          const fullId = `${pluginId}.${permission}`;
+
+          if (
+            !userPermissions.includes("*") &&
+            !userPermissions.includes(fullId)
+          ) {
+            return c.text(`Forbidden: Missing ${fullId}`, 403);
+          }
+
+          await next();
+        });
+      };
+    });
   }
 
   private getExtensionPointProxy<T>(ref: ExtensionPoint<T>): T {
@@ -111,78 +181,6 @@ export class PluginManager {
       const pluginRouter = new Hono();
       this.pluginRouters.set(pluginId, pluginRouter);
       return pluginRouter;
-    });
-
-    // Register Logger Factory
-    this.registry.registerFactory(coreServices.logger, (pluginId) => {
-      return rootLogger.child({ plugin: pluginId });
-    });
-
-    // Register Auth Factory (Scoped)
-    this.registry.registerFactory(coreServices.fetch, (pluginId) => {
-      return {
-        fetch: async (input, init) => {
-          // Sign token with scoped service name
-          const token = await jwtService.sign({ service: pluginId }, "5m");
-          const headers = new Headers(init?.headers);
-          headers.set("Authorization", `Bearer ${token}`);
-          return fetch(input, { ...init, headers });
-        },
-      };
-    });
-
-    // Register Token Verification Factory
-    this.registry.registerFactory(coreServices.tokenVerification, () => {
-      return jwtService;
-    });
-
-    // Register Health Check Registry (Global Singleton)
-    const healthCheckRegistry = new CoreHealthCheckRegistry();
-    this.registry.registerFactory(
-      coreServices.healthCheckRegistry,
-      () => healthCheckRegistry
-    );
-
-    // Register Validation Factory (Scoped)
-    this.registry.registerFactory(
-      coreServices.validation,
-      (_pluginId) => createValidationMiddleware
-    );
-
-    // Register Permission Check Factory (Scoped)
-    this.registry.registerFactory(coreServices.permissionCheck, (pluginId) => {
-      return (permission: string) => {
-        return createMiddleware(async (c, next) => {
-          // Resolve Authentication Service (Late Binding)
-          const authService = await this.registry.get(
-            coreServices.authentication,
-            pluginId
-          );
-
-          if (!authService) {
-            // If no auth backend registered, everything is unauthorized?
-            // Or maybe we skip check? Secure default: Block.
-            return c.text("Authentication Service not available", 500);
-          }
-
-          const user = await authService.validate(c.req.raw);
-          if (!user) {
-            return c.text("Unauthorized", 401);
-          }
-
-          const userPermissions = user.permissions || [];
-          const fullId = `${pluginId}.${permission}`;
-
-          if (
-            !userPermissions.includes("*") &&
-            !userPermissions.includes(fullId)
-          ) {
-            return c.text(`Forbidden: Missing ${fullId}`, 403);
-          }
-
-          await next();
-        });
-      };
     });
 
     rootLogger.info("🔍 Discovering plugins...");
