@@ -32,6 +32,7 @@ export class CoreFetchApi implements FetchApi {
     return fetch(input, {
       ...init,
       headers,
+      credentials: "include",
     });
   }
 

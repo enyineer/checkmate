@@ -5,7 +5,6 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { db } from "./db";
 import path from "node:path";
 import fs from "node:fs";
-import { jwtService } from "./services/jwt";
 import { rootLogger } from "./logger";
 import { coreServices } from "@checkmate/backend-api";
 import { plugins } from "./schema";
@@ -13,6 +12,8 @@ import { eq, and } from "drizzle-orm";
 import { PluginLocalInstaller } from "./services/plugin-installer";
 
 import { cors } from "hono/cors";
+
+import { createAuthMiddleware } from "./middleware/auth";
 
 const app = new Hono();
 const pluginManager = new PluginManager();
@@ -89,46 +90,14 @@ const init = async () => {
   ];
 
   app.use("/api/*", async (c, next) => {
-    const path = c.req.path;
+    const reqPath = c.req.path;
 
     // Check exemptions (prefix match)
-    if (EXEMPT_PATHS.some((p) => path.startsWith(p))) {
+    if (EXEMPT_PATHS.some((p) => reqPath.startsWith(p))) {
       return next();
     }
 
-    const token = c.req.header("Authorization")?.replace("Bearer ", "");
-
-    if (!token) {
-      return c.json(
-        { error: "Unauthorized: Missing Authorization header" },
-        401
-      );
-    }
-
-    // 5. Dual Authentication Strategy
-    // Strategy A: Service Token (Stateless, signed by Core)
-    const payload = await jwtService.verify(token);
-    if (payload) {
-      // It's a valid Service Token
-      return next();
-    }
-
-    // Strategy B: User Token (Stateful, validated by Auth Plugin)
-    // We try to retrieve the registered AuthenticationStrategy
-    const authStrategy = await pluginManager.getService(
-      coreServices.authentication
-    );
-
-    if (authStrategy) {
-      const user = await authStrategy.validate(c.req.raw);
-      if (user) {
-        // It's a valid User Session
-        return next();
-      }
-    }
-
-    // Both failed
-    return c.json({ error: "Unauthorized: Invalid token or session" }, 401);
+    return createAuthMiddleware(pluginManager)(c, next);
   });
 
   // Endpoint to install a new plugin
