@@ -27,7 +27,8 @@ export const CatalogConfigPage = () => {
 
   const [newSystemName, setNewSystemName] = useState("");
   const [newGroupName, setNewGroupName] = useState("");
-  const [selectedSystemId, setSelectedSystemId] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedSystemToAdd, setSelectedSystemToAdd] = useState("");
 
   const loadData = async () => {
     setLoading(true);
@@ -38,8 +39,8 @@ export const CatalogConfigPage = () => {
       ]);
       setSystems(s);
       setGroups(g);
-      if (s.length > 0 && !selectedSystemId) {
-        setSelectedSystemId(s[0].id);
+      if (g.length > 0 && !selectedGroupId) {
+        setSelectedGroupId(g[0].id);
       }
     } catch (error) {
       console.error("Failed to load catalog data:", error);
@@ -75,14 +76,11 @@ export const CatalogConfigPage = () => {
 
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newGroupName || !selectedSystemId) return;
+    if (!newGroupName) return;
     catalogApi
       .createGroup({
-        id: `${selectedSystemId}-${newGroupName
-          .toLowerCase()
-          .replaceAll(/\s+/g, "-")}`,
+        id: newGroupName.toLowerCase().replaceAll(/\s+/g, "-"),
         name: newGroupName,
-        systemId: selectedSystemId,
       })
       .then(() => {
         setNewGroupName("");
@@ -96,7 +94,7 @@ export const CatalogConfigPage = () => {
   const handleDeleteSystem = async (id: string) => {
     if (
       !confirm(
-        "Are you sure? This will hide groups associated with this system if they are not deleted first."
+        "Are you sure? This will remove the system from all groups as well."
       )
     )
       return;
@@ -118,7 +116,35 @@ export const CatalogConfigPage = () => {
     }
   };
 
+  const handleAddSystemToGroup = async () => {
+    if (!selectedGroupId || !selectedSystemToAdd) return;
+    try {
+      await catalogApi.addSystemToGroup(selectedGroupId, selectedSystemToAdd);
+      setSelectedSystemToAdd("");
+      loadData();
+    } catch (error) {
+      console.error("Failed to add system to group:", error);
+    }
+  };
+
+  const handleRemoveSystemFromGroup = async (
+    groupId: string,
+    systemId: string
+  ) => {
+    try {
+      await catalogApi.removeSystemFromGroup(groupId, systemId);
+      loadData();
+    } catch (error) {
+      console.error("Failed to remove system from group:", error);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
+
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+  const availableSystems = systems.filter(
+    (s) => !selectedGroup?.systemIds?.includes(s.id)
+  );
 
   return (
     <div className="space-y-8">
@@ -194,56 +220,32 @@ export const CatalogConfigPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Target System</Label>
-                <select
-                  className="w-full flex h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={selectedSystemId}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setSelectedSystemId(e.target.value)
+            <form onSubmit={handleCreateGroup} className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  placeholder="New Group Name (e.g. Payment Flow)"
+                  value={newGroupName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setNewGroupName(e.target.value)
                   }
-                >
-                  <option value="" disabled>
-                    Select a system
-                  </option>
-                  {systems.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
-
-              <form onSubmit={handleCreateGroup} className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    placeholder="New Group Name (e.g. API)"
-                    value={newGroupName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setNewGroupName(e.target.value)
-                    }
-                  />
-                </div>
-                <Button type="submit" disabled={!selectedSystemId}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add
-                </Button>
-              </form>
-            </div>
+              <Button type="submit">
+                <Plus className="w-4 h-4 mr-2" />
+                Add
+              </Button>
+            </form>
 
             <div className="space-y-2">
-              {groups.filter((g) => g.systemId === selectedSystemId).length ===
-              0 ? (
-                <EmptyState title="No groups in this system." />
+              {groups.length === 0 ? (
+                <EmptyState title="No groups created yet." />
               ) : (
-                groups
-                  .filter((g) => g.systemId === selectedSystemId)
-                  .map((group) => (
-                    <div
-                      key={group.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                    >
+                groups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
                       <div>
                         <span className="font-medium text-gray-900">
                           {group.name}
@@ -260,12 +262,98 @@ export const CatalogConfigPage = () => {
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  ))
+
+                    {/* Systems in this group */}
+                    {group.systemIds && group.systemIds.length > 0 && (
+                      <div className="pl-4 space-y-1">
+                        {group.systemIds.map((sysId) => {
+                          const sys = systems.find((s) => s.id === sysId);
+                          if (!sys) return;
+                          return (
+                            <div
+                              key={sysId}
+                              className="flex items-center justify-between text-sm bg-white p-2 rounded border border-gray-200"
+                            >
+                              <span className="text-gray-700">{sys.name}</span>
+                              <Button
+                                variant="ghost"
+                                className="text-red-400 hover:text-red-600 h-6 w-6 p-0"
+                                onClick={() =>
+                                  handleRemoveSystemFromGroup(group.id, sysId)
+                                }
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))
               )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Add System to Group Section */}
+      {groups.length > 0 && systems.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add System to Group</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Select Group</Label>
+                <select
+                  className="w-full flex h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={selectedGroupId}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setSelectedGroupId(e.target.value)
+                  }
+                >
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Select System</Label>
+                <select
+                  className="w-full flex h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={selectedSystemToAdd}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setSelectedSystemToAdd(e.target.value)
+                  }
+                >
+                  <option value="">Select a system</option>
+                  {availableSystems.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <Button
+                  onClick={handleAddSystemToGroup}
+                  disabled={!selectedSystemToAdd}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add to Group
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

@@ -24,6 +24,7 @@ import { CoreHealthCheckRegistry } from "./services/health-check-registry";
 import z, { ZodSchema } from "zod";
 import { ValidationCheck } from "@checkmate/backend-api";
 import { zValidator } from "@hono/zod-validator";
+import { fixMigrationsSchemaReferences } from "./utils/fix-migrations";
 
 interface PluginManifest {
   name: string;
@@ -376,6 +377,9 @@ export class PluginManager {
         const migrationsFolder = path.join(p.pluginPath, "drizzle");
         if (fs.existsSync(migrationsFolder)) {
           try {
+            // Fix any hardcoded "public" schema references
+            fixMigrationsSchemaReferences(migrationsFolder);
+
             rootLogger.debug(
               `   -> Running migrations for ${p.pluginId} from ${migrationsFolder}`
             );

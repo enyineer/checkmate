@@ -13,7 +13,7 @@ export interface System {
 export interface Group {
   id: string;
   name: string;
-  systemId: string;
+  systemIds?: string[];
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +50,8 @@ export interface CatalogApi {
   createGroup(group: Partial<Group>): Promise<Group>;
   updateGroup(id: string, group: Partial<Group>): Promise<Group>;
   deleteGroup(id: string): Promise<void>;
+  addSystemToGroup(groupId: string, systemId: string): Promise<void>;
+  removeSystemFromGroup(groupId: string, systemId: string): Promise<void>;
 
   getViews(): Promise<View[]>;
   createView(view: Partial<View>): Promise<View>;

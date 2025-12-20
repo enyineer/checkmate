@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { NewSystem, NewGroup, NewView } from "./types";
 import * as schema from "../schema";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -46,7 +46,27 @@ export class EntityService {
 
   // Groups
   async getGroups() {
-    return this.database.select().from(schema.groups);
+    // Fetch all groups
+    const allGroups = await this.database.select().from(schema.groups);
+
+    // Fetch all system-group associations
+    const associations = await this.database
+      .select()
+      .from(schema.systemsGroups);
+
+    // Build a map of groupId -> systemIds[]
+    const groupSystemsMap = new Map<string, string[]>();
+    for (const assoc of associations) {
+      const existing = groupSystemsMap.get(assoc.groupId) ?? [];
+      existing.push(assoc.systemId);
+      groupSystemsMap.set(assoc.groupId, existing);
+    }
+
+    // Attach systemIds to each group
+    return allGroups.map((group) => ({
+      ...group,
+      systemIds: groupSystemsMap.get(group.id) ?? [],
+    }));
   }
 
   async createGroup(data: NewGroup) {
@@ -68,6 +88,26 @@ export class EntityService {
 
   async deleteGroup(id: string) {
     await this.database.delete(schema.groups).where(eq(schema.groups.id, id));
+  }
+
+  async addSystemToGroup(props: { groupId: string; systemId: string }) {
+    const { groupId, systemId } = props;
+    await this.database
+      .insert(schema.systemsGroups)
+      .values({ groupId, systemId })
+      .onConflictDoNothing();
+  }
+
+  async removeSystemFromGroup(props: { groupId: string; systemId: string }) {
+    const { groupId, systemId } = props;
+    await this.database
+      .delete(schema.systemsGroups)
+      .where(
+        and(
+          eq(schema.systemsGroups.groupId, groupId),
+          eq(schema.systemsGroups.systemId, systemId)
+        )
+      );
   }
 
   // Views

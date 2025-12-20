@@ -24,13 +24,12 @@ export type NewSystem = z.infer<typeof insertSystemSchema>;
 export const selectGroupSchema = z.object({
   id: z.string(),
   name: z.string(),
-  systemId: z.string(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
 export const insertGroupSchema = selectGroupSchema
-  .pick({ id: true, name: true, systemId: true })
+  .pick({ id: true, name: true })
   .extend({
     metadata: z.record(z.string(), z.unknown()).optional(),
   });

@@ -71,6 +71,23 @@ export class CatalogClient implements CatalogApi {
     });
   }
 
+  async addSystemToGroup(groupId: string, systemId: string): Promise<void> {
+    await this.fetch(`/entities/groups/${groupId}/systems`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ systemId }),
+    });
+  }
+
+  async removeSystemFromGroup(
+    groupId: string,
+    systemId: string
+  ): Promise<void> {
+    await this.fetch(`/entities/groups/${groupId}/systems/${systemId}`, {
+      method: "DELETE",
+    });
+  }
+
   async getViews(): Promise<View[]> {
     return this.fetch<View[]>("/views");
   }

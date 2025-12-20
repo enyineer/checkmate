@@ -107,6 +107,31 @@ export default createBackendPlugin({
           }
         );
 
+        router.post(
+          "/entities/groups/:id/systems",
+          check("entity.update"),
+          async (c) => {
+            const groupId = c.req.param("id");
+            const body = await c.req.json();
+            await entityService.addSystemToGroup({
+              groupId,
+              systemId: body.systemId,
+            });
+            return c.json({ success: true });
+          }
+        );
+
+        router.delete(
+          "/entities/groups/:id/systems/:systemId",
+          check("entity.update"),
+          async (c) => {
+            const groupId = c.req.param("id");
+            const systemId = c.req.param("systemId");
+            await entityService.removeSystemFromGroup({ groupId, systemId });
+            return c.json({ success: true });
+          }
+        );
+
         // Views
         router.get("/views", check("entity.read"), async (c) => {
           const views = await entityService.getViews();

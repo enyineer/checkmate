@@ -1,4 +1,10 @@
-import { pgTable, text, timestamp, json } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  json,
+  primaryKey,
+} from "drizzle-orm/pg-core";
 
 export const systems = pgTable("systems", {
   id: text("id").primaryKey(),
@@ -13,13 +19,26 @@ export const systems = pgTable("systems", {
 export const groups = pgTable("groups", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  systemId: text("system_id")
-    .notNull()
-    .references(() => systems.id, { onDelete: "cascade" }),
+
   metadata: json("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const systemsGroups = pgTable(
+  "systems_groups",
+  {
+    systemId: text("system_id")
+      .notNull()
+      .references(() => systems.id, { onDelete: "cascade" }),
+    groupId: text("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: primaryKey(t.systemId, t.groupId),
+  })
+);
 
 export const views = pgTable("views", {
   id: text("id").primaryKey(),
