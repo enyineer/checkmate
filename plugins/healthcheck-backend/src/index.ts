@@ -1,0 +1,120 @@
+import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
+import { Hono } from "hono";
+import { HealthCheckService } from "./service";
+import { Scheduler } from "./scheduler";
+import * as schema from "./schema";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import {
+  CreateHealthCheckConfigurationSchema,
+  UpdateHealthCheckConfigurationSchema,
+  AssociateHealthCheckSchema,
+} from "@checkmate/healthcheck-common";
+import { zValidator } from "@hono/zod-validator";
+
+export default createBackendPlugin({
+  pluginId: "healthcheck-backend",
+  register(env) {
+    env.registerInit({
+      deps: {
+        logger: coreServices.logger,
+        database: coreServices.database,
+        healthCheckRegistry: coreServices.healthCheckRegistry,
+        router: coreServices.httpRouter,
+      },
+      init: async ({ logger, database, healthCheckRegistry, router }) => {
+        logger.info("🏥 Initializing Health Check Backend...");
+
+        const service = new HealthCheckService(
+          database as unknown as NodePgDatabase<typeof schema>
+        );
+        const scheduler = new Scheduler(
+          database as unknown as NodePgDatabase<typeof schema>,
+          healthCheckRegistry,
+          logger
+        );
+
+        scheduler.start();
+
+        const apiRouter = new Hono();
+
+        // Strategies
+        apiRouter.get("/strategies", (c) => {
+          const strategies = healthCheckRegistry.getStrategies().map((s) => ({
+            id: s.id,
+            displayName: s.displayName,
+            description: s.description,
+            // We need to convert Zod schema to JSON schema if we want frontend to render it automatically
+            // For now, assuming frontend has a way or just sending raw for custom handling?
+            // Usually we'd use 'zod-to-json-schema' here.
+            configSchema: {}, // TODO: Implement Zod to JSON Schema conversion
+          }));
+          return c.json(strategies);
+        });
+
+        // Configurations CRUD
+        apiRouter.get("/configurations", async (c) => {
+          const configs = await service.getConfigurations();
+          return c.json(configs);
+        });
+
+        apiRouter.post(
+          "/configurations",
+          zValidator("json", CreateHealthCheckConfigurationSchema),
+          async (c) => {
+            const data = c.req.valid("json");
+            const config = await service.createConfiguration(data);
+            return c.json(config, 201);
+          }
+        );
+
+        apiRouter.put(
+          "/configurations/:id",
+          zValidator("json", UpdateHealthCheckConfigurationSchema),
+          async (c) => {
+            const id = c.req.param("id");
+            const data = c.req.valid("json");
+            const config = await service.updateConfiguration(id, data);
+            if (!config) return c.json({ error: "Not found" }, 404);
+            return c.json(config);
+          }
+        );
+
+        apiRouter.delete("/configurations/:id", async (c) => {
+          const id = c.req.param("id");
+          await service.deleteConfiguration(id);
+          // eslint-disable-next-line unicorn/no-null
+          return c.body(null, 204);
+        });
+
+        // System Associations
+        apiRouter.get("/systems/:systemId/checks", async (c) => {
+          const systemId = c.req.param("systemId");
+          const configs = await service.getSystemConfigurations(systemId);
+          return c.json(configs);
+        });
+
+        apiRouter.post(
+          "/systems/:systemId/checks",
+          zValidator("json", AssociateHealthCheckSchema),
+          async (c) => {
+            const systemId = c.req.param("systemId");
+            const { configurationId, enabled } = c.req.valid("json");
+            await service.associateSystem(systemId, configurationId, enabled);
+            // eslint-disable-next-line unicorn/no-null
+            return c.body(null, 201);
+          }
+        );
+
+        apiRouter.delete("/systems/:systemId/checks/:configId", async (c) => {
+          const systemId = c.req.param("systemId");
+          const configId = c.req.param("configId");
+          await service.disassociateSystem(systemId, configId);
+          // eslint-disable-next-line unicorn/no-null
+          return c.body(null, 204);
+        });
+
+        router.route("/healthcheck", apiRouter);
+      },
+    });
+  },
+});

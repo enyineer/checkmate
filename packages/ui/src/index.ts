@@ -15,3 +15,6 @@ export * from "./components/ConfirmationModal";
 export * from "./components/HealthBadge";
 export * from "./components/SystemHealthItem";
 export * from "./utils";
+export * from "./components/Table";
+export * from "./components/Select";
+export * from "./components/Page";

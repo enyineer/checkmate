@@ -4,3 +4,4 @@ export * from "./core-apis";
 export * from "./plugin";
 export * from "./plugin-registry";
 export * from "./components/ExtensionSlot";
+export * from "./utils";

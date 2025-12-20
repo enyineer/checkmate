@@ -7,7 +7,7 @@ export interface Extension<T = unknown> {
   component: React.ComponentType<T>;
 }
 
-export interface FrontendPlugin {
+interface FrontendPlugin {
   name: string;
   extensions?: Extension[];
   apis?: {
@@ -25,4 +25,8 @@ export interface FrontendPlugin {
     path: string;
     icon?: React.ComponentType | React.ReactNode;
   }[];
+}
+
+export function createFrontendPlugin(plugin: FrontendPlugin): FrontendPlugin {
+  return plugin;
 }

@@ -1,14 +1,14 @@
 import { fetchApiRef, ApiRef } from "@checkmate/frontend-api";
 import { CatalogClient } from "./client";
 import { catalogApiRef } from "./api";
-import { FrontendPlugin } from "@checkmate/frontend-api";
+import { createFrontendPlugin } from "@checkmate/frontend-api";
 
 import { CatalogPage } from "./components/CatalogPage";
 import { CatalogConfigPage } from "./components/CatalogConfigPage";
 import { CatalogUserMenuItems } from "./components/UserMenuItems";
 import { SystemDetailPage } from "./components/SystemDetailPage";
 
-export const catalogPlugin: FrontendPlugin = {
+export const catalogPlugin = createFrontendPlugin({
   name: "catalog-frontend",
   apis: [
     {
@@ -41,7 +41,7 @@ export const catalogPlugin: FrontendPlugin = {
       component: CatalogUserMenuItems,
     },
   ],
-};
+});
 
 export * from "./api";
 export * from "./client";

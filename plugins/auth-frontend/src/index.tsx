@@ -1,8 +1,8 @@
 import {
-  FrontendPlugin,
   ApiRef,
   permissionApiRef,
   PermissionApi,
+  createFrontendPlugin,
 } from "@checkmate/frontend-api";
 import {
   LoginPage,
@@ -83,7 +83,7 @@ class BetterAuthApi implements AuthApi {
   }
 }
 
-export const authPlugin: FrontendPlugin = {
+export const authPlugin = createFrontendPlugin({
   name: "auth-frontend",
   apis: [
     {
@@ -113,4 +113,4 @@ export const authPlugin: FrontendPlugin = {
       component: LogoutMenuItem,
     },
   ],
-};
+});
