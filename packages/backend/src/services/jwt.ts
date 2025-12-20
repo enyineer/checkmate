@@ -1,8 +1,5 @@
 import { SignJWT, jwtVerify, importJWK, JWK } from "jose";
 import { keyStore } from "./keystore";
-import { rootLogger } from "../logger";
-
-const logger = rootLogger.child({ service: "JwtService" });
 
 export const jwtService = {
   /**
@@ -41,8 +38,7 @@ export const jwtService = {
         algorithms: ["RS256"],
       });
       return payload;
-    } catch (error) {
-      logger.error("JWT Verification failed:", error);
+    } catch {
       return;
     }
   },

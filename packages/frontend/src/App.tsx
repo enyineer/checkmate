@@ -37,10 +37,8 @@ function App() {
       .register(permissionApiRef, {
         usePermission: () => true, // Default to allow all if no auth plugin present
       })
-      .registerFactory(fetchApiRef, (registry) => {
-        return new CoreFetchApi({
-          get: <T,>(ref: { id: string }) => registry.get(ref.id) as T,
-        });
+      .registerFactory(fetchApiRef, (_registry) => {
+        return new CoreFetchApi();
       });
 
     // Register API factories from plugins

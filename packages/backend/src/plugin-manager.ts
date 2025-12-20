@@ -395,29 +395,25 @@ export class PluginManager {
         // Resolve Dependencies
         const resolvedDeps: Record<string, unknown> = {};
         for (const [key, ref] of Object.entries(p.deps)) {
-          // If schema is present, we skip the standard database resolution
-          // because we will inject the schema-aware DB.
-          if (key === "database") {
-            if (p.schema) {
-              const baseUrl = process.env.DATABASE_URL;
-              const assignedSchema = `plugin_${p.pluginId}`;
-              // Force search_path
-              const scopedUrl = `${baseUrl}?options=-c%20search_path%3D${assignedSchema}`;
-              const pluginPool = new Pool({ connectionString: scopedUrl });
-
-              // Create schema-aware Drizzle instance
-              resolvedDeps["database"] = drizzle(pluginPool, {
-                schema: p.schema,
-              });
-            } else {
-              resolvedDeps["database"] = pluginDb;
-            }
-          }
-
           resolvedDeps[key] = await this.registry.get(
             ref as ServiceRef<unknown>,
             p.pluginId
           );
+        }
+
+        // Inject Schema-aware Database if schema is provided
+        // This takes precedence over any 'database' requested in deps
+        if (p.schema) {
+          const baseUrl = process.env.DATABASE_URL;
+          const assignedSchema = `plugin_${p.pluginId}`;
+          // Force search_path
+          const scopedUrl = `${baseUrl}?options=-c%20search_path%3D${assignedSchema}`;
+          const pluginPool = new Pool({ connectionString: scopedUrl });
+
+          // Create schema-aware Drizzle instance
+          resolvedDeps["database"] = drizzle(pluginPool, {
+            schema: p.schema,
+          });
         }
 
         try {
