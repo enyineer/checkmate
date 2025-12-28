@@ -30,6 +30,7 @@ function getPackageType(packageName: string): PackageType {
   if (packageName.startsWith("@checkmate/frontend")) return "frontend";
   if (packageName.startsWith("@checkmate/backend")) return "backend";
   if (packageName.startsWith("@checkmate/ui")) return "frontend"; // UI is frontend
+  if (packageName === "@checkmate/queue-api") return "backend"; // Queue API is backend
 
   // Core packages (can be used by everyone)
   if (packageName === "@checkmate/common") return "core";

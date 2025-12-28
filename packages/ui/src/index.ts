@@ -21,3 +21,5 @@ export * from "./components/Page";
 export * from "./components/Textarea";
 export * from "./components/Tooltip";
 export * from "./components/Checkbox";
+export * from "./components/Alert";
+export * from "./components/DynamicForm";

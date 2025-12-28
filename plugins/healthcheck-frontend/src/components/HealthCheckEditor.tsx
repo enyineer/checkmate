@@ -18,8 +18,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  DynamicForm,
 } from "@checkmate/ui";
-import { DynamicForm } from "./DynamicForm";
 
 interface HealthCheckEditorProps {
   strategies: HealthCheckStrategyDto[];

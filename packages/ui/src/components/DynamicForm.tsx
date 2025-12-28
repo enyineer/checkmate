@@ -18,7 +18,7 @@ import {
   Button,
   Textarea,
   Tooltip,
-} from "@checkmate/ui";
+} from "../index";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
