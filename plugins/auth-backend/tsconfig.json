@@ -1,10 +1,6 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "outDir": "./dist"
-  }
+  "extends": "@checkmate/tsconfig/backend.json",
+  "include": [
+    "src"
+  ]
 }

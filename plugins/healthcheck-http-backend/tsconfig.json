@@ -1,16 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "types": [
-      "bun"
-    ]
-  },
+  "extends": "@checkmate/tsconfig/backend.json",
   "include": [
     "src"
   ]

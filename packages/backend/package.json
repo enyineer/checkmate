@@ -23,6 +23,7 @@
   "devDependencies": {
     "drizzle-kit": "^0.31.8",
     "@types/pg": "^8.11.0",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@checkmate/tsconfig": "workspace:*"
   }
 }

@@ -5,5 +5,8 @@
   "main": "src/index.ts",
   "dependencies": {
     "@checkmate/common": "workspace:*"
+  },
+  "devDependencies": {
+    "@checkmate/tsconfig": "workspace:*"
   }
 }

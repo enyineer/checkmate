@@ -1,16 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "outDir": "./dist",
-    "declaration": true,
-    "types": [
-      "bun"
-    ]
-  },
+  "extends": "@checkmate/tsconfig/backend.json",
   "include": [
     "src"
   ]
