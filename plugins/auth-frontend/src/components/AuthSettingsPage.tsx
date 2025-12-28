@@ -26,6 +26,8 @@ export const AuthSettingsPage: React.FC = () => {
   const authApi = useApi(authApiRef);
   const permissionApi = useApi(permissionApiRef);
 
+  const session = authApi.useSession();
+
   const [activeTab, setActiveTab] = useState<"users" | "strategies">("users");
   const [users, setUsers] = useState<(AuthUser & { roles: string[] })[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -87,6 +89,11 @@ export const AuthSettingsPage: React.FC = () => {
     roleId: string,
     currentRoles: string[]
   ) => {
+    if (session.data?.user.id === userId) {
+      setError("You cannot update your own roles");
+      return;
+    }
+
     const newRoles = currentRoles.includes(roleId)
       ? currentRoles.filter((r) => r !== roleId)
       : [...currentRoles, roleId];

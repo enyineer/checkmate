@@ -240,6 +240,15 @@ export default createBackendPlugin({
           check(authPermissions.rolesManage.id),
           async (c) => {
             const userId = c.req.param("id");
+            const session = await auth?.api.getSession({
+              headers: c.req.raw.headers,
+            });
+            const sessionUserId = session?.user?.id;
+
+            if (userId === sessionUserId) {
+              return c.json({ error: "Cannot update your own roles" }, 403);
+            }
+
             const { roles } = (await c.req.json()) as { roles: string[] };
 
             await database.transaction(async (tx) => {
