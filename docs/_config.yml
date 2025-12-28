@@ -18,3 +18,4 @@ relative_links:
 
 include:
   - README.md
+  - _includes
