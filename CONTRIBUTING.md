@@ -25,3 +25,57 @@ Apart from the licenses granted above, You retain all ownership rights, title, a
 
 **6. "As Is"**
 You provide Your Contribution on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+
+---
+
+## Creating a Changeset
+
+When contributing code changes to Checkmate, you'll need to create a **changeset** to document your changes. Changesets help us manage versioning and generate changelogs automatically.
+
+### When to Create a Changeset
+
+Create a changeset when your PR includes:
+- ✅ Bug fixes
+- ✅ New features
+- ✅ Breaking changes
+- ✅ Performance improvements
+- ✅ API changes
+
+You typically **don't need** a changeset for:
+- ❌ Documentation-only changes
+- ❌ Test-only changes
+- ❌ CI/build configuration changes
+
+### How to Create a Changeset
+
+1. Make your code changes
+2. Run the changeset command:
+   ```bash
+   bun changeset
+   ```
+3. Select which packages changed
+4. Choose the version bump type (patch/minor/major)
+5. Write a clear summary of your changes
+6. Commit the generated changeset file along with your code
+
+### Example
+
+```bash
+$ bun changeset
+🦋  Which packages would you like to include?
+◉ @checkmate/auth-backend-plugin
+
+🦋  Which packages should have a patch bump?
+◉ @checkmate/auth-backend-plugin
+
+🦋  Please enter a summary for this change:
+Fixed session timeout handling in authentication middleware
+```
+
+This will create a new file in `.changeset/` that you should commit with your changes.
+
+### Changeset Bot
+
+When you create a pull request, the Changeset Bot will automatically comment to let you know if a changeset is needed. If you forgot to add one, the bot provides a helpful link to create it.
+
+For more detailed information, see our [Changesets documentation](docs/changesets.md).
