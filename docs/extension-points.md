@@ -1,0 +1,644 @@
+# Extension Points and Strategies
+
+## Overview
+
+Extension points enable plugins to provide **pluggable implementations** for core functionality. They follow the **Strategy Pattern**, allowing different implementations to be swapped at runtime.
+
+## Core Concepts
+
+### Extension Point
+
+A **contract** that defines what implementations must provide:
+
+```typescript
+interface ExtensionPoint<T> {
+  id: string;
+  T: T; // Phantom type for type safety
+}
+```
+
+### Strategy
+
+An **implementation** of an extension point:
+
+```typescript
+interface Strategy {
+  id: string;
+  displayName: string;
+  // ... strategy-specific methods
+}
+```
+
+## Backend Extension Points
+
+### HealthCheckStrategy
+
+Implements custom health check methods.
+
+#### Interface
+
+```typescript
+interface HealthCheckStrategy<Config = unknown> {
+  /** Unique identifier for this strategy */
+  id: string;
+
+  /** Human-readable name */
+  displayName: string;
+
+  /** Optional description */
+  description?: string;
+
+  /** Current version of the configuration schema */
+  configVersion: number;
+
+  /** Validation schema for the strategy-specific config */
+  configSchema: z.ZodType<Config>;
+
+  /** Optional migrations for backward compatibility */
+  migrations?: MigrationChain<Config>;
+
+  /** Execute the health check */
+  execute(config: Config): Promise<HealthCheckResult>;
+}
+
+interface HealthCheckResult {
+  status: "healthy" | "unhealthy" | "degraded";
+  latency?: number; // ms
+  message?: string;
+  metadata?: Record<string, unknown>;
+}
+```
+
+#### Example: HTTP Health Check
+
+```typescript
+import { z } from "zod";
+import { HealthCheckStrategy } from "@checkmate/backend-api";
+
+const httpCheckConfig = z.object({
+  url: z.string().url().describe("URL to check"),
+  method: z.enum(["GET", "POST", "HEAD"]).default("GET"),
+  timeout: z.number().min(100).max(30000).default(5000),
+  expectedStatus: z.number().min(100).max(599).default(200),
+  headers: z.record(z.string()).optional(),
+});
+
+type HttpCheckConfig = z.infer<typeof httpCheckConfig>;
+
+export const httpHealthCheckStrategy: HealthCheckStrategy<HttpCheckConfig> = {
+  id: "http-check",
+  displayName: "HTTP Health Check",
+  description: "Check if an HTTP endpoint is responding",
+  configVersion: 1,
+  configSchema: httpCheckConfig,
+
+  async execute(config: HttpCheckConfig): Promise<HealthCheckResult> {
+    const startTime = Date.now();
+
+    try {
+      const response = await fetch(config.url, {
+        method: config.method,
+        headers: config.headers,
+        signal: AbortSignal.timeout(config.timeout),
+      });
+
+      const latency = Date.now() - startTime;
+
+      if (response.status === config.expectedStatus) {
+        return {
+          status: "healthy",
+          latency,
+          message: `HTTP ${response.status}`,
+        };
+      } else {
+        return {
+          status: "unhealthy",
+          latency,
+          message: `Expected ${config.expectedStatus}, got ${response.status}`,
+        };
+      }
+    } catch (error) {
+      return {
+        status: "unhealthy",
+        latency: Date.now() - startTime,
+        message: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+};
+```
+
+#### Registering a Health Check Strategy
+
+```typescript
+import { healthCheckExtensionPoint } from "@checkmate/backend-api";
+
+export default createBackendPlugin({
+  pluginId: "http-healthcheck-backend",
+  register(env) {
+    // Get the health check registry
+    const registry = env.getExtensionPoint(healthCheckExtensionPoint);
+
+    // Register the strategy
+    registry.register(httpHealthCheckStrategy);
+  },
+});
+```
+
+### ExporterStrategy
+
+Exports metrics and data in various formats.
+
+#### Interface
+
+```typescript
+interface ExporterStrategy<Config = unknown> {
+  id: string;
+  displayName: string;
+  description?: string;
+  configVersion: number;
+  configSchema: z.ZodType<Config>;
+  migrations?: MigrationChain<Config>;
+
+  /** Export type: endpoint or file */
+  type: "endpoint" | "file";
+
+  /** For endpoint exporters: register routes */
+  registerRoutes?(router: Hono, config: Config): void;
+
+  /** For file exporters: generate file */
+  generateFile?(config: Config): Promise<{
+    filename: string;
+    content: string | Buffer;
+    mimeType: string;
+  }>;
+}
+```
+
+#### Example: Prometheus Exporter
+
+```typescript
+const prometheusConfig = z.object({
+  path: z.string().default("/metrics"),
+  includeTimestamps: z.boolean().default(false),
+});
+
+type PrometheusConfig = z.infer<typeof prometheusConfig>;
+
+export const prometheusExporter: ExporterStrategy<PrometheusConfig> = {
+  id: "prometheus",
+  displayName: "Prometheus Metrics",
+  description: "Export metrics in Prometheus format",
+  configVersion: 1,
+  configSchema: prometheusConfig,
+  type: "endpoint",
+
+  registerRoutes(router, config) {
+    router.get(config.path, async (c) => {
+      const metrics = await collectMetrics();
+      const output = formatPrometheus(metrics, config.includeTimestamps);
+      return c.text(output, 200, {
+        "Content-Type": "text/plain; version=0.0.4",
+      });
+    });
+  },
+};
+```
+
+#### Example: CSV Exporter
+
+```typescript
+const csvConfig = z.object({
+  includeHeaders: z.boolean().default(true),
+  delimiter: z.string().default(","),
+});
+
+type CsvConfig = z.infer<typeof csvConfig>;
+
+export const csvExporter: ExporterStrategy<CsvConfig> = {
+  id: "csv",
+  displayName: "CSV Export",
+  description: "Export data as CSV file",
+  configVersion: 1,
+  configSchema: csvConfig,
+  type: "file",
+
+  async generateFile(config) {
+    const data = await fetchData();
+    const csv = formatCsv(data, config);
+
+    return {
+      filename: `export-${Date.now()}.csv`,
+      content: csv,
+      mimeType: "text/csv",
+    };
+  },
+};
+```
+
+### NotificationStrategy
+
+Send notifications via different channels.
+
+#### Interface
+
+```typescript
+interface NotificationStrategy<Config = unknown> {
+  id: string;
+  displayName: string;
+  description?: string;
+  configVersion: number;
+  configSchema: z.ZodType<Config>;
+  migrations?: MigrationChain<Config>;
+
+  /** Send a notification */
+  send(config: Config, notification: Notification): Promise<void>;
+}
+
+interface Notification {
+  title: string;
+  message: string;
+  severity: "info" | "warning" | "error" | "critical";
+  metadata?: Record<string, unknown>;
+}
+```
+
+#### Example: Slack Notification
+
+```typescript
+const slackConfig = z.object({
+  webhookUrl: z.string().url(),
+  channel: z.string().optional(),
+  username: z.string().default("Checkmate"),
+  iconEmoji: z.string().default(":robot_face:"),
+});
+
+type SlackConfig = z.infer<typeof slackConfig>;
+
+export const slackNotificationStrategy: NotificationStrategy<SlackConfig> = {
+  id: "slack",
+  displayName: "Slack",
+  description: "Send notifications to Slack",
+  configVersion: 1,
+  configSchema: slackConfig,
+
+  async send(config, notification) {
+    const color = {
+      info: "#36a64f",
+      warning: "#ff9900",
+      error: "#ff0000",
+      critical: "#990000",
+    }[notification.severity];
+
+    await fetch(config.webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channel: config.channel,
+        username: config.username,
+        icon_emoji: config.iconEmoji,
+        attachments: [
+          {
+            color,
+            title: notification.title,
+            text: notification.message,
+            fields: Object.entries(notification.metadata || {}).map(
+              ([key, value]) => ({
+                title: key,
+                value: String(value),
+                short: true,
+              })
+            ),
+          },
+        ],
+      }),
+    });
+  },
+};
+```
+
+#### Example: Email Notification
+
+```typescript
+const emailConfig = z.object({
+  smtpHost: z.string(),
+  smtpPort: z.number().default(587),
+  username: z.string(),
+  password: z.string(),
+  from: z.string().email(),
+  to: z.array(z.string().email()),
+});
+
+type EmailConfig = z.infer<typeof emailConfig>;
+
+export const emailNotificationStrategy: NotificationStrategy<EmailConfig> = {
+  id: "email",
+  displayName: "Email",
+  description: "Send notifications via email",
+  configVersion: 1,
+  configSchema: emailConfig,
+
+  async send(config, notification) {
+    const transporter = createTransport({
+      host: config.smtpHost,
+      port: config.smtpPort,
+      auth: {
+        user: config.username,
+        pass: config.password,
+      },
+    });
+
+    await transporter.sendMail({
+      from: config.from,
+      to: config.to.join(", "),
+      subject: notification.title,
+      text: notification.message,
+      html: formatEmailHtml(notification),
+    });
+  },
+};
+```
+
+### AuthenticationStrategy
+
+Integrate authentication providers using Better Auth.
+
+#### Interface
+
+```typescript
+interface AuthenticationStrategy<Config = unknown> {
+  id: string;
+  displayName: string;
+  description?: string;
+  configVersion: number;
+  configSchema: z.ZodType<Config>;
+  migrations?: MigrationChain<Config>;
+
+  /** Configure Better Auth with this strategy */
+  configure(config: Config): BetterAuthConfig;
+}
+```
+
+#### Example: OAuth Provider
+
+```typescript
+const oauthConfig = z.object({
+  clientId: z.string(),
+  clientSecret: z.string(),
+  authorizationUrl: z.string().url(),
+  tokenUrl: z.string().url(),
+  userInfoUrl: z.string().url(),
+});
+
+type OAuthConfig = z.infer<typeof oauthConfig>;
+
+export const oauthStrategy: AuthenticationStrategy<OAuthConfig> = {
+  id: "oauth",
+  displayName: "OAuth 2.0",
+  description: "Authenticate using OAuth 2.0",
+  configVersion: 1,
+  configSchema: oauthConfig,
+
+  configure(config) {
+    return {
+      socialProviders: {
+        custom: {
+          clientId: config.clientId,
+          clientSecret: config.clientSecret,
+          authorizationUrl: config.authorizationUrl,
+          tokenUrl: config.tokenUrl,
+          userInfoUrl: config.userInfoUrl,
+        },
+      },
+    };
+  },
+};
+```
+
+## Frontend Extension Points
+
+### Slots
+
+Inject UI components into predefined locations.
+
+#### Available Slots
+
+```typescript
+// From @checkmate/common
+export const SLOT_USER_MENU_ITEMS = "core.user-menu.items";
+export const SLOT_DASHBOARD_WIDGETS = "core.dashboard.widgets";
+export const SLOT_SYSTEM_DETAIL_TABS = "core.system-detail.tabs";
+```
+
+#### Registering Extensions
+
+```typescript
+import { SLOT_USER_MENU_ITEMS } from "@checkmate/common";
+
+export const myPlugin = createFrontendPlugin({
+  name: "myplugin-frontend",
+  extensions: [
+    {
+      id: "myplugin.user-menu.items",
+      slotId: SLOT_USER_MENU_ITEMS,
+      component: MyUserMenuItems,
+    },
+  ],
+});
+```
+
+#### Example: User Menu Extension
+
+```typescript
+import { DropdownMenuItem } from "@checkmate/ui";
+import { Link } from "react-router-dom";
+
+export const MyUserMenuItems = () => {
+  return (
+    <>
+      <DropdownMenuItem asChild>
+        <Link to="/my-settings">My Settings</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link to="/my-profile">My Profile</Link>
+      </DropdownMenuItem>
+    </>
+  );
+};
+```
+
+#### Example: Dashboard Widget
+
+```typescript
+export const MyDashboardWidget = () => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>My Widget</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>Widget content here</p>
+      </CardContent>
+    </Card>
+  );
+};
+```
+
+## Creating Custom Extension Points
+
+### Backend Extension Point
+
+```typescript
+// 1. Define the interface
+export interface CustomStrategy<Config = unknown> {
+  id: string;
+  displayName: string;
+  configSchema: z.ZodType<Config>;
+  execute(config: Config): Promise<Result>;
+}
+
+// 2. Create the extension point
+import { createExtensionPoint } from "@checkmate/backend-api";
+
+export const customExtensionPoint = createExtensionPoint<CustomStrategy[]>(
+  "custom-extension"
+);
+
+// 3. Create a registry
+export class CustomRegistry {
+  private strategies = new Map<string, CustomStrategy>();
+
+  register(strategy: CustomStrategy) {
+    this.strategies.set(strategy.id, strategy);
+  }
+
+  getStrategy(id: string): CustomStrategy | undefined {
+    return this.strategies.get(id);
+  }
+
+  getStrategies(): CustomStrategy[] {
+    return Array.from(this.strategies.values());
+  }
+}
+
+// 4. Register in core
+const registry = new CustomRegistry();
+env.registerExtensionPoint(customExtensionPoint, registry);
+
+// 5. Plugins can now register implementations
+const myStrategy: CustomStrategy = {
+  id: "my-impl",
+  displayName: "My Implementation",
+  configSchema: z.object({ /* ... */ }),
+  async execute(config) {
+    // Implementation
+  },
+};
+
+const registry = env.getExtensionPoint(customExtensionPoint);
+registry.register(myStrategy);
+```
+
+### Frontend Extension Point (Slot)
+
+```typescript
+// 1. Define the slot ID in @checkmate/common
+export const SLOT_MY_CUSTOM_SLOT = "core.my-custom.slot";
+
+// 2. Use the slot in a component
+import { useExtensions } from "@checkmate/frontend-api";
+
+export const MyComponent = () => {
+  const extensions = useExtensions(SLOT_MY_CUSTOM_SLOT);
+
+  return (
+    <div>
+      {extensions.map((ext) => (
+        <ext.component key={ext.id} />
+      ))}
+    </div>
+  );
+};
+
+// 3. Plugins can register extensions
+extensions: [
+  {
+    id: "myplugin.my-custom.extension",
+    slotId: SLOT_MY_CUSTOM_SLOT,
+    component: MyExtensionComponent,
+  },
+]
+```
+
+## Best Practices
+
+### 1. Use Descriptive IDs
+
+```typescript
+// ✅ Good
+id: "http-health-check"
+id: "slack-notification"
+
+// ❌ Bad
+id: "check1"
+id: "notif"
+```
+
+### 2. Provide Clear Descriptions
+
+```typescript
+displayName: "HTTP Health Check",
+description: "Checks if an HTTP endpoint is responding with the expected status code"
+```
+
+### 3. Use Zod Descriptions
+
+```typescript
+const config = z.object({
+  url: z.string().url().describe("The URL to check"),
+  timeout: z.number().describe("Request timeout in milliseconds"),
+});
+```
+
+These descriptions are used to generate UI forms automatically.
+
+### 4. Handle Errors Gracefully
+
+```typescript
+async execute(config) {
+  try {
+    // Implementation
+  } catch (error) {
+    return {
+      status: "unhealthy",
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+```
+
+### 5. Test Strategies
+
+```typescript
+import { describe, expect, test } from "bun:test";
+
+describe("HTTP Health Check Strategy", () => {
+  test("returns healthy for 200 response", async () => {
+    const result = await httpHealthCheckStrategy.execute({
+      url: "https://example.com",
+      method: "GET",
+      timeout: 5000,
+      expectedStatus: 200,
+    });
+
+    expect(result.status).toBe("healthy");
+  });
+});
+```
+
+## Next Steps
+
+- [Backend Plugin Development](./backend-plugins.md)
+- [Frontend Plugin Development](./frontend-plugins.md)
+- [Versioned Configurations](./versioned-configs.md)
+- [Contributing Guide](./contributing.md)
