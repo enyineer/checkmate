@@ -1,11 +1,13 @@
 import { Queue, QueueFactory } from "@checkmate/queue-api";
 import { QueuePluginRegistryImpl } from "./queue-plugin-registry";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { queueConfiguration } from "../schema";
-import { Logger } from "@checkmate/backend-api";
-import * as schema from "../schema";
+import { Logger, ConfigService } from "@checkmate/backend-api";
+import { z } from "zod";
 
-type Db = NodePgDatabase<typeof schema>;
+// Schema for queue configuration stored in ConfigService
+const queueConfigSchema = z.object({
+  pluginId: z.string(),
+  config: z.record(z.string(), z.unknown()),
+});
 
 export class QueueFactoryImpl implements QueueFactory {
   private activePluginId: string = "memory"; // Default
@@ -13,17 +15,21 @@ export class QueueFactoryImpl implements QueueFactory {
 
   constructor(
     private registry: QueuePluginRegistryImpl,
-    private db: Db,
+    private configService: ConfigService,
     private logger: Logger
   ) {}
 
   async loadConfiguration(): Promise<void> {
     try {
-      const configs = await this.db.select().from(queueConfiguration).limit(1);
+      const config = await this.configService.get(
+        "active",
+        queueConfigSchema,
+        1
+      );
 
-      if (configs.length > 0) {
-        this.activePluginId = configs[0].pluginId;
-        this.activeConfig = configs[0].config;
+      if (config) {
+        this.activePluginId = config.pluginId;
+        this.activeConfig = config.config;
         this.logger.info(
           `📋 Loaded queue configuration: plugin=${this.activePluginId}`
         );
@@ -60,21 +66,11 @@ export class QueueFactoryImpl implements QueueFactory {
     // Validate config against schema
     plugin.configSchema.parse(config);
 
-    // Save to database
-    await this.db
-      .insert(queueConfiguration)
-      .values({
-        pluginId,
-        config: config as Record<string, unknown>,
-      })
-      .onConflictDoUpdate({
-        target: [queueConfiguration.id],
-        set: {
-          pluginId,
-          config: config as Record<string, unknown>,
-          updatedAt: new Date(),
-        },
-      });
+    // Save to ConfigService
+    await this.configService.set("active", queueConfigSchema, 1, {
+      pluginId,
+      config: config as Record<string, unknown>,
+    });
 
     this.activePluginId = pluginId;
     this.activeConfig = config;

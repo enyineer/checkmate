@@ -79,10 +79,18 @@ const init = async () => {
   const { keyStore } = await import("./services/keystore");
   await keyStore.getSigningKey(); // This triggers generation if missing
 
-  // 1.6. Register Queue Services
+  // 1.6. Create backend-scoped ConfigService for core services
+  const { ConfigServiceImpl } = await import("./services/config-service");
+  const configService = new ConfigServiceImpl("backend", db);
+
+  // 1.7. Register Queue Services
   rootLogger.info("📋 Registering queue services...");
   const queueRegistry = new QueuePluginRegistryImpl();
-  const queueFactory = new QueueFactoryImpl(queueRegistry, db, rootLogger);
+  const queueFactory = new QueueFactoryImpl(
+    queueRegistry,
+    configService,
+    rootLogger
+  );
   pluginManager.registerService(
     coreServices.queuePluginRegistry,
     queueRegistry

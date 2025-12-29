@@ -6,5 +6,6 @@ CREATE TABLE "plugin_configs" (
 	CONSTRAINT "plugin_configs_plugin_id_config_id_pk" PRIMARY KEY("plugin_id","config_id")
 );
 
--- Drop old auth_strategy table (configs will be reconfigured manually)
+-- Drop old config tables (configs will be reconfigured manually)
 DROP TABLE IF EXISTS "auth_strategy";
+DROP TABLE IF EXISTS "queue_configuration";

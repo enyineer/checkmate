@@ -31,14 +31,6 @@ export const jwtKeys = pgTable("jwt_keys", {
   revokedAt: text("revoked_at"), // ISO string, null if valid
 });
 
-// --- Queue Configuration Schema ---
-export const queueConfiguration = pgTable("queue_configuration", {
-  id: serial("id").primaryKey(),
-  pluginId: text("plugin_id").notNull(),
-  config: jsonb("config").notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 // --- Plugin Configs Schema ---
 export const pluginConfigs = pgTable(
   "plugin_configs",
