@@ -14,7 +14,8 @@
     "bundle-vendor": "bun run scripts/bundle-vendor.ts",
     "docker:stop": "docker compose down",
     "changeset": "changeset",
-    "version-packages": "changeset version"
+    "version-packages": "changeset version",
+    "create": "bun run checkmate-scripts create"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
