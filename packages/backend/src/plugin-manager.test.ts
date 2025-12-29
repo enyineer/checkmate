@@ -1,57 +1,17 @@
-import { describe, it, expect, mock, beforeEach, spyOn } from "bun:test";
+import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { PluginManager } from "./plugin-manager";
 import {
   createServiceRef,
   createExtensionPoint,
   ServiceRef,
 } from "@checkmate/backend-api";
+import { createMockDbModule } from "./test-utils/mock-db";
+import { createMockLoggerModule } from "./test-utils/mock-logger";
 
 // Mock DB and other globals
-mock.module("./db", () => {
-  const createSelectChain = () => {
-    const whereResult = Object.assign(Promise.resolve([]), {
-      limit: mock(() => Promise.resolve([])),
-    });
-    const fromResult = Object.assign(Promise.resolve([]), {
-      where: mock(() => whereResult),
-    });
-    return {
-      from: mock(() => fromResult),
-    };
-  };
+mock.module("./db", () => createMockDbModule());
 
-  return {
-    adminPool: { query: mock(() => Promise.resolve()) },
-    db: {
-      select: mock(() => createSelectChain()),
-      insert: mock(() => ({
-        values: mock(() => ({
-          onConflictDoUpdate: mock(() => Promise.resolve()),
-        })),
-      })),
-      update: mock(() => ({
-        set: mock(() => ({
-          where: mock(() => Promise.resolve()),
-        })),
-      })),
-    },
-  };
-});
-
-mock.module("./logger", () => ({
-  rootLogger: {
-    info: mock(),
-    debug: mock(),
-    warn: mock(),
-    error: mock(),
-    child: mock(() => ({
-      info: mock(),
-      debug: mock(),
-      warn: mock(),
-      error: mock(),
-    })),
-  },
-}));
+mock.module("./logger", () => createMockLoggerModule());
 
 describe("PluginManager", () => {
   let pluginManager: PluginManager;

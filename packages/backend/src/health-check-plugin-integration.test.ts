@@ -6,55 +6,15 @@ import {
   HealthCheckStrategy,
 } from "@checkmate/backend-api";
 import { z } from "zod";
+import { createMockDbModule } from "./test-utils/mock-db";
+import { createMockLoggerModule } from "./test-utils/mock-logger";
 
 // Mock DB and other globals to avoid side effects
-mock.module("./db", () => {
-  const createSelectChain = () => {
-    const whereResult = Object.assign(Promise.resolve([]), {
-      limit: mock(() => Promise.resolve([])),
-    });
-    const fromResult = Object.assign(Promise.resolve([]), {
-      where: mock(() => whereResult),
-    });
-    return {
-      from: mock(() => fromResult),
-    };
-  };
-
-  return {
-    adminPool: { query: mock(() => Promise.resolve()) },
-    db: {
-      select: mock(() => createSelectChain()),
-      insert: mock(() => ({
-        values: mock(() => ({
-          onConflictDoUpdate: mock(() => Promise.resolve()),
-        })),
-      })),
-      update: mock(() => ({
-        set: mock(() => ({
-          where: mock(() => Promise.resolve()),
-        })),
-      })),
-    },
-  };
-});
+mock.module("./db", () => createMockDbModule());
 
 // Note: FS mocking is no longer needed with manual injection support
 
-mock.module("./logger", () => ({
-  rootLogger: {
-    info: mock(),
-    debug: mock(),
-    warn: mock(),
-    error: mock(),
-    child: mock(() => ({
-      info: mock(),
-      debug: mock(),
-      warn: mock(),
-      error: mock(),
-    })),
-  },
-}));
+mock.module("./logger", () => createMockLoggerModule());
 
 describe("HealthCheck Plugin Integration", () => {
   let pluginManager: PluginManager;
