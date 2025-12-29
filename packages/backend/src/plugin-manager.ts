@@ -16,13 +16,17 @@ import {
   ExtensionPoint,
   Deps,
   ResolvedDeps,
+  AuthService,
+  PluginRouter,
+  RouteOptions,
+  authenticationStrategyServiceRef,
 } from "@checkmate/backend-api";
 import type { Permission } from "@checkmate/common";
 import { rootLogger } from "./logger";
 import { jwtService } from "./services/jwt";
 import { CoreHealthCheckRegistry } from "./services/health-check-registry";
 import z, { ZodSchema } from "zod";
-import { ValidationCheck } from "@checkmate/backend-api";
+import { Context, MiddlewareHandler, Handler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { fixMigrationsSchemaReferences } from "./utils/fix-migrations";
 
@@ -75,21 +79,96 @@ export class PluginManager {
     });
 
     // 3. Auth Factory (Scoped)
-    this.registry.registerFactory(coreServices.fetch, (pluginId) => {
-      return {
-        fetch: async (input, init) => {
-          // Sign token with scoped service name
-          const token = await jwtService.sign({ service: pluginId }, "5m");
-          const headers = new Headers(init?.headers);
-          headers.set("Authorization", `Bearer ${token}`);
-          return fetch(input, { ...init, headers });
+    this.registry.registerFactory(coreServices.auth, (pluginId) => {
+      const authService: AuthService = {
+        authenticate: async (c: Context) => {
+          const token = c.req.header("Authorization")?.replace("Bearer ", "");
+
+          // Strategy A: Service Token
+          if (token) {
+            const payload = await jwtService.verify(token);
+            if (payload) {
+              return {
+                id: (payload.sub as string) || (payload.service as string),
+                permissions: ["*"], // Service tokens grant all
+                roles: ["service"],
+              };
+            }
+          }
+
+          // Strategy B: User Token (via registered strategy)
+          try {
+            const authStrategy = await this.registry.get(
+              authenticationStrategyServiceRef,
+              pluginId
+            );
+            if (authStrategy) {
+              return await authStrategy.validate(c.req.raw);
+            }
+          } catch {
+            // No strategy registered yet
+          }
         },
+
+        getCredentials: async (c?: Context) => {
+          if (c) {
+            const authHeader = c.req.header("Authorization");
+            if (authHeader) {
+              return { headers: { Authorization: authHeader } };
+            }
+          }
+          const token = await jwtService.sign({ service: pluginId }, "5m");
+          return { headers: { Authorization: `Bearer ${token}` } };
+        },
+
+        authorize: (permission: string | string[]) => {
+          return createMiddleware(async (c, next) => {
+            const user = await authService.authenticate(c);
+            if (!user) {
+              return c.json({ error: "Unauthorized" }, 401);
+            }
+
+            const userPermissions = user.permissions || [];
+            const perms = Array.isArray(permission) ? permission : [permission];
+
+            const hasPermission = perms.some((p) => {
+              const fullId = `${pluginId}.${p}`;
+              return (
+                userPermissions.includes("*") ||
+                userPermissions.includes(fullId) ||
+                userPermissions.includes(p)
+              );
+            });
+
+            if (!hasPermission) {
+              return c.json(
+                { error: `Forbidden: Missing ${perms.join(" or ")}` },
+                403
+              );
+            }
+
+            await next();
+          });
+        },
+
+        validate: (schema: ZodSchema) => createValidationMiddleware(schema),
       };
+      return authService;
     });
 
-    // 4. Token Verification Factory
-    this.registry.registerFactory(coreServices.tokenVerification, () => {
-      return jwtService;
+    // 4. Fetch Factory (Scoped)
+    this.registry.registerFactory(coreServices.fetch, async (pluginId) => {
+      const auth = await this.registry.get(coreServices.auth, pluginId);
+      return {
+        fetch: async (input, init) => {
+          const { headers } = await auth.getCredentials();
+          const mergedHeaders = new Headers(init?.headers);
+          for (const [k, v] of Object.entries(headers)) {
+            mergedHeaders.set(k, v);
+          }
+          return fetch(input, { ...init, headers: mergedHeaders });
+        },
+      };
     });
 
     // 5. Health Check Registry (Global Singleton)
@@ -99,45 +178,73 @@ export class PluginManager {
       () => healthCheckRegistry
     );
 
-    // 6. Validation Factory (Scoped)
-    this.registry.registerFactory(
-      coreServices.validation,
-      (_pluginId) => createValidationMiddleware
-    );
-
-    // 7. Permission Check Factory (Scoped)
-    this.registry.registerFactory(coreServices.permissionCheck, (pluginId) => {
-      return (permission: string) => {
-        return createMiddleware(async (c, next) => {
-          // Resolve Authentication Service (Late Binding)
-          const authService = await this.registry.get(
-            coreServices.authentication,
-            pluginId
-          );
-
-          if (!authService) {
-            return c.text("Authentication Service not available", 500);
-          }
-
-          const user = await authService.validate(c.req.raw);
-          if (!user) {
-            return c.text("Unauthorized", 401);
-          }
-
-          const userPermissions = user.permissions || [];
-          const fullId = `${pluginId}.${permission}`;
-
-          if (
-            !userPermissions.includes("*") &&
-            !userPermissions.includes(fullId)
-          ) {
-            return c.text(`Forbidden: Missing ${fullId}`, 403);
-          }
-
-          await next();
-        });
-      };
+    // 6. Router Factory (Scoped)
+    this.registry.registerFactory(coreServices.httpRouter, async (pluginId) => {
+      const auth = await this.registry.get(coreServices.auth, pluginId);
+      return this.createPluginRouter(pluginId, auth);
     });
+  }
+
+  private createPluginRouter(
+    pluginId: string,
+    authService: AuthService
+  ): PluginRouter {
+    const honoRouter = new Hono();
+    this.pluginRouters.set(pluginId, honoRouter);
+
+    const wrap = (
+      method: "get" | "post" | "put" | "patch" | "delete" | "all"
+    ) => {
+      return (path: string, ...args: unknown[]) => {
+        let options: RouteOptions | undefined;
+        let handler: Handler;
+
+        if (
+          args.length === 2 &&
+          typeof args[0] === "object" &&
+          args[0] !== null &&
+          !Array.isArray(args[0])
+        ) {
+          options = args[0] as RouteOptions;
+          handler = args[1] as Handler;
+        } else {
+          handler = args.at(-1) as Handler;
+        }
+
+        const middlewares: MiddlewareHandler[] = [];
+        if (options?.permission) {
+          middlewares.push(authService.authorize(options.permission));
+        }
+        if (options?.schema) {
+          middlewares.push(authService.validate(options.schema));
+        }
+
+        // We use a type cast to access the method dynamically while staying safe
+        const router = honoRouter as unknown as Record<
+          string,
+          (path: string, ...handlers: MiddlewareHandler[]) => void
+        >;
+        router[method](
+          path,
+          ...middlewares,
+          handler as unknown as MiddlewareHandler
+        );
+      };
+    };
+
+    return {
+      get: wrap("get"),
+      post: wrap("post"),
+      put: wrap("put"),
+      patch: wrap("patch"),
+      delete: wrap("delete"),
+      all: wrap("all"),
+      use: (...args: unknown[]) =>
+        (
+          honoRouter as unknown as Record<string, (...a: unknown[]) => void>
+        ).use(...args),
+      hono: honoRouter,
+    };
   }
 
   registerExtensionPoint<T>(ref: ExtensionPoint<T>, impl: T) {
@@ -269,13 +376,6 @@ export class PluginManager {
   }
 
   async loadPlugins(rootRouter: Hono, manualPlugins: BackendPlugin[] = []) {
-    // Register Router Factory now that we have rootRouter
-    this.registry.registerFactory(coreServices.httpRouter, (pluginId) => {
-      const pluginRouter = new Hono();
-      this.pluginRouters.set(pluginId, pluginRouter);
-      return pluginRouter;
-    });
-
     rootLogger.info("🔍 Discovering plugins...");
 
     // 1. Discover local plugins from monorepo
@@ -510,9 +610,9 @@ export class PluginManager {
 }
 
 // Direct zValidator fits the signature logic but needs explicit typing for strictness
-const createValidationMiddleware: ValidationCheck = (schema: ZodSchema) =>
+const createValidationMiddleware = (schema: ZodSchema): MiddlewareHandler =>
   zValidator("json", schema, (result, c) => {
     if (!result.success) {
       return c.json({ error: z.treeifyError(result.error) }, 400);
     }
-  }) as unknown as ReturnType<ValidationCheck>;
+  }) as unknown as MiddlewareHandler;

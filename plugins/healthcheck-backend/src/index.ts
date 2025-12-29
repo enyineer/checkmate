@@ -1,4 +1,3 @@
-import { Hono } from "hono";
 import { HealthCheckService } from "./service";
 import { Scheduler } from "./scheduler";
 import * as schema from "./schema";
@@ -10,7 +9,6 @@ import {
   permissionList,
   permissions,
 } from "@checkmate/healthcheck-common";
-import { zValidator } from "@hono/zod-validator";
 import { createBackendPlugin, coreServices, z } from "@checkmate/backend-api";
 
 export default createBackendPlugin({
@@ -24,18 +22,16 @@ export default createBackendPlugin({
         database: coreServices.database,
         healthCheckRegistry: coreServices.healthCheckRegistry,
         router: coreServices.httpRouter,
-        check: coreServices.permissionCheck,
         fetch: coreServices.fetch,
-        tokenVerification: coreServices.tokenVerification,
+        auth: coreServices.auth,
       },
       init: async ({
         logger,
         database,
         healthCheckRegistry,
         router,
-        check,
         fetch,
-        tokenVerification,
+        auth,
       }) => {
         logger.info("🏥 Initializing Health Check Backend...");
 
@@ -47,17 +43,15 @@ export default createBackendPlugin({
           healthCheckRegistry,
           logger,
           fetch,
-          tokenVerification
+          auth
         );
 
         scheduler.start();
 
-        const apiRouter = new Hono();
-
         // Strategies
-        apiRouter.get(
+        router.get(
           "/strategies",
-          check(permissions.healthCheckRead.id),
+          { permission: permissions.healthCheckRead.id },
           (c) => {
             try {
               const strategies = healthCheckRegistry
@@ -77,42 +71,46 @@ export default createBackendPlugin({
         );
 
         // Configurations CRUD
-        apiRouter.get(
+        router.get(
           "/configurations",
-          check(permissions.healthCheckRead.id),
+          { permission: permissions.healthCheckRead.id },
           async (c) => {
             const configs = await service.getConfigurations();
             return c.json(configs);
           }
         );
 
-        apiRouter.post(
+        router.post(
           "/configurations",
-          check(permissions.healthCheckManage.id),
-          zValidator("json", CreateHealthCheckConfigurationSchema),
+          {
+            permission: permissions.healthCheckManage.id,
+            schema: CreateHealthCheckConfigurationSchema,
+          },
           async (c) => {
-            const data = c.req.valid("json");
-            const config = await service.createConfiguration(data);
+            const body = await c.req.json();
+            const config = await service.createConfiguration(body);
             return c.json(config, 201);
           }
         );
 
-        apiRouter.put(
+        router.put(
           "/configurations/:id",
-          check(permissions.healthCheckManage.id),
-          zValidator("json", UpdateHealthCheckConfigurationSchema),
+          {
+            permission: permissions.healthCheckManage.id,
+            schema: UpdateHealthCheckConfigurationSchema,
+          },
           async (c) => {
             const id = c.req.param("id");
-            const data = c.req.valid("json");
-            const config = await service.updateConfiguration(id, data);
+            const body = await c.req.json();
+            const config = await service.updateConfiguration(id, body);
             if (!config) return c.json({ error: "Not found" }, 404);
             return c.json(config);
           }
         );
 
-        apiRouter.delete(
+        router.delete(
           "/configurations/:id",
-          check(permissions.healthCheckManage.id),
+          { permission: permissions.healthCheckManage.id },
           async (c) => {
             const id = c.req.param("id");
             await service.deleteConfiguration(id);
@@ -122,9 +120,9 @@ export default createBackendPlugin({
         );
 
         // System Associations
-        apiRouter.get(
+        router.get(
           "/systems/:systemId/checks",
-          check(permissions.healthCheckRead.id),
+          { permission: permissions.healthCheckRead.id },
           async (c) => {
             const systemId = c.req.param("systemId");
             const configs = await service.getSystemConfigurations(systemId);
@@ -132,22 +130,24 @@ export default createBackendPlugin({
           }
         );
 
-        apiRouter.post(
+        router.post(
           "/systems/:systemId/checks",
-          check(permissions.healthCheckManage.id), // Managing associations is like managing configurations
-          zValidator("json", AssociateHealthCheckSchema),
+          {
+            permission: permissions.healthCheckManage.id,
+            schema: AssociateHealthCheckSchema,
+          },
           async (c) => {
             const systemId = c.req.param("systemId");
-            const { configurationId, enabled } = c.req.valid("json");
+            const { configurationId, enabled } = await c.req.json();
             await service.associateSystem(systemId, configurationId, enabled);
             // eslint-disable-next-line unicorn/no-null
             return c.body(null, 201);
           }
         );
 
-        apiRouter.delete(
+        router.delete(
           "/systems/:systemId/checks/:configId",
-          check(permissions.healthCheckManage.id),
+          { permission: permissions.healthCheckManage.id },
           async (c) => {
             const systemId = c.req.param("systemId");
             const configId = c.req.param("configId");
@@ -157,9 +157,9 @@ export default createBackendPlugin({
           }
         );
 
-        apiRouter.get(
+        router.get(
           "/history",
-          check(permissions.healthCheckRead.id),
+          { permission: permissions.healthCheckRead.id },
           async (c) => {
             const systemId = c.req.query("systemId");
             const configurationId = c.req.query("configurationId");
@@ -175,8 +175,6 @@ export default createBackendPlugin({
             return c.json(history);
           }
         );
-
-        router.route("/", apiRouter);
       },
     });
   },

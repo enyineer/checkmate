@@ -1,6 +1,10 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createBackendPlugin } from "@checkmate/backend-api";
+import { Context } from "hono";
+import {
+  createBackendPlugin,
+  authenticationStrategyServiceRef,
+} from "@checkmate/backend-api";
 import { coreServices } from "@checkmate/backend-api";
 import { userInfoRef } from "./services/user-info";
 import * as schema from "./schema";
@@ -34,9 +38,6 @@ export default createBackendPlugin({
   register(env) {
     let auth: ReturnType<typeof betterAuth> | undefined;
     let db: NodePgDatabase<typeof schema> | undefined;
-    let tokenVerification:
-      | import("@checkmate/backend-api").TokenVerification
-      | undefined;
 
     const strategies: BetterAuthStrategy[] = [];
 
@@ -45,38 +46,6 @@ export default createBackendPlugin({
     env.registerExtensionPoint(betterAuthExtensionPoint, {
       addStrategy: (s) => strategies.push(s),
     });
-
-    // Helper: Verify Service Token
-    const verifyServiceToken = async (
-      headers: Headers
-    ): Promise<
-      | {
-          id: string;
-          permissions: string[];
-          roles: string[];
-        }
-      | undefined
-    > => {
-      if (!tokenVerification) return undefined;
-
-      const authHeader = headers.get("Authorization");
-      if (!authHeader?.startsWith("Bearer ")) return undefined;
-
-      const token = authHeader.split(" ")[1];
-      try {
-        const payload = await tokenVerification.verify(token);
-        if (!payload) return undefined;
-
-        // It's a valid service token
-        return {
-          id: (payload.sub as string) || "service",
-          permissions: ["*"], // Grant all permissions
-          roles: ["service"],
-        };
-      } catch {
-        return undefined;
-      }
-    };
 
     // Helper to fetch permissions
     const enrichUserLocal = async (user: User) => {
@@ -91,10 +60,6 @@ export default createBackendPlugin({
           throw new Error("Auth backend not initialized");
         }
 
-        // Try Service Token First
-        const serviceUser = await verifyServiceToken(headers);
-        if (serviceUser) return serviceUser;
-
         const session = await auth.api.getSession({
           headers,
         });
@@ -103,16 +68,12 @@ export default createBackendPlugin({
       },
     });
 
-    // 2. Register Authentication Strategy (for Core Middleware)
-    env.registerService(coreServices.authentication, {
+    // 2. Register Authentication Strategy (used by Core AuthService)
+    env.registerService(authenticationStrategyServiceRef, {
       validate: async (request: Request) => {
         if (!auth) {
           return; // Not initialized yet
         }
-
-        // Try Service Token First
-        const serviceUser = await verifyServiceToken(request.headers);
-        if (serviceUser) return serviceUser;
 
         // better-auth needs headers to validate session
         const session = await auth.api.getSession({
@@ -130,22 +91,12 @@ export default createBackendPlugin({
         database: coreServices.database,
         router: coreServices.httpRouter,
         logger: coreServices.logger,
-        tokenVerification: coreServices.tokenVerification,
-        check: coreServices.permissionCheck,
-        validate: coreServices.validation,
+        auth: coreServices.auth,
       },
-      init: async ({
-        database,
-        router,
-        logger,
-        tokenVerification: tv,
-        check,
-        validate: _validate,
-      }) => {
+      init: async ({ database, router, logger, auth: _auth }) => {
         logger.info("Initializing Auth Backend...");
 
         db = database;
-        tokenVerification = tv;
 
         // Fetch enabled strategies
         const dbStrategies = await database.select().from(schema.authStrategy);
@@ -191,31 +142,35 @@ export default createBackendPlugin({
         });
 
         // 5. User Management APIs
-        router.get("/users", check(authPermissions.usersRead.id), async (c) => {
-          const users = await database.select().from(schema.user);
-          const userRoles = await database
-            .select()
-            .from(schema.userRole)
-            .where(
-              inArray(
-                schema.userRole.userId,
-                users.map((u) => u.id)
-              )
-            );
+        router.get(
+          "/users",
+          { permission: authPermissions.usersRead.id },
+          async (c) => {
+            const users = await database.select().from(schema.user);
+            const userRoles = await database
+              .select()
+              .from(schema.userRole)
+              .where(
+                inArray(
+                  schema.userRole.userId,
+                  users.map((u) => u.id)
+                )
+              );
 
-          const usersWithRoles = users.map((u) => ({
-            ...u,
-            roles: userRoles
-              .filter((ur) => ur.userId === u.id)
-              .map((ur) => ur.roleId),
-          }));
+            const usersWithRoles = users.map((u) => ({
+              ...u,
+              roles: userRoles
+                .filter((ur) => ur.userId === u.id)
+                .map((ur) => ur.roleId),
+            }));
 
-          return c.json(usersWithRoles);
-        });
+            return c.json(usersWithRoles);
+          }
+        );
 
         router.delete(
           "/users/:id",
-          check(authPermissions.usersManage.id),
+          { permission: authPermissions.usersManage.id },
           async (c) => {
             const id = c.req.param("id");
             if (id === "initial-admin-id") {
@@ -228,7 +183,7 @@ export default createBackendPlugin({
 
         router.get(
           "/roles",
-          check(authPermissions.rolesManage.id),
+          { permission: authPermissions.rolesManage.id },
           async (c) => {
             const roles = await database.select().from(schema.role);
             return c.json(roles);
@@ -237,7 +192,7 @@ export default createBackendPlugin({
 
         router.post(
           "/users/:id/roles",
-          check(authPermissions.rolesManage.id),
+          { permission: authPermissions.rolesManage.id },
           async (c) => {
             const userId = c.req.param("id");
             const session = await auth?.api.getSession({
@@ -271,7 +226,7 @@ export default createBackendPlugin({
 
         router.get(
           "/strategies",
-          check(authPermissions.strategiesManage.id),
+          { permission: authPermissions.strategiesManage.id },
           async (c) => {
             const dbStrategies = await database
               .select()
@@ -296,7 +251,7 @@ export default createBackendPlugin({
 
         router.patch(
           "/strategies/:id",
-          check(authPermissions.strategiesManage.id),
+          { permission: authPermissions.strategiesManage.id },
           async (c) => {
             const id = c.req.param("id");
             const { enabled } = (await c.req.json()) as { enabled: boolean };
@@ -313,7 +268,7 @@ export default createBackendPlugin({
           }
         );
 
-        router.all("*", (c) => {
+        router.all("*", (c: Context) => {
           return auth!.handler(c.req.raw);
         });
 

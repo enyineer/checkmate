@@ -1,7 +1,7 @@
 import { MiddlewareHandler } from "hono";
 import { PluginManager } from "../plugin-manager";
 import { jwtService } from "../services/jwt";
-import { coreServices } from "@checkmate/backend-api";
+import { authenticationStrategyServiceRef } from "@checkmate/backend-api";
 
 export const createAuthMiddleware = (
   pluginManager: PluginManager
@@ -9,7 +9,6 @@ export const createAuthMiddleware = (
   return async (c, next) => {
     const token = c.req.header("Authorization")?.replace("Bearer ", "");
 
-    // 5. Dual Authentication Strategy
     // Strategy A: Service Token (Stateless, signed by Core)
     if (token) {
       const payload = await jwtService.verify(token);
@@ -20,9 +19,8 @@ export const createAuthMiddleware = (
     }
 
     // Strategy B: User Token (Stateful, validated by Auth Plugin)
-    // We try to retrieve the registered AuthenticationStrategy
     const authStrategy = await pluginManager.getService(
-      coreServices.authentication
+      authenticationStrategyServiceRef
     );
 
     if (authStrategy) {

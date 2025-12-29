@@ -2,7 +2,10 @@ import { describe, it, expect, mock } from "bun:test";
 import { Hono } from "hono";
 import { createAuthMiddleware } from "./auth";
 import { PluginManager } from "../plugin-manager";
-import { coreServices } from "@checkmate/backend-api";
+import {
+  coreServices,
+  authenticationStrategyServiceRef,
+} from "@checkmate/backend-api";
 
 // Mock dependencies
 const mockVerify = mock();
@@ -59,7 +62,9 @@ describe("Auth Middleware", () => {
 
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("Protected Content");
-    expect(mockGetService).toHaveBeenCalledWith(coreServices.authentication);
+    expect(mockGetService).toHaveBeenCalledWith(
+      authenticationStrategyServiceRef
+    );
     expect(mockValidate).toHaveBeenCalled();
   });
 

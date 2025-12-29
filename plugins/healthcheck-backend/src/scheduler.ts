@@ -2,7 +2,7 @@ import {
   HealthCheckRegistry,
   Logger,
   Fetch,
-  TokenVerification,
+  AuthService,
 } from "@checkmate/backend-api";
 import {
   healthCheckConfigurations,
@@ -24,7 +24,7 @@ export class Scheduler {
     private registry: HealthCheckRegistry,
     private logger: Logger,
     private fetch: Fetch,
-    private tokenVerification: TokenVerification
+    private auth: AuthService
   ) {}
 
   start(intervalMs = 10_000) {
@@ -137,10 +137,7 @@ export class Scheduler {
         `Propagating status '${aggregateStatus}' for system ${systemId}`
       );
 
-      const token = await this.tokenVerification.sign({
-        sub: "healthcheck-backend",
-        purpose: "status-propagation",
-      });
+      const { headers } = await this.auth.getCredentials();
 
       // Construct the URL to catalog-backend.
       // In a real scenario, this might come from a discovery service or config.
@@ -151,7 +148,7 @@ export class Scheduler {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...headers,
         },
         body: JSON.stringify({ status: aggregateStatus }),
       });

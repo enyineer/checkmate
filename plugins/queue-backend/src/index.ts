@@ -1,11 +1,9 @@
-import { Hono } from "hono";
 import { createBackendPlugin, coreServices, z } from "@checkmate/backend-api";
 import {
   permissionList,
   permissions,
   UpdateQueueConfigurationSchema,
 } from "@checkmate/queue-common";
-import { zValidator } from "@hono/zod-validator";
 
 export default createBackendPlugin({
   pluginId: "queue-backend",
@@ -18,40 +16,35 @@ export default createBackendPlugin({
         queuePluginRegistry: coreServices.queuePluginRegistry,
         queueFactory: coreServices.queueFactory,
         router: coreServices.httpRouter,
-        check: coreServices.permissionCheck,
       },
-      init: async ({
-        logger,
-        queuePluginRegistry,
-        queueFactory,
-        router,
-        check,
-      }) => {
+      init: async ({ logger, queuePluginRegistry, queueFactory, router }) => {
         logger.info("📋 Initializing Queue Settings Backend...");
 
-        const apiRouter = new Hono();
-
         // Get available queue plugins
-        apiRouter.get("/plugins", check(permissions.queueRead.id), (c) => {
-          try {
-            const plugins = queuePluginRegistry.getPlugins().map((p) => ({
-              id: p.id,
-              displayName: p.displayName,
-              description: p.description,
-              configVersion: p.configVersion,
-              configSchema: z.toJSONSchema(p.configSchema),
-            }));
-            return c.json(plugins);
-          } catch (error) {
-            logger.error("Error fetching queue plugins:", error);
-            return c.json({ error: String(error) }, 500);
+        router.get(
+          "/plugins",
+          { permission: permissions.queueRead.id },
+          (c) => {
+            try {
+              const plugins = queuePluginRegistry.getPlugins().map((p) => ({
+                id: p.id,
+                displayName: p.displayName,
+                description: p.description,
+                configVersion: p.configVersion,
+                configSchema: z.toJSONSchema(p.configSchema),
+              }));
+              return c.json(plugins);
+            } catch (error) {
+              logger.error("Error fetching queue plugins:", error);
+              return c.json({ error: String(error) }, 500);
+            }
           }
-        });
+        );
 
         // Get current queue configuration
-        apiRouter.get(
+        router.get(
           "/configuration",
-          check(permissions.queueRead.id),
+          { permission: permissions.queueRead.id },
           async (c) => {
             try {
               const activePluginId = queueFactory.getActivePlugin();
@@ -61,9 +54,6 @@ export default createBackendPlugin({
                 return c.json({ error: "Active queue plugin not found" }, 404);
               }
 
-              // We don't have a way to get the current config from the factory
-              // So we'll just return the plugin ID for now
-              // The frontend will need to handle this
               return c.json({
                 pluginId: activePluginId,
                 config: {}, // TODO: Store and retrieve actual config
@@ -76,13 +66,15 @@ export default createBackendPlugin({
         );
 
         // Update queue configuration
-        apiRouter.put(
+        router.put(
           "/configuration",
-          check(permissions.queueManage.id),
-          zValidator("json", UpdateQueueConfigurationSchema),
+          {
+            permission: permissions.queueManage.id,
+            schema: UpdateQueueConfigurationSchema,
+          },
           async (c) => {
             try {
-              const { pluginId, config } = c.req.valid("json");
+              const { pluginId, config } = await c.req.json();
 
               await queueFactory.setActivePlugin(pluginId, config);
 
@@ -98,8 +90,6 @@ export default createBackendPlugin({
             }
           }
         );
-
-        router.route("/", apiRouter);
       },
     });
   },

@@ -24,12 +24,6 @@ mock.module("better-auth/crypto", () => ({
   hashPassword: mock(() => Promise.resolve("hashed")),
 }));
 
-mock.module("./utils/user", () => ({
-  enrichUser: mock((user) =>
-    Promise.resolve({ ...user, permissions: ["users.read"] })
-  ),
-}));
-
 describe("Auth Backend Plugin", () => {
   let router: Hono;
   let db: any;
@@ -38,6 +32,7 @@ describe("Auth Backend Plugin", () => {
   const createChain = (data: any = []) => {
     const chain: any = {
       where: mock(() => chain),
+      innerJoin: mock(() => chain),
       limit: mock(() => chain),
       offset: mock(() => chain),
       orderBy: mock(() => chain),
@@ -85,13 +80,46 @@ describe("Auth Backend Plugin", () => {
 
     authPlugin.register(env as any);
 
+    // Mock PluginRouter
+    const mockRouter: any = {
+      get: mock((path: string, ...args: any[]) => {
+        const handler = args.at(-1);
+        router.get(path, handler);
+      }),
+      post: mock((path: string, ...args: any[]) => {
+        const handler = args.at(-1);
+        router.post(path, handler);
+      }),
+      put: mock((path: string, ...args: any[]) => {
+        const handler = args.at(-1);
+        router.put(path, handler);
+      }),
+      patch: mock((path: string, ...args: any[]) => {
+        const handler = args.at(-1);
+        router.patch(path, handler);
+      }),
+      delete: mock((path: string, ...args: any[]) => {
+        const handler = args.at(-1);
+        router.delete(path, handler);
+      }),
+      all: mock((path: string, ...args: any[]) => {
+        const handler = args.at(-1);
+        router.all(path, handler);
+      }),
+      use: mock((...args: any[]) => router.use(...args)),
+      hono: router,
+    };
+
     await initFn({
       database: db,
-      router,
+      router: mockRouter,
       logger: { info: mock(), error: mock(), warn: mock(), debug: mock() },
-      tokenVerification: { verify: mock(), sign: mock() },
-      check: () => async (_c: any, next: any) => await next(),
-      validate: () => async (_c: any, next: any) => await next(),
+      auth: {
+        authenticate: mock(),
+        getCredentials: mock(),
+        authorize: mock(() => (c: any, next: any) => next()),
+        validate: mock(() => (c: any, next: any) => next()),
+      },
     });
   });
 
