@@ -6,6 +6,7 @@ import {
   serial,
   timestamp,
   jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // --- Plugin System Schema ---
@@ -37,3 +38,17 @@ export const queueConfiguration = pgTable("queue_configuration", {
   config: jsonb("config").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// --- Plugin Configs Schema ---
+export const pluginConfigs = pgTable(
+  "plugin_configs",
+  {
+    pluginId: text("plugin_id").notNull(),
+    configId: text("config_id").notNull(),
+    data: jsonb("data").notNull(), // Stores VersionedConfig with encrypted secrets
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.pluginId, table.configId] }),
+  })
+);

@@ -2,6 +2,7 @@ import { createServiceRef } from "./service-ref";
 import type { RpcService } from "./rpc";
 import type { HealthCheckRegistry } from "./health-check";
 import type { QueuePluginRegistry, QueueFactory } from "@checkmate/queue-api";
+import type { ConfigService } from "./config-service";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Logger, Fetch, AuthService, PluginInstaller } from "./types";
 
@@ -26,4 +27,5 @@ export const coreServices = {
     "core.queuePluginRegistry"
   ),
   queueFactory: createServiceRef<QueueFactory>("core.queueFactory"),
+  config: createServiceRef<ConfigService>("core.config"),
 };

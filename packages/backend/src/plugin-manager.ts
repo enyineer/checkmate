@@ -215,6 +215,14 @@ export class PluginManager {
           },
         } satisfies RpcService)
     );
+
+    // 7. Config Service (Scoped Factory)
+    this.registry.registerFactory(coreServices.config, async (pluginId) => {
+      const { ConfigServiceImpl } = await import(
+        "./services/config-service.js"
+      );
+      return new ConfigServiceImpl(pluginId, db);
+    });
   }
 
   registerExtensionPoint<T>(ref: ExtensionPoint<T>, impl: T) {

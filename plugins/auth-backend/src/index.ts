@@ -3,7 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import {
   createBackendPlugin,
   authenticationStrategyServiceRef,
-  RpcContext,
+  type AuthStrategy,
 } from "@checkmate/backend-api";
 import { coreServices } from "@checkmate/backend-api";
 import { userInfoRef } from "./services/user-info";
@@ -16,34 +16,6 @@ import { createExtensionPoint } from "@checkmate/backend-api";
 import { enrichUser } from "./utils/user";
 import { permissionList } from "@checkmate/auth-common";
 import { createAuthRouter } from "./router";
-import { call } from "@orpc/server";
-import { decrypt, isEncrypted } from "./utils/encryption";
-import { isSecretSchema, type AuthStrategy } from "@checkmate/backend-api";
-import * as zod from "zod";
-
-/**
- * Decrypts secret fields in a configuration object.
- */
-function decryptSecrets(
-  zodSchema: zod.ZodTypeAny,
-  config: Record<string, unknown>
-): Record<string, unknown> {
-  if (!("shape" in zodSchema)) return config;
-
-  const objectSchema = zodSchema as zod.ZodObject<zod.ZodRawShape>;
-  const result: Record<string, unknown> = { ...config };
-
-  for (const [key, fieldSchema] of Object.entries(objectSchema.shape)) {
-    if (isSecretSchema(fieldSchema as zod.ZodTypeAny)) {
-      const value = config[key];
-      if (typeof value === "string" && isEncrypted(value)) {
-        result[key] = decrypt(value);
-      }
-    }
-  }
-
-  return result;
-}
 
 export interface BetterAuthExtensionPoint {
   addStrategy(strategy: AuthStrategy<unknown>): void;
@@ -118,22 +90,17 @@ export default createBackendPlugin({
         rpc: coreServices.rpc,
         logger: coreServices.logger,
         auth: coreServices.auth,
+        config: coreServices.config,
       },
-      init: async ({ database, rpc, logger, auth: _auth }) => {
+      init: async ({ database, rpc, logger, auth: _auth, config }) => {
         logger.info("[auth-backend] Initializing Auth Backend...");
 
         db = database;
 
         // Function to initialize/reinitialize better-auth
         const initializeBetterAuth = async () => {
-          // Fetch strategy configs from database
-          const dbStrategies = await database
-            .select()
-            .from(schema.authStrategy);
-          const isDisabled = (id: string) =>
-            dbStrategies.find((s) => s.id === id)?.enabled === false;
-
           const socialProviders: Record<string, unknown> = {};
+
           for (const strategy of strategies) {
             logger.info(
               `[auth-backend]    -> Adding auth strategy: ${strategy.id}`
@@ -142,46 +109,59 @@ export default createBackendPlugin({
             // Skip credential strategy - it's built into better-auth
             if (strategy.id === "credential") continue;
 
-            // Find the database config for this strategy
-            const dbStrategy = dbStrategies.find((s) => s.id === strategy.id);
+            // Load config from ConfigService
+            const strategyConfig = await config.get(
+              strategy.id,
+              strategy.configSchema,
+              strategy.configVersion,
+              strategy.migrations
+            );
 
-            // Skip if disabled
-            if (dbStrategy?.enabled === false) {
-              logger.info(
-                `[auth-backend]    -> Strategy ${strategy.id} is disabled, skipping`
-              );
-              continue;
-            }
-
-            // Get config from database
-            if (!dbStrategy?.config) {
+            // Skip if no config or disabled
+            if (!strategyConfig) {
               logger.info(
                 `[auth-backend]    -> Strategy ${strategy.id} has no config, skipping`
               );
               continue;
             }
 
-            const versionedConfig = dbStrategy.config as {
-              data: Record<string, unknown>;
-              version: number;
-            };
+            // Check if strategy is enabled (if config includes an 'enabled' field)
+            const configRecord = strategyConfig as Record<string, unknown>;
+            if ("enabled" in configRecord && configRecord.enabled === false) {
+              logger.info(
+                `[auth-backend]    -> Strategy ${strategy.id} is disabled, skipping`
+              );
+              continue;
+            }
 
-            // Decrypt secrets in the config
-            const decryptedConfig = decryptSecrets(
-              strategy.configSchema,
-              versionedConfig.data
-            );
-
-            // Add to socialProviders
-            socialProviders[strategy.id] = decryptedConfig;
+            // Add to socialProviders (secrets are already decrypted by ConfigService)
+            socialProviders[strategy.id] = strategyConfig;
           }
+
+          // Check if credential strategy is enabled (default to true)
+          const credentialStrategy = strategies.find(
+            (s) => s.id === "credential"
+          );
+          const credentialConfig = credentialStrategy
+            ? await config.get(
+                "credential",
+                credentialStrategy.configSchema,
+                credentialStrategy.configVersion,
+                credentialStrategy.migrations
+              )
+            : undefined;
+
+          const credentialConfigRecord = credentialConfig as
+            | Record<string, unknown>
+            | undefined;
+          const credentialEnabled = credentialConfigRecord?.enabled !== false;
 
           return betterAuth({
             database: drizzleAdapter(database, {
               provider: "pg",
               schema: { ...schema },
             }),
-            emailAndPassword: { enabled: !isDisabled("credential") },
+            emailAndPassword: { enabled: credentialEnabled },
             socialProviders,
             basePath: "/api/auth-backend",
             baseURL: process.env.VITE_API_BASE_URL || "http://localhost:3000",
@@ -207,7 +187,8 @@ export default createBackendPlugin({
         const authRouter = createAuthRouter(
           database as NodePgDatabase<typeof schema>,
           strategyRegistry,
-          reloadAuth
+          reloadAuth,
+          config
         );
         rpc.registerRouter("auth-backend", authRouter);
 
@@ -216,45 +197,7 @@ export default createBackendPlugin({
           auth!.handler(req)
         );
 
-        // REST Compatibility Layer for legacy frontend calls
-        rpc.registerHttpHandler(
-          "/api/auth-backend/permissions",
-          async (req) => {
-            const session = await auth!.api.getSession({
-              headers: req.headers,
-            });
-            const user = session?.user
-              ? await enrichUserLocal(session.user)
-              : undefined;
-            return Response.json({
-              permissions:
-                (user as { permissions?: string[] })?.permissions || [],
-            });
-          }
-        );
-
-        rpc.registerHttpHandler("/api/auth-backend/users", async () => {
-          const users = await call(authRouter.getUsers, undefined, {
-            context: {} as RpcContext,
-          });
-          return Response.json(users);
-        });
-
-        rpc.registerHttpHandler("/api/auth-backend/roles", async () => {
-          const roles = await call(authRouter.getRoles, undefined, {
-            context: {} as RpcContext,
-          });
-          return Response.json(roles);
-        });
-
-        rpc.registerHttpHandler("/api/auth-backend/strategies", async () => {
-          const strategies = await call(authRouter.getStrategies, undefined, {
-            context: {} as RpcContext,
-          });
-          return Response.json(strategies);
-        });
-
-        // User management and strategy settings are now handled via oRPC router in ./router.ts
+        // All auth management endpoints are now via oRPC (see ./router.ts)
 
         // 4. Idempotent Seeding
         logger.info("🌱 Checking for initial admin user...");

@@ -43,6 +43,13 @@
       "when": 1766949107618,
       "tag": "0005_supreme_darwin",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767041019426,
+      "tag": "0006_ancient_kylun",
+      "breakpoints": true
     }
   ]
 }

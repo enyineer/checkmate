@@ -46,9 +46,33 @@ describe("Auth Router", () => {
     transaction: mock((cb: any) => cb(mockDb)), // Updated reference to mockDb
   };
 
-  const mockRegistry = { getStrategies: () => [] }; // Defined mockRegistry
+  const mockRegistry = {
+    getStrategies: () => [
+      {
+        id: "credential",
+        displayName: "Credentials",
+        description: "Email and password authentication",
+        configSchema: z.object({ enabled: z.boolean() }),
+        configVersion: 1,
+        migrations: [],
+      },
+    ],
+  };
 
-  const router = createAuthRouter(mockDb, mockRegistry, async () => {});
+  const mockConfigService: any = {
+    get: mock(() => Promise.resolve(undefined)),
+    getRedacted: mock(() => Promise.resolve({})),
+    set: mock(() => Promise.resolve()),
+    delete: mock(() => Promise.resolve()),
+    list: mock(() => Promise.resolve([])),
+  };
+
+  const router = createAuthRouter(
+    mockDb,
+    mockRegistry,
+    async () => {},
+    mockConfigService
+  );
 
   it("getPermissions returns current user permissions", async () => {
     const context = createMockRpcContext({ user: mockUser });
@@ -80,15 +104,21 @@ describe("Auth Router", () => {
     ).rejects.toThrow("Cannot delete initial admin");
   });
 
-  it("getRoles returns all roles", async () => {
+  it("getRoles returns all roles with permissions", async () => {
     const context = createMockRpcContext({ user: mockUser });
     mockDb.select.mockImplementationOnce(() => ({
       from: mock(() => createChain([{ id: "admin", name: "Admin" }])),
+    }));
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() =>
+        createChain([{ roleId: "admin", permissionId: "users.manage" }])
+      ),
     }));
 
     const result = await call(router.getRoles, undefined, { context });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("admin");
+    expect(result[0].permissions).toContain("users.manage");
   });
 
   it("updateUserRoles updates user roles", async () => {
@@ -99,7 +129,8 @@ describe("Auth Router", () => {
       { userId: "other-user", roles: ["admin"] },
       { context }
     );
-    expect(result.success).toBe(true);
+    // updateUserRoles returns void, so just check it completed
+    expect(result).toBeUndefined();
     expect(mockDb.transaction).toHaveBeenCalled();
   });
 
@@ -117,9 +148,6 @@ describe("Auth Router", () => {
 
   it("getStrategies returns available strategies", async () => {
     const context = createMockRpcContext({ user: mockUser });
-    mockDb.select.mockImplementationOnce(() => ({
-      from: mock(() => createChain([{ id: "credential", enabled: true }])),
-    }));
 
     const result = await call(router.getStrategies, undefined, { context });
     expect(result.some((s: any) => s.id === "credential")).toBe(true);
@@ -134,6 +162,6 @@ describe("Auth Router", () => {
       { context }
     );
     expect(result.success).toBe(true);
-    expect(mockDb.insert).toHaveBeenCalled();
+    expect(mockConfigService.set).toHaveBeenCalled();
   });
 });

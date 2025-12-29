@@ -4,7 +4,6 @@ import {
   boolean,
   timestamp,
   primaryKey,
-  jsonb,
 } from "drizzle-orm/pg-core";
 
 // --- Better Auth Schema ---
@@ -100,10 +99,3 @@ export const userRole = pgTable(
     pk: primaryKey({ columns: [t.userId, t.roleId] }),
   })
 );
-
-export const authStrategy = pgTable("auth_strategy", {
-  id: text("id").primaryKey(), // strategy ID (e.g., 'github', 'credential')
-  enabled: boolean("enabled").notNull().default(true),
-  config: jsonb("config"), // Stores VersionedConfig<T> as JSONB
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
