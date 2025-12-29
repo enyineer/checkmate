@@ -47,3 +47,5 @@ export const UpdateQueueConfigurationSchema = z.object({
 export type UpdateQueueConfiguration = z.infer<
   typeof UpdateQueueConfigurationSchema
 >;
+
+export * from "./rpc-contract";

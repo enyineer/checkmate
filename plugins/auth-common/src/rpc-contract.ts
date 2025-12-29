@@ -1,11 +1,89 @@
-// RPC Contract for auth-backend
-// This defines the API surface that both backend and frontend use
+import { oc } from "@orpc/contract";
+import { z } from "zod";
+import { permissions } from "./index";
 
+// Permission metadata type
+export interface AuthMetadata {
+  permissions?: string[];
+}
+
+// Base builder with metadata support
+const _base = oc.$meta<AuthMetadata>({});
+
+// Zod schemas for return types
+const UserDtoSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  roles: z.array(z.string()),
+});
+
+const RoleDtoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  permissions: z.array(z.string()),
+});
+
+const StrategyDtoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  enabled: z.boolean(),
+});
+
+// Auth RPC Contract with permission metadata
+export const authContract = {
+  // Permission query - Authenticated only (no specific permission required)
+  permissions: _base
+    .meta({ permissions: [] }) // Anyone authenticated can check their own permissions
+    .output(z.object({ permissions: z.array(z.string()) })),
+
+  // User management - Read permission for queries, Manage for mutations
+  getUsers: _base
+    .meta({ permissions: [permissions.usersRead.id] })
+    .output(z.array(UserDtoSchema)),
+
+  deleteUser: _base
+    .meta({ permissions: [permissions.usersManage.id] })
+    .input(z.string())
+    .output(z.void()),
+
+  updateUserRoles: _base
+    .meta({ permissions: [permissions.usersManage.id] })
+    .input(
+      z.object({
+        userId: z.string(),
+        roles: z.array(z.string()),
+      })
+    )
+    .output(z.void()),
+
+  // Role management - Manage permission
+  getRoles: _base
+    .meta({ permissions: [permissions.rolesManage.id] })
+    .output(z.array(RoleDtoSchema)),
+
+  // Strategy management - Manage permission
+  getStrategies: _base
+    .meta({ permissions: [permissions.strategiesManage.id] })
+    .output(z.array(StrategyDtoSchema)),
+
+  updateStrategy: _base
+    .meta({ permissions: [permissions.strategiesManage.id] })
+    .input(
+      z.object({
+        id: z.string(),
+        enabled: z.boolean(),
+      })
+    )
+    .output(z.void()),
+};
+
+// Export contract type for frontend
+export type AuthContract = typeof authContract;
+
+// Keep old interface for backwards compatibility
 export interface AuthRpcContract {
-  // Permission management
   permissions: () => Promise<{ permissions: string[] }>;
-
-  // User management
   getUsers: () => Promise<
     Array<{
       id: string;
@@ -19,8 +97,6 @@ export interface AuthRpcContract {
     userId: string;
     roles: string[];
   }) => Promise<void>;
-
-  // Role management
   getRoles: () => Promise<
     Array<{
       id: string;
@@ -28,8 +104,6 @@ export interface AuthRpcContract {
       permissions: string[];
     }>
   >;
-
-  // Authentication strategy management
   getStrategies: () => Promise<
     Array<{
       id: string;
