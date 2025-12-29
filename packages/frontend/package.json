@@ -12,8 +12,8 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate/auth-frontend-plugin": "workspace:*",
-    "@checkmate/catalog-frontend-plugin": "workspace:*",
+    "@checkmate/auth-frontend": "workspace:*",
+    "@checkmate/catalog-frontend": "workspace:*",
     "@checkmate/common": "workspace:*",
     "@checkmate/frontend-api": "workspace:*",
     "@checkmate/ui": "workspace:*",

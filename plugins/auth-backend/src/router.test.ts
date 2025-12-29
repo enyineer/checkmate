@@ -43,10 +43,12 @@ describe("Auth Router", () => {
     delete: mock(() => ({
       where: mock(() => Promise.resolve()),
     })),
-    transaction: mock((cb: any) => cb(mockDb)),
+    transaction: mock((cb: any) => cb(mockDb)), // Updated reference to mockDb
   };
 
-  const router = createAuthRouter(mockAuth, mockDb, []);
+  const mockRegistry = { getStrategies: () => [] }; // Defined mockRegistry
+
+  const router = createAuthRouter(mockDb, mockRegistry, async () => {});
 
   it("getPermissions returns current user permissions", async () => {
     const context = createMockRpcContext({ user: mockUser });

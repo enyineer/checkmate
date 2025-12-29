@@ -38,8 +38,8 @@ A new markdown file will be created in `.changeset/` with a random name. The fil
 
 ```markdown
 ---
-"@checkmate/auth-backend-plugin": patch
-"@checkmate/auth-frontend-plugin": patch
+"@checkmate/auth-backend": patch
+"@checkmate/auth-frontend": patch
 ---
 
 Fixed authentication token refresh bug that caused users to be logged out unexpectedly

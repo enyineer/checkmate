@@ -17,14 +17,36 @@ import { enrichUser } from "./utils/user";
 import { permissionList } from "@checkmate/auth-common";
 import { createAuthRouter } from "./router";
 import { call } from "@orpc/server";
+import { decrypt, isEncrypted } from "./utils/encryption";
+import { isSecretSchema, type AuthStrategy } from "@checkmate/backend-api";
+import * as zod from "zod";
 
-export interface BetterAuthStrategy {
-  id: string;
-  config: Record<string, unknown>;
+/**
+ * Decrypts secret fields in a configuration object.
+ */
+function decryptSecrets(
+  zodSchema: zod.ZodTypeAny,
+  config: Record<string, unknown>
+): Record<string, unknown> {
+  if (!("shape" in zodSchema)) return config;
+
+  const objectSchema = zodSchema as zod.ZodObject<zod.ZodRawShape>;
+  const result: Record<string, unknown> = { ...config };
+
+  for (const [key, fieldSchema] of Object.entries(objectSchema.shape)) {
+    if (isSecretSchema(fieldSchema as zod.ZodTypeAny)) {
+      const value = config[key];
+      if (typeof value === "string" && isEncrypted(value)) {
+        result[key] = decrypt(value);
+      }
+    }
+  }
+
+  return result;
 }
 
 export interface BetterAuthExtensionPoint {
-  addStrategy(strategy: BetterAuthStrategy): void;
+  addStrategy(strategy: AuthStrategy<unknown>): void;
 }
 
 export const betterAuthExtensionPoint =
@@ -38,7 +60,12 @@ export default createBackendPlugin({
     let auth: ReturnType<typeof betterAuth> | undefined;
     let db: NodePgDatabase<typeof schema> | undefined;
 
-    const strategies: BetterAuthStrategy[] = [];
+    const strategies: AuthStrategy<unknown>[] = [];
+
+    // Strategy registry
+    const strategyRegistry = {
+      getStrategies: () => strategies,
+    };
 
     env.registerPermissions(permissionList);
 
@@ -93,42 +120,94 @@ export default createBackendPlugin({
         auth: coreServices.auth,
       },
       init: async ({ database, rpc, logger, auth: _auth }) => {
-        logger.info("Initializing Auth Backend...");
+        logger.info("[auth-backend] Initializing Auth Backend...");
 
         db = database;
 
-        // Fetch enabled strategies
-        const dbStrategies = await database.select().from(schema.authStrategy);
-        const isDisabled = (id: string) =>
-          dbStrategies.find((s) => s.id === id)?.enabled === false;
+        // Function to initialize/reinitialize better-auth
+        const initializeBetterAuth = async () => {
+          // Fetch strategy configs from database
+          const dbStrategies = await database
+            .select()
+            .from(schema.authStrategy);
+          const isDisabled = (id: string) =>
+            dbStrategies.find((s) => s.id === id)?.enabled === false;
 
-        const socialProviders: Record<string, unknown> = {};
-        for (const s of strategies) {
-          if (isDisabled(s.id)) {
-            logger.info(`   -> Auth strategy DISABLED: ${s.id}`);
-            continue;
+          const socialProviders: Record<string, unknown> = {};
+          for (const strategy of strategies) {
+            logger.info(
+              `[auth-backend]    -> Adding auth strategy: ${strategy.id}`
+            );
+
+            // Skip credential strategy - it's built into better-auth
+            if (strategy.id === "credential") continue;
+
+            // Find the database config for this strategy
+            const dbStrategy = dbStrategies.find((s) => s.id === strategy.id);
+
+            // Skip if disabled
+            if (dbStrategy?.enabled === false) {
+              logger.info(
+                `[auth-backend]    -> Strategy ${strategy.id} is disabled, skipping`
+              );
+              continue;
+            }
+
+            // Get config from database
+            if (!dbStrategy?.config) {
+              logger.info(
+                `[auth-backend]    -> Strategy ${strategy.id} has no config, skipping`
+              );
+              continue;
+            }
+
+            const versionedConfig = dbStrategy.config as {
+              data: Record<string, unknown>;
+              version: number;
+            };
+
+            // Decrypt secrets in the config
+            const decryptedConfig = decryptSecrets(
+              strategy.configSchema,
+              versionedConfig.data
+            );
+
+            // Add to socialProviders
+            socialProviders[strategy.id] = decryptedConfig;
           }
-          logger.info(`   -> Adding auth strategy: ${s.id}`);
-          socialProviders[s.id] = s.config;
-        }
 
-        auth = betterAuth({
-          database: drizzleAdapter(database, {
-            provider: "pg",
-            schema: { ...schema },
-          }),
-          emailAndPassword: { enabled: !isDisabled("credential") },
-          socialProviders,
-          basePath: "/api/auth-backend",
-          baseURL: process.env.VITE_API_BASE_URL || "http://localhost:3000",
-          trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:5173"],
-        });
+          return betterAuth({
+            database: drizzleAdapter(database, {
+              provider: "pg",
+              schema: { ...schema },
+            }),
+            emailAndPassword: { enabled: !isDisabled("credential") },
+            socialProviders,
+            basePath: "/api/auth-backend",
+            baseURL: process.env.VITE_API_BASE_URL || "http://localhost:3000",
+            trustedOrigins: [
+              process.env.FRONTEND_URL || "http://localhost:5173",
+            ],
+          });
+        };
+
+        // Initialize better-auth
+        auth = await initializeBetterAuth();
+
+        // Reload function for dynamic auth config changes
+        const reloadAuth = async () => {
+          logger.info(
+            "[auth-backend] Reloading authentication configuration..."
+          );
+          auth = await initializeBetterAuth();
+          logger.info("[auth-backend] ✅ Authentication reloaded successfully");
+        };
 
         // 4. Register oRPC router
         const authRouter = createAuthRouter(
-          auth,
           database as NodePgDatabase<typeof schema>,
-          strategies
+          strategyRegistry,
+          reloadAuth
         );
         rpc.registerRouter("auth-backend", authRouter);
 

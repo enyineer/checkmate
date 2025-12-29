@@ -1,0 +1,1 @@
+ALTER TABLE "auth_strategy" ADD COLUMN "config" jsonb;

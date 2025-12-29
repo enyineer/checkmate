@@ -1,5 +1,5 @@
 {
-  "name": "@checkmate/catalog-frontend-plugin",
+  "name": "@checkmate/catalog-frontend",
   "version": "0.0.1",
   "type": "module",
   "main": "src/index.tsx",

@@ -26,8 +26,12 @@ const RoleDtoSchema = z.object({
 
 const StrategyDtoSchema = z.object({
   id: z.string(),
-  name: z.string(),
+  displayName: z.string(),
+  description: z.string().optional(),
   enabled: z.boolean(),
+  configVersion: z.number(),
+  configSchema: z.record(z.string(), z.unknown()), // JSON Schema representation
+  config: z.record(z.string(), z.unknown()).optional(), // VersionedConfig.data (secrets redacted)
 });
 
 // Auth RPC Contract with permission metadata
@@ -62,7 +66,6 @@ export const authContract = {
     .meta({ permissions: [permissions.rolesManage.id] })
     .output(z.array(RoleDtoSchema)),
 
-  // Strategy management - Manage permission
   getStrategies: _base
     .meta({ permissions: [permissions.strategiesManage.id] })
     .output(z.array(StrategyDtoSchema)),
@@ -73,9 +76,14 @@ export const authContract = {
       z.object({
         id: z.string(),
         enabled: z.boolean(),
+        config: z.record(z.string(), z.unknown()).optional(),
       })
     )
-    .output(z.void()),
+    .output(z.object({ success: z.boolean() })),
+
+  reloadAuth: _base
+    .meta({ permissions: [permissions.strategiesManage.id] })
+    .output(z.object({ success: z.boolean() })),
 };
 
 // Export contract type for frontend
@@ -107,9 +115,18 @@ export interface AuthRpcContract {
   getStrategies: () => Promise<
     Array<{
       id: string;
-      name: string;
+      displayName: string;
+      description?: string;
       enabled: boolean;
+      configVersion: number;
+      configSchema: Record<string, unknown>;
+      config?: Record<string, unknown>;
     }>
   >;
-  updateStrategy: (input: { id: string; enabled: boolean }) => Promise<void>;
+  updateStrategy: (input: {
+    id: string;
+    enabled: boolean;
+    config?: Record<string, unknown>;
+  }) => Promise<{ success: boolean }>;
+  reloadAuth: () => Promise<{ success: boolean }>;
 }

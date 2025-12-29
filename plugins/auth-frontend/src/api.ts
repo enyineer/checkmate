@@ -25,7 +25,12 @@ export interface Role {
 
 export interface AuthStrategy {
   id: string;
+  displayName: string;
+  description?: string;
   enabled: boolean;
+  configVersion: number;
+  configSchema: Record<string, unknown>; // JSON Schema
+  config?: Record<string, unknown>;
 }
 
 export interface AuthApi {
@@ -48,6 +53,11 @@ export interface AuthApi {
   updateUserRoles(userId: string, roles: string[]): Promise<void>;
   getStrategies(): Promise<AuthStrategy[]>;
   toggleStrategy(strategyId: string, enabled: boolean): Promise<void>;
+  updateStrategy(
+    strategyId: string,
+    config: { enabled?: boolean; config?: Record<string, unknown> }
+  ): Promise<void>;
+  reloadAuth(): Promise<void>;
 }
 
 export const authApiRef = createApiRef<AuthApi>("auth.api");

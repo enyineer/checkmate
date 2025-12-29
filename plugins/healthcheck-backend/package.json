@@ -1,5 +1,5 @@
 {
-  "name": "@checkmate/healthcheck-backend-plugin",
+  "name": "@checkmate/healthcheck-backend",
   "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@checkmate/backend-api": "workspace:*",
-    "@checkmate/catalog-backend-plugin": "workspace:*",
+    "@checkmate/catalog-backend": "workspace:*",
     "@checkmate/healthcheck-common": "workspace:*",
     "@hono/zod-validator": "^0.7.6",
     "drizzle-orm": "^0.45.1",

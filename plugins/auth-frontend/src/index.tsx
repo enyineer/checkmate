@@ -164,8 +164,29 @@ class BetterAuthApi implements AuthApi {
     return this.rpc.getStrategies();
   }
 
-  async toggleStrategy(id: string, enabled: boolean) {
-    return this.rpc.updateStrategy({ id, enabled });
+  async toggleStrategy(id: string, enabled: boolean): Promise<void> {
+    await this.rpc.updateStrategy({ id, enabled });
+  }
+
+  async updateStrategy(
+    id: string,
+    updates: { enabled?: boolean; config?: Record<string, unknown> }
+  ): Promise<void> {
+    // Build request with only provided fields
+    const request: {
+      id: string;
+      enabled?: boolean;
+      config?: Record<string, unknown>;
+    } = { id };
+    if (updates.enabled !== undefined) request.enabled = updates.enabled;
+    if (updates.config !== undefined) request.config = updates.config;
+    await this.rpc.updateStrategy(
+      request as Parameters<typeof this.rpc.updateStrategy>[0]
+    );
+  }
+
+  async reloadAuth(): Promise<void> {
+    await this.rpc.reloadAuth();
   }
 }
 

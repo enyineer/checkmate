@@ -17,10 +17,19 @@ import {
   Checkbox,
   ConfirmationModal,
   Alert,
+  DynamicForm,
 } from "@checkmate/ui";
 import { authApiRef, AuthUser, Role, AuthStrategy } from "../api";
 import { permissions as authPermissions } from "@checkmate/auth-common";
-import { Trash2, Shield, Settings2, Users } from "lucide-react";
+import {
+  Trash2,
+  Shield,
+  Settings2,
+  Users,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 
 export const AuthSettingsPage: React.FC = () => {
   const authApi = useApi(authApiRef);
@@ -34,8 +43,13 @@ export const AuthSettingsPage: React.FC = () => {
   const [strategies, setStrategies] = useState<AuthStrategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [reloading, setReloading] = useState(false);
 
   const [userToDelete, setUserToDelete] = useState<string>();
+  const [expandedStrategy, setExpandedStrategy] = useState<string>();
+  const [strategyConfigs, setStrategyConfigs] = useState<
+    Record<string, Record<string, unknown>>
+  >({});
 
   const canReadUsers = permissionApi.usePermission(
     authPermissions.usersRead.id
@@ -61,6 +75,13 @@ export const AuthSettingsPage: React.FC = () => {
       setUsers(usersData);
       setRoles(rolesData);
       setStrategies(strategiesData);
+
+      // Initialize strategy configs
+      const configs: Record<string, Record<string, unknown>> = {};
+      for (const strategy of strategiesData) {
+        configs[strategy.id] = strategy.config || {};
+      }
+      setStrategyConfigs(configs);
     } catch (error: unknown) {
       setError("Failed to fetch data");
       console.error(error);
@@ -116,6 +137,32 @@ export const AuthSettingsPage: React.FC = () => {
       );
     } catch {
       setError("Failed to toggle strategy");
+    }
+  };
+
+  const handleSaveStrategyConfig = async (strategyId: string) => {
+    try {
+      const config = strategyConfigs[strategyId];
+      await authApi.updateStrategy(strategyId, { config });
+      setError(undefined);
+      alert(
+        "Configuration saved successfully! Click 'Reload Authentication' to apply changes."
+      );
+    } catch {
+      setError("Failed to save strategy configuration");
+    }
+  };
+
+  const handleReloadAuth = async () => {
+    setReloading(true);
+    try {
+      await authApi.reloadAuth();
+      setError(undefined);
+      alert("Authentication reloaded successfully!");
+    } catch {
+      setError("Failed to reload authentication");
+    } finally {
+      setReloading(false);
     }
   };
 
@@ -241,60 +288,112 @@ export const AuthSettingsPage: React.FC = () => {
       )}
 
       {activeTab === "strategies" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Authentication Strategies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Strategy</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {strategies.map((strategy) => (
-                  <TableRow key={strategy.id}>
-                    <TableCell className="capitalize">{strategy.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`strategy-${strategy.id}`}
-                          checked={strategy.enabled}
-                          disabled={!canManageStrategies.allowed}
-                          onCheckedChange={(checked) =>
-                            handleToggleStrategy(strategy.id, !!checked)
-                          }
-                        />
-                        <label
-                          htmlFor={`strategy-${strategy.id}`}
-                          className="text-sm font-medium leading-none"
-                        >
-                          {strategy.enabled ? "Enabled" : "Disabled"}
-                        </label>
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button
+              onClick={handleReloadAuth}
+              disabled={!canManageStrategies.allowed || reloading}
+              className="gap-2"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${reloading ? "animate-spin" : ""}`}
+              />
+              {reloading ? "Reloading..." : "Reload Authentication"}
+            </Button>
+          </div>
+
+          {strategies.map((strategy) => (
+            <Card key={strategy.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() =>
+                          setExpandedStrategy(
+                            expandedStrategy === strategy.id
+                              ? undefined
+                              : strategy.id
+                          )
+                        }
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        {expandedStrategy === strategy.id ? (
+                          <ChevronDown className="h-5 w-5" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5" />
+                        )}
+                      </button>
+                      <div>
+                        <CardTitle>{strategy.displayName}</CardTitle>
+                        {strategy.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {strategy.description}
+                          </p>
+                        )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {!canManageStrategies.allowed && (
-              <p className="text-xs text-muted-foreground mt-4">
-                You don't have permission to manage strategies.
-              </p>
-            )}
-            <Alert className="mt-6">
-              <Shield className="h-4 w-4" />
-              <p className="text-sm">
-                Disabling a strategy will prevent users from using it to log in
-                and remove it from the login screen. Changes require a backend
-                restart or some time to propagate due to better-auth's
-                initialization.
-              </p>
-            </Alert>
-          </CardContent>
-        </Card>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={`strategy-${strategy.id}`}
+                      checked={strategy.enabled}
+                      disabled={!canManageStrategies.allowed}
+                      onCheckedChange={(checked) =>
+                        handleToggleStrategy(strategy.id, !!checked)
+                      }
+                    />
+                    <label
+                      htmlFor={`strategy-${strategy.id}`}
+                      className="text-sm font-medium"
+                    >
+                      {strategy.enabled ? "Enabled" : "Disabled"}
+                    </label>
+                  </div>
+                </div>
+              </CardHeader>
+
+              {expandedStrategy === strategy.id && (
+                <CardContent>
+                  <div className="space-y-4">
+                    <DynamicForm
+                      schema={strategy.configSchema}
+                      value={strategyConfigs[strategy.id] || {}}
+                      onChange={(newConfig) => {
+                        setStrategyConfigs({
+                          ...strategyConfigs,
+                          [strategy.id]: newConfig,
+                        });
+                      }}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        onClick={() => handleSaveStrategyConfig(strategy.id)}
+                        disabled={!canManageStrategies.allowed}
+                      >
+                        Save Configuration
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          ))}
+
+          {!canManageStrategies.allowed && (
+            <p className="text-xs text-muted-foreground mt-4">
+              You don't have permission to manage strategies.
+            </p>
+          )}
+          <Alert className="mt-6">
+            <Shield className="h-4 w-4" />
+            <p className="text-sm">
+              Changes to authentication strategies require clicking the "Reload
+              Authentication" button to take effect. This reloads the auth
+              system without requiring a full restart.
+            </p>
+          </Alert>
+        </div>
       )}
 
       <ConfirmationModal
