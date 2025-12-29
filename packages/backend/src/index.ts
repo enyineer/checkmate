@@ -36,12 +36,21 @@ app.get("/", (c) => {
 });
 
 app.get("/api/plugins", async (c) => {
+  // Only return remote plugins that need to be loaded via HTTP
+  // Local plugins are bundled and loaded via Vite's glob import
   const enabledPlugins = await db
     .select({
       name: plugins.name,
+      path: plugins.path,
     })
     .from(plugins)
-    .where(and(eq(plugins.enabled, true), eq(plugins.type, "frontend")));
+    .where(
+      and(
+        eq(plugins.enabled, true),
+        eq(plugins.type, "frontend"),
+        eq(plugins.isUninstallable, true) // Only remote plugins
+      )
+    );
 
   return c.json(enabledPlugins);
 });
