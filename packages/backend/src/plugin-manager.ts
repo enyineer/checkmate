@@ -159,15 +159,63 @@ export class PluginManager {
     // 4. Fetch Factory (Scoped)
     this.registry.registerFactory(coreServices.fetch, async (pluginId) => {
       const auth = await this.registry.get(coreServices.auth, pluginId);
+      const apiBaseUrl = process.env.API_BASE_URL || "http://localhost:3000";
+
+      const fetchWithAuth = async (
+        input: RequestInfo | URL,
+        init?: RequestInit
+      ) => {
+        const { headers: authHeaders } = await auth.getCredentials();
+        const mergedHeaders = new Headers(init?.headers);
+        for (const [k, v] of Object.entries(authHeaders)) {
+          mergedHeaders.set(k, v);
+        }
+        return fetch(input, { ...init, headers: mergedHeaders });
+      };
+
+      const forPlugin = (targetPluginId: string) => {
+        const pluginBaseUrl = `${apiBaseUrl}/api/${targetPluginId}`;
+
+        const pluginFetch = async (path: string, init?: RequestInit) => {
+          const url = `${pluginBaseUrl}${
+            path.startsWith("/") ? "" : "/"
+          }${path}`;
+          return fetchWithAuth(url, init);
+        };
+
+        return {
+          fetch: pluginFetch,
+          get: (path: string, init?: RequestInit) =>
+            pluginFetch(path, { ...init, method: "GET" }),
+          post: (path: string, body?: unknown, init?: RequestInit) =>
+            pluginFetch(path, {
+              ...init,
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...init?.headers },
+              body: body ? JSON.stringify(body) : undefined,
+            }),
+          put: (path: string, body?: unknown, init?: RequestInit) =>
+            pluginFetch(path, {
+              ...init,
+              method: "PUT",
+              headers: { "Content-Type": "application/json", ...init?.headers },
+              body: body ? JSON.stringify(body) : undefined,
+            }),
+          patch: (path: string, body?: unknown, init?: RequestInit) =>
+            pluginFetch(path, {
+              ...init,
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", ...init?.headers },
+              body: body ? JSON.stringify(body) : undefined,
+            }),
+          delete: (path: string, init?: RequestInit) =>
+            pluginFetch(path, { ...init, method: "DELETE" }),
+        };
+      };
+
       return {
-        fetch: async (input, init) => {
-          const { headers } = await auth.getCredentials();
-          const mergedHeaders = new Headers(init?.headers);
-          for (const [k, v] of Object.entries(headers)) {
-            mergedHeaders.set(k, v);
-          }
-          return fetch(input, { ...init, headers: mergedHeaders });
-        },
+        fetch: fetchWithAuth,
+        forPlugin,
       };
     });
 

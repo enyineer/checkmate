@@ -1,9 +1,4 @@
-import {
-  HealthCheckRegistry,
-  Logger,
-  Fetch,
-  AuthService,
-} from "@checkmate/backend-api";
+import { HealthCheckRegistry, Logger, Fetch } from "@checkmate/backend-api";
 import {
   healthCheckConfigurations,
   systemHealthChecks,
@@ -23,8 +18,7 @@ export class Scheduler {
     private db: Db,
     private registry: HealthCheckRegistry,
     private logger: Logger,
-    private fetch: Fetch,
-    private auth: AuthService
+    private fetch: Fetch
   ) {}
 
   start(intervalMs = 10_000) {
@@ -137,21 +131,9 @@ export class Scheduler {
         `Propagating status '${aggregateStatus}' for system ${systemId}`
       );
 
-      const { headers } = await this.auth.getCredentials();
-
-      // Construct the URL to catalog-backend.
-      // In a real scenario, this might come from a discovery service or config.
-      // For now, we assume it's reachable at the core's API prefix.
-      const catalogUrl = `http://localhost:3000/api/catalog-backend/entities/systems/${systemId}`;
-
-      const response = await this.fetch.fetch(catalogUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        body: JSON.stringify({ status: aggregateStatus }),
-      });
+      const response = await this.fetch
+        .forPlugin("catalog-backend")
+        .put(`/entities/systems/${systemId}`, { status: aggregateStatus });
 
       if (!response.ok) {
         const text = await response.text();

@@ -11,9 +11,21 @@ export interface Logger {
   debug(message: string, ...args: unknown[]): void;
 }
 
-// Define Fetch interface
 export interface Fetch {
   fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+
+  /**
+   * Helper for inter-plugin communication.
+   * Automatically handles URL construction and credential injection.
+   */
+  forPlugin(pluginId: string): {
+    fetch(path: string, init?: RequestInit): Promise<Response>;
+    get(path: string, init?: RequestInit): Promise<Response>;
+    post(path: string, body?: unknown, init?: RequestInit): Promise<Response>;
+    put(path: string, body?: unknown, init?: RequestInit): Promise<Response>;
+    patch(path: string, body?: unknown, init?: RequestInit): Promise<Response>;
+    delete(path: string, init?: RequestInit): Promise<Response>;
+  };
 }
 
 export type AuthUser = {

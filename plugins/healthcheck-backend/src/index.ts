@@ -23,7 +23,6 @@ export default createBackendPlugin({
         healthCheckRegistry: coreServices.healthCheckRegistry,
         router: coreServices.httpRouter,
         fetch: coreServices.fetch,
-        auth: coreServices.auth,
       },
       init: async ({
         logger,
@@ -31,7 +30,6 @@ export default createBackendPlugin({
         healthCheckRegistry,
         router,
         fetch,
-        auth,
       }) => {
         logger.info("🏥 Initializing Health Check Backend...");
 
@@ -42,8 +40,7 @@ export default createBackendPlugin({
           database as unknown as NodePgDatabase<typeof schema>,
           healthCheckRegistry,
           logger,
-          fetch,
-          auth
+          fetch
         );
 
         scheduler.start();

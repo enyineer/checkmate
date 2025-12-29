@@ -28,7 +28,6 @@ describe("Scheduler", () => {
   let registry: any;
   let logger: any;
   let fetch: any;
-  let tokenVerification: any;
   let scheduler: Scheduler;
 
   beforeEach(() => {
@@ -44,17 +43,29 @@ describe("Scheduler", () => {
     };
     fetch = {
       fetch: mock(() => Promise.resolve({ ok: true, text: () => "" })),
-    };
-    tokenVerification = {
-      sign: mock(() => Promise.resolve("mock-token")),
-      verify: mock(() => Promise.resolve({})),
+      forPlugin: mock(() => ({
+        get: mock(() =>
+          Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+        ),
+        post: mock(() =>
+          Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+        ),
+        put: mock(() =>
+          Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+        ),
+        patch: mock(() =>
+          Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+        ),
+        delete: mock(() =>
+          Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+        ),
+      })),
     };
     scheduler = new Scheduler(
       db,
       registry as HealthCheckRegistry,
       logger as Logger,
-      fetch,
-      tokenVerification
+      fetch
     );
   });
 
