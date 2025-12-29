@@ -64,7 +64,6 @@ export interface AuthApi {
   getRoles(): Promise<Role[]>;
   getPermissions(): Promise<Permission[]>;
   createRole(params: {
-    id: string;
     name: string;
     description?: string;
     permissions: string[];

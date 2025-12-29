@@ -9,6 +9,10 @@ import {
   Input,
   Label,
   Checkbox,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@checkmate/ui";
 import type { Role, Permission } from "../api";
 
@@ -18,7 +22,7 @@ interface RoleDialogProps {
   role?: Role;
   permissions: Permission[];
   onSave: (params: {
-    id: string;
+    id?: string;
     name: string;
     description?: string;
     permissions: string[];
@@ -32,7 +36,6 @@ export const RoleDialog: React.FC<RoleDialogProps> = ({
   permissions,
   onSave,
 }) => {
-  const [id, setId] = useState(role?.id || "");
   const [name, setName] = useState(role?.name || "");
   const [description, setDescription] = useState(role?.description || "");
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(
@@ -66,7 +69,7 @@ export const RoleDialog: React.FC<RoleDialogProps> = ({
     setSaving(true);
     try {
       await onSave({
-        id: isEditing ? role.id : id,
+        ...(isEditing && { id: role.id }),
         name,
         description: description || undefined,
         permissions: [...selectedPermissions],
@@ -94,18 +97,6 @@ export const RoleDialog: React.FC<RoleDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          {!isEditing && (
-            <div>
-              <Label htmlFor="role-id">Role ID</Label>
-              <Input
-                id="role-id"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                placeholder="developer"
-              />
-            </div>
-          )}
-
           <div>
             <Label htmlFor="role-name">Name</Label>
             <Input
@@ -127,42 +118,66 @@ export const RoleDialog: React.FC<RoleDialogProps> = ({
           </div>
 
           <div>
-            <Label>Permissions</Label>
-            <div className="mt-2 space-y-4 border rounded-md p-4 max-h-64 overflow-y-auto">
-              {Object.entries(permissionsByPlugin).map(([plugin, perms]) => (
-                <div key={plugin}>
-                  <h4 className="font-medium text-sm mb-2 capitalize">
-                    {plugin}
-                  </h4>
-                  <div className="space-y-2">
-                    {perms.map((perm) => (
-                      <div
-                        key={perm.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={`perm-${perm.id}`}
-                          checked={selectedPermissions.has(perm.id)}
-                          onCheckedChange={() =>
-                            handleTogglePermission(perm.id)
-                          }
-                        />
-                        <label
-                          htmlFor={`perm-${perm.id}`}
-                          className="text-sm cursor-pointer flex-1"
-                        >
-                          <span className="font-mono text-xs">{perm.id}</span>
-                          {perm.description && (
-                            <span className="text-muted-foreground ml-2">
-                              - {perm.description}
-                            </span>
-                          )}
-                        </label>
+            <Label className="text-base">Permissions</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
+              Select permissions to grant to this role. Permissions are
+              organized by plugin.
+            </p>
+            <div className="border rounded-lg">
+              <Accordion
+                type="multiple"
+                defaultValue={Object.keys(permissionsByPlugin)}
+                className="w-full"
+              >
+                {Object.entries(permissionsByPlugin).map(([plugin, perms]) => (
+                  <AccordionItem key={plugin} value={plugin}>
+                    <AccordionTrigger className="px-4 hover:no-underline">
+                      <div className="flex items-center justify-between flex-1 pr-2">
+                        <span className="font-semibold capitalize">
+                          {plugin.replaceAll("-", " ")}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {
+                            perms.filter((p) => selectedPermissions.has(p.id))
+                              .length
+                          }{" "}
+                          / {perms.length} selected
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4">
+                      <div className="space-y-3 pt-2">
+                        {perms.map((perm) => (
+                          <div
+                            key={perm.id}
+                            className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <Checkbox
+                              id={`perm-${perm.id}`}
+                              checked={selectedPermissions.has(perm.id)}
+                              onCheckedChange={() =>
+                                handleTogglePermission(perm.id)
+                              }
+                              className="mt-0.5"
+                            />
+                            <label
+                              htmlFor={`perm-${perm.id}`}
+                              className="text-sm cursor-pointer flex-1 space-y-1"
+                            >
+                              <div className="font-medium">{perm.id}</div>
+                              {perm.description && (
+                                <div className="text-xs text-muted-foreground">
+                                  {perm.description}
+                                </div>
+                              )}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           </div>
         </div>
@@ -171,10 +186,7 @@ export const RoleDialog: React.FC<RoleDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving || !name || (!isEditing && !id)}
-          >
+          <Button onClick={handleSave} disabled={saving || !name}>
             {buttonText}
           </Button>
         </DialogFooter>

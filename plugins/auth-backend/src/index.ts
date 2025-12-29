@@ -34,17 +34,17 @@ export default createBackendPlugin({
 
     const strategies: AuthStrategy<unknown>[] = [];
 
-    // Permission registry to track currently active permissions
-    const activePermissions: { id: string; description?: string }[] = [];
-
     // Strategy registry
     const strategyRegistry = {
       getStrategies: () => strategies,
     };
 
-    // Permission registry
+    // Permission registry - gets all permissions from PluginManager
     const permissionRegistry = {
-      getPermissions: () => activePermissions,
+      getPermissions: () => {
+        // Get all permissions from the central PluginManager registry
+        return env.pluginManager.getAllPermissions();
+      },
     };
 
     env.registerPermissions(permissionList);
@@ -219,8 +219,7 @@ export default createBackendPlugin({
               .where(eq(schema.permission.id, perm.id));
           }
 
-          // Add to active permissions registry
-          activePermissions.push(perm);
+          // Permissions are now centrally tracked in PluginManager
         }
 
         logger.info(

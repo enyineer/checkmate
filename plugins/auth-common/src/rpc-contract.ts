@@ -80,7 +80,6 @@ export const authContract = {
     .meta({ permissions: [permissions.rolesCreate.id] })
     .input(
       z.object({
-        id: z.string(),
         name: z.string(),
         description: z.string().optional(),
         permissions: z.array(z.string()),

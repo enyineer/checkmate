@@ -234,15 +234,24 @@ export class PluginManager {
     return this.getExtensionPointProxy(ref);
   }
 
+  private registeredPermissions: { id: string; description?: string }[] = [];
+
   registerPermissions(pluginId: string, permissions: Permission[]) {
     const prefixed = permissions.map((p) => ({
       ...p,
       id: `${pluginId}.${p.id}`,
     }));
+
+    // Store permissions in central registry
+    this.registeredPermissions.push(...prefixed);
+
     rootLogger.info(
       `   -> Registered ${prefixed.length} permissions for ${pluginId}`
     );
-    // TODO: Store these in a database or central registry
+  }
+
+  getAllPermissions(): { id: string; description?: string }[] {
+    return [...this.registeredPermissions];
   }
 
   public sortPlugins(
@@ -624,6 +633,9 @@ export class PluginManager {
       },
       registerRouter: (router: unknown) => {
         this.pluginRpcRouters.set(backendPlugin.pluginId, router);
+      },
+      pluginManager: {
+        getAllPermissions: () => this.getAllPermissions(),
       },
     });
   }

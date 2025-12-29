@@ -81,7 +81,10 @@ export const createAuthRouter = (
   });
 
   const createRole = os.createRole.handler(async ({ input }) => {
-    const { id, name, description, permissions: inputPermissions } = input;
+    const { name, description, permissions: inputPermissions } = input;
+
+    // Generate UUID for new role
+    const id = crypto.randomUUID();
 
     // Get active permissions to filter input
     const activePermissions = new Set(

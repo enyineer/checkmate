@@ -200,17 +200,28 @@ export const AuthSettingsPage: React.FC = () => {
   };
 
   const handleSaveRole = async (params: {
-    id: string;
+    id?: string;
     name: string;
     description?: string;
     permissions: string[];
   }) => {
     try {
-      if (editingRole) {
-        await authApi.updateRole(params);
+      if (params.id) {
+        // Update existing role - ID is required
+        await authApi.updateRole({
+          id: params.id,
+          name: params.name,
+          description: params.description,
+          permissions: params.permissions,
+        });
         toast.success("Role updated successfully");
       } else {
-        await authApi.createRole(params);
+        // Create new role - No ID needed, backend generates it
+        await authApi.createRole({
+          name: params.name,
+          description: params.description,
+          permissions: params.permissions,
+        });
         toast.success("Role created successfully");
       }
       await fetchData();
