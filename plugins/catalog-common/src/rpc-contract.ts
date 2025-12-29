@@ -1,9 +1,15 @@
-import { baseContractBuilder } from "@checkmate/backend-api";
+import { oc } from "@orpc/contract";
 import { z } from "zod";
 import { SystemSchema, GroupSchema, ViewSchema, IncidentSchema } from "./types";
 import { permissions } from "./permissions";
 
-// No longer need to define CatalogMetadata or create base - use baseContractBuilder from backend-api
+// Permission metadata type
+export interface CatalogMetadata {
+  permissions?: string[];
+}
+
+// Base builder with metadata support
+const _base = oc.$meta<CatalogMetadata>({});
 
 // Input schemas that match the service layer expectations
 const CreateSystemInputSchema = z.object({
@@ -56,7 +62,7 @@ const CreateIncidentInputSchema = z.object({
 // Catalog RPC Contract using oRPC's contract-first pattern
 export const catalogContract = {
   // Entity management - Read permission
-  getEntities: baseContractBuilder
+  getEntities: _base
     .meta({ permissions: [permissions.catalogRead.id] })
     .output(
       z.object({
@@ -66,47 +72,47 @@ export const catalogContract = {
     ),
 
   // Convenience methods - Read permission
-  getSystems: baseContractBuilder
+  getSystems: _base
     .meta({ permissions: [permissions.catalogRead.id] })
     .output(z.array(SystemSchema)),
-  getGroups: baseContractBuilder
+  getGroups: _base
     .meta({ permissions: [permissions.catalogRead.id] })
     .output(z.array(GroupSchema)),
 
   // System management - Manage permission
-  createSystem: baseContractBuilder
+  createSystem: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(CreateSystemInputSchema)
     .output(SystemSchema),
 
-  updateSystem: baseContractBuilder
+  updateSystem: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(UpdateSystemInputSchema)
     .output(SystemSchema),
 
-  deleteSystem: baseContractBuilder
+  deleteSystem: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(z.string())
     .output(z.object({ success: z.boolean() })),
 
   // Group management - Manage permission
-  createGroup: baseContractBuilder
+  createGroup: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(CreateGroupInputSchema)
     .output(GroupSchema),
 
-  updateGroup: baseContractBuilder
+  updateGroup: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(UpdateGroupInputSchema)
     .output(GroupSchema),
 
-  deleteGroup: baseContractBuilder
+  deleteGroup: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(z.string())
     .output(z.object({ success: z.boolean() })),
 
   // System-Group relationships - Manage permission
-  addSystemToGroup: baseContractBuilder
+  addSystemToGroup: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(
       z.object({
@@ -116,7 +122,7 @@ export const catalogContract = {
     )
     .output(z.object({ success: z.boolean() })),
 
-  removeSystemFromGroup: baseContractBuilder
+  removeSystemFromGroup: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(
       z.object({
@@ -127,19 +133,19 @@ export const catalogContract = {
     .output(z.object({ success: z.boolean() })),
 
   // View management - Read permission
-  getViews: baseContractBuilder
+  getViews: _base
     .meta({ permissions: [permissions.catalogRead.id] })
     .output(z.array(ViewSchema)),
-  createView: baseContractBuilder
+  createView: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(CreateViewInputSchema)
     .output(ViewSchema),
 
   // Incident management - Read permission for get, Manage for create
-  getIncidents: baseContractBuilder
+  getIncidents: _base
     .meta({ permissions: [permissions.catalogRead.id] })
     .output(z.array(IncidentSchema)),
-  createIncident: baseContractBuilder
+  createIncident: _base
     .meta({ permissions: [permissions.catalogManage.id] })
     .input(CreateIncidentInputSchema)
     .output(IncidentSchema),

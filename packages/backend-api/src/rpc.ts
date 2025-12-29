@@ -91,8 +91,10 @@ export interface PermissionMetadata {
  * Middleware that automatically enforces permissions based on procedure metadata.
  * This reads the `permissions` field from the procedure's metadata and validates
  * the user has at least one of the required permissions.
+ *
+ * Use this in backend routers: `implement(contract).use(autoPermissionMiddleware)`
  */
-const autoPermissionMiddleware = os.middleware(
+export const autoPermissionMiddleware = os.middleware(
   async ({ next, context, procedure }) => {
     // Enforce authentication first
     if (!context.user) {
