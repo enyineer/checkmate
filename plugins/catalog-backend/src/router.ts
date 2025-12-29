@@ -1,43 +1,14 @@
 import { implement } from "@orpc/server";
 import type { RpcContext } from "@checkmate/backend-api";
-import { catalogContract, permissions } from "@checkmate/catalog-common";
+import { catalogContract } from "@checkmate/catalog-common";
 import { EntityService } from "./services/entity-service";
 import { OperationService } from "./services/operation-service";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "./schema";
 
 // Create implementer from contract with our context
+// The contract already includes auto permission middleware via baseContractBuilder
 const os = implement(catalogContract).$context<RpcContext>();
-
-// Create middleware
-const authMiddleware = os.middleware(async ({ next, context }) => {
-  if (!context.user) {
-    throw new Error("Unauthorized");
-  }
-  return next({ context: { user: context.user } });
-});
-
-const catalogRead = os.middleware(async ({ next, context }) => {
-  const userPermissions = context.user?.permissions || [];
-  const hasPermission =
-    userPermissions.includes("*") ||
-    userPermissions.includes(permissions.catalogRead.id);
-  if (!hasPermission) {
-    throw new Error(`Forbidden: Missing ${permissions.catalogRead.id}`);
-  }
-  return next({});
-});
-
-const catalogManage = os.middleware(async ({ next, context }) => {
-  const userPermissions = context.user?.permissions || [];
-  const hasPermission =
-    userPermissions.includes("*") ||
-    userPermissions.includes(permissions.catalogManage.id);
-  if (!hasPermission) {
-    throw new Error(`Forbidden: Missing ${permissions.catalogManage.id}`);
-  }
-  return next({});
-});
 
 export const createCatalogRouter = (
   database: NodePgDatabase<typeof schema>
@@ -47,8 +18,8 @@ export const createCatalogRouter = (
 
   // Implement each contract method
   const getEntities = os.getEntities
-    .use(authMiddleware)
-    .use(catalogRead)
+    
+    
     .handler(async () => {
       const systems = await entityService.getSystems();
       const groups = await entityService.getGroups();
@@ -66,8 +37,8 @@ export const createCatalogRouter = (
     });
 
   const getSystems = os.getSystems
-    .use(authMiddleware)
-    .use(catalogRead)
+    
+    
     .handler(async () => {
       const systems = await entityService.getSystems();
       return systems as unknown as Array<
@@ -76,8 +47,8 @@ export const createCatalogRouter = (
     });
 
   const getGroups = os.getGroups
-    .use(authMiddleware)
-    .use(catalogRead)
+    
+    
     .handler(async () => {
       const groups = await entityService.getGroups();
       return groups as unknown as Array<
@@ -86,8 +57,8 @@ export const createCatalogRouter = (
     });
 
   const createSystem = os.createSystem
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       const result = await entityService.createSystem(input);
       return result as typeof result & {
@@ -96,8 +67,8 @@ export const createCatalogRouter = (
     });
 
   const updateSystem = os.updateSystem
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       // Convert null to undefined and filter out fields
       const cleanData: Partial<{
@@ -128,16 +99,16 @@ export const createCatalogRouter = (
     });
 
   const deleteSystem = os.deleteSystem
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       await entityService.deleteSystem(input);
       return { success: true };
     });
 
   const createGroup = os.createGroup
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       const result = await entityService.createGroup({
         name: input.name,
@@ -152,8 +123,8 @@ export const createCatalogRouter = (
     });
 
   const updateGroup = os.updateGroup
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       // Convert null to undefined for optional fields
       const cleanData = {
@@ -172,49 +143,49 @@ export const createCatalogRouter = (
     });
 
   const deleteGroup = os.deleteGroup
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       await entityService.deleteGroup(input);
       return { success: true };
     });
 
   const addSystemToGroup = os.addSystemToGroup
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       await entityService.addSystemToGroup(input);
       return { success: true };
     });
 
   const removeSystemFromGroup = os.removeSystemFromGroup
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       await entityService.removeSystemFromGroup(input);
       return { success: true };
     });
 
   const getViews = os.getViews
-    .use(authMiddleware)
-    .use(catalogRead)
+    
+    
     .handler(async () => entityService.getViews());
 
   const createView = os.createView
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       return entityService.createView(input);
     });
 
   const getIncidents = os.getIncidents
-    .use(authMiddleware)
-    .use(catalogRead)
+    
+    
     .handler(async () => operationService.getIncidents());
 
   const createIncident = os.createIncident
-    .use(authMiddleware)
-    .use(catalogManage)
+    
+    
     .handler(async ({ input }) => {
       // Ensure status and severity have defaults
       return operationService.createIncident({

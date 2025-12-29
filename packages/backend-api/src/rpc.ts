@@ -64,6 +64,87 @@ export const permissionMiddleware = (permission: string | string[]) =>
   });
 
 /**
+ * Base authenticated procedure - alias for clarity
+ */
+export const authenticated = authedProcedure;
+
+/**
+ * Helper to create an authenticated procedure with specific permissions.
+ * Plugins should use this instead of creating their own permission middleware.
+ *
+ * @example
+ * const getSystems = withPermissions([permissions.catalogRead.id])
+ *   .handler(async () => { ... });
+ */
+export const withPermissions = (permissions: string | string[]) =>
+  authenticated.use(permissionMiddleware(permissions));
+
+/**
+ * Metadata interface for permission-based procedures.
+ * All contracts should extend this metadata type.
+ */
+export interface PermissionMetadata {
+  permissions?: string[];
+}
+
+/**
+ * Middleware that automatically enforces permissions based on procedure metadata.
+ * This reads the `permissions` field from the procedure's metadata and validates
+ * the user has at least one of the required permissions.
+ */
+const autoPermissionMiddleware = os.middleware(
+  async ({ next, context, procedure }) => {
+    // Enforce authentication first
+    if (!context.user) {
+      throw new Error("Unauthorized");
+    }
+
+    // Check if procedure has permission requirements in metadata
+    const meta = procedure["~orpc"]?.meta as PermissionMetadata | undefined;
+    const requiredPermissions = meta?.permissions;
+
+    if (!requiredPermissions || requiredPermissions.length === 0) {
+      // No permissions required, pass through with user context
+      return next({ context: { user: context.user } });
+    }
+
+    // Check user has at least one of the required permissions
+    const userPermissions = context.user.permissions || [];
+    const hasPermission = requiredPermissions.some((p: string) => {
+      return userPermissions.includes("*") || userPermissions.includes(p);
+    });
+
+    if (!hasPermission) {
+      throw new Error(`Forbidden: Missing ${requiredPermissions.join(" or ")}`);
+    }
+
+    // Pass through with user context
+    return next({ context: { user: context.user } });
+  }
+);
+
+/**
+ * Base contract builder with automatic authentication and permission enforcement.
+ *
+ * All plugin contracts should use this builder instead of raw `oc` from @orpc/contract.
+ * This ensures that:
+ * 1. All procedures are authenticated by default
+ * 2. Permission metadata is automatically enforced
+ * 3. Plugins cannot forget to add security middleware
+ *
+ * @example
+ * import { baseContractBuilder } from "@checkmate/backend-api";
+ * import { permissions } from "./permissions";
+ *
+ * const myContract = {
+ *   getItems: baseContractBuilder
+ *     .meta({ permissions: [permissions.myPluginRead.id] })
+ *     .output(z.array(ItemSchema)),
+ * };
+ */
+export const baseContractBuilder = os.use(autoPermissionMiddleware).meta({});
+
+/**
  * Service interface for the RPC registry.
  */
 export interface RpcService {
