@@ -18,12 +18,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  useToast,
 } from "@checkmate/ui";
 import { AlertTriangle, Save } from "lucide-react";
 
 const QueueConfigPageContent = () => {
   const api = useApi(queueApiRef);
   const permissionApi = useApi(permissionApiRef);
+  const toast = useToast();
   const { allowed: canRead, loading: permissionLoading } =
     permissionApi.useResourcePermission("queue", "read");
   const { allowed: canUpdate } = permissionApi.useManagePermission("queue");
@@ -32,7 +34,6 @@ const QueueConfigPageContent = () => {
   const [selectedPluginId, setSelectedPluginId] = useState<string>("");
   const [config, setConfig] = useState<Record<string, unknown>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,14 +51,12 @@ const QueueConfigPageContent = () => {
   const handleSave = async () => {
     if (!selectedPluginId) return;
     setIsSaving(true);
-    setSaveSuccess(false);
     try {
       await api.updateConfiguration({
         pluginId: selectedPluginId,
         config,
       });
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      toast.success("Configuration saved successfully!");
     } finally {
       setIsSaving(false);
     }
@@ -94,14 +93,6 @@ const QueueConfigPageContent = () => {
                   using a persistent queue implementation.
                 </AlertDescription>
               </div>
-            </Alert>
-          )}
-
-          {saveSuccess && (
-            <Alert variant="success">
-              <AlertDescription>
-                Configuration saved successfully!
-              </AlertDescription>
             </Alert>
           )}
 
