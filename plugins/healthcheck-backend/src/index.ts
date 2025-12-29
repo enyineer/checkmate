@@ -3,7 +3,7 @@ import * as schema from "./schema";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { permissionList } from "@checkmate/healthcheck-common";
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
-import { router } from "./router";
+import { createHealthCheckRouter } from "./router";
 
 export default createBackendPlugin({
   pluginId: "healthcheck-backend",
@@ -11,20 +11,14 @@ export default createBackendPlugin({
     env.registerPermissions(permissionList);
 
     env.registerInit({
+      schema,
       deps: {
         logger: coreServices.logger,
-        database: coreServices.database,
         healthCheckRegistry: coreServices.healthCheckRegistry,
-        router: coreServices.rpc,
+        rpc: coreServices.rpc,
         fetch: coreServices.fetch,
       },
-      init: async ({
-        logger,
-        database,
-        healthCheckRegistry,
-        router: rpc,
-        fetch,
-      }) => {
+      init: async ({ logger, database, healthCheckRegistry, rpc, fetch }) => {
         logger.info("🏥 Initializing Health Check Backend...");
 
         const scheduler = new Scheduler(
@@ -36,7 +30,12 @@ export default createBackendPlugin({
 
         scheduler.start();
 
-        rpc.registerRouter("healthcheck-backend", router);
+        const healthCheckRouter = createHealthCheckRouter(
+          database as NodePgDatabase<typeof schema>
+        );
+        rpc.registerRouter("healthcheck-backend", healthCheckRouter);
+
+        logger.info("✅ Health Check Backend initialized.");
       },
     });
   },

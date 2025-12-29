@@ -19,115 +19,103 @@ const healthCheckManage = permissionMiddleware(
   permissions.healthCheckManage.id
 );
 
-export const router = os.router({
-  getStrategies: authedProcedure
-    .use(healthCheckRead)
-    .handler(async ({ context }) => {
-      return context.healthCheckRegistry.getStrategies().map((s) => ({
-        id: s.id,
-        displayName: s.displayName,
-        description: s.description,
-        configSchema: zod.toJSONSchema(s.configSchema),
-      }));
-    }),
+export const createHealthCheckRouter = (
+  database: NodePgDatabase<typeof schema>
+) => {
+  return os.router({
+    getStrategies: authedProcedure
+      .use(healthCheckRead)
+      .handler(async ({ context }) => {
+        return context.healthCheckRegistry.getStrategies().map((s) => ({
+          id: s.id,
+          displayName: s.displayName,
+          description: s.description,
+          configSchema: zod.toJSONSchema(s.configSchema),
+        }));
+      }),
 
-  getConfigurations: authedProcedure
-    .use(healthCheckRead)
-    .handler(async ({ context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      return service.getConfigurations();
-    }),
+    getConfigurations: authedProcedure
+      .use(healthCheckRead)
+      .handler(async () => {
+        const service = new HealthCheckService(database);
+        return service.getConfigurations();
+      }),
 
-  createConfiguration: authedProcedure
-    .use(healthCheckManage)
-    .input(CreateHealthCheckConfigurationSchema)
-    .handler(async ({ input, context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      return service.createConfiguration(input);
-    }),
+    createConfiguration: authedProcedure
+      .use(healthCheckManage)
+      .input(CreateHealthCheckConfigurationSchema)
+      .handler(async ({ input }) => {
+        const service = new HealthCheckService(database);
+        return service.createConfiguration(input);
+      }),
 
-  updateConfiguration: authedProcedure
-    .use(healthCheckManage)
-    .input(
-      zod.object({
-        id: zod.string(),
-        body: UpdateHealthCheckConfigurationSchema,
-      })
-    )
-    .handler(async ({ input, context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      const config = await service.updateConfiguration(input.id, input.body);
-      if (!config) throw new Error("Not found");
-      return config;
-    }),
+    updateConfiguration: authedProcedure
+      .use(healthCheckManage)
+      .input(
+        zod.object({
+          id: zod.string(),
+          body: UpdateHealthCheckConfigurationSchema,
+        })
+      )
+      .handler(async ({ input }) => {
+        const service = new HealthCheckService(database);
+        const config = await service.updateConfiguration(input.id, input.body);
+        if (!config) throw new Error("Not found");
+        return config;
+      }),
 
-  deleteConfiguration: authedProcedure
-    .use(healthCheckManage)
-    .input(zod.string())
-    .handler(async ({ input, context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      await service.deleteConfiguration(input);
-    }),
+    deleteConfiguration: authedProcedure
+      .use(healthCheckManage)
+      .input(zod.string())
+      .handler(async ({ input }) => {
+        const service = new HealthCheckService(database);
+        await service.deleteConfiguration(input);
+      }),
 
-  getSystemConfigurations: authedProcedure
-    .use(healthCheckRead)
-    .input(zod.string())
-    .handler(async ({ input, context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      return service.getSystemConfigurations(input);
-    }),
+    getSystemConfigurations: authedProcedure
+      .use(healthCheckRead)
+      .input(zod.string())
+      .handler(async ({ input }) => {
+        const service = new HealthCheckService(database);
+        return service.getSystemConfigurations(input);
+      }),
 
-  associateSystem: authedProcedure
-    .use(healthCheckManage)
-    .input(
-      zod.object({ systemId: zod.string(), body: AssociateHealthCheckSchema })
-    )
-    .handler(async ({ input, context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      await service.associateSystem(
-        input.systemId,
-        input.body.configurationId,
-        input.body.enabled
-      );
-    }),
+    associateSystem: authedProcedure
+      .use(healthCheckManage)
+      .input(
+        zod.object({ systemId: zod.string(), body: AssociateHealthCheckSchema })
+      )
+      .handler(async ({ input }) => {
+        const service = new HealthCheckService(database);
+        await service.associateSystem(
+          input.systemId,
+          input.body.configurationId,
+          input.body.enabled
+        );
+      }),
 
-  disassociateSystem: authedProcedure
-    .use(healthCheckManage)
-    .input(zod.object({ systemId: zod.string(), configId: zod.string() }))
-    .handler(async ({ input, context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      await service.disassociateSystem(input.systemId, input.configId);
-    }),
+    disassociateSystem: authedProcedure
+      .use(healthCheckManage)
+      .input(zod.object({ systemId: zod.string(), configId: zod.string() }))
+      .handler(async ({ input }) => {
+        const service = new HealthCheckService(database);
+        await service.disassociateSystem(input.systemId, input.configId);
+      }),
 
-  getHistory: authedProcedure
-    .use(healthCheckRead)
-    .input(
-      zod.object({
-        systemId: zod.string().optional(),
-        configurationId: zod.string().optional(),
-        limit: zod.number().optional(),
-      })
-    )
-    .handler(async ({ input, context }) => {
-      const service = new HealthCheckService(
-        context.db as unknown as NodePgDatabase<typeof schema>
-      );
-      return service.getHistory(input);
-    }),
-});
+    getHistory: authedProcedure
+      .use(healthCheckRead)
+      .input(
+        zod.object({
+          systemId: zod.string().optional(),
+          configurationId: zod.string().optional(),
+          limit: zod.number().optional(),
+        })
+      )
+      .handler(async ({ input }) => {
+        const service = new HealthCheckService(database);
+        return service.getHistory(input);
+      }),
+  });
+};
 
-export type HealthCheckRouter = typeof router;
+export type HealthCheckRouter = ReturnType<typeof createHealthCheckRouter>;

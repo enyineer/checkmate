@@ -1,5 +1,5 @@
 import { describe, it, expect, mock } from "bun:test";
-import { router } from "./router";
+import { createHealthCheckRouter } from "./router";
 import { createMockRpcContext } from "@checkmate/backend-api";
 import { call } from "@orpc/server";
 import { z } from "zod";
@@ -10,6 +10,22 @@ describe("HealthCheck Router", () => {
     permissions: ["*"],
     roles: ["admin"],
   };
+
+  // Create a mock database with the methods used by HealthCheckService
+  const mockDb = {
+    select: mock().mockReturnValue({
+      from: mock().mockReturnValue({
+        where: mock().mockResolvedValue([]),
+      }),
+    }),
+    insert: mock().mockReturnValue({
+      values: mock().mockReturnValue({
+        returning: mock().mockResolvedValue([]),
+      }),
+    }),
+  } as any;
+
+  const router = createHealthCheckRouter(mockDb);
 
   it("getStrategies returns strategies from registry", async () => {
     const context = createMockRpcContext({
@@ -34,12 +50,6 @@ describe("HealthCheck Router", () => {
   it("getConfigurations calls service", async () => {
     const context = createMockRpcContext({
       user: mockUser,
-    });
-
-    // Wire up sufficient database mock to not crash
-    const mockQuery = mock().mockResolvedValue([]);
-    (context.db.select as any) = mock().mockReturnValue({
-      from: mockQuery,
     });
 
     const result = await call(router.getConfigurations, undefined, { context });
