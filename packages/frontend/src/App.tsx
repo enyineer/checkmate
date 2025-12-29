@@ -14,7 +14,7 @@ import {
 import { ConsoleLoggerApi } from "./apis/logger-api";
 import { CoreFetchApi } from "./apis/fetch-api";
 import { CoreRpcApi } from "./apis/rpc-api";
-import { PermissionDenied, LoadingSpinner } from "@checkmate/ui";
+import { PermissionDenied, LoadingSpinner, ToastProvider } from "@checkmate/ui";
 import {
   SLOT_DASHBOARD,
   SLOT_NAVBAR,
@@ -83,45 +83,47 @@ function App() {
 
   return (
     <ApiProvider registry={apiRegistry}>
-      <BrowserRouter>
-        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-          <header className="p-4 bg-white shadow-sm border-b border-gray-200 flex justify-between items-center z-50 relative">
-            <div className="flex items-center gap-8">
-              <h1 className="text-xl font-bold text-indigo-600">Checkmate</h1>
-              <nav className="hidden md:flex gap-1">
-                <ExtensionSlot id={SLOT_NAVBAR_MAIN} />
-              </nav>
-            </div>
-            <div className="flex gap-2">
-              <ExtensionSlot id={SLOT_NAVBAR} />
-            </div>
-          </header>
-          <main className="p-8 max-w-7xl mx-auto">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <div className="space-y-6">
-                    <ExtensionSlot id={SLOT_DASHBOARD} />
-                  </div>
-                }
-              />
-              {/* Plugin Routes */}
-              {pluginRegistry.getAllRoutes().map((route) => (
+      <ToastProvider>
+        <BrowserRouter>
+          <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+            <header className="p-4 bg-white shadow-sm border-b border-gray-200 flex justify-between items-center z-50 relative">
+              <div className="flex items-center gap-8">
+                <h1 className="text-xl font-bold text-indigo-600">Checkmate</h1>
+                <nav className="hidden md:flex gap-1">
+                  <ExtensionSlot id={SLOT_NAVBAR_MAIN} />
+                </nav>
+              </div>
+              <div className="flex gap-2">
+                <ExtensionSlot id={SLOT_NAVBAR} />
+              </div>
+            </header>
+            <main className="p-8 max-w-7xl mx-auto">
+              <Routes>
                 <Route
-                  key={route.path}
-                  path={route.path}
+                  path="/"
                   element={
-                    <RouteGuard permission={route.permission}>
-                      {route.element}
-                    </RouteGuard>
+                    <div className="space-y-6">
+                      <ExtensionSlot id={SLOT_DASHBOARD} />
+                    </div>
                   }
                 />
-              ))}
-            </Routes>
-          </main>
-        </div>
-      </BrowserRouter>
+                {/* Plugin Routes */}
+                {pluginRegistry.getAllRoutes().map((route) => (
+                  <Route
+                    key={route.path}
+                    path={route.path}
+                    element={
+                      <RouteGuard permission={route.permission}>
+                        {route.element}
+                      </RouteGuard>
+                    }
+                  />
+                ))}
+              </Routes>
+            </main>
+          </div>
+        </BrowserRouter>
+      </ToastProvider>
     </ApiProvider>
   );
 }

@@ -18,6 +18,7 @@ import {
   ConfirmationModal,
   Alert,
   DynamicForm,
+  useToast,
 } from "@checkmate/ui";
 import { authApiRef, AuthUser, Role, AuthStrategy } from "../api";
 import { permissions as authPermissions } from "@checkmate/auth-common";
@@ -34,6 +35,7 @@ import {
 export const AuthSettingsPage: React.FC = () => {
   const authApi = useApi(authApiRef);
   const permissionApi = useApi(permissionApiRef);
+  const toast = useToast();
 
   const session = authApi.useSession();
 
@@ -145,7 +147,7 @@ export const AuthSettingsPage: React.FC = () => {
       const config = strategyConfigs[strategyId];
       await authApi.updateStrategy(strategyId, { config });
       setError(undefined);
-      alert(
+      toast.success(
         "Configuration saved successfully! Click 'Reload Authentication' to apply changes."
       );
     } catch {
@@ -158,7 +160,7 @@ export const AuthSettingsPage: React.FC = () => {
     try {
       await authApi.reloadAuth();
       setError(undefined);
-      alert("Authentication reloaded successfully!");
+      toast.success("Authentication reloaded successfully!");
     } catch {
       setError("Failed to reload authentication");
     } finally {
