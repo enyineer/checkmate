@@ -12,17 +12,22 @@ describe("HealthCheck Router", () => {
   };
 
   // Create a mock database with the methods used by HealthCheckService
+  const createSelectMock = () => {
+    const fromResult = Object.assign(Promise.resolve([]), {
+      where: mock(() => Promise.resolve([])),
+    });
+    return {
+      from: mock(() => fromResult),
+    };
+  };
+
   const mockDb = {
-    select: mock().mockReturnValue({
-      from: mock().mockReturnValue({
-        where: mock().mockResolvedValue([]),
-      }),
-    }),
-    insert: mock().mockReturnValue({
-      values: mock().mockReturnValue({
-        returning: mock().mockResolvedValue([]),
-      }),
-    }),
+    select: mock(() => createSelectMock()),
+    insert: mock(() => ({
+      values: mock(() => ({
+        returning: mock(() => Promise.resolve([])),
+      })),
+    })),
   } as any;
 
   const router = createHealthCheckRouter(mockDb);

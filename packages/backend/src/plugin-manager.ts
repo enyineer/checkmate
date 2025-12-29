@@ -382,7 +382,7 @@ export class PluginManager {
       .from(plugins)
       .where(and(eq(plugins.enabled, true), eq(plugins.type, "backend")));
 
-    if (allPlugins.length === 0) {
+    if (allPlugins.length === 0 && manualPlugins.length === 0) {
       rootLogger.info("ℹ️  No enabled plugins found.");
       return;
     }

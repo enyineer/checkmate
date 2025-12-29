@@ -8,16 +8,36 @@ import {
 import { z } from "zod";
 
 // Mock DB and other globals to avoid side effects
-mock.module("./db", () => ({
-  adminPool: { query: mock(() => Promise.resolve()) },
-  db: {
-    select: mock(() => ({
-      from: mock(() => ({
-        where: mock(() => Promise.resolve([])),
+mock.module("./db", () => {
+  const createSelectChain = () => {
+    const whereResult = Object.assign(Promise.resolve([]), {
+      limit: mock(() => Promise.resolve([])),
+    });
+    const fromResult = Object.assign(Promise.resolve([]), {
+      where: mock(() => whereResult),
+    });
+    return {
+      from: mock(() => fromResult),
+    };
+  };
+
+  return {
+    adminPool: { query: mock(() => Promise.resolve()) },
+    db: {
+      select: mock(() => createSelectChain()),
+      insert: mock(() => ({
+        values: mock(() => ({
+          onConflictDoUpdate: mock(() => Promise.resolve()),
+        })),
       })),
-    })),
-  },
-}));
+      update: mock(() => ({
+        set: mock(() => ({
+          where: mock(() => Promise.resolve()),
+        })),
+      })),
+    },
+  };
+});
 
 // Note: FS mocking is no longer needed with manual injection support
 
