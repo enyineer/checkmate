@@ -674,7 +674,14 @@ export class PluginManager {
       }
 
       // 2. Try native handlers
-      for (const [path, handler] of this.pluginHttpHandlers) {
+      // Sort by path length (descending) to ensure more specific paths are tried first
+      const sortedHandlers = [...this.pluginHttpHandlers.entries()].toSorted(
+        function (a, b) {
+          return b[0].length - a[0].length;
+        }
+      );
+
+      for (const [path, handler] of sortedHandlers) {
         if (pathname.startsWith(path)) {
           return handler(c.req.raw);
         }

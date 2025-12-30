@@ -17,6 +17,7 @@ const ldapConfigV1 = z.object({
   url: z
     .string()
     .url()
+    .default("ldaps://ldap.example.com:636")
     .describe("LDAP server URL (e.g., ldaps://ldap.example.com:636)"),
   bindDN: z
     .string()
@@ -27,6 +28,7 @@ const ldapConfigV1 = z.object({
   bindPassword: secret().optional().describe("Service account password"),
   baseDN: z
     .string()
+    .default("ou=users,dc=example,dc=com")
     .describe("Base DN for user searches (e.g., ou=users,dc=example,dc=com)"),
   searchFilter: z
     .string()
@@ -57,6 +59,10 @@ const ldapConfigV1 = z.object({
         .describe("LDAP attribute for last name")
         .optional(),
     })
+    .default({
+      email: "mail",
+      name: "displayName",
+    })
     .describe("Map LDAP attributes to user fields"),
   tlsOptions: z
     .object({
@@ -66,6 +72,7 @@ const ldapConfigV1 = z.object({
         .describe("Reject unauthorized SSL certificates"),
       ca: secret().optional().describe("Custom CA certificate (PEM format)"),
     })
+    .default({ rejectUnauthorized: true })
     .describe("TLS/SSL configuration"),
   timeout: z
     .number()
