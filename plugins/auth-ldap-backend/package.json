@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@checkmate/tsconfig": "workspace:*",
+    "@checkmate/test-utils-backend": "workspace:*",
     "typescript": "^5.7.2"
   },
   "plugin": {

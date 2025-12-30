@@ -301,6 +301,7 @@
         "zod": "^4.0.0",
       },
       "devDependencies": {
+        "@checkmate/test-utils-backend": "workspace:*",
         "@checkmate/tsconfig": "workspace:*",
         "typescript": "^5.7.2",
       },
