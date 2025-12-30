@@ -20,11 +20,19 @@ export const secret = () => {
 export type Secret = z.infer<ReturnType<typeof secret>>;
 
 /**
- * Helper to check if a Zod schema is a secret type.
+ * Runtime check for secret-branded schemas.
+ * Automatically unwraps ZodOptional to check the inner schema.
  */
-export const isSecretSchema = (schema: z.ZodTypeAny): boolean => {
-  return secretSchemas.has(schema);
-};
+export function isSecretSchema(schema: z.ZodTypeAny): boolean {
+  let unwrappedSchema = schema;
+
+  // Unwrap ZodOptional to check the inner schema
+  if (unwrappedSchema instanceof z.ZodOptional) {
+    unwrappedSchema = unwrappedSchema.unwrap() as z.ZodTypeAny;
+  }
+
+  return secretSchemas.has(unwrappedSchema);
+}
 
 /**
  * Migration chain for auth strategy configurations.

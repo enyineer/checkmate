@@ -20,14 +20,7 @@ function addSecretMetadata(
   if (!properties) return;
 
   for (const [key, fieldSchema] of Object.entries(objectSchema.shape)) {
-    let unwrappedSchema = fieldSchema as z.ZodTypeAny;
-
-    // Unwrap ZodOptional to check the inner schema
-    if (unwrappedSchema instanceof z.ZodOptional) {
-      unwrappedSchema = unwrappedSchema.unwrap() as z.ZodTypeAny;
-    }
-
-    if (isSecretSchema(unwrappedSchema) && properties[key]) {
+    if (isSecretSchema(fieldSchema as z.ZodTypeAny) && properties[key]) {
       properties[key]["x-secret"] = true;
     }
   }
