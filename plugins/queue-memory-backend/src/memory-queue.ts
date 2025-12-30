@@ -179,6 +179,8 @@ export class InMemoryQueue<T> implements Queue<T> {
     await this.semaphore.acquire();
     this.processing++;
 
+    let isRetrying = false;
+
     try {
       await consumer.handler(job);
       this.stats.completed++;
@@ -191,9 +193,20 @@ export class InMemoryQueue<T> implements Queue<T> {
       // Retry logic
       if (job.attempts! < consumer.maxRetries) {
         job.attempts!++;
+        isRetrying = true;
 
         // Remove from processed set to allow retry
         groupState.processedJobIds.delete(job.id);
+
+        // Re-add job to queue for retry (with priority to process soon)
+        const insertIndex = this.jobs.findIndex(
+          (existingJob) => existingJob.priority! < (job.priority ?? 0)
+        );
+        if (insertIndex === -1) {
+          this.jobs.push(job);
+        } else {
+          this.jobs.splice(insertIndex, 0, job);
+        }
 
         // Re-trigger processing with exponential backoff
         const delay = Math.pow(2, job.attempts!) * 1000;
@@ -209,8 +222,8 @@ export class InMemoryQueue<T> implements Queue<T> {
       this.processing--;
       this.semaphore.release();
 
-      // Process next job if available
-      if (this.jobs.length > 0 && !this.stopped) {
+      // Process next job if available (but not if we're retrying - setTimeout will handle it)
+      if (!isRetrying && this.jobs.length > 0 && !this.stopped) {
         void this.processNext();
       }
     }
