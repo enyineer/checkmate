@@ -27,7 +27,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({
         "border-none shadow-sm transition-all duration-200",
         isGradient
           ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md active:scale-[0.98]"
-          : "bg-white hover:border-gray-200",
+          : "bg-card hover:border-border",
         className
       )}
       {...props}
@@ -36,7 +36,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({
         <CardTitle
           className={cn(
             "text-lg font-medium",
-            isGradient ? "opacity-90 text-white" : "text-gray-700"
+            isGradient ? "opacity-90 text-white" : "text-muted-foreground"
           )}
         >
           {title}
@@ -47,13 +47,17 @@ export const StatusCard: React.FC<StatusCardProps> = ({
           <span
             className={cn(
               "text-2xl font-semibold",
-              isGradient ? "text-3xl font-bold" : "text-gray-900"
+              isGradient ? "text-3xl font-bold" : "text-foreground"
             )}
           >
             {value}
           </span>
           {icon && (
-            <div className={cn(isGradient ? "text-white" : "text-gray-400")}>
+            <div
+              className={cn(
+                isGradient ? "text-white" : "text-muted-foreground/60"
+              )}
+            >
               {icon}
             </div>
           )}
@@ -62,7 +66,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({
           <p
             className={cn(
               "mt-1 text-sm",
-              isGradient ? "opacity-80" : "text-gray-500"
+              isGradient ? "opacity-80" : "text-muted-foreground"
             )}
           >
             {description}

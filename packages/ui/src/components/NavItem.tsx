@@ -49,12 +49,12 @@ export const NavItem: React.FC<NavItemProps> = ({
 
   const baseClasses = cn(
     "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer",
-    "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
-    "focus:outline-none focus:ring-2 focus:ring-indigo-500/50",
+    "text-foreground hover:bg-accent hover:text-accent-foreground",
+    "focus:outline-none focus:ring-2 focus:ring-ring/50",
     className
   );
 
-  const activeClasses = "bg-indigo-50 text-indigo-700";
+  const activeClasses = "bg-accent text-accent-foreground";
 
   // Dropdown / Parent Item
   if (children) {
@@ -80,7 +80,7 @@ export const NavItem: React.FC<NavItemProps> = ({
         </button>
 
         {isOpen && (
-          <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-popover ring-1 ring-border z-50 animate-in fade-in zoom-in-95 duration-100">
             <div className="py-1 flex flex-col p-1 gap-1">{children}</div>
           </div>
         )}

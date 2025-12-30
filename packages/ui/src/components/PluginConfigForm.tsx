@@ -69,7 +69,7 @@ export const PluginConfigForm: React.FC<PluginConfigFormProps> = ({
 
       {selectedPlugin && (
         <div className="space-y-4">
-          <div className="pt-4 border-t border-gray-100">
+          <div className="pt-4 border-t border-border">
             <h3 className="text-lg font-semibold">Configuration</h3>
             <p className="text-sm text-muted-foreground">
               Configure the settings for {selectedPlugin.displayName}

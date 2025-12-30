@@ -17,14 +17,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <Card
-      className={cn("border-dashed border-2 bg-gray-50/50", className)}
+      className={cn("border-dashed border-2 bg-muted/30", className)}
       {...props}
     >
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-        {icon && <div className="text-gray-300 mb-4">{icon}</div>}
-        <p className="text-gray-500 font-medium">{title}</p>
+        {icon && <div className="text-muted-foreground/40 mb-4">{icon}</div>}
+        <p className="text-foreground font-medium">{title}</p>
         {description && (
-          <p className="text-sm text-gray-400 mt-1">{description}</p>
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
         )}
       </CardContent>
     </Card>

@@ -106,7 +106,7 @@ const JsonField: React.FC<{
 
   return (
     <div className="space-y-2">
-      <div className="min-h-[100px] w-full rounded-md border border-gray-300 bg-white font-mono text-sm focus-within:ring-2 focus-within:ring-indigo-600 focus-within:border-transparent transition-all overflow-hidden box-border">
+      <div className="min-h-[100px] w-full rounded-md border border-input bg-background font-mono text-sm focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all overflow-hidden box-border">
         <Editor
           id={id}
           value={internalValue}
@@ -125,7 +125,7 @@ const JsonField: React.FC<{
           }}
         />
       </div>
-      {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+      {error && <p className="text-xs text-destructive font-medium">{error}</p>}
     </div>
   );
 };
@@ -231,7 +231,7 @@ const FormField: React.FC<{
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               {showPassword ? (
                 <svg
@@ -354,7 +354,7 @@ const FormField: React.FC<{
   // Object (Nested Form)
   if (propSchema.type === "object" && propSchema.properties) {
     return (
-      <div className="space-y-4 p-4 border rounded-lg bg-gray-50/50">
+      <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
         <p className="text-sm font-semibold">{label}</p>
         {Object.entries(propSchema.properties).map(([key, subSchema]) => (
           <FormField
@@ -397,7 +397,7 @@ const FormField: React.FC<{
             onClick={() =>
               onChange([...(items as Record<string, unknown>[]), {}])
             }
-            className="h-8 gap-1 transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200"
+            className="h-8 gap-1 transition-all hover:bg-accent hover:text-accent-foreground"
           >
             <Plus className="h-4 w-4" />
             Add Item
@@ -411,7 +411,7 @@ const FormField: React.FC<{
         <div className="space-y-4">
           {items.map((item: unknown, index: number) => (
             <div key={index} className="relative group">
-              <div className="p-4 border rounded-lg bg-white shadow-sm border-gray-200 transition-all hover:border-gray-300">
+              <div className="p-4 border rounded-lg bg-background shadow-sm border-border transition-all hover:border-border/80">
                 <Button
                   type="button"
                   variant="ghost"
@@ -421,7 +421,7 @@ const FormField: React.FC<{
                     next.splice(index, 1);
                     onChange(next);
                   }}
-                  className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-white border shadow-sm text-red-500 hover:text-red-600 hover:bg-red-50"
+                  className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-background border shadow-sm text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>

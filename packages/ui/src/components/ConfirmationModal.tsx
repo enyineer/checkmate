@@ -64,7 +64,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200"
+        className="bg-background rounded-lg shadow-xl max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
@@ -79,7 +79,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <div className="flex-1">
               <h3
                 id="modal-title"
-                className="text-lg font-semibold text-gray-900"
+                className="text-lg font-semibold text-foreground"
               >
                 {title}
               </h3>
@@ -87,7 +87,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
             disabled={isLoading}
           >
             <X className="w-5 h-5" />
@@ -96,13 +96,16 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
         {/* Body */}
         <div className="px-6 pb-6">
-          <p id="modal-description" className="text-sm text-gray-600 pl-14">
+          <p
+            id="modal-description"
+            className="text-sm text-muted-foreground pl-14"
+          >
             {message}
           </p>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-muted/30 rounded-b-lg">
           <Button
             variant="ghost"
             onClick={onClose}

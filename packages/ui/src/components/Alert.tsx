@@ -4,11 +4,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 const alertVariants = cva("relative w-full rounded-md border p-4", {
   variants: {
     variant: {
-      default: "bg-gray-50 border-gray-200 text-gray-900",
-      success: "bg-green-50 border-green-200 text-green-900",
-      warning: "bg-yellow-50 border-yellow-200 text-yellow-900",
-      error: "bg-red-50 border-red-200 text-red-900",
-      info: "bg-blue-50 border-blue-200 text-blue-900",
+      default: "bg-muted/50 border-border text-foreground",
+      success:
+        "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900 text-green-900 dark:text-green-100",
+      warning:
+        "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900 text-yellow-900 dark:text-yellow-100",
+      error:
+        "bg-destructive/10 border-destructive/30 text-destructive-foreground",
+      info: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-100",
     },
   },
   defaultVariants: {
