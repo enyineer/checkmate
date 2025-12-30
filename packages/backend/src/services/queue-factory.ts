@@ -12,6 +12,7 @@ const queueConfigSchema = z.object({
 export class QueueFactoryImpl implements QueueFactory {
   private activePluginId: string = "memory"; // Default
   private activeConfig: unknown = { concurrency: 10, maxQueueSize: 10_000 };
+  private createdQueues: Map<string, Queue<unknown>> = new Map();
 
   constructor(
     private registry: QueuePluginRegistryImpl,
@@ -49,7 +50,13 @@ export class QueueFactoryImpl implements QueueFactory {
     if (!plugin) {
       throw new Error(`Queue plugin '${this.activePluginId}' not found`);
     }
-    return plugin.createQueue(name, this.activeConfig);
+
+    const queue = plugin.createQueue<T>(name, this.activeConfig);
+
+    // Track the queue for graceful shutdown
+    this.createdQueues.set(name, queue);
+
+    return queue;
   }
 
   getActivePlugin(): string {
@@ -65,6 +72,25 @@ export class QueueFactoryImpl implements QueueFactory {
 
     // Validate config against schema
     plugin.configSchema.parse(config);
+
+    // Stop all active queues gracefully before switching
+    this.logger.info(
+      "🛑 Stopping active queues before switching configuration..."
+    );
+    const stopPromises: Promise<void>[] = [];
+    for (const [name, queue] of this.createdQueues.entries()) {
+      this.logger.debug(`Stopping queue: ${name}`);
+      stopPromises.push(
+        queue.stop().catch((error) => {
+          this.logger.error(`Failed to stop queue ${name}`, error);
+        })
+      );
+    }
+    await Promise.all(stopPromises);
+
+    // Clear the queue tracking
+    this.createdQueues.clear();
+    this.logger.info("✅ All active queues stopped successfully");
 
     // Save to ConfigService
     await this.configService.set("active", queueConfigSchema, 1, {
