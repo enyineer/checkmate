@@ -28,14 +28,15 @@
     "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {
+    "@checkmate/scripts": "workspace:*",
+    "@checkmate/tsconfig": "workspace:*",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.18",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
-    "vite": "^5.1.6",
-    "@checkmate/tsconfig": "workspace:*",
-    "@checkmate/scripts": "workspace:*"
+    "tailwindcss-animate": "^1.0.7",
+    "vite": "^5.1.6"
   }
 }

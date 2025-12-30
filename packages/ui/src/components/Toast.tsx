@@ -4,16 +4,18 @@ import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
 import { cn } from "../utils";
 
 const toastVariants = cva(
-  "relative flex items-start gap-3 w-full max-w-md rounded-lg border p-4 shadow-lg transition-all",
+  "relative flex items-start gap-3 w-full max-w-md rounded-lg border-2 p-4 shadow-xl transition-all backdrop-blur-sm",
   {
     variants: {
       variant: {
-        default: "bg-card border-border text-card-foreground",
-        success: "bg-success/10 border-success/30 text-success-foreground",
+        default: "bg-card border-border text-card-foreground shadow-card/50",
+        success:
+          "bg-success border-success text-success-foreground shadow-success/30",
         error:
-          "bg-destructive/10 border-destructive/30 text-destructive-foreground",
-        warning: "bg-warning/10 border-warning/30 text-warning-foreground",
-        info: "bg-info/10 border-info/30 text-info-foreground",
+          "bg-destructive border-destructive text-destructive-foreground shadow-destructive/30",
+        warning:
+          "bg-warning border-warning text-warning-foreground shadow-warning/30",
+        info: "bg-info border-info text-info-foreground shadow-info/30",
       },
     },
     defaultVariants: {
@@ -31,11 +33,11 @@ const iconMap = {
 };
 
 const iconColorMap = {
-  default: "text-foreground",
-  success: "text-success",
-  error: "text-destructive",
-  warning: "text-warning",
-  info: "text-info",
+  default: "text-card-foreground",
+  success: "text-success-foreground",
+  error: "text-destructive-foreground",
+  warning: "text-warning-foreground",
+  info: "text-info-foreground",
 };
 
 export interface ToastProps extends VariantProps<typeof toastVariants> {
@@ -69,7 +71,7 @@ export const Toast: React.FC<ToastProps> = ({
     <div
       className={cn(
         toastVariants({ variant }),
-        "animate-in slide-in-from-right fade-in duration-300"
+        "animate-in slide-in-from-right fade-in zoom-in-95 duration-300"
       )}
       role="alert"
       aria-live="polite"
@@ -78,7 +80,7 @@ export const Toast: React.FC<ToastProps> = ({
       <p className="flex-1 text-sm font-medium">{message}</p>
       <button
         onClick={() => onDismiss(id)}
-        className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+        className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
         aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" />
