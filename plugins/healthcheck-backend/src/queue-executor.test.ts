@@ -110,25 +110,31 @@ describe("Queue-Based Health Check Executor", () => {
       const mockDb = createMockDb();
 
       // Configure the mock database to return some enabled checks
-      // We need to override the full chain: select().from().innerJoin().where()
       const mockData = [
         {
           systemId: "system-1",
           configId: "config-1",
           interval: 30,
+          lastRun: null,
         },
         {
           systemId: "system-2",
           configId: "config-2",
           interval: 60,
+          lastRun: null,
         },
       ];
 
-      // Override select to return a chain that resolves to mockData
+      // Override select to return a chain that handles subquery with groupBy
       (mockDb.select as any) = mock(() => ({
         from: mock(() => ({
+          groupBy: mock(() => ({
+            as: mock(() => ({})), // Returns subquery alias
+          })),
           innerJoin: mock(() => ({
-            where: mock(() => Promise.resolve(mockData)),
+            leftJoin: mock(() => ({
+              where: mock(() => Promise.resolve(mockData)),
+            })),
           })),
         })),
       }));

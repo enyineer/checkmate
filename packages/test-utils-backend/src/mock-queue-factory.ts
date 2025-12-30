@@ -56,6 +56,15 @@ export function createMockQueueFactory(): QueueFactory {
             maxRetries: options.maxRetries ?? 3,
           });
         },
+        scheduleRecurring: async (data: unknown, options) => {
+          // Simple mock - just enqueue once for testing
+          // Real implementation would handle recurring execution
+          jobs.push(data);
+          return options.jobId;
+        },
+        cancelRecurring: async (_jobId: string) => {
+          // Mock implementation - no-op
+        },
         stop: async () => {
           consumers.clear();
         },

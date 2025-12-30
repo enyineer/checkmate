@@ -30,10 +30,21 @@ export function createMockDb() {
     });
     const innerJoinResult = Object.assign(Promise.resolve([]), {
       where: mock(() => whereResult),
+      leftJoin: mock(function () {
+        return Object.assign(Promise.resolve([]), {
+          where: mock(() => whereResult),
+        });
+      }),
     });
     const fromResult = Object.assign(Promise.resolve([]), {
       where: mock(() => whereResult),
       innerJoin: mock(() => innerJoinResult),
+      leftJoin: mock(() => innerJoinResult),
+      groupBy: mock(function () {
+        return Object.assign(Promise.resolve([]), {
+          as: mock(() => ({})), // For subquery aliasing
+        });
+      }),
     });
     return {
       from: mock(() => fromResult),

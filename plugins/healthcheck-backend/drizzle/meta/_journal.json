@@ -8,6 +8,20 @@
       "when": 1766244866579,
       "tag": "0000_left_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767099451728,
+      "tag": "0001_happy_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767101276963,
+      "tag": "0002_real_nocturne",
+      "breakpoints": true
     }
   ]
 }

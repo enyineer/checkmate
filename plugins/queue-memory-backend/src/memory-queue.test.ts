@@ -345,7 +345,7 @@ describe("InMemoryQueue Consumer Groups", () => {
       );
 
       // Enqueue with 2-second delay
-      await queue.enqueue("delayed-job", { delaySeconds: 2 });
+      await queue.enqueue("delayed-job", { startDelay: 2 });
 
       // Check immediately - should not be processed yet
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -372,7 +372,7 @@ describe("InMemoryQueue Consumer Groups", () => {
       );
 
       // Enqueue delayed job first
-      await queue.enqueue("delayed", { delaySeconds: 1 });
+      await queue.enqueue("delayed", { startDelay: 1 });
 
       // Enqueue immediate job
       await queue.enqueue("immediate");
@@ -398,15 +398,15 @@ describe("InMemoryQueue Consumer Groups", () => {
 
       // Enqueue multiple delayed jobs with same delay but different priorities
       await queue.enqueue("low-priority", {
-        delaySeconds: 1,
+        startDelay: 1,
         priority: 1,
       });
       await queue.enqueue("high-priority", {
-        delaySeconds: 1,
+        startDelay: 1,
         priority: 10,
       });
       await queue.enqueue("medium-priority", {
-        delaySeconds: 1,
+        startDelay: 1,
         priority: 5,
       });
 

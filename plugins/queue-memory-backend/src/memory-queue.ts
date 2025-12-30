@@ -60,11 +60,23 @@ interface ConsumerGroupState<T> {
 }
 
 /**
+ * Recurring job metadata
+ */
+interface RecurringJobMetadata<T> {
+  jobId: string;
+  intervalSeconds: number;
+  payload: T;
+  priority: number;
+  enabled: boolean; // For cancellation
+}
+
+/**
  * In-memory queue implementation with consumer group support
  */
 export class InMemoryQueue<T> implements Queue<T> {
   private jobs: InternalQueueJob<T>[] = [];
   private consumerGroups = new Map<string, ConsumerGroupState<T>>();
+  private recurringJobs = new Map<string, RecurringJobMetadata<T>>();
   private semaphore: Semaphore;
   private stopped = false;
   private processing = 0;
@@ -79,7 +91,7 @@ export class InMemoryQueue<T> implements Queue<T> {
 
   async enqueue(
     data: T,
-    options?: { priority?: number; delaySeconds?: number; jobId?: string }
+    options?: { priority?: number; startDelay?: number; jobId?: string }
   ): Promise<string> {
     if (this.jobs.length >= this.config.maxQueueSize) {
       throw new Error(
@@ -88,8 +100,8 @@ export class InMemoryQueue<T> implements Queue<T> {
     }
 
     const now = new Date();
-    const availableAt = options?.delaySeconds
-      ? new Date(now.getTime() + options.delaySeconds * 1000)
+    const availableAt = options?.startDelay
+      ? new Date(now.getTime() + options.startDelay * 1000)
       : now;
 
     // Use custom jobId if provided, otherwise generate one
@@ -123,13 +135,13 @@ export class InMemoryQueue<T> implements Queue<T> {
 
     // Trigger processing for all consumer groups (or schedule for later)
     if (!this.stopped) {
-      if (options?.delaySeconds) {
+      if (options?.startDelay) {
         // Schedule processing when the job becomes available
         setTimeout(() => {
           if (!this.stopped) {
             void this.processNext();
           }
-        }, options.delaySeconds * 1000);
+        }, options.startDelay * 1000);
       } else {
         void this.processNext();
       }
@@ -165,6 +177,73 @@ export class InMemoryQueue<T> implements Queue<T> {
     // Start processing existing jobs
     if (!this.stopped) {
       void this.processNext();
+    }
+  }
+
+  async scheduleRecurring(
+    data: T,
+    options: {
+      jobId: string;
+      intervalSeconds: number;
+      startDelay?: number;
+      priority?: number;
+    }
+  ): Promise<string> {
+    const { jobId, intervalSeconds, startDelay = 0, priority = 0 } = options;
+
+    // Check if this is an update to an existing recurring job
+    const existingMetadata = this.recurringJobs.get(jobId);
+    if (existingMetadata) {
+      // UPDATE CASE: Cancel pending executions
+      // Find and remove any pending jobs for this recurring job
+      this.jobs = this.jobs.filter((job) => {
+        // Check if this job belongs to the recurring job being updated
+        if (job.id.startsWith(jobId + ":")) {
+          // Remove from processed sets to prevent orphaned references
+          for (const group of this.consumerGroups.values()) {
+            group.processedJobIds.delete(job.id);
+          }
+          return false; // Remove this job
+        }
+        return true; // Keep other jobs
+      });
+    }
+
+    // Store or update recurring job metadata
+    this.recurringJobs.set(jobId, {
+      jobId,
+      intervalSeconds,
+      payload: data,
+      priority,
+      enabled: true,
+    });
+
+    // Schedule first execution with new configuration
+    await this.enqueue(data, {
+      jobId: `${jobId}:${Date.now()}`, // Unique ID for this execution
+      startDelay,
+      priority,
+    });
+
+    return jobId;
+  }
+
+  async cancelRecurring(jobId: string): Promise<void> {
+    const metadata = this.recurringJobs.get(jobId);
+    if (metadata) {
+      metadata.enabled = false; // Mark as disabled to stop future rescheduling
+
+      // Also cancel any pending jobs
+      this.jobs = this.jobs.filter((job) => {
+        if (job.id.startsWith(jobId + ":")) {
+          // Remove from processed sets
+          for (const group of this.consumerGroups.values()) {
+            group.processedJobIds.delete(job.id);
+          }
+          return false;
+        }
+        return true;
+      });
     }
   }
 
@@ -222,6 +301,20 @@ export class InMemoryQueue<T> implements Queue<T> {
     try {
       await consumer.handler(job);
       this.stats.completed++;
+
+      // After successful execution, check for recurring job and reschedule
+      const recurringJobId = this.findRecurringJobId(job.id);
+      if (recurringJobId) {
+        const metadata = this.recurringJobs.get(recurringJobId);
+        if (metadata?.enabled) {
+          // Reschedule for next interval
+          void this.enqueue(metadata.payload, {
+            jobId: `${recurringJobId}:${Date.now()}`,
+            startDelay: metadata.intervalSeconds,
+            priority: metadata.priority,
+          });
+        }
+      }
     } catch (error) {
       console.error(
         `Job ${job.id} failed in group ${groupId} (attempt ${job.attempts}):`,
@@ -265,6 +358,20 @@ export class InMemoryQueue<T> implements Queue<T> {
         void this.processNext();
       }
     }
+  }
+
+  /**
+   * Extract the recurring job ID from an execution job ID
+   * Execution jobs have format: "recurringJobId:timestamp"
+   */
+  private findRecurringJobId(executionJobId: string): string | undefined {
+    // Check if this execution job belongs to any recurring job
+    for (const [recurringId] of this.recurringJobs) {
+      if (executionJobId.startsWith(recurringId + ":")) {
+        return recurringId;
+      }
+    }
+    return undefined;
   }
 
   async stop(): Promise<void> {

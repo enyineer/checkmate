@@ -1,0 +1,1 @@
+ALTER TABLE "system_health_checks" DROP COLUMN "last_run_at";

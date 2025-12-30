@@ -45,7 +45,7 @@ export interface Queue<T = unknown> {
        * Delay in seconds before the job becomes available for processing
        * Queue backends should not make this job available until the delay expires
        */
-      delaySeconds?: number;
+      startDelay?: number;
       /**
        * Optional unique job ID for deduplication
        * If provided and a job with this ID already exists, behavior depends on queue implementation
@@ -60,6 +60,43 @@ export interface Queue<T = unknown> {
    * BREAKING CHANGE: Now requires ConsumeOptions with consumerGroup
    */
   consume(consumer: QueueConsumer<T>, options: ConsumeOptions): Promise<void>;
+
+  /**
+   * Schedule a recurring job that executes at regular intervals.
+   *
+   * UPDATE SEMANTICS: Calling this method with an existing jobId will UPDATE
+   * the recurring job configuration (interval, payload, priority, etc.).
+   * The queue implementation MUST:
+   * 1. Cancel any pending scheduled execution of the old job
+   * 2. Apply the new configuration
+   * 3. Schedule the next execution with the new startDelay (or immediately if not provided)
+   *
+   * @param data - Job payload
+   * @param options - Recurring job options
+   * @returns Job ID
+   */
+  scheduleRecurring(
+    data: T,
+    options: {
+      /**
+       * Unique job ID for deduplication and updates.
+       * Calling scheduleRecurring with the same jobId updates the existing job.
+       */
+      jobId: string;
+      /** Interval in seconds between executions */
+      intervalSeconds: number;
+      /** Optional delay before first execution (for delta-based scheduling) */
+      startDelay?: number;
+      /** Optional priority */
+      priority?: number;
+    }
+  ): Promise<string>;
+
+  /**
+   * Cancel a recurring job
+   * @param jobId - Job ID to cancel
+   */
+  cancelRecurring(jobId: string): Promise<void>;
 
   /**
    * Stop consuming jobs and cleanup

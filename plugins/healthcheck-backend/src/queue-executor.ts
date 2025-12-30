@@ -10,7 +10,7 @@ import {
   healthCheckRuns,
 } from "./schema";
 import * as schema from "./schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 type Db = NodePgDatabase<typeof schema>;
@@ -34,40 +34,44 @@ const HEALTH_CHECK_QUEUE = "health-checks";
 const WORKER_GROUP = "health-check-executor";
 
 /**
- * Schedule a health check for execution
+ * Schedule a health check for execution using recurring jobs
  * @param queueFactory - Queue factory service
  * @param payload - Health check job payload
- * @param intervalSeconds - Delay before execution (from configuration)
+ * @param intervalSeconds - Interval between executions
+ * @param startDelay - Optional delay before first execution (for delta-based scheduling)
+ * @param logger - Optional logger
  */
 export async function scheduleHealthCheck(props: {
   queueFactory: QueueFactory;
   payload: HealthCheckJobPayload;
   intervalSeconds: number;
+  startDelay?: number;
   logger?: Logger;
 }): Promise<string> {
-  const { queueFactory, payload, intervalSeconds, logger } = props;
+  const {
+    queueFactory,
+    payload,
+    intervalSeconds,
+    startDelay = 0,
+    logger,
+  } = props;
 
   const queue = await queueFactory.createQueue<HealthCheckJobPayload>(
     HEALTH_CHECK_QUEUE
   );
 
-  // Use deterministic job ID to prevent duplicates across instances
   const jobId = `healthcheck:${payload.configId}:${payload.systemId}`;
 
-  const resultJobId = await queue.enqueue(payload, {
-    delaySeconds: intervalSeconds,
-    priority: 0,
+  logger?.debug(
+    `Scheduling recurring health check ${jobId} with interval ${intervalSeconds}s, startDelay ${startDelay}s`
+  );
+
+  return queue.scheduleRecurring(payload, {
     jobId,
+    intervalSeconds,
+    startDelay,
+    priority: 0,
   });
-
-  // If the returned jobId matches our jobId, it was either created or already exists
-  if (resultJobId === jobId && logger) {
-    logger.debug(
-      `Scheduled health check ${payload.configId} for system ${payload.systemId} (may be duplicate)`
-    );
-  }
-
-  return resultJobId;
 }
 
 /**
@@ -79,9 +83,8 @@ async function executeHealthCheckJob(props: {
   registry: HealthCheckRegistry;
   logger: Logger;
   fetch: Fetch;
-  queueFactory: QueueFactory;
 }): Promise<void> {
-  const { payload, db, registry, logger, fetch, queueFactory } = props;
+  const { payload, db, registry, logger, fetch } = props;
   const { configId, systemId } = payload;
 
   try {
@@ -143,17 +146,7 @@ async function executeHealthCheckJob(props: {
     // Propagate status to catalog
     await propagateStatus({ systemId, db, logger, fetch });
 
-    // Re-schedule for next execution
-    await scheduleHealthCheck({
-      queueFactory,
-      payload,
-      intervalSeconds: configRow.interval,
-      logger,
-    });
-
-    logger.debug(
-      `Rescheduled health check ${configId} for system ${systemId} in ${configRow.interval}s`
-    );
+    // Note: No manual rescheduling needed - recurring job handles it automatically
   } catch (error) {
     logger.error(
       `Failed to execute health check ${configId} for system ${systemId}`,
@@ -171,28 +164,7 @@ async function executeHealthCheckJob(props: {
     // Propagate status even on failure
     await propagateStatus({ systemId, db, logger, fetch });
 
-    // Re-schedule even on failure (health checks can fail intentionally)
-    // We need to fetch the interval from the database since we might not have it if we failed early
-    try {
-      const [config] = await db
-        .select({ interval: healthCheckConfigurations.intervalSeconds })
-        .from(healthCheckConfigurations)
-        .where(eq(healthCheckConfigurations.id, configId));
-
-      if (config) {
-        await scheduleHealthCheck({
-          queueFactory,
-          payload,
-          intervalSeconds: config.interval,
-          logger,
-        });
-      }
-    } catch (rescheduleError) {
-      logger.error(
-        `Failed to reschedule health check ${configId} after failure`,
-        rescheduleError
-      );
-    }
+    // Note: No manual rescheduling needed - recurring job handles it automatically
   }
 }
 
@@ -307,7 +279,6 @@ export async function setupHealthCheckWorker(props: {
         registry,
         logger,
         fetch,
-        queueFactory,
       });
     },
     {
@@ -329,23 +300,57 @@ export async function bootstrapHealthChecks(props: {
 }): Promise<void> {
   const { db, queueFactory, logger } = props;
 
-  // Get all enabled health checks
+  // Subquery to get the latest run timestamp per check (efficient, no in-memory grouping)
+  const latestRuns = db
+    .select({
+      systemId: healthCheckRuns.systemId,
+      configurationId: healthCheckRuns.configurationId,
+      maxTimestamp: sql<Date>`MAX(${healthCheckRuns.timestamp})`.as(
+        "max_timestamp"
+      ),
+    })
+    .from(healthCheckRuns)
+    .groupBy(healthCheckRuns.systemId, healthCheckRuns.configurationId)
+    .as("latest_runs");
+
+  // Get all enabled health checks with their latest run time (one row per check)
   const enabledChecks = await db
     .select({
       systemId: systemHealthChecks.systemId,
       configId: healthCheckConfigurations.id,
       interval: healthCheckConfigurations.intervalSeconds,
+      lastRun: latestRuns.maxTimestamp,
     })
     .from(systemHealthChecks)
     .innerJoin(
       healthCheckConfigurations,
       eq(systemHealthChecks.configurationId, healthCheckConfigurations.id)
     )
+    .leftJoin(
+      latestRuns,
+      and(
+        eq(latestRuns.systemId, systemHealthChecks.systemId),
+        eq(latestRuns.configurationId, systemHealthChecks.configurationId)
+      )
+    )
     .where(eq(systemHealthChecks.enabled, true));
 
   logger.debug(`Bootstrapping ${enabledChecks.length} health checks`);
 
   for (const check of enabledChecks) {
+    // Calculate delta for first run
+    let startDelay = 0;
+    if (check.lastRun) {
+      const elapsedSeconds = Math.floor(
+        (Date.now() - check.lastRun.getTime()) / 1000
+      );
+      if (elapsedSeconds < check.interval) {
+        // Not overdue yet - schedule with remaining time
+        startDelay = check.interval - elapsedSeconds;
+      }
+      // Otherwise it's overdue - run immediately (startDelay = 0)
+    }
+
     await scheduleHealthCheck({
       queueFactory,
       payload: {
@@ -353,6 +358,7 @@ export async function bootstrapHealthChecks(props: {
         systemId: check.systemId,
       },
       intervalSeconds: check.interval,
+      startDelay,
       logger,
     });
   }
