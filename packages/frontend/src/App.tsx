@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import {
   ApiProvider,
   ApiRegistryBuilder,
@@ -88,7 +88,9 @@ function App() {
           <div className="min-h-screen bg-background text-foreground font-sans">
             <header className="p-4 bg-card shadow-sm border-b border-border flex justify-between items-center z-50 relative">
               <div className="flex items-center gap-8">
-                <h1 className="text-xl font-bold text-primary">Checkmate</h1>
+                <Link to="/">
+                  <h1 className="text-xl font-bold text-primary">Checkmate</h1>
+                </Link>
                 <nav className="hidden md:flex gap-1">
                   <ExtensionSlot id={SLOT_NAVBAR_MAIN} />
                 </nav>
