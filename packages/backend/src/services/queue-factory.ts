@@ -3,10 +3,9 @@ import { QueuePluginRegistryImpl } from "./queue-plugin-registry";
 import { Logger, ConfigService } from "@checkmate/backend-api";
 import { z } from "zod";
 
-// Schema for queue configuration stored in ConfigService
-const queueConfigSchema = z.object({
-  pluginId: z.string(),
-  config: z.record(z.string(), z.unknown()),
+// Schema for active plugin pointer
+const activePluginPointerSchema = z.object({
+  activePluginId: z.string(),
 });
 
 export class QueueFactoryImpl implements QueueFactory {
@@ -22,15 +21,30 @@ export class QueueFactoryImpl implements QueueFactory {
 
   async loadConfiguration(): Promise<void> {
     try {
-      const config = await this.configService.get(
-        "active",
-        queueConfigSchema,
+      // Load active plugin pointer
+      const pointer = await this.configService.get(
+        "queue:active",
+        activePluginPointerSchema,
         1
       );
 
-      if (config) {
-        this.activePluginId = config.pluginId;
-        this.activeConfig = config.config;
+      if (pointer) {
+        this.activePluginId = pointer.activePluginId;
+
+        // Load the actual config for this plugin
+        const plugin = this.registry.getPlugin(this.activePluginId);
+        if (plugin) {
+          const config = await this.configService.get(
+            this.activePluginId,
+            plugin.configSchema,
+            plugin.configVersion
+          );
+
+          if (config) {
+            this.activeConfig = config;
+          }
+        }
+
         this.logger.info(
           `📋 Loaded queue configuration: plugin=${this.activePluginId}`
         );
@@ -109,10 +123,17 @@ export class QueueFactoryImpl implements QueueFactory {
     this.createdQueues.clear();
     this.logger.info("✅ All active queues stopped successfully");
 
-    // Save to ConfigService
-    await this.configService.set("active", queueConfigSchema, 1, {
+    // Save plugin config under plugin ID
+    await this.configService.set(
       pluginId,
-      config: config as Record<string, unknown>,
+      plugin.configSchema,
+      plugin.configVersion,
+      config
+    );
+
+    // Save active plugin pointer
+    await this.configService.set("queue:active", activePluginPointerSchema, 1, {
+      activePluginId: pluginId,
     });
 
     this.activePluginId = pluginId;

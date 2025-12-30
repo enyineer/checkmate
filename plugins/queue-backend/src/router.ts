@@ -3,6 +3,7 @@ import {
   authedProcedure,
   permissionMiddleware,
   toJsonSchema,
+  ConfigService,
 } from "@checkmate/backend-api";
 import {
   permissions,
@@ -13,7 +14,7 @@ import { ORPCError } from "@orpc/server";
 const queueRead = permissionMiddleware(permissions.queueRead.id);
 const queueManage = permissionMiddleware(permissions.queueManage.id);
 
-export const createQueueRouter = () => {
+export const createQueueRouter = (configService: ConfigService) => {
   return os.router({
     getPlugins: authedProcedure.use(queueRead).handler(async ({ context }) => {
       const plugins = context.queuePluginRegistry.getPlugins().map((p) => ({
@@ -36,9 +37,16 @@ export const createQueueRouter = () => {
           throw new Error("Active queue plugin not found");
         }
 
+        // Get redacted config from ConfigService using plugin's schema
+        const config = await configService.getRedacted(
+          activePluginId,
+          plugin.configSchema,
+          plugin.configVersion
+        );
+
         return {
           pluginId: activePluginId,
-          config: context.queueFactory.getActiveConfig(),
+          config: config || {},
         };
       }),
 

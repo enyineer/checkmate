@@ -31,7 +31,11 @@ describe("Queue Router", () => {
     setActivePlugin: mock(() => Promise.resolve()),
   };
 
-  const router = createQueueRouter();
+  const mockConfigService: any = {
+    getRedacted: mock(() => Promise.resolve({ concurrency: 10 })),
+  };
+
+  const router = createQueueRouter(mockConfigService);
 
   it("getPlugins returns list of plugins", async () => {
     const context = createMockRpcContext({
@@ -44,7 +48,7 @@ describe("Queue Router", () => {
     expect(result[0].id).toBe("memory");
   });
 
-  it("getConfiguration returns active plugin config", async () => {
+  it("getConfiguration returns redacted config", async () => {
     const context = createMockRpcContext({
       user: mockUser,
       queuePluginRegistry: mockRegistry,
@@ -53,6 +57,12 @@ describe("Queue Router", () => {
 
     const result = await call(router.getConfiguration, undefined, { context });
     expect(result.pluginId).toBe("memory");
+    expect(result.config).toEqual({ concurrency: 10 });
+    expect(mockConfigService.getRedacted).toHaveBeenCalledWith(
+      "memory",
+      mockPlugins[0].configSchema,
+      mockPlugins[0].configVersion
+    );
   });
 
   it("updateConfiguration updates active plugin", async () => {

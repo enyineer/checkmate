@@ -11,12 +11,13 @@ export default createBackendPlugin({
       deps: {
         logger: coreServices.logger,
         rpc: coreServices.rpc,
+        config: coreServices.config,
       },
-      init: async ({ logger, rpc }) => {
+      init: async ({ logger, rpc, config }) => {
         logger.debug("📋 Initializing Queue Settings Backend...");
 
         // 4. Register oRPC router
-        const queueRouter = createQueueRouter();
+        const queueRouter = createQueueRouter(config);
         rpc.registerRouter("queue-backend", queueRouter);
       },
     });
