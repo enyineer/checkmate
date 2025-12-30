@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
   PluginConfigForm,
+  useToast,
 } from "@checkmate/ui";
 
 interface HealthCheckEditorProps {
@@ -38,6 +39,7 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
     (initialData?.config as Record<string, unknown>) || {}
   );
 
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -51,6 +53,9 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
         config,
       });
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save health check";
+      toast.error(message);
       console.error(error);
     } finally {
       setLoading(false);

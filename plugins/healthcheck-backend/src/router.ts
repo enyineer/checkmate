@@ -4,6 +4,7 @@ import {
   permissionMiddleware,
   zod,
 } from "@checkmate/backend-api";
+import { ORPCError } from "@orpc/server";
 import {
   CreateHealthCheckConfigurationSchema,
   UpdateHealthCheckConfigurationSchema,
@@ -60,7 +61,11 @@ export const createHealthCheckRouter = (
       .handler(async ({ input }) => {
         const service = new HealthCheckService(database);
         const config = await service.updateConfiguration(input.id, input.body);
-        if (!config) throw new Error("Not found");
+        if (!config) {
+          throw new ORPCError("NOT_FOUND", {
+            message: "Configuration not found",
+          });
+        }
         return config;
       }),
 

@@ -20,12 +20,14 @@ import {
   PermissionDenied,
   EditableText,
   ConfirmationModal,
+  useToast,
 } from "@checkmate/ui";
 import { Plus, Trash2, LayoutGrid, Server, Settings } from "lucide-react";
 
 export const CatalogConfigPage = () => {
   const catalogApi = useApi(catalogApiRef);
   const permissionApi = useApi(permissionApiRef);
+  const toast = useToast();
   const { allowed: canManage, loading: permissionLoading } =
     permissionApi.useManagePermission("catalog");
 
@@ -65,6 +67,9 @@ export const CatalogConfigPage = () => {
         setSelectedGroupId(g[0].id);
       }
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load catalog data";
+      toast.error(message);
       console.error("Failed to load catalog data:", error);
     } finally {
       setLoading(false);
@@ -86,9 +91,13 @@ export const CatalogConfigPage = () => {
       .then(() => {
         setNewSystemName("");
         setNewSystemDescription("");
+        toast.success("System created successfully");
         loadData();
       })
       .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : "Failed to create system";
+        toast.error(message);
         console.error("Failed to create system:", error);
       });
   };
@@ -102,9 +111,13 @@ export const CatalogConfigPage = () => {
       })
       .then(() => {
         setNewGroupName("");
+        toast.success("Group created successfully");
         loadData();
       })
       .catch((error) => {
+        const message =
+          error instanceof Error ? error.message : "Failed to create group";
+        toast.error(message);
         console.error("Failed to create group:", error);
       });
   };
@@ -119,8 +132,12 @@ export const CatalogConfigPage = () => {
         try {
           await catalogApi.deleteSystem(id);
           setConfirmModal({ ...confirmModal, isOpen: false });
+          toast.success("System deleted successfully");
           loadData();
         } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Failed to delete system";
+          toast.error(message);
           console.error("Failed to delete system:", error);
         }
       },
@@ -137,8 +154,12 @@ export const CatalogConfigPage = () => {
         try {
           await catalogApi.deleteGroup(id);
           setConfirmModal({ ...confirmModal, isOpen: false });
+          toast.success("Group deleted successfully");
           loadData();
         } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Failed to delete group";
+          toast.error(message);
           console.error("Failed to delete group:", error);
         }
       },
@@ -153,8 +174,14 @@ export const CatalogConfigPage = () => {
         systemId: selectedSystemToAdd,
       });
       setSelectedSystemToAdd("");
+      toast.success("System added to group successfully");
       loadData();
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to add system to group";
+      toast.error(message);
       console.error("Failed to add system to group:", error);
     }
   };
@@ -165,8 +192,14 @@ export const CatalogConfigPage = () => {
   ) => {
     try {
       await catalogApi.removeSystemFromGroup({ groupId, systemId });
+      toast.success("System removed from group successfully");
       loadData();
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to remove system from group";
+      toast.error(message);
       console.error("Failed to remove system from group:", error);
     }
   };
@@ -174,8 +207,12 @@ export const CatalogConfigPage = () => {
   const handleUpdateSystemName = async (id: string, newName: string) => {
     try {
       await catalogApi.updateSystem({ id, data: { name: newName } });
+      toast.success("System name updated successfully");
       loadData();
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update system name";
+      toast.error(message);
       console.error("Failed to update system name:", error);
       throw error;
     }
@@ -190,8 +227,14 @@ export const CatalogConfigPage = () => {
         id,
         data: { description: newDescription },
       });
+      toast.success("System description updated successfully");
       loadData();
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to update system description";
+      toast.error(message);
       console.error("Failed to update system description:", error);
       throw error;
     }
@@ -200,8 +243,12 @@ export const CatalogConfigPage = () => {
   const handleUpdateGroupName = async (id: string, newName: string) => {
     try {
       await catalogApi.updateGroup({ id, data: { name: newName } });
+      toast.success("Group name updated successfully");
       loadData();
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update group name";
+      toast.error(message);
       console.error("Failed to update group name:", error);
       throw error;
     }

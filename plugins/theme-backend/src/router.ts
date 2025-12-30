@@ -1,4 +1,4 @@
-import { implement } from "@orpc/server";
+import { implement, ORPCError } from "@orpc/server";
 import type { RpcContext } from "@checkmate/backend-api";
 import { themeContract } from "@checkmate/theme-common";
 import * as schema from "./schema";
@@ -13,7 +13,9 @@ export const createThemeRouter = (db: NodePgDatabase<typeof schema>) => {
     const userId = context.user?.id as string | undefined;
 
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Unauthorized",
+      });
     }
 
     // Query user theme preference
@@ -32,7 +34,9 @@ export const createThemeRouter = (db: NodePgDatabase<typeof schema>) => {
     const userId = context.user?.id as string | undefined;
 
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Unauthorized",
+      });
     }
 
     const { theme } = input;

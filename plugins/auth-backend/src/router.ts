@@ -1,4 +1,4 @@
-import { implement } from "@orpc/server";
+import { implement, ORPCError } from "@orpc/server";
 import type { RpcContext } from "@checkmate/backend-api";
 import {
   type AuthStrategy,
@@ -125,7 +125,9 @@ export const createAuthRouter = (
 
   const deleteUser = os.deleteUser.handler(async ({ input: id }) => {
     if (id === "initial-admin-id") {
-      throw new Error("Cannot delete initial admin");
+      throw new ORPCError("FORBIDDEN", {
+        message: "Cannot delete initial admin",
+      });
     }
     await internalDb.delete(schema.user).where(eq(schema.user.id, id));
   });
@@ -194,7 +196,9 @@ export const createAuthRouter = (
     // Security check: prevent users from modifying their own roles
     const userRoles = context.user?.roles || [];
     if (userRoles.includes(id)) {
-      throw new Error("Cannot modify a role that you currently have");
+      throw new ORPCError("FORBIDDEN", {
+        message: "Cannot modify a role that you currently have",
+      });
     }
 
     // Check if role is a system role
@@ -204,11 +208,15 @@ export const createAuthRouter = (
       .where(eq(schema.role.id, id));
 
     if (existingRole.length === 0) {
-      throw new Error(`Role ${id} not found`);
+      throw new ORPCError("NOT_FOUND", {
+        message: `Role ${id} not found`,
+      });
     }
 
     if (existingRole[0].isSystem) {
-      throw new Error("Cannot modify system role");
+      throw new ORPCError("FORBIDDEN", {
+        message: "Cannot modify system role",
+      });
     }
 
     // Get active permissions to filter input
@@ -251,7 +259,9 @@ export const createAuthRouter = (
     // Security check: prevent users from deleting their own roles
     const userRoles = context.user?.roles || [];
     if (userRoles.includes(id)) {
-      throw new Error("Cannot delete a role that you currently have");
+      throw new ORPCError("FORBIDDEN", {
+        message: "Cannot delete a role that you currently have",
+      });
     }
 
     // Check if role is a system role
@@ -261,11 +271,15 @@ export const createAuthRouter = (
       .where(eq(schema.role.id, id));
 
     if (existingRole.length === 0) {
-      throw new Error(`Role ${id} not found`);
+      throw new ORPCError("NOT_FOUND", {
+        message: `Role ${id} not found`,
+      });
     }
 
     if (existingRole[0].isSystem) {
-      throw new Error("Cannot delete system role");
+      throw new ORPCError("FORBIDDEN", {
+        message: "Cannot delete system role",
+      });
     }
 
     // Delete role (cascades to user_role and role_permission via foreign keys)
@@ -277,7 +291,9 @@ export const createAuthRouter = (
       const { userId, roles } = input;
 
       if (userId === context.user?.id) {
-        throw new Error("Cannot update your own roles");
+        throw new ORPCError("FORBIDDEN", {
+          message: "Cannot update your own roles",
+        });
       }
 
       await internalDb.transaction(async (tx) => {
@@ -333,7 +349,9 @@ export const createAuthRouter = (
     const strategy = strategyRegistry.getStrategies().find((s) => s.id === id);
 
     if (!strategy) {
-      throw new Error(`Strategy ${id} not found`);
+      throw new ORPCError("NOT_FOUND", {
+        message: `Strategy ${id} not found`,
+      });
     }
 
     // Save strategy configuration (if provided)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { Toggle, useTheme } from "@checkmate/ui";
+import { Toggle, useTheme, useToast } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import { themeContract } from "@checkmate/theme-common";
 import type { ContractRouterClient } from "@orpc/contract";
@@ -15,6 +15,7 @@ export const ThemeToggleMenuItem = () => {
 
   const [loading, setLoading] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  const toast = useToast();
 
   // Load theme preference from backend on mount
   useEffect(() => {
@@ -49,6 +50,11 @@ export const ThemeToggleMenuItem = () => {
     try {
       await themeClient.setTheme({ theme: newTheme });
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save theme preference";
+      toast.error(message);
       console.error("Failed to save theme preference:", error);
       // Revert on error
       setIsDark(!checked);

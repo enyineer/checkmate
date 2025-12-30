@@ -10,6 +10,7 @@ import {
   Checkbox,
   Label,
   LoadingSpinner,
+  useToast,
 } from "@checkmate/ui";
 import { Activity } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const SystemHealthCheckAssignment: React.FC<unknown> = (props) => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | undefined>();
   const [isOpen, setIsOpen] = useState(false);
+  const toast = useToast();
 
   const loadData = async () => {
     setLoading(true);
@@ -39,6 +41,9 @@ export const SystemHealthCheckAssignment: React.FC<unknown> = (props) => {
       setConfigs(allConfigs);
       setAssignedIds(systemConfigs.map((c) => c.id));
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load assignments";
+      toast.error(message);
       console.error("Failed to load assignments:", error);
     } finally {
       setLoading(false);
@@ -73,6 +78,9 @@ export const SystemHealthCheckAssignment: React.FC<unknown> = (props) => {
             },
           }));
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to toggle assignment";
+      toast.error(message);
       console.error("Failed to toggle assignment:", error);
       // Rollback on error
       setAssignedIds(previousAssignedIds);

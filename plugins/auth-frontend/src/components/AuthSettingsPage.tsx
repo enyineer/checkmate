@@ -115,7 +115,9 @@ export const AuthSettingsPage: React.FC = () => {
       }
       setStrategyConfigs(configs);
     } catch (error: unknown) {
-      toast.error("Failed to fetch data");
+      const message =
+        error instanceof Error ? error.message : "Failed to fetch data";
+      toast.error(message);
       console.error(error);
     } finally {
       setLoading(false);
@@ -132,8 +134,10 @@ export const AuthSettingsPage: React.FC = () => {
       await authApi.deleteUser(userToDelete);
       setUsers(users.filter((u) => u.id !== userToDelete));
       setUserToDelete(undefined);
-    } catch {
-      toast.error("Failed to delete user");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete user";
+      toast.error(message);
     }
   };
 
@@ -156,8 +160,10 @@ export const AuthSettingsPage: React.FC = () => {
       setUsers(
         users.map((u) => (u.id === userId ? { ...u, roles: newRoles } : u))
       );
-    } catch {
-      toast.error("Failed to update roles");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update roles";
+      toast.error(message);
     }
   };
 
@@ -167,8 +173,10 @@ export const AuthSettingsPage: React.FC = () => {
       setStrategies(
         strategies.map((s) => (s.id === strategyId ? { ...s, enabled } : s))
       );
-    } catch {
-      toast.error("Failed to toggle strategy");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to toggle strategy";
+      toast.error(message);
     }
   };
 
@@ -187,8 +195,12 @@ export const AuthSettingsPage: React.FC = () => {
       toast.success(
         "Configuration saved successfully! Click 'Reload Authentication' to apply changes."
       );
-    } catch {
-      toast.error("Failed to save strategy configuration");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save strategy configuration";
+      toast.error(message);
     }
   };
 
@@ -197,8 +209,12 @@ export const AuthSettingsPage: React.FC = () => {
     try {
       await authApi.reloadAuth();
       toast.success("Authentication reloaded successfully!");
-    } catch {
-      toast.error("Failed to reload authentication");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to reload authentication";
+      toast.error(message);
     } finally {
       setReloading(false);
     }
