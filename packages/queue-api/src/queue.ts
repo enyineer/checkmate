@@ -37,7 +37,17 @@ export interface Queue<T = unknown> {
   /**
    * Enqueue a job for processing
    */
-  enqueue(data: T, options?: { priority?: number }): Promise<string>;
+  enqueue(
+    data: T,
+    options?: {
+      priority?: number;
+      /**
+       * Delay in seconds before the job becomes available for processing
+       * Queue backends should not make this job available until the delay expires
+       */
+      delaySeconds?: number;
+    }
+  ): Promise<string>;
 
   /**
    * Register a consumer to process jobs

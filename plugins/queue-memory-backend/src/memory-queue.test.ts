@@ -331,4 +331,94 @@ describe("InMemoryQueue Consumer Groups", () => {
       expect(stats.pending).toBe(0);
     });
   });
+
+  describe("Delayed Jobs", () => {
+    it("should not process job until delay expires", async () => {
+      const processedTimes: number[] = [];
+      const enqueueTime = Date.now();
+
+      await queue.consume(
+        async (job) => {
+          processedTimes.push(Date.now());
+        },
+        { consumerGroup: "delay-group", maxRetries: 0 }
+      );
+
+      // Enqueue with 2-second delay
+      await queue.enqueue("delayed-job", { delaySeconds: 2 });
+
+      // Check immediately - should not be processed yet
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(processedTimes.length).toBe(0);
+
+      // Wait for delay to expire
+      await new Promise((resolve) => setTimeout(resolve, 2100));
+      expect(processedTimes.length).toBe(1);
+
+      // Verify it was processed after the delay
+      const actualDelay = processedTimes[0] - enqueueTime;
+      expect(actualDelay).toBeGreaterThanOrEqual(1900); // Allow 100ms tolerance
+      expect(actualDelay).toBeLessThanOrEqual(2500);
+    });
+
+    it("should process non-delayed jobs immediately while delayed jobs wait", async () => {
+      const processed: string[] = [];
+
+      await queue.consume(
+        async (job) => {
+          processed.push(job.data);
+        },
+        { consumerGroup: "mixed-delay-group", maxRetries: 0 }
+      );
+
+      // Enqueue delayed job first
+      await queue.enqueue("delayed", { delaySeconds: 1 });
+
+      // Enqueue immediate job
+      await queue.enqueue("immediate");
+
+      // Wait for immediate job
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(processed).toEqual(["immediate"]);
+
+      // Wait for delayed job
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+      expect(processed).toEqual(["immediate", "delayed"]);
+    });
+
+    it("should respect priority with delayed jobs", async () => {
+      const processed: string[] = [];
+
+      await queue.consume(
+        async (job) => {
+          processed.push(job.data);
+        },
+        { consumerGroup: "priority-delay-group", maxRetries: 0 }
+      );
+
+      // Enqueue multiple delayed jobs with same delay but different priorities
+      await queue.enqueue("low-priority", {
+        delaySeconds: 1,
+        priority: 1,
+      });
+      await queue.enqueue("high-priority", {
+        delaySeconds: 1,
+        priority: 10,
+      });
+      await queue.enqueue("medium-priority", {
+        delaySeconds: 1,
+        priority: 5,
+      });
+
+      // Wait for delay to expire
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      // Should process in priority order (highest first)
+      expect(processed).toEqual([
+        "high-priority",
+        "medium-priority",
+        "low-priority",
+      ]);
+    });
+  });
 });

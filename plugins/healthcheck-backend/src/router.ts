@@ -85,13 +85,32 @@ export const createHealthCheckRouter = (
       .input(
         zod.object({ systemId: zod.string(), body: AssociateHealthCheckSchema })
       )
-      .handler(async ({ input }) => {
+      .handler(async ({ input, context }) => {
         const service = new HealthCheckService(database);
         await service.associateSystem(
           input.systemId,
           input.body.configurationId,
           input.body.enabled
         );
+
+        // If enabling the health check, schedule it immediately
+        if (input.body.enabled) {
+          const config = await service.getConfiguration(
+            input.body.configurationId
+          );
+          if (config) {
+            // Import scheduleHealthCheck at the top of the function to avoid circular dependencies
+            const { scheduleHealthCheck } = await import("./queue-executor");
+            await scheduleHealthCheck({
+              queueFactory: context.queueFactory,
+              payload: {
+                configId: config.id,
+                systemId: input.systemId,
+              },
+              intervalSeconds: config.intervalSeconds,
+            });
+          }
+        }
       }),
 
     disassociateSystem: authedProcedure

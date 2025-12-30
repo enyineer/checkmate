@@ -8,6 +8,13 @@ import {
 import { InMemoryQueueConfig } from "./plugin";
 
 /**
+ * Extended queue job with availability tracking for delayed jobs
+ */
+interface InternalQueueJob<T> extends QueueJob<T> {
+  availableAt: Date;
+}
+
+/**
  * Simple semaphore for concurrency control
  */
 class Semaphore {
@@ -56,7 +63,7 @@ interface ConsumerGroupState<T> {
  * In-memory queue implementation with consumer group support
  */
 export class InMemoryQueue<T> implements Queue<T> {
-  private jobs: QueueJob<T>[] = [];
+  private jobs: InternalQueueJob<T>[] = [];
   private consumerGroups = new Map<string, ConsumerGroupState<T>>();
   private semaphore: Semaphore;
   private stopped = false;
@@ -70,19 +77,28 @@ export class InMemoryQueue<T> implements Queue<T> {
     this.semaphore = new Semaphore(config.concurrency);
   }
 
-  async enqueue(data: T, options?: { priority?: number }): Promise<string> {
+  async enqueue(
+    data: T,
+    options?: { priority?: number; delaySeconds?: number }
+  ): Promise<string> {
     if (this.jobs.length >= this.config.maxQueueSize) {
       throw new Error(
         `Queue '${this.name}' is full (max: ${this.config.maxQueueSize})`
       );
     }
 
-    const job: QueueJob<T> = {
+    const now = new Date();
+    const availableAt = options?.delaySeconds
+      ? new Date(now.getTime() + options.delaySeconds * 1000)
+      : now;
+
+    const job: InternalQueueJob<T> = {
       id: crypto.randomUUID(),
       data,
       priority: options?.priority ?? 0,
-      timestamp: new Date(),
+      timestamp: now,
       attempts: 0,
+      availableAt,
     };
 
     // Insert job in priority order (higher priority first)
@@ -96,9 +112,18 @@ export class InMemoryQueue<T> implements Queue<T> {
       this.jobs.splice(insertIndex, 0, job);
     }
 
-    // Trigger processing for all consumer groups
+    // Trigger processing for all consumer groups (or schedule for later)
     if (!this.stopped) {
-      void this.processNext();
+      if (options?.delaySeconds) {
+        // Schedule processing when the job becomes available
+        setTimeout(() => {
+          if (!this.stopped) {
+            void this.processNext();
+          }
+        }, options.delaySeconds * 1000);
+      } else {
+        void this.processNext();
+      }
     }
 
     return job.id;
@@ -139,12 +164,16 @@ export class InMemoryQueue<T> implements Queue<T> {
       return;
     }
 
+    const now = new Date();
+
     // For each consumer group, check if there's a job they haven't processed
     for (const [groupId, groupState] of this.consumerGroups.entries()) {
       if (groupState.consumers.length === 0) continue;
 
-      // Find next unprocessed job for this group
-      const job = this.jobs.find((j) => !groupState.processedJobIds.has(j.id));
+      // Find next unprocessed job for this group that is available
+      const job = this.jobs.find(
+        (j) => !groupState.processedJobIds.has(j.id) && j.availableAt <= now
+      );
 
       if (!job) continue;
 
@@ -171,7 +200,7 @@ export class InMemoryQueue<T> implements Queue<T> {
   }
 
   private async processJob(
-    job: QueueJob<T>,
+    job: InternalQueueJob<T>,
     consumer: ConsumerGroupState<T>["consumers"][0],
     groupId: string,
     groupState: ConsumerGroupState<T>
@@ -198,7 +227,7 @@ export class InMemoryQueue<T> implements Queue<T> {
         // Remove from processed set to allow retry
         groupState.processedJobIds.delete(job.id);
 
-        // Re-add job to queue for retry (with priority to process soon)
+        // Re-add job to queue for retry (with priority to process soon, preserving availableAt)
         const insertIndex = this.jobs.findIndex(
           (existingJob) => existingJob.priority! < (job.priority ?? 0)
         );

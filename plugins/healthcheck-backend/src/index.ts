@@ -1,4 +1,7 @@
-import { Scheduler } from "./scheduler";
+import {
+  setupHealthCheckWorker,
+  bootstrapHealthChecks,
+} from "./queue-executor";
 import * as schema from "./schema";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { permissionList } from "@checkmate/healthcheck-common";
@@ -17,18 +20,33 @@ export default createBackendPlugin({
         healthCheckRegistry: coreServices.healthCheckRegistry,
         rpc: coreServices.rpc,
         fetch: coreServices.fetch,
+        queueFactory: coreServices.queueFactory,
       },
-      init: async ({ logger, database, healthCheckRegistry, rpc, fetch }) => {
+      init: async ({
+        logger,
+        database,
+        healthCheckRegistry,
+        rpc,
+        fetch,
+        queueFactory,
+      }) => {
         logger.info("🏥 Initializing Health Check Backend...");
 
-        const scheduler = new Scheduler(
-          database as unknown as NodePgDatabase<typeof schema>,
-          healthCheckRegistry,
+        // Setup queue-based health check worker
+        await setupHealthCheckWorker({
+          db: database as unknown as NodePgDatabase<typeof schema>,
+          registry: healthCheckRegistry,
           logger,
-          fetch
-        );
+          fetch,
+          queueFactory,
+        });
 
-        scheduler.start();
+        // Bootstrap all enabled health checks
+        await bootstrapHealthChecks({
+          db: database as unknown as NodePgDatabase<typeof schema>,
+          queueFactory,
+          logger,
+        });
 
         const healthCheckRouter = createHealthCheckRouter(
           database as NodePgDatabase<typeof schema>
