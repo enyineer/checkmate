@@ -18,6 +18,7 @@ import {
   Button,
   Textarea,
   Tooltip,
+  EmptyState,
 } from "../index";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -495,7 +496,18 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     }
   }, [schema]); // Only run when schema changes
 
-  if (!schema || !schema.properties) return <></>;
+  if (
+    !schema ||
+    !schema.properties ||
+    Object.keys(schema.properties).length === 0
+  ) {
+    return (
+      <EmptyState
+        title="No Configuration Required"
+        description="This component doesn't require any configuration."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
