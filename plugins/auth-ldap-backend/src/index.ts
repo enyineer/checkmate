@@ -4,7 +4,10 @@ import {
   secret,
   coreServices,
 } from "@checkmate/backend-api";
-import { betterAuthExtensionPoint } from "@checkmate/auth-backend";
+import {
+  betterAuthExtensionPoint,
+  redirectToAuthError,
+} from "@checkmate/auth-backend";
 import type { AuthClient } from "@checkmate/auth-common";
 import { z } from "zod";
 import { Client as LdapClient } from "ldapts";
@@ -13,7 +16,7 @@ import { sql } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 
 // LDAP Configuration Schema V1
-const ldapConfigV1 = z.object({
+const _ldapConfigV1 = z.object({
   enabled: z.boolean().default(false).describe("Enable LDAP authentication"),
   url: z
     .string()
@@ -89,7 +92,83 @@ const ldapConfigV1 = z.object({
     .describe("Update user attributes on each login"),
 });
 
-type LdapConfig = z.infer<typeof ldapConfigV1>;
+// LDAP Configuration Schema V1
+const ldapConfigV2 = z.object({
+  url: z
+    .string()
+    .url()
+    .default("ldaps://ldap.example.com:636")
+    .describe("LDAP server URL (e.g., ldaps://ldap.example.com:636)"),
+  bindDN: z
+    .string()
+    .optional()
+    .describe(
+      "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)"
+    ),
+  bindPassword: secret().optional().describe("Service account password"),
+  baseDN: z
+    .string()
+    .default("ou=users,dc=example,dc=com")
+    .describe("Base DN for user searches (e.g., ou=users,dc=example,dc=com)"),
+  searchFilter: z
+    .string()
+    .default("(uid={0})")
+    .describe("LDAP search filter, {0} will be replaced with username"),
+  usernameAttribute: z
+    .string()
+    .default("uid")
+    .describe("LDAP attribute to match against login username"),
+  attributeMapping: z
+    .object({
+      email: z
+        .string()
+        .default("mail")
+        .describe("LDAP attribute for email address"),
+      name: z
+        .string()
+        .default("displayName")
+        .describe("LDAP attribute for display name"),
+      firstName: z
+        .string()
+        .default("givenName")
+        .describe("LDAP attribute for first name")
+        .optional(),
+      lastName: z
+        .string()
+        .default("sn")
+        .describe("LDAP attribute for last name")
+        .optional(),
+    })
+    .default({
+      email: "mail",
+      name: "displayName",
+    })
+    .describe("Map LDAP attributes to user fields"),
+  tlsOptions: z
+    .object({
+      rejectUnauthorized: z
+        .boolean()
+        .default(true)
+        .describe("Reject unauthorized SSL certificates"),
+      ca: secret().optional().describe("Custom CA certificate (PEM format)"),
+    })
+    .default({ rejectUnauthorized: true })
+    .describe("TLS/SSL configuration"),
+  timeout: z
+    .number()
+    .default(5000)
+    .describe("Connection timeout in milliseconds"),
+  autoCreateUsers: z
+    .boolean()
+    .default(true)
+    .describe("Automatically create users on first login"),
+  autoUpdateUsers: z
+    .boolean()
+    .default(true)
+    .describe("Update user attributes on each login"),
+});
+
+type LdapConfig = z.infer<typeof ldapConfigV2>;
 
 // LDAP Strategy Definition
 const ldapStrategy: AuthStrategy<LdapConfig> = {
@@ -97,9 +176,21 @@ const ldapStrategy: AuthStrategy<LdapConfig> = {
   displayName: "LDAP",
   description: "Authenticate using LDAP directory",
   icon: "network",
-  configVersion: 1,
-  configSchema: ldapConfigV1,
+  configVersion: 2,
+  configSchema: ldapConfigV2,
   requiresManualRegistration: false,
+  migrations: [
+    {
+      description: "Migrate LDAP configuration to version 2",
+      fromVersion: 1,
+      toVersion: 2,
+      migrate: (oldConfig: z.infer<typeof _ldapConfigV1>) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { enabled, ...rest } = oldConfig;
+        return rest;
+      },
+    },
+  ],
 };
 
 export default createBackendPlugin({
@@ -132,9 +223,9 @@ export default createBackendPlugin({
         }> => {
           try {
             // Load LDAP configuration
-            const ldapConfig = await config.get("ldap", ldapConfigV1, 1);
+            const ldapConfig = await config.get("ldap", ldapConfigV2, 2);
 
-            if (!ldapConfig || !ldapConfig.enabled) {
+            if (!ldapConfig) {
               return {
                 success: false,
                 error: "LDAP authentication is not enabled",
@@ -246,7 +337,7 @@ export default createBackendPlugin({
           username: string,
           ldapAttributes: Record<string, unknown>
         ): Promise<{ userId: string; email: string; name: string }> => {
-          const ldapConfig = await config.get("ldap", ldapConfigV1, 1);
+          const ldapConfig = await config.get("ldap", ldapConfigV2, 2);
           if (!ldapConfig) {
             throw new Error("LDAP configuration not found");
           }
@@ -360,13 +451,8 @@ export default createBackendPlugin({
               const { username, password } = body;
 
               if (!username || !password) {
-                return Response.json(
-                  {
-                    error: "Username and password are required",
-                  },
-                  {
-                    status: 400,
-                  }
+                return redirectToAuthError(
+                  "Username and password are required"
                 );
               }
 
@@ -374,13 +460,8 @@ export default createBackendPlugin({
               const authResult = await authenticateLdap(username, password);
 
               if (!authResult.success) {
-                return Response.json(
-                  {
-                    error: authResult.error || "Authentication failed",
-                  },
-                  {
-                    status: 401,
-                  }
+                return redirectToAuthError(
+                  authResult.error || "Authentication failed"
                 );
               }
 
@@ -429,17 +510,11 @@ export default createBackendPlugin({
               );
             } catch (error) {
               logger.error("LDAP login error:", error);
-              return Response.json(
-                {
-                  error:
-                    error instanceof Error
-                      ? error.message
-                      : "Internal server error",
-                },
-                {
-                  status: 500,
-                }
-              );
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Authentication failed. Please try again.";
+              return redirectToAuthError(message);
             }
           }
         );

@@ -409,3 +409,6 @@ export default createBackendPlugin({
     });
   },
 });
+
+// Re-export utility functions for use by custom auth strategies
+export * from "./utils/auth-error-redirect";
