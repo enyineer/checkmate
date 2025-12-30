@@ -551,6 +551,15 @@ export const AuthSettingsPage: React.FC = () => {
             );
           })()}
 
+          <Alert className="mt-6">
+            <Shield className="h-4 w-4" />
+            <p className="text-sm">
+              Changes to authentication strategies require clicking the "Reload
+              Authentication" button to take effect. This reloads the auth
+              system without requiring a full restart.
+            </p>
+          </Alert>
+
           {strategies.map((strategy) => (
             <Card key={strategy.id}>
               <CardHeader>
@@ -656,14 +665,6 @@ export const AuthSettingsPage: React.FC = () => {
               You don't have permission to manage strategies.
             </p>
           )}
-          <Alert className="mt-6">
-            <Shield className="h-4 w-4" />
-            <p className="text-sm">
-              Changes to authentication strategies require clicking the "Reload
-              Authentication" button to take effect. This reloads the auth
-              system without requiring a full restart.
-            </p>
-          </Alert>
         </div>
       </TabPanel>
 
