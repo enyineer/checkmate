@@ -13,9 +13,11 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-  Alert,
-  AlertTitle,
-  AlertDescription,
+  InfoBanner,
+  InfoBannerIcon,
+  InfoBannerContent,
+  InfoBannerTitle,
+  InfoBannerDescription,
 } from "@checkmate/ui";
 import { useEnabledStrategies } from "../hooks/useEnabledStrategies";
 import { SocialProviderButton } from "./SocialProviderButton";
@@ -105,21 +107,27 @@ export const RegisterPage = () => {
             <CardTitle>Registration Disabled</CardTitle>
           </CardHeader>
           <CardContent>
-            <Alert variant="warning">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Registration is Currently Disabled</AlertTitle>
-              <AlertDescription>
-                New user registration has been disabled by the system
-                administrator. If you already have an account, please{" "}
-                <Link
-                  to="/auth/login"
-                  className="underline text-primary hover:text-primary/90 font-medium"
-                >
-                  sign in
-                </Link>
-                . Otherwise, please contact your administrator for assistance.
-              </AlertDescription>
-            </Alert>
+            <InfoBanner variant="warning">
+              <InfoBannerIcon>
+                <AlertCircle className="h-4 w-4" />
+              </InfoBannerIcon>
+              <InfoBannerContent>
+                <InfoBannerTitle>
+                  Registration is Currently Disabled
+                </InfoBannerTitle>
+                <InfoBannerDescription>
+                  New user registration has been disabled by the system
+                  administrator. If you already have an account, please{" "}
+                  <Link
+                    to="/auth/login"
+                    className="underline text-primary hover:text-primary/90 font-medium"
+                  >
+                    sign in
+                  </Link>
+                  . Otherwise, please contact your administrator for assistance.
+                </InfoBannerDescription>
+              </InfoBannerContent>
+            </InfoBanner>
           </CardContent>
         </Card>
       </div>
@@ -135,14 +143,20 @@ export const RegisterPage = () => {
             <CardTitle>Registration Unavailable</CardTitle>
           </CardHeader>
           <CardContent>
-            <Alert variant="warning">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>No authentication methods enabled</AlertTitle>
-              <AlertDescription>
-                Please contact your system administrator to enable
-                authentication methods.
-              </AlertDescription>
-            </Alert>
+            <InfoBanner variant="warning">
+              <InfoBannerIcon>
+                <AlertCircle className="h-4 w-4" />
+              </InfoBannerIcon>
+              <InfoBannerContent>
+                <InfoBannerTitle>
+                  No authentication methods enabled
+                </InfoBannerTitle>
+                <InfoBannerDescription>
+                  Please contact your system administrator to enable
+                  authentication methods.
+                </InfoBannerDescription>
+              </InfoBannerContent>
+            </InfoBanner>
           </CardContent>
         </Card>
       </div>
@@ -163,21 +177,25 @@ export const RegisterPage = () => {
             <CardTitle>Registration Not Required</CardTitle>
           </CardHeader>
           <CardContent>
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Automatic Account Creation</AlertTitle>
-              <AlertDescription>
-                Accounts are automatically created when you sign in with one of
-                the available authentication methods. Please proceed to the{" "}
-                <Link
-                  to="/auth/login"
-                  className="underline text-primary hover:text-primary/90 font-medium"
-                >
-                  login page
-                </Link>
-                .
-              </AlertDescription>
-            </Alert>
+            <InfoBanner>
+              <InfoBannerIcon>
+                <AlertCircle className="h-4 w-4" />
+              </InfoBannerIcon>
+              <InfoBannerContent>
+                <InfoBannerTitle>Automatic Account Creation</InfoBannerTitle>
+                <InfoBannerDescription>
+                  Accounts are automatically created when you sign in with one
+                  of the available authentication methods. Please proceed to the{" "}
+                  <Link
+                    to="/auth/login"
+                    className="underline text-primary hover:text-primary/90 font-medium"
+                  >
+                    login page
+                  </Link>
+                  .
+                </InfoBannerDescription>
+              </InfoBannerContent>
+            </InfoBanner>
           </CardContent>
         </Card>
       </div>

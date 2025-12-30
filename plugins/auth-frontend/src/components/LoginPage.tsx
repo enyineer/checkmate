@@ -19,6 +19,11 @@ import {
   Alert,
   AlertTitle,
   AlertDescription,
+  InfoBanner,
+  InfoBannerIcon,
+  InfoBannerContent,
+  InfoBannerTitle,
+  InfoBannerDescription,
 } from "@checkmate/ui";
 import {
   SLOT_USER_MENU_ITEMS,
@@ -134,16 +139,20 @@ export const LoginPage = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Registration Disabled Alert */}
+            {/* Registration Disabled Banner */}
             {!registrationAllowed && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Registration Disabled</AlertTitle>
-                <AlertDescription>
-                  New user registration is currently disabled. Please contact an
-                  administrator if you need access.
-                </AlertDescription>
-              </Alert>
+              <InfoBanner variant="warning">
+                <InfoBannerIcon>
+                  <AlertCircle className="h-4 w-4" />
+                </InfoBannerIcon>
+                <InfoBannerContent>
+                  <InfoBannerTitle>Registration Disabled</InfoBannerTitle>
+                  <InfoBannerDescription>
+                    New user registration is currently disabled. Please contact
+                    an administrator if you need access.
+                  </InfoBannerDescription>
+                </InfoBannerContent>
+              </InfoBanner>
             )}
 
             {/* Credential Form */}

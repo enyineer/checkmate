@@ -23,6 +23,7 @@ export * from "./components/Tooltip";
 export * from "./components/Toggle";
 export * from "./components/Checkbox";
 export * from "./components/Alert";
+export * from "./components/InfoBanner";
 export * from "./components/DynamicForm";
 export * from "./components/PageLayout";
 export * from "./components/PluginConfigForm";
