@@ -15,16 +15,14 @@ const statusConfig = {
   healthy: {
     icon: CheckCircle2,
     label: "Healthy",
-    className:
-      "bg-green-100 dark:bg-green-950/20 text-green-800 dark:text-green-300 border-green-200 dark:border-green-900",
-    iconClassName: "text-green-600 dark:text-green-400",
+    className: "bg-success/10 text-success-foreground border-success/30",
+    iconClassName: "text-success",
   },
   degraded: {
     icon: AlertTriangle,
     label: "Degraded",
-    className:
-      "bg-yellow-100 dark:bg-yellow-950/20 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-900",
-    iconClassName: "text-yellow-600 dark:text-yellow-400",
+    className: "bg-warning/10 text-warning-foreground border-warning/30",
+    iconClassName: "text-warning",
   },
   unhealthy: {
     icon: XCircle,

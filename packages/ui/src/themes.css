@@ -45,6 +45,22 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
+    /* Semantic colors */
+    --success: 142 71% 45%;
+    /* green-600 */
+    --success-foreground: 355 7% 97%;
+    /* white */
+
+    --warning: 38 92% 50%;
+    /* yellow-500 */
+    --warning-foreground: 26 83% 14%;
+    /* yellow-950 */
+
+    --info: 217 91% 60%;
+    /* blue-500 */
+    --info-foreground: 355 7% 97%;
+    /* white */
+
     /* Radius for rounded corners */
     --radius: 0.5rem;
   }
@@ -93,6 +109,22 @@
     --chart-3: 197 37% 34%;
     --chart-4: 43 74% 76%;
     --chart-5: 27 87% 77%;
+
+    /* Semantic colors - dark mode */
+    --success: 142 76% 36%;
+    /* green-700 - slightly darker */
+    --success-foreground: 138 76% 97%;
+    /* green-50 */
+
+    --warning: 48 96% 53%;
+    /* yellow-400 - brighter */
+    --warning-foreground: 26 83% 14%;
+    /* yellow-950 */
+
+    --info: 213 94% 68%;
+    /* blue-400 - brighter */
+    --info-foreground: 214 100% 97%;
+    /* blue-50 */
   }
 }
 

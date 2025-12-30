@@ -5,13 +5,11 @@ const alertVariants = cva("relative w-full rounded-md border p-4", {
   variants: {
     variant: {
       default: "bg-muted/50 border-border text-foreground",
-      success:
-        "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900 text-green-900 dark:text-green-100",
-      warning:
-        "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900 text-yellow-900 dark:text-yellow-100",
+      success: "bg-success/10 border-success/30 text-success-foreground",
+      warning: "bg-warning/10 border-warning/30 text-warning-foreground",
       error:
         "bg-destructive/10 border-destructive/30 text-destructive-foreground",
-      info: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-100",
+      info: "bg-info/10 border-info/30 text-info-foreground",
     },
   },
   defaultVariants: {

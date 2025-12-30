@@ -9,13 +9,11 @@ const toastVariants = cva(
     variants: {
       variant: {
         default: "bg-card border-border text-card-foreground",
-        success:
-          "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900 text-green-900 dark:text-green-100",
+        success: "bg-success/10 border-success/30 text-success-foreground",
         error:
           "bg-destructive/10 border-destructive/30 text-destructive-foreground",
-        warning:
-          "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900 text-yellow-900 dark:text-yellow-100",
-        info: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-100",
+        warning: "bg-warning/10 border-warning/30 text-warning-foreground",
+        info: "bg-info/10 border-info/30 text-info-foreground",
       },
     },
     defaultVariants: {
@@ -34,10 +32,10 @@ const iconMap = {
 
 const iconColorMap = {
   default: "text-foreground",
-  success: "text-green-600 dark:text-green-400",
+  success: "text-success",
   error: "text-destructive",
-  warning: "text-yellow-600 dark:text-yellow-400",
-  info: "text-blue-600 dark:text-blue-400",
+  warning: "text-warning",
+  info: "text-info",
 };
 
 export interface ToastProps extends VariantProps<typeof toastVariants> {

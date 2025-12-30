@@ -40,19 +40,20 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   const variantStyles = {
     danger: {
-      icon: "text-red-600",
-      iconBg: "bg-red-100",
-      button: "bg-red-600 text-white hover:bg-red-700",
+      icon: "text-destructive",
+      iconBg: "bg-destructive/10",
+      button:
+        "bg-destructive text-destructive-foreground hover:bg-destructive/90",
     },
     warning: {
-      icon: "text-yellow-600",
-      iconBg: "bg-yellow-100",
-      button: "bg-yellow-600 text-white hover:bg-yellow-700",
+      icon: "text-warning",
+      iconBg: "bg-warning/10",
+      button: "bg-warning text-warning-foreground hover:bg-warning/90",
     },
     info: {
-      icon: "text-blue-600",
-      iconBg: "bg-blue-100",
-      button: "bg-blue-600 text-white hover:bg-blue-700",
+      icon: "text-info",
+      iconBg: "bg-info/10",
+      button: "bg-info text-info-foreground hover:bg-info/90",
     },
   };
 
