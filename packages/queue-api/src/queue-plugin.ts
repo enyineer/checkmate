@@ -51,6 +51,11 @@ export interface QueueFactory {
   getActivePlugin(): string;
 
   /**
+   * Get the currently active queue plugin configuration
+   */
+  getActiveConfig(): unknown;
+
+  /**
    * Set the active queue plugin and its configuration
    */
   setActivePlugin(pluginId: string, config: unknown): Promise<void>;

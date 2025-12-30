@@ -63,6 +63,10 @@ export class QueueFactoryImpl implements QueueFactory {
     return this.activePluginId;
   }
 
+  getActiveConfig(): unknown {
+    return this.activeConfig;
+  }
+
   async setActivePlugin(pluginId: string, config: unknown): Promise<void> {
     // Validate plugin exists
     const plugin = this.registry.getPlugin(pluginId);

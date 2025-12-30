@@ -2,7 +2,7 @@ import {
   os,
   authedProcedure,
   permissionMiddleware,
-  zod,
+  toJsonSchema,
 } from "@checkmate/backend-api";
 import {
   permissions,
@@ -21,7 +21,7 @@ export const createQueueRouter = () => {
         displayName: p.displayName,
         description: p.description,
         configVersion: p.configVersion,
-        configSchema: zod.toJSONSchema(p.configSchema),
+        configSchema: toJsonSchema(p.configSchema),
       }));
       return plugins;
     }),
@@ -38,7 +38,7 @@ export const createQueueRouter = () => {
 
         return {
           pluginId: activePluginId,
-          config: {}, // TODO: Store and retrieve actual config
+          config: context.queueFactory.getActiveConfig(),
         };
       }),
 
