@@ -279,6 +279,19 @@ export const AuthSettingsPage: React.FC = () => {
     return <PermissionDenied />;
   }
 
+  const schemaHasProperties = (
+    schema: Record<string, unknown> & { properties?: Record<string, unknown> }
+  ) => {
+    if (schema.properties) {
+      return Object.keys(schema.properties).length > 0;
+    }
+    return false;
+  };
+
+  const configIsMissing = (strategy: AuthStrategy) => {
+    return strategy.config === undefined;
+  };
+
   return (
     <PageLayout title="Authentication Settings">
       <Tabs
@@ -514,6 +527,30 @@ export const AuthSettingsPage: React.FC = () => {
             </Button>
           </div>
 
+          {(() => {
+            const enabledStrategies = strategies.filter((s) => s.enabled);
+            const hasNoEnabled = enabledStrategies.length === 0;
+
+            return (
+              <>
+                {hasNoEnabled && (
+                  <Alert variant="warning">
+                    <Shield className="h-4 w-4" />
+                    <div>
+                      <p className="font-semibold">
+                        No authentication strategies enabled
+                      </p>
+                      <p className="text-sm mt-1">
+                        You won't be able to log in! Please enable at least one
+                        authentication strategy and reload authentication.
+                      </p>
+                    </div>
+                  </Alert>
+                )}
+              </>
+            );
+          })()}
+
           {strategies.map((strategy) => (
             <Card key={strategy.id}>
               <CardHeader>
@@ -537,7 +574,15 @@ export const AuthSettingsPage: React.FC = () => {
                         )}
                       </button>
                       <div>
-                        <CardTitle>{strategy.displayName}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle>{strategy.displayName}</CardTitle>
+                          {schemaHasProperties(strategy.configSchema) &&
+                            configIsMissing(strategy) && (
+                              <Badge variant="warning">
+                                Needs Configuration
+                              </Badge>
+                            )}
+                        </div>
                         {strategy.description && (
                           <p className="text-sm text-muted-foreground mt-1">
                             {strategy.description}
@@ -550,7 +595,12 @@ export const AuthSettingsPage: React.FC = () => {
                     <Checkbox
                       id={`strategy-${strategy.id}`}
                       checked={strategy.enabled}
-                      disabled={!canManageStrategies.allowed}
+                      disabled={
+                        !canManageStrategies.allowed ||
+                        // Disable if strategy needs config (has schema properties) but doesn't have any saved
+                        (schemaHasProperties(strategy.configSchema) &&
+                          configIsMissing(strategy))
+                      }
                       onCheckedChange={(checked) =>
                         handleToggleStrategy(strategy.id, !!checked)
                       }
@@ -585,14 +635,16 @@ export const AuthSettingsPage: React.FC = () => {
                         });
                       }}
                     />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        onClick={() => handleSaveStrategyConfig(strategy.id)}
-                        disabled={!canManageStrategies.allowed}
-                      >
-                        Save Configuration
-                      </Button>
-                    </div>
+                    {schemaHasProperties(strategy.configSchema) && (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          onClick={() => handleSaveStrategyConfig(strategy.id)}
+                          disabled={!canManageStrategies.allowed}
+                        >
+                          Save Configuration
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               )}
