@@ -247,6 +247,10 @@ export class InMemoryQueue<T> implements Queue<T> {
     }
   }
 
+  async listRecurringJobs(): Promise<string[]> {
+    return [...this.recurringJobs.keys()];
+  }
+
   private async processNext(): Promise<void> {
     if (this.jobs.length === 0 || this.consumerGroups.size === 0) {
       return;

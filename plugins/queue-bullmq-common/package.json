@@ -1,0 +1,19 @@
+{
+  "name": "@checkmate/queue-bullmq-common",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "bun run lint:code",
+    "lint:code": "eslint . --max-warnings 0"
+  },
+  "dependencies": {
+    "@checkmate/common": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@checkmate/tsconfig": "workspace:*",
+    "@checkmate/scripts": "workspace:*"
+  }
+}

@@ -65,6 +65,10 @@ export function createMockQueueFactory(): QueueFactory {
         cancelRecurring: async (_jobId: string) => {
           // Mock implementation - no-op
         },
+        listRecurringJobs: async () => {
+          // Mock implementation - return empty array
+          return [];
+        },
         stop: async () => {
           consumers.clear();
         },

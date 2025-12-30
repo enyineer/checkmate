@@ -364,4 +364,30 @@ export async function bootstrapHealthChecks(props: {
   }
 
   logger.debug(`✅ Bootstrapped ${enabledChecks.length} health checks`);
+
+  // Clean up orphaned jobs
+  const queue = await queueFactory.createQueue<HealthCheckJobPayload>(
+    HEALTH_CHECK_QUEUE
+  );
+  const allRecurringJobs = await queue.listRecurringJobs();
+  const expectedJobIds = new Set(
+    enabledChecks.map(
+      (check) => `healthcheck:${check.configId}:${check.systemId}`
+    )
+  );
+
+  const orphanedJobs = allRecurringJobs.filter(
+    (jobId) => jobId.startsWith("healthcheck:") && !expectedJobIds.has(jobId)
+  );
+
+  for (const jobId of orphanedJobs) {
+    await queue.cancelRecurring(jobId);
+    logger.debug(`Removed orphaned job scheduler: ${jobId}`);
+  }
+
+  if (orphanedJobs.length > 0) {
+    logger.info(
+      `🧹 Cleaned up ${orphanedJobs.length} orphaned health check jobs`
+    );
+  }
 }

@@ -99,6 +99,13 @@ export interface Queue<T = unknown> {
   cancelRecurring(jobId: string): Promise<void>;
 
   /**
+   * List all recurring job IDs
+   * Used for reconciliation to detect orphaned jobs
+   * @returns Array of job IDs for all recurring jobs
+   */
+  listRecurringJobs(): Promise<string[]>;
+
+  /**
    * Stop consuming jobs and cleanup
    */
   stop(): Promise<void>;
