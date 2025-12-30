@@ -85,10 +85,10 @@ function App() {
     <ApiProvider registry={apiRegistry}>
       <ToastProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-            <header className="p-4 bg-white shadow-sm border-b border-gray-200 flex justify-between items-center z-50 relative">
+          <div className="min-h-screen bg-background text-foreground font-sans">
+            <header className="p-4 bg-card shadow-sm border-b border-border flex justify-between items-center z-50 relative">
               <div className="flex items-center gap-8">
-                <h1 className="text-xl font-bold text-indigo-600">Checkmate</h1>
+                <h1 className="text-xl font-bold text-primary">Checkmate</h1>
                 <nav className="hidden md:flex gap-1">
                   <ExtensionSlot id={SLOT_NAVBAR_MAIN} />
                 </nav>

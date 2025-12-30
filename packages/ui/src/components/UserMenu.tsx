@@ -31,12 +31,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <DropdownMenuTrigger onClick={() => setIsOpen(!isOpen)}>
         <button
           className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200",
-            isOpen && "bg-gray-100 border-gray-200",
+            "flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-accent transition-all border border-transparent hover:border-border",
+            isOpen && "bg-accent border-border",
             className
           )}
         >
-          <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary">
             {user.image ? (
               <img
                 src={user.image}
@@ -47,13 +47,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               <User size={14} />
             )}
           </div>
-          <span className="text-sm font-medium text-gray-700 hidden sm:inline-block max-w-[120px] truncate">
+          <span className="text-sm font-medium text-foreground hidden sm:inline-block max-w-[120px] truncate">
             {user.name || user.email}
           </span>
           <ChevronDown
             size={14}
             className={cn(
-              "text-gray-400 transition-transform",
+              "text-muted-foreground transition-transform",
               isOpen && "rotate-180"
             )}
           />
@@ -63,10 +63,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       <DropdownMenuContent isOpen={isOpen} onClose={() => setIsOpen(false)}>
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-gray-900 truncate">
+            <span className="text-sm font-bold text-foreground truncate">
               {user.name || "User"}
             </span>
-            <span className="text-xs font-normal text-gray-500 truncate">
+            <span className="text-xs font-normal text-muted-foreground truncate">
               {user.email}
             </span>
           </div>

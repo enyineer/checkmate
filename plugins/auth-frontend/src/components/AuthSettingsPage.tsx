@@ -497,7 +497,7 @@ export const AuthSettingsPage: React.FC = () => {
                               : strategy.id
                           )
                         }
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-muted-foreground hover:text-foreground"
                       >
                         {expandedStrategy === strategy.id ? (
                           <ChevronDown className="h-5 w-5" />

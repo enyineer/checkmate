@@ -8,11 +8,14 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-white border-gray-200 text-gray-900",
-        success: "bg-green-50 border-green-200 text-green-900",
-        error: "bg-red-50 border-red-200 text-red-900",
-        warning: "bg-yellow-50 border-yellow-200 text-yellow-900",
-        info: "bg-blue-50 border-blue-200 text-blue-900",
+        default: "bg-card border-border text-card-foreground",
+        success:
+          "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900 text-green-900 dark:text-green-100",
+        error:
+          "bg-destructive/10 border-destructive/30 text-destructive-foreground",
+        warning:
+          "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900 text-yellow-900 dark:text-yellow-100",
+        info: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 text-blue-900 dark:text-blue-100",
       },
     },
     defaultVariants: {
@@ -30,11 +33,11 @@ const iconMap = {
 };
 
 const iconColorMap = {
-  default: "text-gray-600",
-  success: "text-green-600",
-  error: "text-red-600",
-  warning: "text-yellow-600",
-  info: "text-blue-600",
+  default: "text-foreground",
+  success: "text-green-600 dark:text-green-400",
+  error: "text-destructive",
+  warning: "text-yellow-600 dark:text-yellow-400",
+  info: "text-blue-600 dark:text-blue-400",
 };
 
 export interface ToastProps extends VariantProps<typeof toastVariants> {
@@ -77,7 +80,7 @@ export const Toast: React.FC<ToastProps> = ({
       <p className="flex-1 text-sm font-medium">{message}</p>
       <button
         onClick={() => onDismiss(id)}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
         aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" />

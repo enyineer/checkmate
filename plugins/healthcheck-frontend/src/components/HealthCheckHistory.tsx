@@ -41,7 +41,9 @@ export const HealthCheckHistory: React.FC<unknown> = (context) => {
 
   if (history.length === 0) {
     return (
-      <p className="text-gray-500 text-sm">No health check history found.</p>
+      <p className="text-muted-foreground text-sm">
+        No health check history found.
+      </p>
     );
   }
 
@@ -61,7 +63,7 @@ export const HealthCheckHistory: React.FC<unknown> = (context) => {
               <TableCell>
                 <HealthBadge status={run.status} />
               </TableCell>
-              <TableCell className="text-sm text-gray-600">
+              <TableCell className="text-sm text-muted-foreground">
                 {run.timestamp
                   ? formatDistanceToNow(new Date(run.timestamp), {
                       addSuffix: true,
@@ -70,11 +72,11 @@ export const HealthCheckHistory: React.FC<unknown> = (context) => {
               </TableCell>
               <TableCell className="text-sm">
                 {run.status === "unhealthy" && run.result?.error ? (
-                  <span className="text-red-600 font-medium">
+                  <span className="text-destructive font-medium">
                     {String(run.result.error)}
                   </span>
                 ) : (
-                  <span className="text-gray-500">
+                  <span className="text-muted-foreground">
                     {String(run.result?.message || "No additional info")}
                   </span>
                 )}

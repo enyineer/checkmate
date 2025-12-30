@@ -17,13 +17,13 @@ export const PermissionDenied: React.FC<{
         className
       )}
     >
-      <Card className="max-w-md w-full border-red-200 bg-red-50">
+      <Card className="max-w-md w-full border-destructive/30 bg-destructive/10">
         <CardHeader className="flex flex-row items-center gap-4 pb-2">
-          <ShieldAlert className="w-8 h-8 text-red-600" />
-          <CardTitle className="text-red-700">Access Denied</CardTitle>
+          <ShieldAlert className="w-8 h-8 text-destructive" />
+          <CardTitle className="text-destructive">Access Denied</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-red-600">{message}</p>
+          <p className="text-destructive-foreground">{message}</p>
         </CardContent>
       </Card>
     </div>

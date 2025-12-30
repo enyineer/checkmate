@@ -78,17 +78,17 @@ export const SystemDetailPage: React.FC = () => {
       <div className="space-y-6">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </button>
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="p-12 text-center">
-            <h2 className="text-xl font-semibold text-red-900 mb-2">
+            <h2 className="text-xl font-semibold text-destructive mb-2">
               System Not Found
             </h2>
-            <p className="text-red-700">
+            <p className="text-destructive-foreground">
               The system you're looking for doesn't exist or has been removed.
             </p>
           </CardContent>
@@ -109,7 +109,7 @@ export const SystemDetailPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
@@ -118,15 +118,15 @@ export const SystemDetailPage: React.FC = () => {
 
       {/* System Name */}
       <div className="flex items-center gap-3">
-        <Activity className="h-8 w-8 text-indigo-600" />
-        <h1 className="text-3xl font-bold text-gray-900">{system.name}</h1>
+        <Activity className="h-8 w-8 text-primary" />
+        <h1 className="text-3xl font-bold text-foreground">{system.name}</h1>
       </div>
 
       {/* Health Overview Card */}
-      <Card className="border-gray-200 shadow-sm">
-        <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-gray-600" />
+            <Activity className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-lg font-semibold">
               Health Overview
             </CardTitle>
@@ -135,18 +135,18 @@ export const SystemDetailPage: React.FC = () => {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <p className="text-sm text-gray-600">Current Status</p>
+              <p className="text-sm text-muted-foreground">Current Status</p>
               <HealthBadge status={system.status} />
             </div>
             <div className="text-right space-y-1">
-              <p className="text-sm text-gray-600">Response Time</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm text-muted-foreground">Response Time</p>
+              <p className="text-2xl font-semibold text-foreground">
                 {String(metadata.latency)}
               </p>
             </div>
             <div className="text-right space-y-1">
-              <p className="text-sm text-gray-600">Last Checked</p>
-              <p className="text-base font-medium text-gray-700">
+              <p className="text-sm text-muted-foreground">Last Checked</p>
+              <p className="text-base font-medium text-foreground">
                 {String(metadata.lastCheck)}
               </p>
             </div>
@@ -155,10 +155,10 @@ export const SystemDetailPage: React.FC = () => {
       </Card>
 
       {/* System Information Card */}
-      <Card className="border-gray-200 shadow-sm">
-        <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
-            <Info className="h-5 w-5 text-gray-600" />
+            <Info className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-lg font-semibold">
               System Information
             </CardTitle>
@@ -166,21 +166,23 @@ export const SystemDetailPage: React.FC = () => {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-600">
+            <label className="text-sm font-medium text-muted-foreground">
               Description
             </label>
-            <p className="mt-1 text-gray-900">
+            <p className="mt-1 text-foreground">
               {system.description || "No description provided"}
             </p>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-600">Owner</label>
-            <p className="mt-1 text-gray-900">
+            <label className="text-sm font-medium text-muted-foreground">
+              Owner
+            </label>
+            <p className="mt-1 text-foreground">
               {system.owner || "Not assigned"}
             </p>
           </div>
           <div className="flex gap-6 text-sm">
-            <div className="flex items-center gap-2 text-gray-600">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>
                 Created:{" "}
@@ -191,7 +193,7 @@ export const SystemDetailPage: React.FC = () => {
                 })}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-gray-600">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>
                 Updated:{" "}
@@ -207,10 +209,10 @@ export const SystemDetailPage: React.FC = () => {
       </Card>
 
       {/* Groups Card */}
-      <Card className="border-gray-200 shadow-sm">
-        <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+      <Card className="border-border shadow-sm">
+        <CardHeader className="border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-gray-600" />
+            <Users className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-lg font-semibold">
               Member of Groups
             </CardTitle>
@@ -218,7 +220,7 @@ export const SystemDetailPage: React.FC = () => {
         </CardHeader>
         <CardContent className="p-6">
           {groups.length === 0 ? (
-            <p className="text-gray-500 text-sm">
+            <p className="text-muted-foreground text-sm">
               This system is not part of any groups
             </p>
           ) : (
@@ -226,7 +228,7 @@ export const SystemDetailPage: React.FC = () => {
               {groups.map((group) => (
                 <span
                   key={group.id}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
                 >
                   {group.name}
                 </span>
@@ -240,17 +242,17 @@ export const SystemDetailPage: React.FC = () => {
       {system.metadata &&
         typeof system.metadata === "object" &&
         Object.keys(system.metadata).length > 0 && (
-          <Card className="border-gray-200 shadow-sm">
-            <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+          <Card className="border-border shadow-sm">
+            <CardHeader className="border-b border-border bg-muted/30">
               <div className="flex items-center gap-2">
-                <FileJson className="h-5 w-5 text-gray-600" />
+                <FileJson className="h-5 w-5 text-muted-foreground" />
                 <CardTitle className="text-lg font-semibold">
                   Metadata
                 </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <pre className="text-sm text-gray-700 bg-gray-50 p-4 rounded border border-gray-200 overflow-x-auto">
+              <pre className="text-sm text-foreground bg-muted/30 p-4 rounded border border-border overflow-x-auto">
                 {JSON.stringify(system.metadata, undefined, 2)}
               </pre>
             </CardContent>

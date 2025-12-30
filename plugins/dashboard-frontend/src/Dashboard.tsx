@@ -79,15 +79,15 @@ export const Dashboard: React.FC = () => {
         {groupsWithSystems.map((group) => (
           <Card
             key={group.id}
-            className="border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+            className="border-border shadow-sm hover:shadow-md transition-shadow"
           >
-            <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+            <CardHeader className="border-b border-border bg-muted/30">
               <div className="flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-gray-600" />
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg font-semibold text-foreground">
                   {group.name}
                 </CardTitle>
-                <span className="ml-auto text-sm text-gray-500">
+                <span className="ml-auto text-sm text-muted-foreground">
                   {group.systems.length}{" "}
                   {group.systems.length === 1 ? "system" : "systems"}
                 </span>
@@ -96,7 +96,7 @@ export const Dashboard: React.FC = () => {
             <CardContent className="p-4">
               {group.systems.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     No systems in this group yet
                   </p>
                 </div>

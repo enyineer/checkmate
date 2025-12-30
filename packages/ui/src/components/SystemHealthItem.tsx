@@ -26,8 +26,8 @@ export const SystemHealthItem: React.FC<SystemHealthItemProps> = ({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 transition-all",
-        isClickable && "cursor-pointer hover:border-gray-300 hover:shadow-sm",
+        "flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-all",
+        isClickable && "cursor-pointer hover:border-border/80 hover:shadow-sm",
         className
       )}
       onClick={onClick}
@@ -35,11 +35,11 @@ export const SystemHealthItem: React.FC<SystemHealthItemProps> = ({
       tabIndex={isClickable ? 0 : undefined}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <Activity className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        <Activity className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
+          <p className="text-sm font-medium text-foreground truncate">{name}</p>
           {metadata && (
-            <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+            <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
               {metadata.latency !== undefined && (
                 <span>{metadata.latency}ms</span>
               )}

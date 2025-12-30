@@ -13,7 +13,7 @@ export const CatalogPage = () => {
   return (
     <div className="p-4 rounded-lg bg-white shadow">
       <h2 className="text-2xl font-semibold mb-4">Catalog</h2>
-      <p className="text-gray-600">Welcome to the Service Catalog.</p>
+      <p className="text-muted-foreground">Welcome to the Service Catalog.</p>
     </div>
   );
 };

@@ -98,7 +98,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
         />
         <Button
           variant="ghost"
-          className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+          className="h-8 w-8 p-0 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-950/20"
           onClick={handleSave}
           disabled={isSaving || !editValue.trim()}
           type="button"
@@ -107,7 +107,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
         </Button>
         <Button
           variant="ghost"
-          className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
           onClick={handleCancel}
           disabled={isSaving}
           type="button"

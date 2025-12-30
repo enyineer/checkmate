@@ -223,7 +223,7 @@ export const CatalogConfigPage = () => {
       <SectionHeader
         title="Catalog Management"
         description="Manage systems and logical groups within your infrastructure"
-        icon={<Settings className="w-6 h-6 text-indigo-600" />}
+        icon={<Settings className="w-6 h-6 text-primary" />}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -231,7 +231,7 @@ export const CatalogConfigPage = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Server className="w-5 h-5 text-gray-500" />
+              <Server className="w-5 h-5 text-muted-foreground" />
               Systems
             </CardTitle>
           </CardHeader>
@@ -248,7 +248,7 @@ export const CatalogConfigPage = () => {
               </div>
               <div>
                 <textarea
-                  className="w-full flex min-h-[60px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  className="w-full flex min-h-[60px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                   placeholder="Description (optional)"
                   value={newSystemDescription}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
@@ -270,7 +270,7 @@ export const CatalogConfigPage = () => {
                 systems.map((system) => (
                   <div
                     key={system.id}
-                    className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    className="flex items-start justify-between p-3 bg-muted/30 rounded-lg border border-border"
                   >
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
@@ -279,7 +279,7 @@ export const CatalogConfigPage = () => {
                           onSave={(newName) =>
                             handleUpdateSystemName(system.id, newName)
                           }
-                          className="font-medium text-gray-900"
+                          className="font-medium text-foreground"
                         />
                         <ExtensionSlot
                           id={SLOT_CATALOG_SYSTEM_ACTIONS}
@@ -294,13 +294,13 @@ export const CatalogConfigPage = () => {
                             newDescription
                           )
                         }
-                        className="text-xs text-gray-500 font-mono"
+                        className="text-xs text-muted-foreground font-mono"
                         placeholder="Add description..."
                       />
                     </div>
                     <Button
                       variant="ghost"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                      className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 h-8 w-8 p-0"
                       onClick={() => handleDeleteSystem(system.id)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -316,7 +316,7 @@ export const CatalogConfigPage = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <LayoutGrid className="w-5 h-5 text-gray-500" />
+              <LayoutGrid className="w-5 h-5 text-muted-foreground" />
               Groups
             </CardTitle>
           </CardHeader>
@@ -344,7 +344,7 @@ export const CatalogConfigPage = () => {
                 groups.map((group) => (
                   <div
                     key={group.id}
-                    className="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-2"
+                    className="p-3 bg-muted/30 rounded-lg border border-border space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -353,15 +353,15 @@ export const CatalogConfigPage = () => {
                           onSave={(newName) =>
                             handleUpdateGroupName(group.id, newName)
                           }
-                          className="font-medium text-gray-900"
+                          className="font-medium text-foreground"
                         />
-                        <p className="text-xs text-gray-500 font-mono">
+                        <p className="text-xs text-muted-foreground font-mono">
                           {group.id}
                         </p>
                       </div>
                       <Button
                         variant="ghost"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 h-8 w-8 p-0"
                         onClick={() => handleDeleteGroup(group.id)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -377,12 +377,14 @@ export const CatalogConfigPage = () => {
                           return (
                             <div
                               key={sysId}
-                              className="flex items-center justify-between text-sm bg-white p-2 rounded border border-gray-200"
+                              className="flex items-center justify-between text-sm bg-background p-2 rounded border border-border"
                             >
-                              <span className="text-gray-700">{sys.name}</span>
+                              <span className="text-foreground">
+                                {sys.name}
+                              </span>
                               <Button
                                 variant="ghost"
-                                className="text-red-400 hover:text-red-600 h-6 w-6 p-0"
+                                className="text-destructive/60 hover:text-destructive h-6 w-6 p-0"
                                 onClick={() =>
                                   handleRemoveSystemFromGroup(group.id, sysId)
                                 }
@@ -413,7 +415,7 @@ export const CatalogConfigPage = () => {
               <div className="space-y-2">
                 <Label>Select Group</Label>
                 <select
-                  className="w-full flex h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={selectedGroupId}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setSelectedGroupId(e.target.value)
@@ -430,7 +432,7 @@ export const CatalogConfigPage = () => {
               <div className="space-y-2">
                 <Label>Select System</Label>
                 <select
-                  className="w-full flex h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={selectedSystemToAdd}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setSelectedSystemToAdd(e.target.value)

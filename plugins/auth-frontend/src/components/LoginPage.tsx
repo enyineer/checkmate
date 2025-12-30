@@ -82,12 +82,12 @@ export const LoginPage = () => {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center border-t border-gray-100 mt-4 pt-4">
+        <CardFooter className="flex justify-center border-t border-border mt-4 pt-4">
           <div className="text-sm">
             Don't have an account?{" "}
             <Link
               to="/auth/register"
-              className="underline text-indigo-600 hover:text-indigo-800 font-medium"
+              className="underline text-primary hover:text-primary/90 font-medium"
             >
               Sign up
             </Link>
@@ -116,7 +116,7 @@ export const LoginNavbarAction = () => {
   const { data: session, isPending } = authApi.useSession();
 
   if (isPending) {
-    return <div className="w-20 h-9 bg-gray-100 animate-pulse rounded-full" />;
+    return <div className="w-20 h-9 bg-muted animate-pulse rounded-full" />;
   }
 
   if (session?.user) {

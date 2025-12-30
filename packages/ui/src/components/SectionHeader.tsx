@@ -16,13 +16,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 }) => {
   return (
     <div className={cn("flex items-center gap-2 mb-6", className)} {...props}>
-      {icon && <div className="text-indigo-500">{icon}</div>}
+      {icon && <div className="text-primary">{icon}</div>}
       <div>
-        <h2 className="text-xl font-semibold tracking-tight text-gray-800">
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">
           {title}
         </h2>
         {description && (
-          <p className="text-sm text-gray-500 mt-1">{description}</p>
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
         )}
       </div>
     </div>
