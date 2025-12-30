@@ -460,6 +460,59 @@
         "typescript": "^5.0.0",
       },
     },
+    "plugins/notification-backend": {
+      "name": "@checkmate/notification-backend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/backend-api": "workspace:*",
+        "@checkmate/notification-common": "workspace:*",
+        "@checkmate/queue-api": "workspace:*",
+        "drizzle-orm": "^0.45.1",
+        "zod": "^4.2.1",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/test-utils-backend": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "@orpc/server": "^1.13.2",
+        "@types/node": "^20.0.0",
+        "drizzle-kit": "^0.31.8",
+        "typescript": "^5.0.0",
+      },
+    },
+    "plugins/notification-common": {
+      "name": "@checkmate/notification-common",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/common": "workspace:*",
+        "@orpc/contract": "^1.13.2",
+        "zod": "^4.0.0",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "typescript": "^5.7.2",
+      },
+    },
+    "plugins/notification-frontend": {
+      "name": "@checkmate/notification-frontend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/common": "workspace:*",
+        "@checkmate/frontend-api": "workspace:*",
+        "@checkmate/notification-common": "workspace:*",
+        "@checkmate/ui": "workspace:*",
+        "lucide-react": "^0.344.0",
+        "react": "^18.2.0",
+        "react-router-dom": "^6.22.0",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "@types/react": "^18.2.0",
+        "typescript": "^5.0.0",
+      },
+    },
     "plugins/queue-backend": {
       "name": "@checkmate/queue-backend",
       "version": "0.0.1",
@@ -745,6 +798,12 @@
     "@checkmate/healthcheck-frontend": ["@checkmate/healthcheck-frontend@workspace:plugins/healthcheck-frontend"],
 
     "@checkmate/healthcheck-http-backend": ["@checkmate/healthcheck-http-backend@workspace:plugins/healthcheck-http-backend"],
+
+    "@checkmate/notification-backend": ["@checkmate/notification-backend@workspace:plugins/notification-backend"],
+
+    "@checkmate/notification-common": ["@checkmate/notification-common@workspace:plugins/notification-common"],
+
+    "@checkmate/notification-frontend": ["@checkmate/notification-frontend@workspace:plugins/notification-frontend"],
 
     "@checkmate/queue-api": ["@checkmate/queue-api@workspace:packages/queue-api"],
 

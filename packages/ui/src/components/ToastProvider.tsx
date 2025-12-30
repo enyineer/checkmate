@@ -90,13 +90,16 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     [show]
   );
 
-  const value: ToastContextValue = {
-    show,
-    success,
-    error,
-    warning,
-    info,
-  };
+  const value = React.useMemo<ToastContextValue>(
+    () => ({
+      show,
+      success,
+      error,
+      warning,
+      info,
+    }),
+    [show, success, error, warning, info]
+  );
 
   return (
     <ToastContext.Provider value={value}>

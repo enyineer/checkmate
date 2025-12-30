@@ -4,6 +4,7 @@ import { RPCLink } from "@orpc/client/fetch";
 
 export class CoreRpcApi implements RpcApi {
   public client: unknown;
+  private pluginClientCache: Map<string, unknown> = new Map();
 
   constructor() {
     const baseUrl =
@@ -19,6 +20,12 @@ export class CoreRpcApi implements RpcApi {
   }
 
   forPlugin<T>(pluginId: string): T {
-    return (this.client as Record<string, T>)[pluginId];
+    if (!this.pluginClientCache.has(pluginId)) {
+      this.pluginClientCache.set(
+        pluginId,
+        (this.client as Record<string, unknown>)[pluginId]
+      );
+    }
+    return this.pluginClientCache.get(pluginId) as T;
   }
 }
