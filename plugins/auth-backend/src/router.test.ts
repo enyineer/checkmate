@@ -114,6 +114,36 @@ describe("Auth Router", () => {
     ).rejects.toThrow("Cannot delete initial admin");
   });
 
+  it("deleteUser cascades to delete related records", async () => {
+    const context = createMockRpcContext({ user: mockUser });
+    const userId = "user-to-delete";
+
+    // Track which tables had delete called on them
+    const deletedTables: any[] = [];
+    const mockTx: any = {
+      delete: mock((table: any) => {
+        deletedTables.push(table); // Track table
+        return {
+          where: mock(() => Promise.resolve()),
+        };
+      }),
+    };
+
+    mockDb.transaction.mockImplementationOnce((cb: any) => cb(mockTx));
+
+    await call(router.deleteUser, userId, { context });
+
+    // Verify transaction was used
+    expect(mockDb.transaction).toHaveBeenCalled();
+
+    // Verify all related tables were deleted in order
+    expect(deletedTables).toHaveLength(4);
+    expect(deletedTables.includes(schema.userRole)).toBe(true);
+    expect(deletedTables.includes(schema.session)).toBe(true);
+    expect(deletedTables.includes(schema.account)).toBe(true);
+    expect(deletedTables.includes(schema.user)).toBe(true);
+  });
+
   it("getRoles returns all roles with permissions", async () => {
     const context = createMockRpcContext({ user: mockUser });
     mockDb.select.mockImplementationOnce(() => ({

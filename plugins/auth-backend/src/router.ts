@@ -152,7 +152,22 @@ export const createAuthRouter = (
         message: "Cannot delete initial admin",
       });
     }
-    await internalDb.delete(schema.user).where(eq(schema.user.id, id));
+
+    // Delete user and all related records in a transaction
+    // Foreign keys are set to "ON DELETE no action", so we must manually delete related records
+    await internalDb.transaction(async (tx) => {
+      // Delete user roles
+      await tx.delete(schema.userRole).where(eq(schema.userRole.userId, id));
+
+      // Delete sessions
+      await tx.delete(schema.session).where(eq(schema.session.userId, id));
+
+      // Delete accounts
+      await tx.delete(schema.account).where(eq(schema.account.userId, id));
+
+      // Finally, delete the user
+      await tx.delete(schema.user).where(eq(schema.user.id, id));
+    });
   });
 
   const getRoles = os.getRoles.handler(async () => {
