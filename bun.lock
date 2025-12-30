@@ -507,6 +507,56 @@
         "@checkmate/tsconfig": "workspace:*",
       },
     },
+    "plugins/theme-backend": {
+      "name": "@checkmate/theme-backend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/backend-api": "workspace:*",
+        "@checkmate/theme-common": "workspace:*",
+        "drizzle-orm": "^0.45.1",
+        "zod": "^4.2.1",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "@orpc/server": "^1.13.2",
+        "@types/node": "^20.0.0",
+        "drizzle-kit": "^0.31.8",
+        "typescript": "^5.0.0",
+      },
+    },
+    "plugins/theme-common": {
+      "name": "@checkmate/theme-common",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/common": "workspace:*",
+        "@orpc/contract": "^1.13.2",
+        "zod": "^4.0.0",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "typescript": "^5.7.2",
+      },
+    },
+    "plugins/theme-frontend": {
+      "name": "@checkmate/theme-frontend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/common": "workspace:*",
+        "@checkmate/frontend-api": "workspace:*",
+        "@checkmate/theme-common": "workspace:*",
+        "@checkmate/ui": "workspace:*",
+        "lucide-react": "^0.344.0",
+        "react": "^18.2.0",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "@types/react": "^18.2.0",
+        "typescript": "^5.0.0",
+      },
+    },
   },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
@@ -642,6 +692,12 @@
     "@checkmate/scripts": ["@checkmate/scripts@workspace:packages/scripts"],
 
     "@checkmate/test-utils-backend": ["@checkmate/test-utils-backend@workspace:packages/test-utils-backend"],
+
+    "@checkmate/theme-backend": ["@checkmate/theme-backend@workspace:plugins/theme-backend"],
+
+    "@checkmate/theme-common": ["@checkmate/theme-common@workspace:plugins/theme-common"],
+
+    "@checkmate/theme-frontend": ["@checkmate/theme-frontend@workspace:plugins/theme-frontend"],
 
     "@checkmate/tsconfig": ["@checkmate/tsconfig@workspace:packages/tsconfig"],
 
