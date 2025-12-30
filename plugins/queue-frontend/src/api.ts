@@ -1,6 +1,5 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import type { ContractRouterClient } from "@orpc/contract";
-import { queueContract } from "@checkmate/queue-common";
+import { QueueClient } from "@checkmate/queue-common";
 
 // Re-export types for convenience
 export type {
@@ -9,7 +8,7 @@ export type {
   UpdateQueueConfiguration,
 } from "@checkmate/queue-common";
 
-// QueueApi is the client type derived from the contract
-export type QueueApi = ContractRouterClient<typeof queueContract>;
+// QueueApi is the client type from the common package
+export type QueueApi = QueueClient;
 
 export const queueApiRef = createApiRef<QueueApi>("queue-api");

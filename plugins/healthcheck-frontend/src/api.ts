@@ -1,6 +1,5 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import type { ContractRouterClient } from "@orpc/contract";
-import { healthCheckContract } from "@checkmate/healthcheck-common";
+import { HealthCheckClient } from "@checkmate/healthcheck-common";
 
 // Re-export types for convenience
 export type {
@@ -9,8 +8,8 @@ export type {
   HealthCheckRun,
 } from "@checkmate/healthcheck-common";
 
-// HealthCheckApi is the client type derived from the contract
-export type HealthCheckApi = ContractRouterClient<typeof healthCheckContract>;
+// HealthCheckApi is the client type from the common package
+export type HealthCheckApi = HealthCheckClient;
 
 export const healthCheckApiRef =
   createApiRef<HealthCheckApi>("healthcheck-api");

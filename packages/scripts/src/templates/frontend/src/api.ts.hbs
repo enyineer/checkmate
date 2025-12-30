@@ -1,6 +1,5 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import type { ContractRouterClient } from "@orpc/contract";
-import { {{pluginNameCamel}}Contract } from "@checkmate/{{pluginBaseName}}-common";
+import { {{pluginNamePascal}}Client } from "@checkmate/{{pluginBaseName}}-common";
 
 // Re-export types for convenience
 export type {
@@ -9,7 +8,7 @@ export type {
   Update{{pluginNamePascal}}Item,
 } from "@checkmate/{{pluginBaseName}}-common";
 
-// Derive API type from contract - no manual interface definitions!
-export type {{pluginNamePascal}}Api = ContractRouterClient<typeof {{pluginNameCamel}}Contract>;
+// {{pluginNamePascal}}Api is the client type from the common package
+export type {{pluginNamePascal}}Api = {{pluginNamePascal}}Client;
 
 export const {{pluginNameCamel}}ApiRef = createApiRef<{{pluginNamePascal}}Api>("{{pluginBaseName}}-api");

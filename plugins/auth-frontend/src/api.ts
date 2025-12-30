@@ -1,6 +1,7 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import type { ContractRouterClient } from "@orpc/contract";
-import { authContract } from "@checkmate/auth-common";
+
+// Re-export AuthClient for use in hooks and components
+export type { AuthClient } from "@checkmate/auth-common";
 
 export interface AuthUser {
   id: string;
@@ -50,9 +51,6 @@ export interface EnabledAuthStrategy {
   icon?: string; // Lucide icon name
   requiresManualRegistration: boolean;
 }
-
-// Auth RPC client type derived from the contract
-export type AuthClient = ContractRouterClient<typeof authContract>;
 
 export interface AuthApi {
   getEnabledStrategies(): Promise<EnabledAuthStrategy[]>;
