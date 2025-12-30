@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
 import {
   createBackendPlugin,
   authenticationStrategyServiceRef,
@@ -245,6 +246,24 @@ export default createBackendPlugin({
             trustedOrigins: [
               process.env.VITE_FRONTEND_URL || "http://localhost:5173",
             ],
+            databaseHooks: {
+              user: {
+                create: {
+                  before: async (user) => {
+                    // Block new user creation when registration is disabled
+                    // Credential registration is already blocked by disableSignUp,
+                    // so any user.create here must be from social providers
+                    if (!registrationAllowed) {
+                      throw new APIError("FORBIDDEN", {
+                        message:
+                          "Registration is currently disabled. Please contact an administrator.",
+                      });
+                    }
+                    return { data: user };
+                  },
+                },
+              },
+            },
           });
         };
 
