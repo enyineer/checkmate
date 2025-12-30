@@ -37,6 +37,7 @@ import {
   Edit,
 } from "lucide-react";
 import { RoleDialog } from "./RoleDialog";
+import { PermissionsViewDialog } from "./PermissionsViewDialog";
 
 export const AuthSettingsPage: React.FC = () => {
   const authApi = useApi(authApiRef);
@@ -59,6 +60,9 @@ export const AuthSettingsPage: React.FC = () => {
   const [roleToDelete, setRoleToDelete] = useState<string>();
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | undefined>();
+  const [viewingRolePermissions, setViewingRolePermissions] = useState<
+    Role | undefined
+  >();
   const [expandedStrategy, setExpandedStrategy] = useState<string>();
   const [strategyConfigs, setStrategyConfigs] = useState<
     Record<string, Record<string, unknown>>
@@ -421,9 +425,12 @@ export const AuthSettingsPage: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="text-sm text-muted-foreground">
+                            <button
+                              onClick={() => setViewingRolePermissions(role)}
+                              className="text-sm text-primary hover:underline cursor-pointer"
+                            >
                               {role.permissions?.length || 0} permissions
-                            </span>
+                            </button>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
@@ -583,6 +590,13 @@ export const AuthSettingsPage: React.FC = () => {
         onConfirm={handleDeleteUser}
         title="Delete User"
         message="Are you sure you want to delete this user? This action cannot be undone."
+      />
+
+      <PermissionsViewDialog
+        open={!!viewingRolePermissions}
+        onOpenChange={(open) => !open && setViewingRolePermissions(undefined)}
+        role={viewingRolePermissions}
+        permissions={permissions}
       />
 
       <RoleDialog
