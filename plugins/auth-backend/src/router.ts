@@ -26,6 +26,44 @@ export const createAuthRouter = (
     getPermissions: () => { id: string; description?: string }[];
   }
 ) => {
+  // Public endpoint for enabled strategies (no authentication required)
+  const getEnabledStrategies = os.getEnabledStrategies.handler(async () => {
+    const registeredStrategies = strategyRegistry.getStrategies();
+
+    const enabledStrategies = await Promise.all(
+      registeredStrategies.map(async (strategy) => {
+        // Get config to check enabled status
+        const config = await configService.get(
+          strategy.id,
+          strategy.configSchema,
+          strategy.configVersion,
+          strategy.migrations
+        );
+
+        // Check if strategy is enabled
+        const enabled =
+          config && typeof config === "object" && "enabled" in config
+            ? config.enabled !== false
+            : true;
+
+        // Determine strategy type
+        const type: "credential" | "social" =
+          strategy.id === "credential" ? "credential" : "social";
+
+        return {
+          id: strategy.id,
+          displayName: strategy.displayName,
+          description: strategy.description,
+          type,
+          enabled,
+        };
+      })
+    );
+
+    // Filter to only return enabled strategies
+    return enabledStrategies.filter((s) => s.enabled);
+  });
+
   const permissions = os.permissions.handler(async ({ context }) => {
     return { permissions: context.user?.permissions || [] };
   });
@@ -328,6 +366,7 @@ export const createAuthRouter = (
   });
 
   return os.router({
+    getEnabledStrategies,
     permissions,
     getUsers,
     deleteUser,

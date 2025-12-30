@@ -40,8 +40,20 @@ const StrategyDtoSchema = z.object({
   config: z.record(z.string(), z.unknown()).optional(), // VersionedConfig.data (secrets redacted)
 });
 
+const EnabledStrategyDtoSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  description: z.string().optional(),
+  type: z.enum(["credential", "social"]),
+});
+
 // Auth RPC Contract with permission metadata
 export const authContract = {
+  // Public endpoint - No authentication required (for login page)
+  getEnabledStrategies: _base
+    .meta({ permissions: [] }) // Public endpoint
+    .output(z.array(EnabledStrategyDtoSchema)),
+
   // Permission query - Authenticated only (no specific permission required)
   permissions: _base
     .meta({ permissions: [] }) // Anyone authenticated can check their own permissions

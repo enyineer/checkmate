@@ -28,7 +28,7 @@ export default tseslint.config(
       "unicorn/filename-case": "off",
       "unicorn/prevent-abbreviations": "off",
       "unicorn/prefer-module": "off",
-      "tunicorn/no-nested-ternary": "off",
+      "unicorn/no-nested-ternary": "off",
     },
   }
 );

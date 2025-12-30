@@ -9,6 +9,7 @@ import {
   LoginNavbarAction,
   LogoutMenuItem,
 } from "./components/LoginPage";
+import { RegisterPage } from "./components/RegisterPage";
 import { authApiRef, AuthApi, AuthSession, AuthClient } from "./api";
 import { authClient } from "./lib/auth-client";
 
@@ -88,6 +89,10 @@ class BetterAuthApi implements AuthApi {
 
   constructor(private readonly rpcApi: RpcApi) {}
 
+  async getEnabledStrategies() {
+    return this.rpc.getEnabledStrategies();
+  }
+
   async signIn(email: string, password: string) {
     const res = await authClient.signIn.email({ email, password });
     if (res.error) {
@@ -111,6 +116,10 @@ class BetterAuthApi implements AuthApi {
       } as AuthSession,
       error: undefined,
     };
+  }
+
+  async signInWithSocial(provider: string) {
+    await authClient.signIn.social({ provider });
   }
 
   async signOut() {
@@ -229,6 +238,10 @@ export const authPlugin = createFrontendPlugin({
     {
       path: "/auth/login",
       element: <LoginPage />,
+    },
+    {
+      path: "/auth/register",
+      element: <RegisterPage />,
     },
     {
       path: "/settings/auth",

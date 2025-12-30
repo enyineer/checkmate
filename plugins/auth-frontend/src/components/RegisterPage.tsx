@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn, LogOut, AlertCircle } from "lucide-react";
-import { useApi, ExtensionSlot, pluginRegistry } from "@checkmate/frontend-api";
+import { AlertCircle } from "lucide-react";
+import { useApi } from "@checkmate/frontend-api";
 import { authApiRef } from "../api";
 import {
   Button,
@@ -13,21 +13,16 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-  UserMenu,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
   Alert,
   AlertTitle,
   AlertDescription,
 } from "@checkmate/ui";
-import {
-  SLOT_USER_MENU_ITEMS,
-  SLOT_USER_MENU_ITEMS_BOTTOM,
-} from "@checkmate/common";
 import { useEnabledStrategies } from "../hooks/useEnabledStrategies";
 import { SocialProviderButton } from "./SocialProviderButton";
+import { authClient } from "../lib/auth-client";
 
-export const LoginPage = () => {
+export const RegisterPage = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,27 +30,29 @@ export const LoginPage = () => {
   const authApi = useApi(authApiRef);
   const { strategies, loading: strategiesLoading } = useEnabledStrategies();
 
-  const handleCredentialLogin = async (e: React.FormEvent) => {
+  const handleCredentialRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await authApi.signIn(email, password);
-      if (error) {
-        console.error("Login failed:", error);
+      const res = await authClient.signUp.email({ name, email, password });
+      if (res.error) {
+        console.error("Registration failed:", res.error);
       } else {
         navigate("/");
       }
+    } catch (error) {
+      console.error("Registration failed:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialLogin = async (provider: string) => {
+  const handleSocialRegister = async (provider: string) => {
     try {
       await authApi.signInWithSocial(provider);
       // Navigation will happen automatically after OAuth redirect
     } catch (error) {
-      console.error("Social login failed:", error);
+      console.error("Social registration failed:", error);
     }
   };
 
@@ -88,7 +85,7 @@ export const LoginPage = () => {
       <div className="min-h-[80vh] flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="flex flex-col space-y-1 items-center">
-            <CardTitle>Authentication Unavailable</CardTitle>
+            <CardTitle>Registration Unavailable</CardTitle>
           </CardHeader>
           <CardContent>
             <Alert variant="warning">
@@ -109,20 +106,31 @@ export const LoginPage = () => {
     <div className="min-h-[80vh] flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col space-y-1 items-center">
-          <CardTitle>Sign in to your account</CardTitle>
+          <CardTitle>Create your account</CardTitle>
           <CardDescription>
             {hasCredential && hasSocial
-              ? "Choose your preferred sign-in method"
-              : (hasCredential
-              ? "Enter your credentials to access the dashboard"
-              : "Continue with your account")}
+              ? "Choose your preferred registration method"
+              : hasCredential
+              ? "Enter your details to get started"
+              : "Continue to create your account"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Credential Form */}
+            {/* Credential Registration Form */}
             {hasCredential && (
-              <form className="space-y-4" onSubmit={handleCredentialLogin}>
+              <form className="space-y-4" onSubmit={handleCredentialRegister}>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="John Doe"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -145,7 +153,7 @@ export const LoginPage = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing In..." : "Sign In"}
+                  {loading ? "Creating Account..." : "Create Account"}
                 </Button>
               </form>
             )}
@@ -172,7 +180,7 @@ export const LoginPage = () => {
                     key={strategy.id}
                     provider={strategy.id}
                     displayName={strategy.displayName}
-                    onClick={() => handleSocialLogin(strategy.id)}
+                    onClick={() => handleSocialRegister(strategy.id)}
                   />
                 ))}
               </div>
@@ -181,63 +189,16 @@ export const LoginPage = () => {
         </CardContent>
         <CardFooter className="flex justify-center border-t border-border mt-4 pt-4">
           <div className="text-sm">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <Link
-              to="/auth/register"
+              to="/auth/login"
               className="underline text-primary hover:text-primary/90 font-medium"
             >
-              Sign up
+              Sign in
             </Link>
           </div>
         </CardFooter>
       </Card>
     </div>
-  );
-};
-
-export const LogoutMenuItem = () => {
-  const authApi = useApi(authApiRef);
-
-  return (
-    <DropdownMenuItem
-      onClick={() => authApi.signOut()}
-      icon={<LogOut className="h-4 w-4" />}
-    >
-      Logout
-    </DropdownMenuItem>
-  );
-};
-
-export const LoginNavbarAction = () => {
-  const authApi = useApi(authApiRef);
-  const { data: session, isPending } = authApi.useSession();
-
-  if (isPending) {
-    return <div className="w-20 h-9 bg-muted animate-pulse rounded-full" />;
-  }
-
-  if (session?.user) {
-    // Check if we have any bottom items to decide if we need a separator
-    const bottomExtensions = pluginRegistry.getExtensions(
-      SLOT_USER_MENU_ITEMS_BOTTOM
-    );
-    const hasBottomItems = bottomExtensions.length > 0;
-
-    return (
-      <UserMenu user={session.user}>
-        <ExtensionSlot id={SLOT_USER_MENU_ITEMS} />
-        {hasBottomItems && <DropdownMenuSeparator />}
-        <ExtensionSlot id={SLOT_USER_MENU_ITEMS_BOTTOM} />
-      </UserMenu>
-    );
-  }
-
-  return (
-    <Link to="/auth/login">
-      <Button variant="outline" className="flex items-center rounded-full px-5">
-        <LogIn className="mr-2 h-4 w-4" />
-        Login
-      </Button>
-    </Link>
   );
 };

@@ -42,14 +42,23 @@ export interface AuthStrategy {
   config?: Record<string, unknown>;
 }
 
+export interface EnabledAuthStrategy {
+  id: string;
+  displayName: string;
+  description?: string;
+  type: "credential" | "social";
+}
+
 // Auth RPC client type derived from the contract
 export type AuthClient = ContractRouterClient<typeof authContract>;
 
 export interface AuthApi {
+  getEnabledStrategies(): Promise<EnabledAuthStrategy[]>;
   signIn(
     email: string,
     password: string
   ): Promise<{ data?: AuthSession; error?: Error }>;
+  signInWithSocial(provider: string): Promise<void>;
   signOut(): Promise<void>;
   getSession(): Promise<{ data?: AuthSession; error?: Error }>;
   useSession(): {
