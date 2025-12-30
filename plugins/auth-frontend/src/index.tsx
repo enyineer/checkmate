@@ -126,7 +126,14 @@ class BetterAuthApi implements AuthApi {
   }
 
   async signOut() {
-    await authClient.signOut();
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          // Redirect to frontend root after successful logout
+          globalThis.location.href = "/";
+        },
+      },
+    });
   }
 
   async getSession() {
