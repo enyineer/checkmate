@@ -41,6 +41,7 @@
       },
       "devDependencies": {
         "@checkmate/scripts": "workspace:*",
+        "@checkmate/test-utils-backend": "workspace:*",
         "@checkmate/tsconfig": "workspace:*",
         "@types/bun": "latest",
         "@types/pg": "^8.11.0",
@@ -156,6 +157,19 @@
         "@types/handlebars": "^4.1.0",
         "@types/inquirer": "^8.2.10",
         "typescript": "^5.0.0",
+      },
+    },
+    "packages/test-utils-backend": {
+      "name": "@checkmate/test-utils-backend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/backend-api": "workspace:*",
+        "@checkmate/queue-api": "workspace:*",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "@types/bun": "latest",
       },
     },
     "packages/tsconfig": {
@@ -349,6 +363,7 @@
       },
       "devDependencies": {
         "@checkmate/scripts": "workspace:*",
+        "@checkmate/test-utils-backend": "workspace:*",
         "@checkmate/tsconfig": "workspace:*",
         "@orpc/server": "^1.13.2",
         "@types/bun": "^1.0.0",
@@ -625,6 +640,8 @@
     "@checkmate/queue-memory-common": ["@checkmate/queue-memory-common@workspace:plugins/queue-memory-common"],
 
     "@checkmate/scripts": ["@checkmate/scripts@workspace:packages/scripts"],
+
+    "@checkmate/test-utils-backend": ["@checkmate/test-utils-backend@workspace:packages/test-utils-backend"],
 
     "@checkmate/tsconfig": ["@checkmate/tsconfig@workspace:packages/tsconfig"],
 

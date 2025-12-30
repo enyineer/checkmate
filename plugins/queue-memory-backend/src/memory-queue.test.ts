@@ -421,4 +421,56 @@ describe("InMemoryQueue Consumer Groups", () => {
       ]);
     });
   });
+
+  describe("Job Deduplication", () => {
+    it("should skip duplicate jobs with same jobId", async () => {
+      const processed: string[] = [];
+
+      await queue.consume(
+        async (job) => {
+          processed.push(job.data);
+        },
+        { consumerGroup: "dedup-group", maxRetries: 0 }
+      );
+
+      // Enqueue job with custom jobId
+      const jobId1 = await queue.enqueue("first", { jobId: "unique-job-1" });
+      expect(jobId1).toBe("unique-job-1");
+
+      // Try to enqueue duplicate (should return same jobId without adding to queue)
+      const jobId2 = await queue.enqueue("duplicate", {
+        jobId: "unique-job-1",
+      });
+      expect(jobId2).toBe("unique-job-1");
+
+      // Wait for processing
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Should only have processed the first job
+      expect(processed.length).toBe(1);
+      expect(processed[0]).toBe("first");
+    });
+
+    it("should allow different jobIds", async () => {
+      const processed: string[] = [];
+
+      await queue.consume(
+        async (job) => {
+          processed.push(job.data);
+        },
+        { consumerGroup: "different-group", maxRetries: 0 }
+      );
+
+      await queue.enqueue("job1", { jobId: "job-1" });
+      await queue.enqueue("job2", { jobId: "job-2" });
+      await queue.enqueue("job3", { jobId: "job-3" });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(processed.length).toBe(3);
+      expect(processed).toContain("job1");
+      expect(processed).toContain("job2");
+      expect(processed).toContain("job3");
+    });
+  });
 });

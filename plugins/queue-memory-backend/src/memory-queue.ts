@@ -79,7 +79,7 @@ export class InMemoryQueue<T> implements Queue<T> {
 
   async enqueue(
     data: T,
-    options?: { priority?: number; delaySeconds?: number }
+    options?: { priority?: number; delaySeconds?: number; jobId?: string }
   ): Promise<string> {
     if (this.jobs.length >= this.config.maxQueueSize) {
       throw new Error(
@@ -92,8 +92,17 @@ export class InMemoryQueue<T> implements Queue<T> {
       ? new Date(now.getTime() + options.delaySeconds * 1000)
       : now;
 
+    // Use custom jobId if provided, otherwise generate one
+    const jobId = options?.jobId ?? crypto.randomUUID();
+
+    // Check for duplicate jobId
+    if (options?.jobId && this.jobs.some((j) => j.id === options.jobId)) {
+      // Job with this ID already exists, skip silently
+      return options.jobId;
+    }
+
     const job: InternalQueueJob<T> = {
-      id: crypto.randomUUID(),
+      id: jobId,
       data,
       priority: options?.priority ?? 0,
       timestamp: now,

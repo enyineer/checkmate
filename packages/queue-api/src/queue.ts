@@ -46,6 +46,11 @@ export interface Queue<T = unknown> {
        * Queue backends should not make this job available until the delay expires
        */
       delaySeconds?: number;
+      /**
+       * Optional unique job ID for deduplication
+       * If provided and a job with this ID already exists, behavior depends on queue implementation
+       */
+      jobId?: string;
     }
   ): Promise<string>;
 

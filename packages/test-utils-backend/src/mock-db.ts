@@ -22,9 +22,18 @@ export function createMockDb() {
   const createSelectChain = () => {
     const whereResult = Object.assign(Promise.resolve([]), {
       limit: mock(() => Promise.resolve([])),
+      orderBy: mock(function () {
+        return Object.assign(Promise.resolve([]), {
+          limit: mock(() => Promise.resolve([])),
+        });
+      }),
+    });
+    const innerJoinResult = Object.assign(Promise.resolve([]), {
+      where: mock(() => whereResult),
     });
     const fromResult = Object.assign(Promise.resolve([]), {
       where: mock(() => whereResult),
+      innerJoin: mock(() => innerJoinResult),
     });
     return {
       from: mock(() => fromResult),

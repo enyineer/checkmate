@@ -30,6 +30,7 @@
     "@types/pg": "^8.11.0",
     "@types/bun": "latest",
     "@checkmate/tsconfig": "workspace:*",
-    "@checkmate/scripts": "workspace:*"
+    "@checkmate/scripts": "workspace:*",
+    "@checkmate/test-utils-backend": "workspace:*"
   }
 }

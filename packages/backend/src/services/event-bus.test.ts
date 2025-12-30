@@ -3,7 +3,10 @@ import { EventBus } from "./event-bus";
 import type { QueueFactory } from "@checkmate/queue-api";
 import type { Logger, Hook } from "@checkmate/backend-api";
 import { createHook } from "@checkmate/backend-api";
-import { createMockLogger, createMockQueueFactory } from "../test-utils";
+import {
+  createMockLogger,
+  createMockQueueFactory,
+} from "@checkmate/test-utils-backend";
 
 describe("EventBus", () => {
   let eventBus: EventBus;

@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@checkmate/scripts": "workspace:*",
+    "@checkmate/test-utils-backend": "workspace:*",
     "@checkmate/tsconfig": "workspace:*",
     "@orpc/server": "^1.13.2",
     "@types/bun": "^1.0.0",

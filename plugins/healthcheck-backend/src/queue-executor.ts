@@ -43,17 +43,31 @@ export async function scheduleHealthCheck(props: {
   queueFactory: QueueFactory;
   payload: HealthCheckJobPayload;
   intervalSeconds: number;
+  logger?: Logger;
 }): Promise<string> {
-  const { queueFactory, payload, intervalSeconds } = props;
+  const { queueFactory, payload, intervalSeconds, logger } = props;
 
   const queue = await queueFactory.createQueue<HealthCheckJobPayload>(
     HEALTH_CHECK_QUEUE
   );
 
-  return await queue.enqueue(payload, {
+  // Use deterministic job ID to prevent duplicates across instances
+  const jobId = `healthcheck:${payload.configId}:${payload.systemId}`;
+
+  const resultJobId = await queue.enqueue(payload, {
     delaySeconds: intervalSeconds,
     priority: 0,
+    jobId,
   });
+
+  // If the returned jobId matches our jobId, it was either created or already exists
+  if (resultJobId === jobId && logger) {
+    logger.debug(
+      `Scheduled health check ${payload.configId} for system ${payload.systemId} (may be duplicate)`
+    );
+  }
+
+  return resultJobId;
 }
 
 /**
@@ -134,6 +148,7 @@ async function executeHealthCheckJob(props: {
       queueFactory,
       payload,
       intervalSeconds: configRow.interval,
+      logger,
     });
 
     logger.debug(
@@ -169,6 +184,7 @@ async function executeHealthCheckJob(props: {
           queueFactory,
           payload,
           intervalSeconds: config.interval,
+          logger,
         });
       }
     } catch (rescheduleError) {
@@ -337,6 +353,7 @@ export async function bootstrapHealthChecks(props: {
         systemId: check.systemId,
       },
       intervalSeconds: check.interval,
+      logger,
     });
   }
 
