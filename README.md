@@ -2,6 +2,11 @@
 
 Checkmate is a system monitor which allows you to configure Health-Checks and automatically communicate to your users if something breaks.
 
+> [!WARNING]
+> Checkmate is currently in alpha and is not ready for production use.
+>
+> Breaking changes are to be expected regularly in this development phase. We're still happy if you try it out and give us feedback!
+
 ## Running locally
 
 To run this project in development, run `bun run dev` in the root directory.
