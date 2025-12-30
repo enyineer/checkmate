@@ -1,4 +1,5 @@
 import { oc } from "@orpc/contract";
+import type { ContractRouterClient } from "@orpc/contract";
 import { z } from "zod";
 
 // Theme type - matches ThemeProvider's Theme type
@@ -31,3 +32,6 @@ export const themeContract = {
 
 // Export contract type for frontend
 export type ThemeContract = typeof themeContract;
+
+// Export typed client for backend-to-backend communication
+export type ThemeClient = ContractRouterClient<typeof themeContract>;

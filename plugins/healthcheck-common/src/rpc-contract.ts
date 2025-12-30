@@ -1,4 +1,5 @@
 import { oc } from "@orpc/contract";
+import type { ContractRouterClient } from "@orpc/contract";
 import { z } from "zod";
 import { permissions } from "./permissions";
 import {
@@ -91,3 +92,8 @@ export const healthCheckContract = {
 
 // Export contract type for frontend
 export type HealthCheckContract = typeof healthCheckContract;
+
+// Export typed client for backend-to-backend communication
+export type HealthCheckClient = ContractRouterClient<
+  typeof healthCheckContract
+>;

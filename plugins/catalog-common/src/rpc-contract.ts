@@ -1,4 +1,5 @@
 import { oc } from "@orpc/contract";
+import type { ContractRouterClient } from "@orpc/contract";
 import { z } from "zod";
 import { SystemSchema, GroupSchema, ViewSchema, IncidentSchema } from "./types";
 import { permissions } from "./permissions";
@@ -62,14 +63,12 @@ const CreateIncidentInputSchema = z.object({
 // Catalog RPC Contract using oRPC's contract-first pattern
 export const catalogContract = {
   // Entity management - Read permission
-  getEntities: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
-    .output(
-      z.object({
-        systems: z.array(SystemSchema),
-        groups: z.array(GroupSchema),
-      })
-    ),
+  getEntities: _base.meta({ permissions: [permissions.catalogRead.id] }).output(
+    z.object({
+      systems: z.array(SystemSchema),
+      groups: z.array(GroupSchema),
+    })
+  ),
 
   // Convenience methods - Read permission
   getSystems: _base
@@ -153,3 +152,6 @@ export const catalogContract = {
 
 // Export contract type for frontend
 export type CatalogContract = typeof catalogContract;
+
+// Export typed client for backend-to-backend communication
+export type CatalogClient = ContractRouterClient<typeof catalogContract>;

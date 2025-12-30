@@ -1,4 +1,5 @@
 import { oc } from "@orpc/contract";
+import type { ContractRouterClient } from "@orpc/contract";
 import { z } from "zod";
 import {
   {{pluginNamePascal}}ItemSchema,
@@ -51,4 +52,8 @@ export const {{pluginNameCamel}}Contract = {
     .output(z.void()),
 };
 
+// Export contract type for frontend
 export type {{pluginNamePascal}}Contract = typeof {{pluginNameCamel}}Contract;
+
+// Export typed client for backend-to-backend communication
+export type {{pluginNamePascal}}Client = ContractRouterClient<typeof {{pluginNameCamel}}Contract>;
