@@ -78,6 +78,9 @@
     "packages/common": {
       "name": "@checkmate/common",
       "version": "0.0.1",
+      "dependencies": {
+        "zod": "^4.0.0",
+      },
       "devDependencies": {
         "@checkmate/scripts": "workspace:*",
         "@checkmate/tsconfig": "workspace:*",

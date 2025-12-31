@@ -35,3 +35,6 @@ export * from "./components/Accordion";
 export * from "./components/Tabs";
 export * from "./components/ThemeProvider";
 export * from "./components/SubscribeButton";
+export * from "./components/Pagination";
+export * from "./components/PaginatedList";
+export * from "./hooks/usePagination";
