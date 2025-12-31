@@ -46,10 +46,3 @@ export const notificationSubscriptions = pgTable(
     pk: primaryKey({ columns: [t.userId, t.groupId] }),
   })
 );
-
-// Notification settings (retention policy, etc.)
-export const notificationSettings = pgTable("notification_settings", {
-  id: text("id").primaryKey(), // e.g., 'retention'
-  value: jsonb("value").notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});

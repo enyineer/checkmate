@@ -3,7 +3,6 @@ import { eq, and, count, desc, lt } from "drizzle-orm";
 import type {
   NotificationAction,
   Importance,
-  RetentionSettings,
 } from "@checkmate/notification-common";
 import * as schema from "./schema";
 
@@ -381,62 +380,24 @@ export async function unsubscribeFromGroup(
 }
 
 /**
- * Get retention settings
+ * Purge old notifications based on retention policy.
+ * Retention settings should be fetched from ConfigService and passed in.
  */
-export async function getRetentionSettings(
-  db: NodePgDatabase<typeof schema>
-): Promise<RetentionSettings> {
-  const result = await db
-    .select({ value: schema.notificationSettings.value })
-    .from(schema.notificationSettings)
-    .where(eq(schema.notificationSettings.id, "retention"))
-    .limit(1);
-
-  if (result.length === 0) {
-    // Default settings
-    return { retentionDays: 30, enabled: false };
-  }
-
-  return result[0].value as RetentionSettings;
-}
-
-/**
- * Set retention settings
- */
-export async function setRetentionSettings(
-  db: NodePgDatabase<typeof schema>,
-  settings: RetentionSettings
-): Promise<void> {
-  await db
-    .insert(schema.notificationSettings)
-    .values({
-      id: "retention",
-      value: settings,
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: [schema.notificationSettings.id],
-      set: {
-        value: settings,
-        updatedAt: new Date(),
-      },
-    });
-}
-
-/**
- * Purge old notifications based on retention policy
- */
-export async function purgeOldNotifications(
-  db: NodePgDatabase<typeof schema>
-): Promise<number> {
-  const settings = await getRetentionSettings(db);
-
-  if (!settings.enabled) {
+export async function purgeOldNotifications({
+  db,
+  enabled,
+  retentionDays,
+}: {
+  db: NodePgDatabase<typeof schema>;
+  enabled: boolean;
+  retentionDays: number;
+}): Promise<number> {
+  if (!enabled) {
     return 0;
   }
 
   const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - settings.retentionDays);
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
   const result = await db
     .delete(schema.notifications)

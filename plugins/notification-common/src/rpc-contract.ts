@@ -80,6 +80,11 @@ export const notificationContract = {
 
   // --- Admin Settings Endpoints ---
 
+  // Get retention schema for DynamicForm
+  getRetentionSchema: _base
+    .meta({ permissions: [permissions.notificationAdmin.id] })
+    .output(z.record(z.string(), z.unknown())),
+
   // Get retention settings
   getRetentionSettings: _base
     .meta({ permissions: [permissions.notificationAdmin.id] })

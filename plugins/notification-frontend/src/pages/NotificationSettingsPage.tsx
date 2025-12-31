@@ -4,15 +4,13 @@ import {
   PageLayout,
   Card,
   Button,
-  Input,
-  Label,
   Toggle,
   useToast,
   SectionHeader,
+  DynamicForm,
 } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import type {
-  RetentionSettings,
   NotificationGroup,
   NotificationSubscription,
   NotificationClient,
@@ -26,12 +24,15 @@ export const NotificationSettingsPage = () => {
   const toast = useToast();
 
   // Retention settings state
-  const [retentionSettings, setRetentionSettings] = useState<RetentionSettings>(
-    {
-      retentionDays: 30,
-      enabled: false,
-    }
-  );
+  const [retentionSchema, setRetentionSchema] = useState<
+    Record<string, unknown> | undefined
+  >();
+  const [retentionSettings, setRetentionSettings] = useState<
+    Record<string, unknown>
+  >({
+    retentionDays: 30,
+    enabled: false,
+  });
   const [retentionLoading, setRetentionLoading] = useState(true);
   const [retentionSaving, setRetentionSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -43,10 +44,14 @@ export const NotificationSettingsPage = () => {
   >([]);
   const [subsLoading, setSubsLoading] = useState(true);
 
-  // Fetch retention settings (admin only)
-  const fetchRetentionSettings = useCallback(async () => {
+  // Fetch retention settings and schema (admin only)
+  const fetchRetentionData = useCallback(async () => {
     try {
-      const settings = await notificationClient.getRetentionSettings();
+      const [schema, settings] = await Promise.all([
+        notificationClient.getRetentionSchema(),
+        notificationClient.getRetentionSettings(),
+      ]);
+      setRetentionSchema(schema as Record<string, unknown>);
       setRetentionSettings(settings);
       setIsAdmin(true); // If fetch succeeds, user has admin access
     } catch {
@@ -78,14 +83,16 @@ export const NotificationSettingsPage = () => {
   }, [notificationClient, toast]);
 
   useEffect(() => {
-    void fetchRetentionSettings();
+    void fetchRetentionData();
     void fetchSubscriptionData();
-  }, [fetchRetentionSettings, fetchSubscriptionData]);
+  }, [fetchRetentionData, fetchSubscriptionData]);
 
   const handleSaveRetention = async () => {
     try {
       setRetentionSaving(true);
-      await notificationClient.setRetentionSettings(retentionSettings);
+      await notificationClient.setRetentionSettings(
+        retentionSettings as { enabled: boolean; retentionDays: number }
+      );
       toast.success("Retention settings saved");
     } catch (error) {
       const message =
@@ -176,7 +183,7 @@ export const NotificationSettingsPage = () => {
         </section>
 
         {/* Retention Policy - Admin only */}
-        {isAdmin && (
+        {isAdmin && retentionSchema && (
           <section>
             <SectionHeader
               title="Retention Policy"
@@ -190,48 +197,11 @@ export const NotificationSettingsPage = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Enable auto-purge</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Automatically delete old notifications
-                      </p>
-                    </div>
-                    <Toggle
-                      checked={retentionSettings.enabled}
-                      onCheckedChange={(checked) => {
-                        setRetentionSettings((prev) => ({
-                          ...prev,
-                          enabled: checked,
-                        }));
-                      }}
-                      aria-label="Enable retention policy"
-                    />
-                  </div>
-
-                  {retentionSettings.enabled && (
-                    <div>
-                      <Label htmlFor="retentionDays">
-                        Retention period (days)
-                      </Label>
-                      <Input
-                        id="retentionDays"
-                        type="number"
-                        min={1}
-                        max={365}
-                        value={retentionSettings.retentionDays}
-                        onChange={(e) => {
-                          setRetentionSettings((prev) => ({
-                            ...prev,
-                            retentionDays:
-                              Number.parseInt(e.target.value, 10) || 30,
-                          }));
-                        }}
-                        className="w-32 mt-1"
-                      />
-                    </div>
-                  )}
-
+                  <DynamicForm
+                    schema={retentionSchema}
+                    value={retentionSettings}
+                    onChange={setRetentionSettings}
+                  />
                   <Button
                     onClick={() => {
                       void handleSaveRetention();

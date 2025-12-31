@@ -3,6 +3,8 @@ import {
   authedProcedure,
   permissionMiddleware,
   zod,
+  type ConfigService,
+  toJsonSchema,
 } from "@checkmate/backend-api";
 import {
   PaginationInputSchema,
@@ -20,9 +22,12 @@ import {
   getUserSubscriptions,
   subscribeToGroup,
   unsubscribeFromGroup,
-  getRetentionSettings,
-  setRetentionSettings,
 } from "./service";
+import {
+  retentionConfigV1,
+  RETENTION_CONFIG_VERSION,
+  RETENTION_CONFIG_ID,
+} from "./retention-config";
 
 // Create middleware for permissions
 const notificationRead = permissionMiddleware(permissions.notificationRead.id);
@@ -31,7 +36,8 @@ const notificationAdmin = permissionMiddleware(
 );
 
 export const createNotificationRouter = (
-  database: NodePgDatabase<typeof schema>
+  database: NodePgDatabase<typeof schema>,
+  configService: ConfigService
 ) => {
   return os.router({
     // --- User Notification Endpoints ---
@@ -131,17 +137,33 @@ export const createNotificationRouter = (
 
     // --- Admin Settings Endpoints ---
 
+    getRetentionSchema: authedProcedure.use(notificationAdmin).handler(() => {
+      // Return the JSON schema for DynamicForm
+      return toJsonSchema(retentionConfigV1);
+    }),
+
     getRetentionSettings: authedProcedure
       .use(notificationAdmin)
       .handler(async () => {
-        return getRetentionSettings(database);
+        const config = await configService.get(
+          RETENTION_CONFIG_ID,
+          retentionConfigV1,
+          RETENTION_CONFIG_VERSION
+        );
+        // Return defaults if no config stored
+        return config ?? { enabled: false, retentionDays: 30 };
       }),
 
     setRetentionSettings: authedProcedure
       .use(notificationAdmin)
       .input(RetentionSettingsSchema)
       .handler(async ({ input }) => {
-        await setRetentionSettings(database, input);
+        await configService.set(
+          RETENTION_CONFIG_ID,
+          retentionConfigV1,
+          RETENTION_CONFIG_VERSION,
+          input
+        );
       }),
   });
 };

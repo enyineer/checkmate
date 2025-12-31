@@ -29,7 +29,6 @@ describe("Notification Backend Module", () => {
     expect(schema.notifications).toBeDefined();
     expect(schema.notificationGroups).toBeDefined();
     expect(schema.notificationSubscriptions).toBeDefined();
-    expect(schema.notificationSettings).toBeDefined();
   });
 
   it("exports plugin default", async () => {

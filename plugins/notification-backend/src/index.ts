@@ -31,14 +31,15 @@ export default createBackendPlugin({
       deps: {
         logger: coreServices.logger,
         rpc: coreServices.rpc,
+        config: coreServices.config,
       },
-      init: async ({ logger, database, rpc }) => {
+      init: async ({ logger, database, rpc, config }) => {
         logger.debug("🔔 Initializing Notification Backend...");
 
         const db = database as unknown as NodePgDatabase<typeof schema>;
 
         // Create and register the notification router
-        const router = createNotificationRouter(db);
+        const router = createNotificationRouter(db, config);
         rpc.registerRouter("notification-backend", router);
 
         logger.debug("✅ Notification Backend initialized.");
