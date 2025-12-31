@@ -17,17 +17,21 @@ export async function loadPlugins(
 
     // 2. Glob all available local plugins
     // Load from both core/ (essential) and plugins/ (providers)
-    const coreModules =
-      overrideModules ||
-      // @ts-expect-error - Vite specific property
-      import.meta.glob("../../*-frontend/src/index.tsx");
+    // Skip glob calls when override modules provided (for testing in non-Vite environments)
+    let modules: Record<string, () => Promise<unknown>>;
+    if (overrideModules) {
+      modules = overrideModules;
+    } else {
+      const coreModules =
+        // @ts-expect-error - Vite specific property
+        import.meta.glob("../../*-frontend/src/index.tsx");
 
-    const pluginModules =
-      // @ts-expect-error - Vite specific property
-      import.meta.glob("../../../plugins/*-frontend/src/index.tsx");
+      const pluginModules =
+        // @ts-expect-error - Vite specific property
+        import.meta.glob("../../../plugins/*-frontend/src/index.tsx");
 
-    // Merge both sources
-    const modules = overrideModules || { ...coreModules, ...pluginModules };
+      modules = { ...coreModules, ...pluginModules };
+    }
 
     console.log(
       `🔌 Found ${

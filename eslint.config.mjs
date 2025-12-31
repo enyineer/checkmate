@@ -10,6 +10,7 @@ export default tseslint.config(
       "**/drizzle/**",
       "**/public/vendor/**",
       "**/*.test.ts*",
+      "**/*.e2e.ts",
     ],
   },
   js.configs.recommended,
