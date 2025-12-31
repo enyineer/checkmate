@@ -16,12 +16,18 @@ export async function loadPlugins(
       await response.json();
 
     // 2. Glob all available local plugins
-    // We expect plugins to be in ../../plugins/*/src/index.tsx
-    // The key will be the relative path
-    const modules =
+    // Load from both core/ (essential) and plugins/ (providers)
+    const coreModules =
       overrideModules ||
       // @ts-expect-error - Vite specific property
+      import.meta.glob("../../*-frontend/src/index.tsx");
+
+    const pluginModules =
+      // @ts-expect-error - Vite specific property
       import.meta.glob("../../../plugins/*-frontend/src/index.tsx");
+
+    // Merge both sources
+    const modules = overrideModules || { ...coreModules, ...pluginModules };
 
     console.log(
       `🔌 Found ${

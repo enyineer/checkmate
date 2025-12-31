@@ -6,7 +6,11 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
-    "../../plugins/*/src/**/*.{js,ts,jsx,tsx}",
+    // Core frontend plugins (siblings in core/)
+    "../*-frontend/src/**/*.{js,ts,jsx,tsx}",
+    // External plugins
+    "../../plugins/*-frontend/src/**/*.{js,ts,jsx,tsx}",
+    // Shared UI library
     "../ui/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
