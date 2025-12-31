@@ -98,14 +98,14 @@ export class PluginManager {
           const authHeader = request.headers.get("Authorization");
           const token = authHeader?.replace("Bearer ", "");
 
-          // Strategy A: Service Token
+          // Strategy A: Service Token (backend-to-backend)
           if (token) {
             const payload = await jwtService.verify(token);
-            if (payload) {
+            if (payload && payload.service) {
+              // Service tokens return ServiceUser type
               return {
-                id: (payload.sub as string) || (payload.service as string),
-                permissions: ["*"], // Service tokens grant all
-                roles: ["service"],
+                type: "service" as const,
+                pluginId: payload.service as string,
               };
             }
           }
@@ -117,6 +117,7 @@ export class PluginManager {
               pluginId
             );
             if (authStrategy) {
+              // AuthenticationStrategy.validate() returns RealUser | undefined
               return await (authStrategy as AuthenticationStrategy).validate(
                 request
               );

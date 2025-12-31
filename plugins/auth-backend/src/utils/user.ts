@@ -1,12 +1,17 @@
 import { User } from "better-auth/types";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
+import type { RealUser } from "@checkmate/backend-api";
 import * as schema from "../schema";
 
+/**
+ * Enriches a better-auth User with roles and permissions from the database.
+ * Returns a RealUser type for use in the RPC context.
+ */
 export const enrichUser = async (
   user: User,
   db: NodePgDatabase<typeof schema>
-) => {
+): Promise<RealUser> => {
   // 1. Get Roles
   const userRoles = await db
     .select({
@@ -44,7 +49,13 @@ export const enrichUser = async (
   }
 
   return {
+    // Spread user first to preserve additional properties
     ...user,
+    // Override with required RealUser fields
+    type: "user",
+    id: user.id,
+    email: user.email,
+    name: user.name,
     roles,
     permissions: [...permissions],
   };

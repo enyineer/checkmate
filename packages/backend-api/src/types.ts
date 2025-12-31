@@ -19,19 +19,46 @@ export interface Fetch {
   };
 }
 
-export type AuthUser = {
-  [key: string]: unknown;
+/**
+ * Real user authenticated via session/token (human users).
+ * Has permissions and roles from the RBAC system.
+ */
+export interface RealUser {
+  type: "user";
+  id: string;
+  email?: string;
+  name?: string;
   permissions?: string[];
   roles?: string[];
-};
+  [key: string]: unknown;
+}
+
+/**
+ * Service user for backend-to-backend calls.
+ * Trusted implicitly - no permissions/roles needed.
+ */
+export interface ServiceUser {
+  type: "service";
+  pluginId: string;
+}
+
+/**
+ * Discriminated union of user types.
+ * Use `user.type` to discriminate between real users and service users.
+ */
+export type AuthUser = RealUser | ServiceUser;
 
 export interface AuthService {
   authenticate(request: Request): Promise<AuthUser | undefined>;
   getCredentials(): Promise<{ headers: Record<string, string> }>;
 }
 
+/**
+ * Authentication strategy for validating user credentials.
+ * Only returns RealUser since strategies authenticate human users, not services.
+ */
 export interface AuthenticationStrategy {
-  validate(request: Request): Promise<AuthUser | undefined>;
+  validate(request: Request): Promise<RealUser | undefined>;
 }
 
 export interface PluginInstaller {

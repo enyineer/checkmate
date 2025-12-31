@@ -1,6 +1,8 @@
 import {
   os,
+  userProcedure,
   authedProcedure,
+  serviceProcedure,
   permissionMiddleware,
   zod,
   type ConfigService,
@@ -40,13 +42,13 @@ export const createNotificationRouter = (
   configService: ConfigService
 ) => {
   return os.router({
-    // --- User Notification Endpoints ---
+    // --- User Notification Endpoints (userProcedure for type-safe user.id) ---
 
-    getNotifications: authedProcedure
+    getNotifications: userProcedure
       .use(notificationRead)
       .input(PaginationInputSchema)
       .handler(async ({ input, context }) => {
-        const userId = context.user.id as string;
+        const userId = context.user.id;
 
         const result = await getUserNotifications(database, userId, {
           limit: input.limit,
@@ -70,31 +72,31 @@ export const createNotificationRouter = (
         };
       }),
 
-    getUnreadCount: authedProcedure
+    getUnreadCount: userProcedure
       .use(notificationRead)
       .handler(async ({ context }) => {
-        const userId = context.user.id as string;
+        const userId = context.user.id;
         const count = await getUnreadCount(database, userId);
         return { count };
       }),
 
-    markAsRead: authedProcedure
+    markAsRead: userProcedure
       .use(notificationRead)
       .input(zod.object({ notificationId: zod.string().uuid().optional() }))
       .handler(async ({ input, context }) => {
-        const userId = context.user.id as string;
+        const userId = context.user.id;
         await markAsRead(database, userId, input.notificationId);
       }),
 
-    deleteNotification: authedProcedure
+    deleteNotification: userProcedure
       .use(notificationRead)
       .input(zod.object({ notificationId: zod.string().uuid() }))
       .handler(async ({ input, context }) => {
-        const userId = context.user.id as string;
+        const userId = context.user.id;
         await deleteNotification(database, userId, input.notificationId);
       }),
 
-    // --- Group & Subscription Endpoints (any authenticated user) ---
+    // --- Group & Subscription Endpoints (user-only) ---
 
     getGroups: authedProcedure.use(notificationRead).handler(async () => {
       const groups = await getAllGroups(database);
@@ -103,14 +105,13 @@ export const createNotificationRouter = (
         name: g.name,
         description: g.description,
         ownerPlugin: g.ownerPlugin,
-        createdAt: g.createdAt,
       }));
     }),
 
-    getSubscriptions: authedProcedure
+    getSubscriptions: userProcedure
       .use(notificationRead)
       .handler(async ({ context }) => {
-        const userId = context.user.id as string;
+        const userId = context.user.id;
         const subscriptions = await getEnrichedUserSubscriptions(
           database,
           userId
@@ -118,19 +119,19 @@ export const createNotificationRouter = (
         return subscriptions;
       }),
 
-    subscribe: authedProcedure
+    subscribe: userProcedure
       .use(notificationRead)
       .input(zod.object({ groupId: zod.string() }))
       .handler(async ({ input, context }) => {
-        const userId = context.user.id as string;
+        const userId = context.user.id;
         await subscribeToGroup(database, userId, input.groupId);
       }),
 
-    unsubscribe: authedProcedure
+    unsubscribe: userProcedure
       .use(notificationRead)
       .input(zod.object({ groupId: zod.string() }))
       .handler(async ({ input, context }) => {
-        const userId = context.user.id as string;
+        const userId = context.user.id;
         await unsubscribeFromGroup(database, userId, input.groupId);
       }),
 
@@ -165,9 +166,9 @@ export const createNotificationRouter = (
         );
       }),
 
-    // --- Backend-to-Backend Group Management ---
+    // --- Backend-to-Backend Group Management (Service-Only) ---
 
-    createGroup: authedProcedure
+    createGroup: serviceProcedure
       .input(
         zod.object({
           groupId: zod.string(),
@@ -199,7 +200,7 @@ export const createNotificationRouter = (
         return { id: namespacedId };
       }),
 
-    deleteGroup: authedProcedure
+    deleteGroup: serviceProcedure
       .input(
         zod.object({
           groupId: zod.string(),

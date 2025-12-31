@@ -36,17 +36,68 @@ export const authMiddleware = os.middleware(async ({ next, context }) => {
 });
 
 /**
- * Base procedure for authenticated requests.
+ * Base procedure for authenticated requests (users or services).
  */
 export const authedProcedure = os.use(authMiddleware);
 
 /**
+ * Middleware that ensures the caller is a service (backend-to-backend).
+ * Use this for endpoints that should only be callable by other services.
+ */
+export const serviceOnlyMiddleware = os.middleware(
+  async ({ next, context }) => {
+    if (!context.user) {
+      throw new Error("Unauthorized");
+    }
+    if (context.user.type !== "service") {
+      throw new Error(
+        "Forbidden: This endpoint is for service-to-service calls only"
+      );
+    }
+    return next({ context: { user: context.user } });
+  }
+);
+
+/**
+ * Procedure for service-to-service calls only.
+ * Services are trusted and don't need permission checks.
+ */
+export const serviceProcedure = os.use(serviceOnlyMiddleware);
+
+/**
+ * Middleware that ensures the caller is a real user (not a service).
+ * Use this for endpoints that should only be callable by frontend users.
+ */
+export const userOnlyMiddleware = os.middleware(async ({ next, context }) => {
+  if (!context.user) {
+    throw new Error("Unauthorized");
+  }
+  if (context.user.type !== "user") {
+    throw new Error("Forbidden: This endpoint is for user access only");
+  }
+  // Narrow context type to RealUser
+  return next({ context: { user: context.user } });
+});
+
+/**
+ * Procedure for user-facing endpoints only.
+ * Narrows context.user to RealUser type for type-safe access to user.id, etc.
+ */
+export const userProcedure = os.use(userOnlyMiddleware);
+
+/**
  * Middleware that checks for a specific permission.
+ * Only applies to real users - services are implicitly trusted.
  */
 export const permissionMiddleware = (permission: string | string[]) =>
   os.middleware(async ({ next, context }) => {
     if (!context.user) {
       throw new Error("Unauthorized");
+    }
+
+    // Services are implicitly trusted - skip permission checks
+    if (context.user.type === "service") {
+      return next({});
     }
 
     const userPermissions = context.user.permissions || [];
@@ -92,6 +143,8 @@ export interface PermissionMetadata {
  * This reads the `permissions` field from the procedure's metadata and validates
  * the user has at least one of the required permissions.
  *
+ * Services are implicitly trusted and skip permission checks.
+ *
  * Use this in backend routers: `implement(contract).use(autoPermissionMiddleware)`
  */
 export const autoPermissionMiddleware = os.middleware(
@@ -101,17 +154,24 @@ export const autoPermissionMiddleware = os.middleware(
       throw new Error("Unauthorized");
     }
 
+    const user = context.user;
+
+    // Services are implicitly trusted - skip permission checks
+    if (user.type === "service") {
+      return next({});
+    }
+
     // Check if procedure has permission requirements in metadata
     const meta = procedure["~orpc"]?.meta as PermissionMetadata | undefined;
     const requiredPermissions = meta?.permissions;
 
     if (!requiredPermissions || requiredPermissions.length === 0) {
-      // No permissions required, pass through with user context
-      return next({ context: { user: context.user } });
+      // No permissions required, pass through
+      return next({});
     }
 
     // Check user has at least one of the required permissions
-    const userPermissions = context.user.permissions || [];
+    const userPermissions = user.permissions || [];
     const hasPermission = requiredPermissions.some((p: string) => {
       return userPermissions.includes("*") || userPermissions.includes(p);
     });
@@ -120,8 +180,7 @@ export const autoPermissionMiddleware = os.middleware(
       throw new Error(`Forbidden: Missing ${requiredPermissions.join(" or ")}`);
     }
 
-    // Pass through with user context
-    return next({ context: { user: context.user } });
+    return next({});
   }
 );
 

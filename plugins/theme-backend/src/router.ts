@@ -1,22 +1,28 @@
 import { implement, ORPCError } from "@orpc/server";
-import type { RpcContext } from "@checkmate/backend-api";
+import type { RpcContext, AuthUser, RealUser } from "@checkmate/backend-api";
 import { themeContract } from "@checkmate/theme-common";
 import * as schema from "./schema";
 import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+
+/**
+ * Type guard to check if user is a RealUser (not a service).
+ */
+function isRealUser(user: AuthUser | undefined): user is RealUser {
+  return user?.type === "user";
+}
 
 // Create implementer from contract with our context
 const os = implement(themeContract).$context<RpcContext>();
 
 export const createThemeRouter = (db: NodePgDatabase<typeof schema>) => {
   const getTheme = os.getTheme.handler(async ({ context }) => {
-    const userId = context.user?.id as string | undefined;
-
-    if (!userId) {
+    if (!isRealUser(context.user)) {
       throw new ORPCError("UNAUTHORIZED", {
         message: "Unauthorized",
       });
     }
+    const userId = context.user.id;
 
     // Query user theme preference
     const preferences = await db
@@ -31,13 +37,12 @@ export const createThemeRouter = (db: NodePgDatabase<typeof schema>) => {
   });
 
   const setTheme = os.setTheme.handler(async ({ input, context }) => {
-    const userId = context.user?.id as string | undefined;
-
-    if (!userId) {
+    if (!isRealUser(context.user)) {
       throw new ORPCError("UNAUTHORIZED", {
         message: "Unauthorized",
       });
     }
+    const userId = context.user.id;
 
     const { theme } = input;
 

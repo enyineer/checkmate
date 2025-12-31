@@ -1,5 +1,5 @@
 import { implement, ORPCError } from "@orpc/server";
-import type { RpcContext } from "@checkmate/backend-api";
+import type { RpcContext, AuthUser, RealUser } from "@checkmate/backend-api";
 import {
   type AuthStrategy,
   type ConfigService,
@@ -9,6 +9,13 @@ import { authContract } from "@checkmate/auth-common";
 import * as schema from "./schema";
 import { eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+
+/**
+ * Type guard to check if user is a RealUser (not a service).
+ */
+function isRealUser(user: AuthUser | undefined): user is RealUser {
+  return user?.type === "user";
+}
 import {
   strategyMetaConfigV1,
   STRATEGY_META_CONFIG_VERSION,
@@ -121,7 +128,11 @@ export const createAuthRouter = (
   });
 
   const permissions = os.permissions.handler(async ({ context }) => {
-    return { permissions: context.user?.permissions || [] };
+    const user = context.user;
+    if (!isRealUser(user)) {
+      return { permissions: [] };
+    }
+    return { permissions: user.permissions || [] };
   });
 
   const getUsers = os.getUsers.handler(async () => {
@@ -232,7 +243,7 @@ export const createAuthRouter = (
     const { id, name, description, permissions: inputPermissions } = input;
 
     // Security check: prevent users from modifying their own roles
-    const userRoles = context.user?.roles || [];
+    const userRoles = isRealUser(context.user) ? context.user.roles || [] : [];
     if (userRoles.includes(id)) {
       throw new ORPCError("FORBIDDEN", {
         message: "Cannot modify a role that you currently have",
@@ -295,7 +306,7 @@ export const createAuthRouter = (
 
   const deleteRole = os.deleteRole.handler(async ({ input: id, context }) => {
     // Security check: prevent users from deleting their own roles
-    const userRoles = context.user?.roles || [];
+    const userRoles = isRealUser(context.user) ? context.user.roles || [] : [];
     if (userRoles.includes(id)) {
       throw new ORPCError("FORBIDDEN", {
         message: "Cannot delete a role that you currently have",
@@ -328,7 +339,10 @@ export const createAuthRouter = (
     async ({ input, context }) => {
       const { userId, roles } = input;
 
-      if (userId === context.user?.id) {
+      const currentUserId = isRealUser(context.user)
+        ? context.user.id
+        : undefined;
+      if (userId === currentUserId) {
         throw new ORPCError("FORBIDDEN", {
           message: "Cannot update your own roles",
         });
