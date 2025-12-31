@@ -25,7 +25,7 @@ const HealthCheckConfigPageContent = () => {
     HealthCheckConfiguration[]
   >([]);
   const [strategies, setStrategies] = useState<HealthCheckStrategyDto[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<
     HealthCheckConfiguration | undefined
   >();
@@ -50,12 +50,12 @@ const HealthCheckConfigPageContent = () => {
 
   const handleCreate = () => {
     setEditingConfig(undefined);
-    setIsEditing(true);
+    setIsEditorOpen(true);
   };
 
   const handleEdit = (config: HealthCheckConfiguration) => {
     setEditingConfig(config);
-    setIsEditing(true);
+    setIsEditorOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -80,8 +80,13 @@ const HealthCheckConfigPageContent = () => {
     await (editingConfig
       ? api.updateConfiguration({ id: editingConfig.id, body: data })
       : api.createConfiguration(data));
-    setIsEditing(false);
+    setIsEditorOpen(false);
     await fetchData();
+  };
+
+  const handleEditorClose = () => {
+    setIsEditorOpen(false);
+    setEditingConfig(undefined);
   };
 
   return (
@@ -90,30 +95,26 @@ const HealthCheckConfigPageContent = () => {
       subtitle="Manage health check configurations"
       loading={permissionLoading}
       allowed={canRead}
-      maxWidth={isEditing ? "3xl" : "full"}
       actions={
-        !isEditing && (
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Create Check
-          </Button>
-        )
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" /> Create Check
+        </Button>
       }
     >
-      {isEditing ? (
-        <HealthCheckEditor
-          strategies={strategies}
-          initialData={editingConfig}
-          onSave={handleSave}
-          onCancel={() => setIsEditing(false)}
-        />
-      ) : (
-        <HealthCheckList
-          configurations={configurations}
-          strategies={strategies}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      )}
+      <HealthCheckList
+        configurations={configurations}
+        strategies={strategies}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      <HealthCheckEditor
+        open={isEditorOpen}
+        strategies={strategies}
+        initialData={editingConfig}
+        onSave={handleSave}
+        onCancel={handleEditorClose}
+      />
 
       <ConfirmationModal
         isOpen={isDeleteModalOpen}

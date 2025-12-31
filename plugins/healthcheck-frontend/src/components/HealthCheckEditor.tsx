@@ -8,13 +8,13 @@ import {
   Button,
   Input,
   Label,
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
   PluginConfigForm,
   useToast,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@checkmate/ui";
 
 interface HealthCheckEditorProps {
@@ -22,6 +22,7 @@ interface HealthCheckEditorProps {
   initialData?: HealthCheckConfiguration;
   onSave: (data: CreateHealthCheckConfiguration) => Promise<void>;
   onCancel: () => void;
+  open: boolean;
 }
 
 export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
@@ -29,6 +30,7 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
   initialData,
   onSave,
   onCancel,
+  open,
 }) => {
   const [name, setName] = useState(initialData?.name || "");
   const [strategyId, setStrategyId] = useState(initialData?.strategyId || "");
@@ -41,6 +43,16 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
 
   const toast = useToast();
   const [loading, setLoading] = useState(false);
+
+  // Reset form when dialog opens with new data
+  React.useEffect(() => {
+    if (open) {
+      setName(initialData?.name || "");
+      setStrategyId(initialData?.strategyId || "");
+      setInterval(initialData?.intervalSeconds?.toString() || "60");
+      setConfig((initialData?.config as Record<string, unknown>) || {});
+    }
+  }, [open, initialData]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,58 +75,62 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {initialData ? "Edit Health Check" : "Create Health Check"}
-        </CardTitle>
-      </CardHeader>
-      <form onSubmit={handleSave}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+      <DialogContent size="lg">
+        <form onSubmit={handleSave}>
+          <DialogHeader>
+            <DialogTitle>
+              {initialData ? "Edit Health Check" : "Create Health Check"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="interval">Interval (seconds)</Label>
+              <Input
+                id="interval"
+                type="number"
+                min="1"
+                value={interval}
+                onChange={(e) => setInterval(e.target.value)}
+                required
+              />
+            </div>
+
+            <PluginConfigForm
+              label="Strategy"
+              plugins={strategies}
+              selectedPluginId={strategyId}
+              onPluginChange={(id) => {
+                setStrategyId(id);
+                setConfig({});
+              }}
+              config={config}
+              onConfigChange={setConfig}
+              disabled={!!initialData}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="interval">Interval (seconds)</Label>
-            <Input
-              id="interval"
-              type="number"
-              min="1"
-              value={interval}
-              onChange={(e) => setInterval(e.target.value)}
-              required
-            />
-          </div>
-
-          <PluginConfigForm
-            label="Strategy"
-            plugins={strategies}
-            selectedPluginId={strategyId}
-            onPluginChange={(id) => {
-              setStrategyId(id);
-              setConfig({});
-            }}
-            config={config}
-            onConfigChange={setConfig}
-            disabled={!!initialData}
-          />
-        </CardContent>
-        <CardFooter className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : "Save"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
