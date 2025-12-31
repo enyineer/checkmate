@@ -446,5 +446,5 @@ function useSignalConnection(): boolean;
 ## Related Documentation
 
 - [Queue System](queue-system.md) - EventBus and multi-instance coordination
-- [Backend Plugins](backend-plugins.md) - Plugin architecture
-- [Frontend Plugins](frontend-plugins.md) - React integration patterns
+- [Backend Plugins](./plugins.md) - Plugin architecture
+- [Frontend Plugins](../frontend/plugins.md) - React integration patterns

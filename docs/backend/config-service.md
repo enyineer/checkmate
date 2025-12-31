@@ -370,6 +370,6 @@ await config.set("slack-integration", schema, 1, {
 
 ## Next Steps
 
-- [Backend Plugin Development](./backend-plugins.md)
+- [Backend Plugin Development](./plugins.md)
 - [Versioned Configurations](./versioned-configs.md)
-- [Extension Points](./extension-points.md)
+- [Extension Points](../frontend/extension-points.md)

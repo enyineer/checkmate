@@ -82,7 +82,7 @@ These rules are **automatically enforced** by the dependency linter:
 - ❌ **Common** → Backend or Frontend (FORBIDDEN)
 - ❌ **Frontend** → Backend (FORBIDDEN)
 
-See [dependency-linter.md](./dependency-linter.md) for details.
+See [dependency-linter.md](../tooling/dependency-linter.md) for details.
 
 ## Plugin Lifecycle
 
@@ -151,7 +151,7 @@ Database: checkmate
 - **Security**: Plugins can't access each other's data directly
 - **Scalability**: Easy to split into separate databases later
 
-See [drizzle-schema-isolation.md](./drizzle-schema-isolation.md) for implementation details.
+See [drizzle-schema-isolation.md](../backend/drizzle-schema.md) for implementation details.
 
 ## Extension Points
 
@@ -170,7 +170,7 @@ Extension points enable plugins to provide implementations for core functionalit
 - **Routes**: Add new pages to the application
 - **APIs**: Provide client-side services
 
-See [extension-points.md](./extension-points.md) for detailed documentation.
+See [extension-points.md](../frontend/extension-points.md) for detailed documentation.
 
 ## Configuration Management
 
@@ -191,7 +191,7 @@ This enables:
 - Automatic migration of old configurations
 - Rollback support
 
-See [versioned-configs.md](./versioned-configs.md) for details.
+See [versioned-configs.md](../backend/versioned-configs.md) for details.
 
 ## Communication Patterns
 
@@ -299,9 +299,9 @@ Mix and match based on scaling needs:
 
 ## Next Steps
 
-- [Backend Plugin Development](./backend-plugins.md)
-- [Frontend Plugin Development](./frontend-plugins.md)
-- [Common Plugin Guidelines](./common-plugins.md)
-- [Extension Points](./extension-points.md)
-- [Versioned Configurations](./versioned-configs.md)
-- [Contributing Guide](./contributing.md)
+- [Backend Plugin Development](../backend/plugins.md)
+- [Frontend Plugin Development](../frontend/plugins.md)
+- [Common Plugin Guidelines](../common/plugins.md)
+- [Extension Points](../frontend/extension-points.md)
+- [Versioned Configurations](../backend/versioned-configs.md)
+- [Contributing Guide](../getting-started/contributing.md)

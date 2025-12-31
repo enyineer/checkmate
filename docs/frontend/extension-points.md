@@ -452,7 +452,7 @@ export const oauthStrategy: AuthenticationStrategy<OAuthConfig> = {
 > });
 > ```
 >
-> This ensures administrators have full control over user registration across all authentication methods. See [Backend Service Communication](./backend-service-communication.md) for more details on using the RPC client.
+> This ensures administrators have full control over user registration across all authentication methods. See [Backend Service Communication](../backend/services.md) for more details on using the RPC client.
 
 ## Frontend Extension Points
 
@@ -677,7 +677,7 @@ describe("HTTP Health Check Strategy", () => {
 
 ## Next Steps
 
-- [Backend Plugin Development](./backend-plugins.md)
-- [Frontend Plugin Development](./frontend-plugins.md)
-- [Versioned Configurations](./versioned-configs.md)
-- [Contributing Guide](./contributing.md)
+- [Backend Plugin Development](../backend/plugins.md)
+- [Frontend Plugin Development](./plugins.md)
+- [Versioned Configurations](../backend/versioned-configs.md)
+- [Contributing Guide](../getting-started/contributing.md)

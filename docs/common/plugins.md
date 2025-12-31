@@ -322,7 +322,7 @@ Common plugins should extend the shared common configuration:
 }
 ```
 
-See [Monorepo Tooling](./monorepo-tooling.md) for more information.
+See [Monorepo Tooling](../tooling/cli.md) for more information.
 
 ## Mandatory Project Structure
 
@@ -587,7 +587,7 @@ export const permissions = {
 export const permissionList = Object.values(permissions);
 ```
 
-> **Note**: Permissions with `isDefault: true` are automatically synced to the built-in "users" role on startup. See [Backend Plugin Development](./backend-plugins.md#default-permissions-and-the-users-role) for details.
+> **Note**: Permissions with `isDefault: true` are automatically synced to the built-in "users" role on startup. See [Backend Plugin Development](../backend/plugins.md#default-permissions-and-the-users-role) for details.
 
 ### In Backend Plugin
 
@@ -797,7 +797,7 @@ describe("Schemas", () => {
 
 ## Next Steps
 
-- [Backend Plugin Development](./backend-plugins.md) - Implement contracts in backend routers
-- [Frontend Plugin Development](./frontend-plugins.md) - Consume contracts in frontend clients
-- [Extension Points](./extension-points.md)
-- [Versioned Configurations](./versioned-configs.md)
+- [Backend Plugin Development](../backend/plugins.md) - Implement contracts in backend routers
+- [Frontend Plugin Development](../frontend/plugins.md) - Consume contracts in frontend clients
+- [Extension Points](../frontend/extension-points.md)
+- [Versioned Configurations](../backend/versioned-configs.md)

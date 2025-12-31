@@ -149,10 +149,10 @@ bun run sync
 ```
 
 See:
-- [Backend Plugin Guide](./backend-plugins.md)
-- [Frontend Plugin Guide](./frontend-plugins.md)
-- [Common Plugin Guidelines](./common-plugins.md)
-- [Monorepo Tooling Guide](./monorepo-tooling.md)
+- [Backend Plugin Guide](../backend/plugins.md)
+- [Frontend Plugin Guide](../frontend/plugins.md)
+- [Common Plugin Guidelines](../common/plugins.md)
+- [Monorepo Tooling Guide](../tooling/cli.md)
 
 ### 4. Implement Plugin
 
@@ -461,7 +461,7 @@ These are **automatically enforced** by the linter:
 - Frontend plugins → Frontend or Common
 - Backend plugins → Backend or Common
 
-See [dependency-linter.md](./dependency-linter.md) for details.
+See [dependency-linter.md](../tooling/dependency-linter.md) for details.
 
 ### Database Isolation
 
@@ -469,7 +469,7 @@ See [dependency-linter.md](./dependency-linter.md) for details.
 - Don't use `pgSchema()` in table definitions
 - Migrations are automatic
 
-See [drizzle-schema-isolation.md](./drizzle-schema-isolation.md) for details.
+See [drizzle-schema-isolation.md](../backend/drizzle-schema.md) for details.
 
 ### Versioned Configs
 
@@ -477,18 +477,18 @@ See [drizzle-schema-isolation.md](./drizzle-schema-isolation.md) for details.
 - Provide migrations for schema changes
 - Test migrations thoroughly
 
-See [versioned-configs.md](./versioned-configs.md) for details.
+See [versioned-configs.md](../backend/versioned-configs.md) for details.
 
 ## Getting Help
 
 ### Documentation
 
-- [Plugin Architecture](./plugin-architecture.md)
-- [Monorepo Tooling](./monorepo-tooling.md)
-- [Backend Plugins](./backend-plugins.md)
-- [Frontend Plugins](./frontend-plugins.md)
+- [Plugin Architecture](../architecture/plugin-system.md)
+- [Monorepo Tooling](../tooling/cli.md)
+- [Backend Plugins](../backend/plugins.md)
+- [Frontend Plugins](../frontend/plugins.md)
 - [Extension Points](./extension-points.md)
-- [Versioned Configs](./versioned-configs.md)
+- [Versioned Configs](../backend/versioned-configs.md)
 
 ### Community
 

@@ -169,7 +169,7 @@ bun test
 
 That's it! Your backend plugin is ready to use.
 
-> **Note:** Don't forget to also create the corresponding `-common` package to define your contract. See [Common Plugin Guidelines](./common-plugins.md) for details.
+> **Note:** Don't forget to also create the corresponding `-common` package to define your contract. See [Common Plugin Guidelines](../common/plugins.md) for details.
 
 ## Plugin Registration API
 
@@ -348,7 +348,7 @@ logger.debug("Debug message");
 
 ### 1. Define Contract in Common Package
 
-Contracts are defined in the `-common` package using `@orpc/contract`. See [Common Plugin Guidelines](./common-plugins.md) for details.
+Contracts are defined in the `-common` package using `@orpc/contract`. See [Common Plugin Guidelines](../common/plugins.md) for details.
 
 ### 2. Implement Contract in Backend
 
@@ -486,7 +486,7 @@ Backend plugins should extend the shared backend configuration.
 }
 ```
 
-See [Monorepo Tooling](./monorepo-tooling.md) for more information.
+See [Monorepo Tooling](../tooling/cli.md) for more information.
 
 ### Configure Drizzle
 
@@ -514,7 +514,7 @@ This creates migration files in `./drizzle/`.
 
 The core **automatically runs migrations** when the plugin loads. No manual migration step needed!
 
-See [drizzle-schema-isolation.md](./drizzle-schema-isolation.md) for details.
+See [drizzle-schema-isolation.md](./drizzle-schema.md) for details.
 
 ## Router Factory Pattern
 
@@ -746,7 +746,7 @@ If TypeScript complains about handler types:
 ## Next Steps
 
 - [Configuration Storage](./config-service.md) - When to use ConfigService vs custom schemas
-- [Frontend Plugin Development](./frontend-plugins.md)
-- [Common Plugin Guidelines](./common-plugins.md)
-- [Extension Points](./extension-points.md)
+- [Frontend Plugin Development](../frontend/plugins.md)
+- [Common Plugin Guidelines](../common/plugins.md)
+- [Extension Points](../frontend/extension-points.md)
 - [Versioned Configurations](./versioned-configs.md)

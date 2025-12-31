@@ -169,7 +169,7 @@ bun run lint
 
 That's it! Your frontend plugin is ready to use.
 
-> **Note:** Make sure you have also created the corresponding `-common` and `-backend` packages. See [Common Plugin Guidelines](./common-plugins.md) and [Backend Plugin Development](./backend-plugins.md) for details.
+> **Note:** Make sure you have also created the corresponding `-common` and `-backend` packages. See [Common Plugin Guidelines](../common/plugins.md) and [Backend Plugin Development](../backend/plugins.md) for details.
 
 ## Plugin Configuration
 
@@ -1013,7 +1013,7 @@ apis: [
 
 ## Next Steps
 
-- [Backend Plugin Development](./backend-plugins.md)
-- [Common Plugin Guidelines](./common-plugins.md)
+- [Backend Plugin Development](../backend/plugins.md)
+- [Common Plugin Guidelines](../common/plugins.md)
 - [Extension Points](./extension-points.md)
 - [UI Component Library](../packages/ui/README.md)

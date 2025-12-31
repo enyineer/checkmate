@@ -596,6 +596,6 @@ Always:
 
 ## Next Steps
 
-- [Backend Plugin Development](./backend-plugins.md)
-- [Extension Points](./extension-points.md)
-- [Contributing Guide](./contributing.md)
+- [Backend Plugin Development](./plugins.md)
+- [Extension Points](../frontend/extension-points.md)
+- [Contributing Guide](../getting-started/contributing.md)
