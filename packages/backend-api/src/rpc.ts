@@ -1,4 +1,4 @@
-import { os as baseOs } from "@orpc/server";
+import { os as baseOs, ORPCError } from "@orpc/server";
 import { HealthCheckRegistry } from "./health-check";
 import { QueuePluginRegistry, QueueManager } from "@checkmate/queue-api";
 import { ProcedureMetadata } from "@checkmate/common";
@@ -75,17 +75,23 @@ export const autoAuthMiddleware = os.middleware(
 
     // 2. Enforce authentication for all other cases
     if (!context.user) {
-      throw new Error("Unauthorized");
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Authentication required",
+      });
     }
 
     const user = context.user;
 
     // 3. Enforce user type
     if (requiredUserType === "user" && user.type !== "user") {
-      throw new Error("Forbidden: This endpoint is for users only");
+      throw new ORPCError("FORBIDDEN", {
+        message: "This endpoint is for users only",
+      });
     }
     if (requiredUserType === "service" && user.type !== "service") {
-      throw new Error("Forbidden: This endpoint is for services only");
+      throw new ORPCError("FORBIDDEN", {
+        message: "This endpoint is for services only",
+      });
     }
 
     // 4. Enforce permissions (only for real users)
@@ -98,9 +104,9 @@ export const autoAuthMiddleware = os.middleware(
         });
 
         if (!hasPermission) {
-          throw new Error(
-            `Forbidden: Missing ${requiredPermissions.join(" or ")}`
-          );
+          throw new ORPCError("FORBIDDEN", {
+            message: `Missing permission: ${requiredPermissions.join(" or ")}`,
+          });
         }
       }
     }

@@ -24,7 +24,6 @@ export const notificationContract = {
   getNotifications: _base
     .meta({
       userType: "user",
-      permissions: [permissions.notificationRead.id],
     })
     .input(PaginationInputSchema)
     .output(
@@ -38,7 +37,6 @@ export const notificationContract = {
   getUnreadCount: _base
     .meta({
       userType: "user",
-      permissions: [permissions.notificationRead.id],
     })
     .output(z.object({ count: z.number() })),
 
@@ -46,7 +44,6 @@ export const notificationContract = {
   markAsRead: _base
     .meta({
       userType: "user",
-      permissions: [permissions.notificationRead.id],
     })
     .input(
       z.object({
@@ -59,7 +56,6 @@ export const notificationContract = {
   deleteNotification: _base
     .meta({
       userType: "user",
-      permissions: [permissions.notificationRead.id],
     })
     .input(z.object({ notificationId: z.string().uuid() }))
     .output(z.void()),
@@ -72,7 +68,6 @@ export const notificationContract = {
   getGroups: _base
     .meta({
       userType: "both", // Services can read groups too
-      permissions: [permissions.notificationRead.id],
     })
     .output(z.array(NotificationGroupSchema)),
 
@@ -80,7 +75,6 @@ export const notificationContract = {
   getSubscriptions: _base
     .meta({
       userType: "user",
-      permissions: [permissions.notificationRead.id],
     })
     .output(z.array(EnrichedSubscriptionSchema)),
 
@@ -88,7 +82,6 @@ export const notificationContract = {
   subscribe: _base
     .meta({
       userType: "user",
-      permissions: [permissions.notificationRead.id],
     })
     .input(z.object({ groupId: z.string() }))
     .output(z.void()),
@@ -97,7 +90,6 @@ export const notificationContract = {
   unsubscribe: _base
     .meta({
       userType: "user",
-      permissions: [permissions.notificationRead.id],
     })
     .input(z.object({ groupId: z.string() }))
     .output(z.void()),

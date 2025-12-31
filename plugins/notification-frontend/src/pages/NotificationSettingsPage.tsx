@@ -8,18 +8,25 @@ import {
   SectionHeader,
   DynamicForm,
 } from "@checkmate/ui";
-import { useApi, rpcApiRef } from "@checkmate/frontend-api";
+import { useApi, rpcApiRef, permissionApiRef } from "@checkmate/frontend-api";
 import type {
   EnrichedSubscription,
   NotificationClient,
 } from "@checkmate/notification-common";
+import { permissions } from "@checkmate/notification-common";
 
 export const NotificationSettingsPage = () => {
   const rpcApi = useApi(rpcApiRef);
+  const permissionApi = useApi(permissionApiRef);
   const notificationClient = rpcApi.forPlugin<NotificationClient>(
     "notification-backend"
   );
   const toast = useToast();
+
+  // Check if user has admin permission
+  const { allowed: isAdmin } = permissionApi.usePermission(
+    permissions.notificationAdmin.id
+  );
 
   // Retention settings state
   const [retentionSchema, setRetentionSchema] = useState<
@@ -33,7 +40,6 @@ export const NotificationSettingsPage = () => {
   });
   const [retentionLoading, setRetentionLoading] = useState(true);
   const [retentionSaving, setRetentionSaving] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   // Subscription state - now uses enriched subscriptions only
   const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>(
@@ -43,6 +49,10 @@ export const NotificationSettingsPage = () => {
 
   // Fetch retention settings and schema (admin only)
   const fetchRetentionData = useCallback(async () => {
+    if (!isAdmin) {
+      setRetentionLoading(false);
+      return;
+    }
     try {
       const [schema, settings] = await Promise.all([
         notificationClient.getRetentionSchema(),
@@ -50,14 +60,16 @@ export const NotificationSettingsPage = () => {
       ]);
       setRetentionSchema(schema as Record<string, unknown>);
       setRetentionSettings(settings);
-      setIsAdmin(true); // If fetch succeeds, user has admin access
-    } catch {
-      // User might not have admin permission - that's okay
-      setIsAdmin(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to load retention settings";
+      toast.error(message);
     } finally {
       setRetentionLoading(false);
     }
-  }, [notificationClient]);
+  }, [notificationClient, isAdmin, toast]);
 
   // Fetch subscriptions only (no groups needed)
   const fetchSubscriptionData = useCallback(async () => {
