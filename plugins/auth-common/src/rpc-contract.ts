@@ -179,6 +179,18 @@ export const authContract = {
     })
     .input(RegistrationStatusSchema)
     .output(z.object({ success: z.boolean() })),
+
+  // ==========================================================================
+  // INTERNAL SERVICE ENDPOINTS (userType: "service")
+  // ==========================================================================
+
+  /**
+   * Get permissions assigned to the anonymous role.
+   * Used by core AuthService for permission checks on public endpoints.
+   */
+  getAnonymousPermissions: _base
+    .meta({ userType: "service" })
+    .output(z.array(z.string())),
 };
 
 // Export contract type for frontend

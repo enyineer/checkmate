@@ -1,6 +1,5 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { sql } from "drizzle-orm";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import {
@@ -12,6 +11,7 @@ import {
   EventBus as IEventBus,
   AuthenticationStrategy,
 } from "@checkmate/backend-api";
+import type { AuthClient } from "@checkmate/auth-common";
 import type { ServiceRegistry } from "../services/service-registry";
 import { rootLogger } from "../logger";
 import { db } from "../db";
@@ -113,14 +113,11 @@ export function registerCoreServices({
           return anonymousPermissionsCache;
         }
 
-        // Query anonymous role permissions from database
-        // Using raw SQL because auth-backend schema is in a different package
+        // Use RPC client to call auth-backend's getAnonymousPermissions endpoint
         try {
-          const result = await db.execute<{ permission_id: string }>(
-            sql`SELECT permission_id FROM plugin_auth_backend.role_permission WHERE role_id = 'anonymous'`
-          );
-          const permissions =
-            result.rows?.map((row) => row.permission_id) ?? [];
+          const rpcClient = await registry.get(coreServices.rpcClient, "core");
+          const authClient = rpcClient.forPlugin<AuthClient>("auth-backend");
+          const permissions = await authClient.getAnonymousPermissions();
 
           // Update cache
           anonymousPermissionsCache = permissions;
@@ -128,7 +125,7 @@ export function registerCoreServices({
 
           return permissions;
         } catch {
-          // If table doesn't exist yet (during startup), return empty
+          // RPC client not available yet (during startup), return empty
           return [];
         }
       },

@@ -564,6 +564,16 @@ export const createAuthRouter = (
     }
   );
 
+  const getAnonymousPermissions = os.getAnonymousPermissions.handler(
+    async () => {
+      const rolePerms = await internalDb
+        .select()
+        .from(schema.rolePermission)
+        .where(eq(schema.rolePermission.roleId, "anonymous"));
+      return rolePerms.map((rp) => rp.permissionId);
+    }
+  );
+
   return os.router({
     getEnabledStrategies,
     permissions,
@@ -581,6 +591,7 @@ export const createAuthRouter = (
     getRegistrationSchema,
     getRegistrationStatus,
     setRegistrationStatus,
+    getAnonymousPermissions,
   });
 };
 

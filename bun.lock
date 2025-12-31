@@ -24,6 +24,7 @@
       "name": "@checkmate/backend",
       "version": "0.0.1",
       "dependencies": {
+        "@checkmate/auth-common": "workspace:*",
         "@checkmate/backend-api": "workspace:*",
         "@checkmate/common": "workspace:*",
         "@checkmate/queue-api": "workspace:*",
