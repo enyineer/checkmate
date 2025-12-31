@@ -110,22 +110,37 @@ export function registerCoreServices({
           anonymousPermissionsCache !== undefined &&
           now - anonymousCacheTime < CACHE_TTL_MS
         ) {
+          rootLogger.debug(
+            `[auth] getAnonymousPermissions: cache hit (${anonymousPermissionsCache.length} permissions)`
+          );
           return anonymousPermissionsCache;
         }
 
         // Use RPC client to call auth-backend's getAnonymousPermissions endpoint
         try {
+          rootLogger.debug(
+            "[auth] getAnonymousPermissions: cache miss, fetching via RPC..."
+          );
           const rpcClient = await registry.get(coreServices.rpcClient, "core");
           const authClient = rpcClient.forPlugin<AuthClient>("auth-backend");
           const permissions = await authClient.getAnonymousPermissions();
+
+          rootLogger.debug(
+            `[auth] getAnonymousPermissions: RPC success, got ${
+              permissions.length
+            } permissions: ${permissions.join(", ")}`
+          );
 
           // Update cache
           anonymousPermissionsCache = permissions;
           anonymousCacheTime = now;
 
           return permissions;
-        } catch {
+        } catch (error) {
           // RPC client not available yet (during startup), return empty
+          rootLogger.warn(
+            `[auth] getAnonymousPermissions: RPC failed, returning empty array. Error: ${error}`
+          );
           return [];
         }
       },
