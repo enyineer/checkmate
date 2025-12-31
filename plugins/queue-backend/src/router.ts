@@ -30,7 +30,7 @@ export const createQueueRouter = (configService: ConfigService) => {
     getConfiguration: authedProcedure
       .use(queueRead)
       .handler(async ({ context }) => {
-        const activePluginId = context.queueFactory.getActivePlugin();
+        const activePluginId = context.queueManager.getActivePlugin();
         const plugin = context.queuePluginRegistry.getPlugin(activePluginId);
 
         if (!plugin) {
@@ -56,7 +56,7 @@ export const createQueueRouter = (configService: ConfigService) => {
       .handler(async ({ input, context }) => {
         const { pluginId, config } = input;
         try {
-          await context.queueFactory.setActivePlugin(pluginId, config);
+          await context.queueManager.setActiveBackend(pluginId, config);
         } catch (error) {
           if (error instanceof Error) {
             throw new ORPCError("INTERNAL_SERVER_ERROR", {

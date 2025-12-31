@@ -1,22 +1,22 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { EventBus } from "./event-bus";
-import type { QueueFactory } from "@checkmate/queue-api";
+import type { QueueManager } from "@checkmate/queue-api";
 import type { Logger, Hook } from "@checkmate/backend-api";
 import { createHook } from "@checkmate/backend-api";
 import {
   createMockLogger,
-  createMockQueueFactory,
+  createMockQueueManager,
 } from "@checkmate/test-utils-backend";
 
 describe("EventBus", () => {
   let eventBus: EventBus;
-  let mockQueueFactory: QueueFactory;
+  let mockQueueManager: QueueManager;
   let mockLogger: Logger;
 
   beforeEach(() => {
-    mockQueueFactory = createMockQueueFactory();
+    mockQueueManager = createMockQueueManager();
     mockLogger = createMockLogger();
-    eventBus = new EventBus(mockQueueFactory, mockLogger);
+    eventBus = new EventBus(mockQueueManager, mockLogger);
   });
 
   describe("Validation", () => {

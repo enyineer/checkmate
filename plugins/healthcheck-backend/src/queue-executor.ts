@@ -1,5 +1,5 @@
 import { HealthCheckRegistry, Logger, Fetch } from "@checkmate/backend-api";
-import { QueueFactory } from "@checkmate/queue-api";
+import { QueueManager } from "@checkmate/queue-api";
 import {
   healthCheckConfigurations,
   systemHealthChecks,
@@ -31,30 +31,29 @@ const WORKER_GROUP = "health-check-executor";
 
 /**
  * Schedule a health check for execution using recurring jobs
- * @param queueFactory - Queue factory service
+ * @param queueManager - Queue manager service
  * @param payload - Health check job payload
  * @param intervalSeconds - Interval between executions
  * @param startDelay - Optional delay before first execution (for delta-based scheduling)
  * @param logger - Optional logger
  */
 export async function scheduleHealthCheck(props: {
-  queueFactory: QueueFactory;
+  queueManager: QueueManager;
   payload: HealthCheckJobPayload;
   intervalSeconds: number;
   startDelay?: number;
   logger?: Logger;
 }): Promise<string> {
   const {
-    queueFactory,
+    queueManager,
     payload,
     intervalSeconds,
     startDelay = 0,
     logger,
   } = props;
 
-  const queue = await queueFactory.createQueue<HealthCheckJobPayload>(
-    HEALTH_CHECK_QUEUE
-  );
+  const queue =
+    queueManager.getQueue<HealthCheckJobPayload>(HEALTH_CHECK_QUEUE);
 
   const jobId = `healthcheck:${payload.configId}:${payload.systemId}`;
 
@@ -258,13 +257,12 @@ export async function setupHealthCheckWorker(props: {
   registry: HealthCheckRegistry;
   logger: Logger;
   fetch: Fetch;
-  queueFactory: QueueFactory;
+  queueManager: QueueManager;
 }): Promise<void> {
-  const { db, registry, logger, fetch, queueFactory } = props;
+  const { db, registry, logger, fetch, queueManager } = props;
 
-  const queue = await queueFactory.createQueue<HealthCheckJobPayload>(
-    HEALTH_CHECK_QUEUE
-  );
+  const queue =
+    queueManager.getQueue<HealthCheckJobPayload>(HEALTH_CHECK_QUEUE);
 
   // Subscribe to health check queue in work-queue mode
   await queue.consume(
@@ -291,10 +289,10 @@ export async function setupHealthCheckWorker(props: {
  */
 export async function bootstrapHealthChecks(props: {
   db: Db;
-  queueFactory: QueueFactory;
+  queueManager: QueueManager;
   logger: Logger;
 }): Promise<void> {
-  const { db, queueFactory, logger } = props;
+  const { db, queueManager, logger } = props;
 
   // Subquery to get the latest run timestamp per check (efficient, no in-memory grouping)
   const latestRuns = db
@@ -348,7 +346,7 @@ export async function bootstrapHealthChecks(props: {
     }
 
     await scheduleHealthCheck({
-      queueFactory,
+      queueManager,
       payload: {
         configId: check.configId,
         systemId: check.systemId,
@@ -362,9 +360,8 @@ export async function bootstrapHealthChecks(props: {
   logger.debug(`✅ Bootstrapped ${enabledChecks.length} health checks`);
 
   // Clean up orphaned jobs
-  const queue = await queueFactory.createQueue<HealthCheckJobPayload>(
-    HEALTH_CHECK_QUEUE
-  );
+  const queue =
+    queueManager.getQueue<HealthCheckJobPayload>(HEALTH_CHECK_QUEUE);
   const allRecurringJobs = await queue.listRecurringJobs();
   const expectedJobIds = new Set(
     enabledChecks.map(

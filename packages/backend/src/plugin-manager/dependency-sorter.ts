@@ -1,4 +1,5 @@
 import type { ServiceRef, Logger } from "@checkmate/backend-api";
+import { coreServices } from "@checkmate/backend-api";
 
 /**
  * Topologically sorts plugins based on their dependencies.
@@ -30,7 +31,7 @@ export function sortPlugins({
   const queuePluginProviders = new Set<string>();
   for (const p of pendingInits) {
     for (const [, ref] of Object.entries(p.deps)) {
-      if (ref.id === "core.queue-plugin-registry") {
+      if (ref.id === coreServices.queuePluginRegistry.id) {
         queuePluginProviders.add(p.pluginId);
       }
     }
@@ -52,11 +53,11 @@ export function sortPlugins({
       }
     }
 
-    // Special handling: if this plugin uses queueFactory, it must wait for all queue plugin providers
-    const usesQueueFactory = Object.values(p.deps).some(
-      (ref) => ref.id === "core.queue-factory"
+    // Special handling: if this plugin uses queueManager, it must wait for all queue plugin providers
+    const usesQueueManager = Object.values(p.deps).some(
+      (ref) => ref.id === coreServices.queueManager.id
     );
-    if (usesQueueFactory) {
+    if (usesQueueManager) {
       for (const qpp of queuePluginProviders) {
         if (qpp !== consumerId) {
           if (!graph.has(qpp)) {

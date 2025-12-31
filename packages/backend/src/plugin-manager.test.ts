@@ -151,7 +151,7 @@ describe("PluginManager", () => {
 
     describe("Queue Plugin Ordering", () => {
       it("should initialize queue plugin providers before queue consumers", () => {
-        const queueFactoryRef = createServiceRef<any>("core.queue-factory");
+        const queueManagerRef = createServiceRef<any>("core.queueManager");
         const queueRegistryRef = createServiceRef<any>(
           "core.queue-plugin-registry"
         );
@@ -159,7 +159,7 @@ describe("PluginManager", () => {
         const pendingInits = [
           {
             pluginId: "queue-consumer",
-            deps: { queueFactory: queueFactoryRef } as Record<
+            deps: { queueManager: queueManagerRef } as Record<
               string,
               ServiceRef<unknown>
             >,
@@ -187,7 +187,7 @@ describe("PluginManager", () => {
       });
 
       it("should handle multiple queue providers and consumers", () => {
-        const queueFactoryRef = createServiceRef<any>("core.queue-factory");
+        const queueManagerRef = createServiceRef<any>("core.queueManager");
         const queueRegistryRef = createServiceRef<any>(
           "core.queue-plugin-registry"
         );
@@ -196,7 +196,7 @@ describe("PluginManager", () => {
         const pendingInits = [
           {
             pluginId: "consumer-1",
-            deps: { queueFactory: queueFactoryRef } as Record<
+            deps: { queueManager: queueManagerRef } as Record<
               string,
               ServiceRef<unknown>
             >,
@@ -210,7 +210,7 @@ describe("PluginManager", () => {
           },
           {
             pluginId: "consumer-2",
-            deps: { queueFactory: queueFactoryRef } as Record<
+            deps: { queueManager: queueManagerRef } as Record<
               string,
               ServiceRef<unknown>
             >,
@@ -248,7 +248,7 @@ describe("PluginManager", () => {
       });
 
       it("should respect existing service dependencies while prioritizing queue plugins", () => {
-        const queueFactoryRef = createServiceRef<any>("core.queue-factory");
+        const queueManagerRef = createServiceRef<any>("core.queueManager");
         const queueRegistryRef = createServiceRef<any>(
           "core.queue-plugin-registry"
         );
@@ -259,7 +259,7 @@ describe("PluginManager", () => {
           {
             pluginId: "queue-consumer",
             deps: {
-              queueFactory: queueFactoryRef,
+              queueManager: queueManagerRef,
               customService: customServiceRef,
             } as Record<string, ServiceRef<unknown>>,
           },
@@ -297,7 +297,7 @@ describe("PluginManager", () => {
       });
 
       it("should handle plugins that both provide and consume queues", () => {
-        const queueFactoryRef = createServiceRef<any>("core.queue-factory");
+        const queueManagerRef = createServiceRef<any>("core.queueManager");
         const queueRegistryRef = createServiceRef<any>(
           "core.queue-plugin-registry"
         );
@@ -307,12 +307,12 @@ describe("PluginManager", () => {
             pluginId: "dual-plugin",
             deps: {
               queuePluginRegistry: queueRegistryRef,
-              queueFactory: queueFactoryRef,
+              queueManager: queueManagerRef,
             } as Record<string, ServiceRef<unknown>>,
           },
           {
             pluginId: "consumer-only",
-            deps: { queueFactory: queueFactoryRef } as Record<
+            deps: { queueManager: queueManagerRef } as Record<
               string,
               ServiceRef<unknown>
             >,
@@ -333,7 +333,7 @@ describe("PluginManager", () => {
       });
 
       it("should not create circular dependencies with queue ordering", () => {
-        const queueFactoryRef = createServiceRef<any>("core.queue-factory");
+        const queueManagerRef = createServiceRef<any>("core.queueManager");
         const queueRegistryRef = createServiceRef<any>(
           "core.queue-plugin-registry"
         );
@@ -348,7 +348,7 @@ describe("PluginManager", () => {
           },
           {
             pluginId: "queue-consumer",
-            deps: { queueFactory: queueFactoryRef } as Record<
+            deps: { queueManager: queueManagerRef } as Record<
               string,
               ServiceRef<unknown>
             >,

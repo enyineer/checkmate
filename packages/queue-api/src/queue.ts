@@ -9,6 +9,17 @@ export interface QueueJob<T = unknown> {
   attempts?: number;
 }
 
+/**
+ * Details of a recurring job for migration purposes
+ */
+export interface RecurringJobDetails<T = unknown> {
+  jobId: string;
+  data: T;
+  intervalSeconds: number;
+  priority?: number;
+  nextRunAt?: Date;
+}
+
 export interface QueueConsumer<T = unknown> {
   (job: QueueJob<T>): Promise<void>;
 }
@@ -104,6 +115,21 @@ export interface Queue<T = unknown> {
    * @returns Array of job IDs for all recurring jobs
    */
   listRecurringJobs(): Promise<string[]>;
+
+  /**
+   * Get details of a recurring job for migration purposes
+   * @param jobId - Job ID
+   * @returns Job details or undefined if not found
+   */
+  getRecurringJobDetails(
+    jobId: string
+  ): Promise<RecurringJobDetails<T> | undefined>;
+
+  /**
+   * Get the number of jobs currently being processed
+   * Used to warn users before switching backends
+   */
+  getInFlightCount(): Promise<number>;
 
   /**
    * Test connection to the queue backend

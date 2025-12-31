@@ -2,7 +2,7 @@ import { mock } from "bun:test";
 import { RpcContext } from "./rpc";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HealthCheckRegistry } from "./health-check";
-import { QueuePluginRegistry, QueueFactory } from "@checkmate/queue-api";
+import { QueuePluginRegistry, QueueManager } from "@checkmate/queue-api";
 
 /**
  * Creates a mocked oRPC context for testing.
@@ -43,9 +43,16 @@ export function createMockRpcContext(
       getPlugin: mock(),
       getPlugins: mock().mockReturnValue([]),
     } as unknown as QueuePluginRegistry,
-    queueFactory: {
-      createQueue: mock(),
-    } as unknown as QueueFactory,
+    queueManager: {
+      getQueue: mock(),
+      getActivePlugin: mock(),
+      getActiveConfig: mock(),
+      setActiveBackend: mock(),
+      getInFlightJobCount: mock(),
+      listAllRecurringJobs: mock(),
+      startPolling: mock(),
+      shutdown: mock(),
+    } as unknown as QueueManager,
     user: undefined,
     ...overrides,
   };

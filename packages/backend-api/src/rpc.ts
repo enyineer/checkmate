@@ -1,6 +1,6 @@
 import { os as baseOs } from "@orpc/server";
 import { HealthCheckRegistry } from "./health-check";
-import { QueuePluginRegistry, QueueFactory } from "@checkmate/queue-api";
+import { QueuePluginRegistry, QueueManager } from "@checkmate/queue-api";
 import { ProcedureMetadata } from "@checkmate/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -24,7 +24,7 @@ export interface RpcContext {
   user?: AuthUser;
   healthCheckRegistry: HealthCheckRegistry;
   queuePluginRegistry: QueuePluginRegistry;
-  queueFactory: QueueFactory;
+  queueManager: QueueManager;
 }
 
 /** Context with authenticated real user */

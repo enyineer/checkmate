@@ -82,7 +82,7 @@ export const createHealthCheckRouter = (
         if (config) {
           const { scheduleHealthCheck } = await import("./queue-executor");
           await scheduleHealthCheck({
-            queueFactory: context.queueFactory,
+            queueManager: context.queueManager,
             payload: {
               configId: config.id,
               systemId: input.systemId,

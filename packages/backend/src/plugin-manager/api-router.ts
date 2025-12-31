@@ -9,7 +9,7 @@ import {
   Fetch,
   HealthCheckRegistry,
 } from "@checkmate/backend-api";
-import type { QueuePluginRegistry, QueueFactory } from "@checkmate/queue-api";
+import type { QueuePluginRegistry, QueueManager } from "@checkmate/queue-api";
 import type { ServiceRegistry } from "../services/service-registry";
 
 /**
@@ -62,7 +62,7 @@ export function createApiRouteHandler({
     const queuePluginRegistry = await getService(
       coreServices.queuePluginRegistry
     );
-    const queueFactory = await getService(coreServices.queueFactory);
+    const queueManager = await getService(coreServices.queueManager);
 
     if (
       !auth ||
@@ -71,7 +71,7 @@ export function createApiRouteHandler({
       !fetch ||
       !healthCheckRegistry ||
       !queuePluginRegistry ||
-      !queueFactory
+      !queueManager
     ) {
       return c.json({ error: "Core services not initialized" }, 500);
     }
@@ -85,7 +85,7 @@ export function createApiRouteHandler({
       fetch: fetch as Fetch,
       healthCheckRegistry: healthCheckRegistry as HealthCheckRegistry,
       queuePluginRegistry: queuePluginRegistry as QueuePluginRegistry,
-      queueFactory: queueFactory as QueueFactory,
+      queueManager: queueManager as QueueManager,
       user,
     };
 

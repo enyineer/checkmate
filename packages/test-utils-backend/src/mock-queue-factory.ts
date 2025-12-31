@@ -1,90 +1,140 @@
-import type { Queue, QueueFactory, QueueJob } from "@checkmate/queue-api";
+import type {
+  Queue,
+  QueueManager,
+  QueueJob,
+  SwitchResult,
+  RecurringJobInfo,
+  RecurringJobDetails,
+} from "@checkmate/queue-api";
 
 /**
- * Creates a mock QueueFactory for testing.
- * This factory creates simple in-memory mock queues for testing purposes.
+ * Creates a mock QueueManager for testing.
+ * This manager creates simple in-memory mock queues for testing purposes.
  *
- * @returns A mock QueueFactory
+ * @returns A mock QueueManager
  *
  * @example
  * ```typescript
- * const mockQueueFactory = createMockQueueFactory();
- * const queue = mockQueueFactory.createQueue("test-channel");
+ * const mockQueueManager = createMockQueueManager();
+ * const queue = mockQueueManager.getQueue("test-channel");
  * ```
  */
-export function createMockQueueFactory(): QueueFactory {
+export function createMockQueueManager(): QueueManager {
   const queues = new Map<string, Queue<unknown>>();
+  let activePluginId = "mock";
+
+  function createMockQueue<T>(_channelId: string): Queue<T> {
+    const consumers = new Map<
+      string,
+      {
+        handler: (job: QueueJob<T>) => Promise<void>;
+        maxRetries: number;
+      }
+    >();
+    const jobs: T[] = [];
+    const recurringJobs = new Map<
+      string,
+      { data: T; intervalSeconds: number }
+    >();
+
+    const mockQueue: Queue<T> = {
+      enqueue: async (data) => {
+        jobs.push(data);
+        // Trigger all consumers (with error handling like real queue)
+        for (const [_group, consumer] of consumers.entries()) {
+          try {
+            await consumer.handler({
+              id: `job-${Date.now()}`,
+              data,
+              timestamp: new Date(),
+              attempts: 0,
+            });
+          } catch (error) {
+            // Mock queue catches errors like real implementation
+            console.error("Mock queue caught error:", error);
+          }
+        }
+        return `job-${Date.now()}`;
+      },
+      consume: async (handler, options) => {
+        consumers.set(options.consumerGroup, {
+          handler: async (job: QueueJob<T>) => await handler(job),
+          maxRetries: options.maxRetries ?? 3,
+        });
+      },
+      scheduleRecurring: async (data, options) => {
+        recurringJobs.set(options.jobId, {
+          data,
+          intervalSeconds: options.intervalSeconds,
+        });
+        return options.jobId;
+      },
+      cancelRecurring: async (jobId) => {
+        recurringJobs.delete(jobId);
+      },
+      listRecurringJobs: async () => {
+        return [...recurringJobs.keys()];
+      },
+      getRecurringJobDetails: async (
+        jobId
+      ): Promise<RecurringJobDetails<T> | undefined> => {
+        const job = recurringJobs.get(jobId);
+        if (!job) return undefined;
+        return {
+          jobId,
+          data: job.data,
+          intervalSeconds: job.intervalSeconds,
+        };
+      },
+      getInFlightCount: async () => 0,
+      testConnection: async () => {
+        // Mock implementation - always succeeds
+      },
+      stop: async () => {
+        consumers.clear();
+      },
+      getStats: async () => ({
+        pending: jobs.length,
+        processing: 0,
+        completed: 0,
+        failed: 0,
+        consumerGroups: consumers.size,
+      }),
+    };
+
+    return mockQueue;
+  }
 
   return {
-    createQueue: (channelId: string) => {
+    getQueue: <T>(name: string): Queue<T> => {
       // Return existing queue if already created
-      if (queues.has(channelId)) {
-        return queues.get(channelId)!;
+      if (queues.has(name)) {
+        return queues.get(name)! as Queue<T>;
       }
 
-      const consumers = new Map<
-        string,
-        {
-          handler: (job: QueueJob<unknown>) => Promise<void>;
-          maxRetries: number;
-        }
-      >();
-      const jobs: unknown[] = [];
-
-      const mockQueue: Queue<unknown> = {
-        enqueue: async (data: unknown) => {
-          jobs.push(data);
-          // Trigger all consumers (with error handling like real queue)
-          for (const [_group, consumer] of consumers.entries()) {
-            try {
-              await consumer.handler({
-                id: `job-${Date.now()}`,
-                data,
-                timestamp: new Date(),
-                attempts: 0,
-              });
-            } catch (error) {
-              // Mock queue catches errors like real implementation
-              console.error("Mock queue caught error:", error);
-            }
-          }
-          return `job-${Date.now()}`;
-        },
-        consume: async (handler, options) => {
-          consumers.set(options.consumerGroup, {
-            handler: async (job: QueueJob<unknown>) => await handler(job),
-            maxRetries: options.maxRetries ?? 3,
-          });
-        },
-        scheduleRecurring: async (data: unknown, options) => {
-          // Simple mock - just enqueue once for testing
-          // Real implementation would handle recurring execution
-          jobs.push(data);
-          return options.jobId;
-        },
-        cancelRecurring: async (_jobId: string) => {
-          // Mock implementation - no-op
-        },
-        listRecurringJobs: async () => {
-          return [];
-        },
-        testConnection: async () => {
-          // Mock implementation - always succeeds
-        },
-        stop: async () => {
-          consumers.clear();
-        },
-        getStats: async () => ({
-          pending: jobs.length,
-          processing: 0,
-          completed: 0,
-          failed: 0,
-          consumerGroups: consumers.size,
-        }),
-      };
-
-      queues.set(channelId, mockQueue);
+      const mockQueue = createMockQueue<T>(name);
+      queues.set(name, mockQueue as Queue<unknown>);
       return mockQueue;
     },
-  } as QueueFactory;
+    getActivePlugin: () => activePluginId,
+    getActiveConfig: () => ({}),
+    setActiveBackend: async (pluginId: string): Promise<SwitchResult> => {
+      activePluginId = pluginId;
+      return { success: true, migratedRecurringJobs: 0, warnings: [] };
+    },
+    getInFlightJobCount: async () => 0,
+    listAllRecurringJobs: async (): Promise<RecurringJobInfo[]> => [],
+    startPolling: () => {},
+    shutdown: async () => {
+      for (const queue of queues.values()) {
+        await queue.stop();
+      }
+      queues.clear();
+    },
+  };
 }
+
+/**
+ * @deprecated Use createMockQueueManager instead
+ */
+export const createMockQueueFactory = createMockQueueManager;

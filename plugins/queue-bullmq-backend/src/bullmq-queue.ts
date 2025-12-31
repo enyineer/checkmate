@@ -4,6 +4,7 @@ import {
   QueueConsumer,
   QueueStats,
   ConsumeOptions,
+  RecurringJobDetails,
 } from "@checkmate/queue-api";
 import { Queue as BullQueue, Worker, JobsOptions } from "bullmq";
 import type { BullMQConfig } from "./plugin";
@@ -210,6 +211,35 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
 
     const schedulers = await this.queue.getJobSchedulers();
     return schedulers.map((scheduler) => scheduler.key);
+  }
+
+  async getRecurringJobDetails(
+    jobId: string
+  ): Promise<RecurringJobDetails<T> | undefined> {
+    if (this.stopped) {
+      throw new Error("Queue has been stopped");
+    }
+
+    const schedulers = await this.queue.getJobSchedulers();
+    const scheduler = schedulers.find((s) => s.key === jobId);
+
+    if (!scheduler) {
+      return undefined;
+    }
+
+    // BullMQ scheduler template contains the data
+    return {
+      jobId,
+      data: scheduler.template?.data as T,
+      intervalSeconds: scheduler.every ? scheduler.every / 1000 : 0,
+      priority: scheduler.template?.opts?.priority,
+      nextRunAt: scheduler.next ? new Date(scheduler.next) : undefined,
+    };
+  }
+
+  async getInFlightCount(): Promise<number> {
+    const counts = await this.queue.getJobCounts("active");
+    return counts.active || 0;
   }
 
   async stop(): Promise<void> {

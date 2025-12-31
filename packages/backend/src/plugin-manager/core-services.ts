@@ -219,12 +219,12 @@ export function registerCoreServices({
   let eventBusInstance: IEventBus | undefined;
   registry.registerFactory(coreServices.eventBus, async () => {
     if (!eventBusInstance) {
-      const queueFactory = await registry.get(
-        coreServices.queueFactory,
+      const queueManager = await registry.get(
+        coreServices.queueManager,
         "core"
       );
       const logger = await registry.get(coreServices.logger, "core");
-      eventBusInstance = new EventBus(queueFactory, logger);
+      eventBusInstance = new EventBus(queueManager, logger);
     }
     return eventBusInstance;
   });

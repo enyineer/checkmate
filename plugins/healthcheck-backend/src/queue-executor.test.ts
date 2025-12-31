@@ -7,7 +7,7 @@ import {
 } from "./queue-executor";
 import {
   createMockLogger,
-  createMockQueueFactory,
+  createMockQueueManager,
   createMockDb,
   createMockFetch,
 } from "@checkmate/test-utils-backend";
@@ -35,7 +35,7 @@ const createMockRegistry = (): HealthCheckRegistry => ({
 describe("Queue-Based Health Check Executor", () => {
   describe("scheduleHealthCheck", () => {
     it("should enqueue a health check with delay and deterministic jobId", async () => {
-      const mockQueueFactory = createMockQueueFactory();
+      const mockQueueManager = createMockQueueManager();
       const mockLogger = createMockLogger();
 
       const payload: HealthCheckJobPayload = {
@@ -44,19 +44,19 @@ describe("Queue-Based Health Check Executor", () => {
       };
 
       await scheduleHealthCheck({
-        queueFactory: mockQueueFactory,
+        queueManager: mockQueueManager,
         payload,
         intervalSeconds: 60,
         logger: mockLogger,
       });
 
       // Verify queue was created with correct name
-      const queue = await mockQueueFactory.createQueue("health-checks");
+      const queue = mockQueueManager.getQueue("health-checks");
       expect(queue).toBeDefined();
     });
 
     it("should use deterministic job IDs", async () => {
-      const mockQueueFactory = createMockQueueFactory();
+      const mockQueueManager = createMockQueueManager();
       const mockLogger = createMockLogger();
 
       const payload: HealthCheckJobPayload = {
@@ -65,7 +65,7 @@ describe("Queue-Based Health Check Executor", () => {
       };
 
       const result = await scheduleHealthCheck({
-        queueFactory: mockQueueFactory,
+        queueManager: mockQueueManager,
         payload,
         intervalSeconds: 60,
         logger: mockLogger,
@@ -83,14 +83,14 @@ describe("Queue-Based Health Check Executor", () => {
       const mockRegistry = createMockRegistry();
       const mockLogger = createMockLogger();
       const mockFetch = createMockFetch();
-      const mockQueueFactory = createMockQueueFactory();
+      const mockQueueManager = createMockQueueManager();
 
       await setupHealthCheckWorker({
         db: mockDb as any,
         registry: mockRegistry,
         logger: mockLogger,
         fetch: mockFetch,
-        queueFactory: mockQueueFactory,
+        queueManager: mockQueueManager,
       });
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -105,7 +105,7 @@ describe("Queue-Based Health Check Executor", () => {
     });
 
     it("should enqueue all enabled health checks", async () => {
-      const mockQueueFactory = createMockQueueFactory();
+      const mockQueueManager = createMockQueueManager();
       const mockLogger = createMockLogger();
       const mockDb = createMockDb();
 
@@ -141,7 +141,7 @@ describe("Queue-Based Health Check Executor", () => {
 
       await bootstrapHealthChecks({
         db: mockDb as any,
-        queueFactory: mockQueueFactory,
+        queueManager: mockQueueManager,
         logger: mockLogger,
       });
 
@@ -154,7 +154,7 @@ describe("Queue-Based Health Check Executor", () => {
     });
 
     it("should handle empty health check list", async () => {
-      const mockQueueFactory = createMockQueueFactory();
+      const mockQueueManager = createMockQueueManager();
       const mockLogger = createMockLogger();
       const mockDb = createMockDb();
 
@@ -167,7 +167,7 @@ describe("Queue-Based Health Check Executor", () => {
 
       await bootstrapHealthChecks({
         db: mockDb as any,
-        queueFactory: mockQueueFactory,
+        queueManager: mockQueueManager,
         logger: mockLogger,
       });
 

@@ -11,7 +11,7 @@ import { plugins } from "./schema";
 import { eq, and } from "drizzle-orm";
 import { PluginLocalInstaller } from "./services/plugin-installer";
 import { QueuePluginRegistryImpl } from "./services/queue-plugin-registry";
-import { QueueFactoryImpl } from "./services/queue-factory";
+import { QueueManagerImpl } from "./services/queue-manager";
 
 import { cors } from "hono/cors";
 
@@ -95,7 +95,7 @@ const init = async () => {
   // 1.7. Register Queue Services
   rootLogger.info("📋 Registering queue services...");
   const queueRegistry = new QueuePluginRegistryImpl();
-  const queueFactory = new QueueFactoryImpl(
+  const queueManager = new QueueManagerImpl(
     queueRegistry,
     configService,
     rootLogger
@@ -104,7 +104,7 @@ const init = async () => {
     coreServices.queuePluginRegistry,
     queueRegistry
   );
-  pluginManager.registerService(coreServices.queueFactory, queueFactory);
+  pluginManager.registerService(coreServices.queueManager, queueManager);
 
   // Endpoint to install a new plugin
   app.post("/api/plugins/install", async (c) => {
@@ -158,9 +158,12 @@ const init = async () => {
   // 3. Load Plugins
   await pluginManager.loadPlugins(app);
 
-  // 4. Load Queue Configuration
+  // 4. Load Queue Configuration AFTER plugins (queue plugins register first)
   rootLogger.info("📋 Loading queue configuration...");
-  await queueFactory.loadConfiguration();
+  await queueManager.loadConfiguration();
+
+  // 5. Start config polling for multi-instance coordination
+  queueManager.startPolling(5000);
 
   rootLogger.info("✅ Checkmate Core initialized.");
 };

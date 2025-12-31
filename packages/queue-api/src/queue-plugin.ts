@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Queue } from "./queue";
+import type { Queue } from "./queue";
 import type { MigrationChain } from "@checkmate/backend-api";
 
 export interface QueuePlugin<Config = unknown> {
@@ -25,11 +25,40 @@ export interface QueuePluginRegistry {
   getPlugins(): QueuePlugin<unknown>[];
 }
 
-export interface QueueFactory {
+/**
+ * Result of switching queue backends
+ */
+export interface SwitchResult {
+  success: boolean;
+  migratedRecurringJobs: number;
+  warnings: string[];
+}
+
+/**
+ * Info about a recurring job across all queues
+ */
+export interface RecurringJobInfo {
+  queueName: string;
+  jobId: string;
+  intervalSeconds: number;
+  nextRunAt?: Date;
+}
+
+/**
+ * QueueManager handles queue creation, backend switching, and multi-instance coordination.
+ *
+ * Key features:
+ * - Returns stable QueueProxy instances that survive backend switches
+ * - Polls config for changes to support multi-instance coordination
+ * - Handles graceful migration of recurring jobs when switching backends
+ */
+export interface QueueManager {
   /**
-   * Create a queue using the configured queue plugin
+   * Get or create a queue proxy.
+   * Returns a stable reference that survives backend switches.
+   * Subscriptions are automatically re-applied when backend changes.
    */
-  createQueue<T>(name: string): Queue<T>;
+  getQueue<T>(name: string): Queue<T>;
 
   /**
    * Get the currently active queue plugin ID
@@ -42,7 +71,34 @@ export interface QueueFactory {
   getActiveConfig(): unknown;
 
   /**
-   * Set the active queue plugin and its configuration
+   * Switch to a different queue backend with job migration.
+   *
+   * @throws Error if connection test fails
+   * @throws Error if migration fails
    */
-  setActivePlugin(pluginId: string, config: unknown): Promise<void>;
+  setActiveBackend(pluginId: string, config: unknown): Promise<SwitchResult>;
+
+  /**
+   * Get total number of in-flight jobs across all queues.
+   * Used to warn users before switching backends.
+   */
+  getInFlightJobCount(): Promise<number>;
+
+  /**
+   * List all recurring jobs across all queues.
+   * Used for migration preview.
+   */
+  listAllRecurringJobs(): Promise<RecurringJobInfo[]>;
+
+  /**
+   * Start polling for configuration changes.
+   * Required for multi-instance coordination.
+   * @param intervalMs - Polling interval in milliseconds (default: 5000)
+   */
+  startPolling(intervalMs?: number): void;
+
+  /**
+   * Stop polling and gracefully shutdown all queues.
+   */
+  shutdown(): Promise<void>;
 }

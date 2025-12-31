@@ -4,6 +4,7 @@ import {
   QueueConsumer,
   QueueStats,
   ConsumeOptions,
+  RecurringJobDetails,
 } from "@checkmate/queue-api";
 import { InMemoryQueueConfig } from "./plugin";
 
@@ -249,6 +250,25 @@ export class InMemoryQueue<T> implements Queue<T> {
 
   async listRecurringJobs(): Promise<string[]> {
     return [...this.recurringJobs.keys()];
+  }
+
+  async getRecurringJobDetails(
+    jobId: string
+  ): Promise<RecurringJobDetails<T> | undefined> {
+    const metadata = this.recurringJobs.get(jobId);
+    if (!metadata || !metadata.enabled) {
+      return undefined;
+    }
+    return {
+      jobId: metadata.jobId,
+      data: metadata.payload,
+      intervalSeconds: metadata.intervalSeconds,
+      priority: metadata.priority,
+    };
+  }
+
+  async getInFlightCount(): Promise<number> {
+    return this.processing;
   }
 
   private async processNext(): Promise<void> {

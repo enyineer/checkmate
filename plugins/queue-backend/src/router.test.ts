@@ -26,9 +26,11 @@ describe("Queue Router", () => {
     getPlugin: mock((id: string) => mockPlugins.find((p) => p.id === id)),
   };
 
-  const mockFactory: any = {
+  const mockManager: any = {
     getActivePlugin: mock(() => "memory"),
-    setActivePlugin: mock(() => Promise.resolve()),
+    setActiveBackend: mock(() =>
+      Promise.resolve({ success: true, migratedRecurringJobs: 0, warnings: [] })
+    ),
   };
 
   const mockConfigService: any = {
@@ -52,7 +54,7 @@ describe("Queue Router", () => {
     const context = createMockRpcContext({
       user: mockUser,
       queuePluginRegistry: mockRegistry,
-      queueFactory: mockFactory,
+      queueManager: mockManager,
     });
 
     const result = await call(router.getConfiguration, undefined, { context });
@@ -68,7 +70,7 @@ describe("Queue Router", () => {
   it("updateConfiguration updates active plugin", async () => {
     const context = createMockRpcContext({
       user: mockUser,
-      queueFactory: mockFactory,
+      queueManager: mockManager,
     });
 
     const result = await call(
@@ -77,6 +79,6 @@ describe("Queue Router", () => {
       { context }
     );
     expect(result.pluginId).toBe("memory");
-    expect(mockFactory.setActivePlugin).toHaveBeenCalled();
+    expect(mockManager.setActiveBackend).toHaveBeenCalled();
   });
 });

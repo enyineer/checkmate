@@ -3,20 +3,20 @@ import { EventBus } from "../services/event-bus";
 import { createHook } from "@checkmate/backend-api";
 import {
   createMockLogger,
-  createMockQueueFactory,
+  createMockQueueManager,
 } from "@checkmate/test-utils-backend";
 import type { Logger } from "@checkmate/backend-api";
-import type { QueueFactory } from "@checkmate/queue-api";
+import type { QueueManager } from "@checkmate/queue-api";
 
 describe("EventBus Integration Tests", () => {
   let eventBus: EventBus;
-  let mockQueueFactory: QueueFactory;
+  let mockQueueManager: QueueManager;
   let mockLogger: Logger;
 
   beforeEach(() => {
-    mockQueueFactory = createMockQueueFactory();
+    mockQueueManager = createMockQueueManager();
     mockLogger = createMockLogger();
-    eventBus = new EventBus(mockQueueFactory, mockLogger);
+    eventBus = new EventBus(mockQueueManager, mockLogger);
   });
 
   describe("Permission Sync Scenario", () => {

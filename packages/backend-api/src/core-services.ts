@@ -1,7 +1,7 @@
 import { createServiceRef } from "./service-ref";
 import type { RpcService } from "./rpc";
 import type { HealthCheckRegistry } from "./health-check";
-import type { QueuePluginRegistry, QueueFactory } from "@checkmate/queue-api";
+import type { QueuePluginRegistry, QueueManager } from "@checkmate/queue-api";
 import type { ConfigService } from "./config-service";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -34,7 +34,7 @@ export const coreServices = {
   queuePluginRegistry: createServiceRef<QueuePluginRegistry>(
     "core.queuePluginRegistry"
   ),
-  queueFactory: createServiceRef<QueueFactory>("core.queueFactory"),
+  queueManager: createServiceRef<QueueManager>("core.queueManager"),
   config: createServiceRef<ConfigService>("core.config"),
   eventBus: createServiceRef<EventBus>("core.eventBus"),
 };

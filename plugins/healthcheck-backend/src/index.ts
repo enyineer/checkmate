@@ -20,7 +20,7 @@ export default createBackendPlugin({
         healthCheckRegistry: coreServices.healthCheckRegistry,
         rpc: coreServices.rpc,
         fetch: coreServices.fetch,
-        queueFactory: coreServices.queueFactory,
+        queueManager: coreServices.queueManager,
       },
       // Phase 2: Register router and setup worker
       init: async ({
@@ -29,7 +29,7 @@ export default createBackendPlugin({
         healthCheckRegistry,
         rpc,
         fetch,
-        queueFactory,
+        queueManager,
       }) => {
         logger.debug("🏥 Initializing Health Check Backend...");
 
@@ -39,7 +39,7 @@ export default createBackendPlugin({
           registry: healthCheckRegistry,
           logger,
           fetch,
-          queueFactory,
+          queueManager,
         });
 
         const healthCheckRouter = createHealthCheckRouter(
@@ -50,11 +50,11 @@ export default createBackendPlugin({
         logger.debug("✅ Health Check Backend initialized.");
       },
       // Phase 3: Bootstrap health checks after all plugins are ready
-      afterPluginsReady: async ({ database, queueFactory, logger }) => {
+      afterPluginsReady: async ({ database, queueManager, logger }) => {
         // Bootstrap all enabled health checks
         await bootstrapHealthChecks({
           db: database as unknown as NodePgDatabase<typeof schema>,
-          queueFactory,
+          queueManager,
           logger,
         });
       },

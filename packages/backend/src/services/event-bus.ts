@@ -1,4 +1,4 @@
-import type { Queue, QueueFactory } from "@checkmate/queue-api";
+import type { Queue, QueueManager } from "@checkmate/queue-api";
 import type {
   Hook,
   HookSubscribeOptions,
@@ -30,7 +30,7 @@ export class EventBus implements IEventBus {
   private workerGroups = new Map<string, Set<string>>(); // pluginId -> Set<workerGroup>
   private instanceId = crypto.randomUUID();
 
-  constructor(private queueFactory: QueueFactory, private logger: Logger) {}
+  constructor(private queueManager: QueueManager, private logger: Logger) {}
 
   /**
    * Subscribe to a hook
@@ -92,7 +92,7 @@ export class EventBus implements IEventBus {
 
     // Create queue channel if needed
     if (!this.queueChannels.has(hook.id)) {
-      const channel = this.queueFactory.createQueue<T>(hook.id);
+      const channel = this.queueManager.getQueue<T>(hook.id);
       this.queueChannels.set(hook.id, channel);
 
       this.logger.debug(`Created event channel for hook: ${hook.id}`);
@@ -179,7 +179,7 @@ export class EventBus implements IEventBus {
 
     // Create channel lazily if not exists
     if (!channel) {
-      channel = this.queueFactory.createQueue<T>(hook.id);
+      channel = this.queueManager.getQueue<T>(hook.id);
       this.queueChannels.set(hook.id, channel);
     }
 
