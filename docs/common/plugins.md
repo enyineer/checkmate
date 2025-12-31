@@ -220,7 +220,7 @@ That's it! Your common package is ready to be consumed by backend and frontend p
 
 ## The `@checkmate/common` Core Package
 
-The `@checkmate/common` package is a special core package located in `packages/common/` that provides shared type definitions used across the entire codebase. This is the foundation that all common plugins can depend on.
+The `@checkmate/common` package is a special core package located in `core/common/` that provides shared type definitions used across the entire codebase. This is the foundation that all common plugins can depend on.
 
 **What it contains:**
 - Core type definitions (e.g., `Permission` type)
@@ -233,7 +233,7 @@ The `@checkmate/common` package is a special core package located in `packages/c
 - ✅ Frontend API packages (like `@checkmate/frontend-api`)
 - ✅ Backend and frontend plugins (when they need core types)
 
-**Example - `packages/common/src/types.ts`:**
+**Example - `core/common/src/types.ts`:**
 ```typescript
 /**
  * Represents a permission that can be assigned to roles.

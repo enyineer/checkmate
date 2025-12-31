@@ -892,5 +892,5 @@ By implementing the `QueuePlugin` interface, you can integrate any backend (Redi
 
 For reference implementations, see:
 - [`InMemoryQueue`](file:///Users/nicoenking/Development/Projects/node/checkmate/plugins/queue-memory-backend/src/memory-queue.ts) - Complete working example
-- [`Queue API`](file:///Users/nicoenking/Development/Projects/node/checkmate/packages/queue-api/src/queue.ts) - Core interfaces
-- [`QueuePlugin Interface`](file:///Users/nicoenking/Development/Projects/node/checkmate/packages/queue-api/src/queue-plugin.ts) - Plugin contract
+- [`Queue API`](file:///Users/nicoenking/Development/Projects/node/checkmate/core/queue-api/src/queue.ts) - Core interfaces
+- [`QueuePlugin Interface`](file:///Users/nicoenking/Development/Projects/node/checkmate/core/queue-api/src/queue-plugin.ts) - Plugin contract

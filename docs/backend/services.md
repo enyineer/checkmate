@@ -397,7 +397,7 @@ const blob = await response.blob();
 ### Code Reference
 
 ```typescript
-// packages/backend/src/plugin-manager.ts
+// core/backend/src/plugin-manager.ts
 this.registry.registerFactory(coreServices.rpcClient, async (pluginId) => {
   const fetchService = await this.registry.get(coreServices.fetch, pluginId);
   const apiBaseUrl = process.env.API_BASE_URL || "http://localhost:3000";

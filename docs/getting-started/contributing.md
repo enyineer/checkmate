@@ -43,7 +43,7 @@ bun install
 Ensure your project follows the shared standards for TypeScript and package scripts:
 
 ```bash
-bun run packages/scripts/src/sync.ts
+bun run core/scripts/src/sync.ts
 ```
 
 ### Set Up Database
@@ -74,7 +74,7 @@ The application will be available at:
 
 ```
 checkmate/
-├── packages/          # Core packages
+├── core/          # Core packages
 │   ├── backend/      # Backend core
 │   ├── frontend/     # Frontend core
 │   ├── backend-api/  # Backend plugin API

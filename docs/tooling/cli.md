@@ -48,7 +48,7 @@ We provide a tool to automatically keep all `package.json` and `tsconfig.json` f
 
 ```bash
 # From the root of the monorepo
-bun run packages/scripts/src/sync.ts
+bun run core/scripts/src/sync.ts
 ```
 
 This tool will:
@@ -68,7 +68,7 @@ bun run cli create
 
 The CLI will guide you through:
 
-1. **Location choice**: `packages/` (core components) or `plugins/` (replaceable providers)
+1. **Location choice**: `core/` (core components) or `plugins/` (replaceable providers)
 2. **Package type**: backend, frontend, common, node, or react
 3. **Package name**: Base name for your package (e.g., "auth" for "auth-backend")
 4. **Description**: Optional description for your package
@@ -77,7 +77,7 @@ The CLI will guide you through:
 
 | Location | Use For |
 |----------|---------|
-| `packages/` | Core platform components that are essential and non-replaceable |
+| `core/` | Core platform components that are essential and non-replaceable |
 | `plugins/` | Replaceable providers that can be swapped (auth providers, queue backends) |
 
 See [Packages vs Plugins Architecture](../architecture/packages-vs-plugins.md) for detailed decision criteria.
@@ -90,7 +90,7 @@ If the CLI doesn't work in your environment:
 2. Create a minimal `tsconfig.json`.
 3. Run the synchronization tool:
    ```bash
-   bun run packages/scripts/src/sync.ts
+   bun run core/scripts/src/sync.ts
    ```
 4. Run `bun install` to link the new dependencies.
 

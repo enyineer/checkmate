@@ -1018,4 +1018,4 @@ apis: [
 - [Backend Plugin Development](../backend/plugins.md)
 - [Common Plugin Guidelines](../common/plugins.md)
 - [Extension Points](./extension-points.md)
-- [UI Component Library](../packages/ui/README.md)
+- [UI Component Library](../core/ui/README.md)

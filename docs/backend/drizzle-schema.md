@@ -27,7 +27,7 @@ This happens automatically for **all plugins** (local and remote) with zero conf
 
 ### Implementation
 
-The fix is implemented in `/packages/backend/src/utils/fix-migrations.ts` and is called automatically by the `PluginManager` before running any plugin migrations.
+The fix is implemented in `/core/backend/src/utils/fix-migrations.ts` and is called automatically by the `PluginManager` before running any plugin migrations.
 
 ```typescript
 // In PluginManager.loadPlugins()

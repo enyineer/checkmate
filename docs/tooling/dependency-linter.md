@@ -33,7 +33,7 @@ The script automatically detects package types based on naming conventions:
 
 ### Validation Process
 
-1. Scans all packages in `packages/*` and `plugins/*` directories
+1. Scans all packages in `core/*` and `plugins/*` directories
 2. Reads each `package.json` file
 3. Checks `dependencies` and `peerDependencies`
 4. Validates each internal dependency against the architecture rules

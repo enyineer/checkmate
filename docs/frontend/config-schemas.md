@@ -101,7 +101,7 @@ import { PluginConfigForm } from "@checkmate/ui";
 
 ### Backend: Schema Conversion Process
 
-The `toJsonSchema()` function in [`schema-utils.ts`](file:///Users/nicoenking/Development/Projects/node/checkmate/packages/backend-api/src/schema-utils.ts):
+The `toJsonSchema()` function in [`schema-utils.ts`](file:///Users/nicoenking/Development/Projects/node/checkmate/core/backend-api/src/schema-utils.ts):
 
 1. Calls Zod's native `toJSONSchema()` to get the base JSON Schema
 2. Traverses the Zod schema to identify fields created with `secret()`
@@ -119,7 +119,7 @@ function toJsonSchema(zodSchema: z.ZodTypeAny): Record<string, unknown> {
 
 ### Frontend: Password Field Rendering
 
-The `DynamicForm` component in [`DynamicForm.tsx`](file:///Users/nicoenking/Development/Projects/node/checkmate/packages/ui/src/components/DynamicForm.tsx) detects secret fields:
+The `DynamicForm` component in [`DynamicForm.tsx`](file:///Users/nicoenking/Development/Projects/node/checkmate/core/ui/src/components/DynamicForm.tsx) detects secret fields:
 
 ```typescript
 // Detect secret fields from x-secret metadata

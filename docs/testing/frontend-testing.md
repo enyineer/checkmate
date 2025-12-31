@@ -176,10 +176,10 @@ test.describe("Login Page", () => {
 
 ```bash
 # Terminal 1: Start backend
-cd packages/backend && bun run dev
+cd core/backend && bun run dev
 
 # Terminal 2: Start frontend
-cd packages/frontend && bun run dev
+cd core/frontend && bun run dev
 
 # Terminal 3: Run E2E tests
 cd plugins/your-plugin && bun run test:e2e

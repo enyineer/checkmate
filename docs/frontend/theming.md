@@ -8,7 +8,7 @@ The Checkmate UI system uses a centralized, configurable theming architecture ba
 
 The theming system consists of four key layers:
 
-1. **CSS Variables** (`packages/ui/src/themes.css`) - Core color definitions using HSL values
+1. **CSS Variables** (`core/ui/src/themes.css`) - Core color definitions using HSL values
 2. **Tailwind Integration** (`tailwind.config.js`) - Maps CSS variables to Tailwind utility classes
 3. **Theme Provider** (`@checkmate/ui/ThemeProvider`) - Runtime theme management and persistence
 4. **Component Adoption** - All components use semantic tokens instead of hardcoded colors
@@ -382,7 +382,7 @@ Always verify your components in both light and dark modes:
 
 If you need to add new tokens, follow this process:
 
-1. **Define CSS variables** in `packages/ui/src/themes.css` for both `:root` and `.dark`
+1. **Define CSS variables** in `core/ui/src/themes.css` for both `:root` and `.dark`
 2. **Map to Tailwind** in `tailwind.config.js` under `theme.extend.colors`
 3. **Document the token** in this guide with usage guidelines
 4. **Update components** to use the new token where appropriate

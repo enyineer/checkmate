@@ -11,14 +11,14 @@ The Checkmate platform uses a two-tier architecture for code organization:
 
 | Directory | Purpose | Examples |
 |-----------|---------|----------|
-| `packages/` | Essential platform components that cannot be removed | Auth, Catalog, Queue, Notifications |
+| `core/` | Essential platform components that cannot be removed | Auth, Catalog, Queue, Notifications |
 | `plugins/` | Replaceable providers and strategies | Auth providers (GitHub, LDAP), Queue backends (BullMQ) |
 
 ## Decision Criteria
 
 Use this guide when deciding where to place new code:
 
-### Create in `packages/` when:
+### Create in `core/` when:
 
 - ✅ The platform **depends on this functionality** to operate
 - ✅ It provides **core infrastructure** (auth, storage, messaging)
@@ -53,13 +53,13 @@ Use this guide when deciding where to place new code:
 
 | Type | Backend | Common (Shared) | Frontend |
 |------|---------|-----------------|----------|
-| **Package** | `packages/{name}-backend` | `packages/{name}-common` | `packages/{name}-frontend` |
+| **Package** | `core/{name}-backend` | `core/{name}-common` | `core/{name}-frontend` |
 | **Plugin** | `plugins/{name}-backend` | `plugins/{name}-common` | `plugins/{name}-frontend` |
 
 ## Architecture Diagram
 
 ```
-packages/
+core/
 ├── backend/           # Core backend server
 ├── frontend/          # Core frontend app
 ├── backend-api/       # Backend plugin API
@@ -95,7 +95,7 @@ plugins/
 Plugins implement interfaces defined in packages:
 
 ```typescript
-// packages/queue-api/src/types.ts
+// core/queue-api/src/types.ts
 export interface QueuePlugin {
   type: "queue";
   createQueue(name: string, options: QueueOptions): Queue;

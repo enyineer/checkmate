@@ -48,7 +48,7 @@ Each plugin is a standalone npm package that can:
 
 ```
 checkmate/
-├── packages/
+├── core/
 │   ├── backend/           # Core backend framework
 │   ├── frontend/          # Core frontend framework
 │   ├── backend-api/       # Backend plugin API
