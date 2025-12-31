@@ -8,6 +8,7 @@
 "@checkmate/notification-common": minor
 "@checkmate/notification-backend": minor
 "@checkmate/notification-frontend": minor
+"@checkmate/test-utils-backend": minor
 ---
 
 Added realtime Signal Service for backend-to-frontend push notifications via WebSockets.

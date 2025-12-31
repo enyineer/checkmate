@@ -176,6 +176,7 @@
         "@checkmate/tsconfig": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5.7.2",
+        "zod": "^4.0.0",
       },
     },
     "packages/signal-common": {
@@ -212,11 +213,13 @@
       "dependencies": {
         "@checkmate/backend-api": "workspace:*",
         "@checkmate/queue-api": "workspace:*",
+        "@checkmate/signal-common": "workspace:*",
       },
       "devDependencies": {
         "@checkmate/scripts": "workspace:*",
         "@checkmate/tsconfig": "workspace:*",
         "@types/bun": "latest",
+        "zod": "^4.0.0",
       },
     },
     "packages/tsconfig": {
