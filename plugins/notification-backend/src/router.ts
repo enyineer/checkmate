@@ -19,7 +19,7 @@ import {
   markAsRead,
   deleteNotification,
   getAllGroups,
-  getUserSubscriptions,
+  getEnrichedUserSubscriptions,
   subscribeToGroup,
   unsubscribeFromGroup,
 } from "./service";
@@ -111,12 +111,11 @@ export const createNotificationRouter = (
       .use(notificationRead)
       .handler(async ({ context }) => {
         const userId = context.user.id as string;
-        const subscriptions = await getUserSubscriptions(database, userId);
-        return subscriptions.map((s) => ({
-          userId: s.userId,
-          groupId: s.groupId,
-          subscribedAt: s.subscribedAt,
-        }));
+        const subscriptions = await getEnrichedUserSubscriptions(
+          database,
+          userId
+        );
+        return subscriptions;
       }),
 
     subscribe: authedProcedure

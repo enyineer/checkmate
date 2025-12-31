@@ -46,6 +46,16 @@ export type NotificationSubscription = z.infer<
   typeof NotificationSubscriptionSchema
 >;
 
+// Enriched subscription with group details for display
+export const EnrichedSubscriptionSchema = z.object({
+  groupId: z.string(),
+  groupName: z.string(),
+  groupDescription: z.string(),
+  ownerPlugin: z.string(),
+  subscribedAt: z.coerce.date(),
+});
+export type EnrichedSubscription = z.infer<typeof EnrichedSubscriptionSchema>;
+
 // Retention settings
 export const RetentionSettingsSchema = z.object({
   retentionDays: z.number().min(1).max(365),

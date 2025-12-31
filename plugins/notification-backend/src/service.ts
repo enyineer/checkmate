@@ -332,16 +332,36 @@ export async function getAllGroups(
 }
 
 /**
- * Get user's subscriptions
+ * Get user's subscriptions with enriched group details
  */
-export async function getUserSubscriptions(
+export async function getEnrichedUserSubscriptions(
   db: NodePgDatabase<typeof schema>,
   userId: string
-): Promise<(typeof schema.notificationSubscriptions.$inferSelect)[]> {
-  return db
-    .select()
+): Promise<
+  {
+    groupId: string;
+    groupName: string;
+    groupDescription: string;
+    ownerPlugin: string;
+    subscribedAt: Date;
+  }[]
+> {
+  const result = await db
+    .select({
+      groupId: schema.notificationSubscriptions.groupId,
+      groupName: schema.notificationGroups.name,
+      groupDescription: schema.notificationGroups.description,
+      ownerPlugin: schema.notificationGroups.ownerPlugin,
+      subscribedAt: schema.notificationSubscriptions.subscribedAt,
+    })
     .from(schema.notificationSubscriptions)
+    .innerJoin(
+      schema.notificationGroups,
+      eq(schema.notificationSubscriptions.groupId, schema.notificationGroups.id)
+    )
     .where(eq(schema.notificationSubscriptions.userId, userId));
+
+  return result;
 }
 
 /**

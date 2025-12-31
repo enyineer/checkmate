@@ -5,7 +5,7 @@ import { permissions } from "./permissions";
 import {
   NotificationSchema,
   NotificationGroupSchema,
-  NotificationSubscriptionSchema,
+  EnrichedSubscriptionSchema,
   RetentionSettingsSchema,
   PaginationInputSchema,
 } from "./schemas";
@@ -61,10 +61,10 @@ export const notificationContract = {
     .meta({ permissions: [permissions.notificationRead.id] })
     .output(z.array(NotificationGroupSchema)),
 
-  // Get current user's subscriptions
+  // Get current user's subscriptions with group details
   getSubscriptions: _base
     .meta({ permissions: [permissions.notificationRead.id] })
-    .output(z.array(NotificationSubscriptionSchema)),
+    .output(z.array(EnrichedSubscriptionSchema)),
 
   // Subscribe to a notification group (any authenticated user)
   subscribe: _base

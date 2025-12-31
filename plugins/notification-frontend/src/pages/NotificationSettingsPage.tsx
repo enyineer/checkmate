@@ -4,15 +4,13 @@ import {
   PageLayout,
   Card,
   Button,
-  Toggle,
   useToast,
   SectionHeader,
   DynamicForm,
 } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import type {
-  NotificationGroup,
-  NotificationSubscription,
+  EnrichedSubscription,
   NotificationClient,
 } from "@checkmate/notification-common";
 
@@ -37,11 +35,10 @@ export const NotificationSettingsPage = () => {
   const [retentionSaving, setRetentionSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Subscription state
-  const [groups, setGroups] = useState<NotificationGroup[]>([]);
-  const [subscriptions, setSubscriptions] = useState<
-    NotificationSubscription[]
-  >([]);
+  // Subscription state - now uses enriched subscriptions only
+  const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>(
+    []
+  );
   const [subsLoading, setSubsLoading] = useState(true);
 
   // Fetch retention settings and schema (admin only)
@@ -62,20 +59,16 @@ export const NotificationSettingsPage = () => {
     }
   }, [notificationClient]);
 
-  // Fetch groups and subscriptions
+  // Fetch subscriptions only (no groups needed)
   const fetchSubscriptionData = useCallback(async () => {
     try {
-      const [groupsData, subsData] = await Promise.all([
-        notificationClient.getGroups(),
-        notificationClient.getSubscriptions(),
-      ]);
-      setGroups(groupsData);
+      const subsData = await notificationClient.getSubscriptions();
       setSubscriptions(subsData);
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Failed to fetch subscription data";
+          : "Failed to fetch subscriptions";
       toast.error(message);
     } finally {
       setSubsLoading(false);
@@ -103,26 +96,11 @@ export const NotificationSettingsPage = () => {
     }
   };
 
-  const handleSubscribe = async (groupId: string) => {
-    try {
-      await notificationClient.subscribe({ groupId });
-      setSubscriptions((prev) => [
-        ...prev,
-        { userId: "", groupId, subscribedAt: new Date() },
-      ]);
-      toast.success("Subscribed to group");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to subscribe";
-      toast.error(message);
-    }
-  };
-
   const handleUnsubscribe = async (groupId: string) => {
     try {
       await notificationClient.unsubscribe({ groupId });
       setSubscriptions((prev) => prev.filter((s) => s.groupId !== groupId));
-      toast.success("Unsubscribed from group");
+      toast.success("Unsubscribed successfully");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to unsubscribe";
@@ -130,51 +108,44 @@ export const NotificationSettingsPage = () => {
     }
   };
 
-  const isSubscribed = (groupId: string) =>
-    subscriptions.some((s) => s.groupId === groupId);
-
   return (
     <PageLayout title="Notification Settings" loading={subsLoading}>
       <div className="space-y-8">
-        {/* Subscription Management - Available to all users */}
+        {/* Subscription Management - Shows current subscriptions */}
         <section>
           <SectionHeader
-            title="Notification Groups"
-            description="Subscribe to notification groups to receive updates"
+            title="Your Subscriptions"
+            description="Manage your notification subscriptions. Subscriptions are created by plugins and services."
             icon={<Bell className="h-5 w-5" />}
           />
           <Card className="p-4">
-            {groups.length === 0 ? (
+            {subscriptions.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                No notification groups available
+                No active subscriptions
               </div>
             ) : (
               <div className="space-y-3">
-                {groups.map((group) => (
+                {subscriptions.map((sub) => (
                   <div
-                    key={group.id}
+                    key={sub.groupId}
                     className="flex items-center justify-between py-2 border-b last:border-0"
                   >
                     <div>
-                      <div className="font-medium">{group.name}</div>
+                      <div className="font-medium">{sub.groupName}</div>
                       <div className="text-sm text-muted-foreground">
-                        {group.description}
+                        {sub.groupDescription}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        From: {group.ownerPlugin}
+                        From: {sub.ownerPlugin}
                       </div>
                     </div>
-                    <Toggle
-                      checked={isSubscribed(group.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          void handleSubscribe(group.id);
-                        } else {
-                          void handleUnsubscribe(group.id);
-                        }
-                      }}
-                      aria-label={`Subscribe to ${group.name}`}
-                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleUnsubscribe(sub.groupId)}
+                    >
+                      Unsubscribe
+                    </Button>
                   </div>
                 ))}
               </div>
