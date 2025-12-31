@@ -11,6 +11,13 @@ export type ResolvedDeps<T extends Deps> = {
   [K in keyof T]: T[K]["T"];
 };
 
+/**
+ * Helper type for database dependency injection.
+ * If schema S is provided, adds typed database; otherwise adds nothing.
+ */
+export type DatabaseDeps<S extends Record<string, unknown> | undefined> =
+  S extends undefined ? unknown : { database: NodePgDatabase<NonNullable<S>> };
+
 export type PluginContext = {
   pluginId: string;
 };
@@ -47,23 +54,14 @@ export type BackendPluginRegistry = {
      * Use this to register routers, services, and set up internal state.
      * DO NOT make RPC calls to other plugins here - use afterPluginsReady instead.
      */
-    init: (
-      deps: ResolvedDeps<D> &
-        (S extends undefined
-          ? unknown
-          : { database: NodePgDatabase<NonNullable<S>> })
-    ) => Promise<void>;
+    init: (deps: ResolvedDeps<D> & DatabaseDeps<S>) => Promise<void>;
     /**
      * Phase 3: Called after ALL plugins have initialized.
      * Safe to make RPC calls to other plugins and subscribe to hooks.
      * Receives the same deps as init, plus onHook and emitHook.
      */
     afterPluginsReady?: (
-      deps: ResolvedDeps<D> &
-        (S extends undefined
-          ? unknown
-          : { database: NodePgDatabase<NonNullable<S>> }) &
-        AfterPluginsReadyContext
+      deps: ResolvedDeps<D> & DatabaseDeps<S> & AfterPluginsReadyContext
     ) => Promise<void>;
   }) => void;
   registerService: <S>(ref: ServiceRef<S>, impl: S) => void;

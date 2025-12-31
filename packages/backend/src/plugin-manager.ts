@@ -12,6 +12,7 @@ import {
   coreServices,
   BackendPlugin,
   AfterPluginsReadyContext,
+  DatabaseDeps,
   ServiceRef,
   ExtensionPoint,
   Deps,
@@ -44,12 +45,15 @@ import {
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 
+/** Erased callback type used in PendingInit storage */
+type InitCallback = (deps: Record<string, unknown>) => Promise<void>;
+
 interface PendingInit {
   pluginId: string;
   pluginPath: string;
   deps: Record<string, ServiceRef<unknown>>;
-  init: (deps: Record<string, unknown>) => Promise<void>;
-  afterPluginsReady?: (deps: Record<string, unknown>) => Promise<void>;
+  init: InitCallback;
+  afterPluginsReady?: InitCallback;
   schema?: Record<string, unknown>;
 }
 
@@ -806,28 +810,17 @@ export class PluginManager {
       >(args: {
         deps: D;
         schema?: S;
-        init: (
-          deps: ResolvedDeps<D> &
-            (S extends undefined
-              ? unknown
-              : { database: NodePgDatabase<NonNullable<S>> })
-        ) => Promise<void>;
+        init: (deps: ResolvedDeps<D> & DatabaseDeps<S>) => Promise<void>;
         afterPluginsReady?: (
-          deps: ResolvedDeps<D> &
-            (S extends undefined
-              ? unknown
-              : { database: NodePgDatabase<NonNullable<S>> }) &
-            AfterPluginsReadyContext
+          deps: ResolvedDeps<D> & DatabaseDeps<S> & AfterPluginsReadyContext
         ) => Promise<void>;
       }) => {
         pendingInits.push({
           pluginId: backendPlugin.pluginId,
           pluginPath: pluginPath,
           deps: args.deps,
-          init: args.init as (deps: Record<string, unknown>) => Promise<void>,
-          afterPluginsReady: args.afterPluginsReady as
-            | ((deps: Record<string, unknown>) => Promise<void>)
-            | undefined,
+          init: args.init as InitCallback,
+          afterPluginsReady: args.afterPluginsReady as InitCallback | undefined,
           schema: args.schema,
         });
       },
