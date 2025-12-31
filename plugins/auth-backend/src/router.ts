@@ -383,8 +383,19 @@ export const createAuthRouter = (
       });
     }
 
-    // Delete role (cascades to user_role and role_permission via foreign keys)
-    await internalDb.delete(schema.role).where(eq(schema.role.id, id));
+    // Delete role and related records in transaction
+    await internalDb.transaction(async (tx) => {
+      // Delete role-permission mappings
+      await tx
+        .delete(schema.rolePermission)
+        .where(eq(schema.rolePermission.roleId, id));
+
+      // Delete user-role mappings
+      await tx.delete(schema.userRole).where(eq(schema.userRole.roleId, id));
+
+      // Delete the role itself
+      await tx.delete(schema.role).where(eq(schema.role.id, id));
+    });
   });
 
   const updateUserRoles = os.updateUserRoles.handler(
