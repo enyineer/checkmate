@@ -264,6 +264,25 @@ await config.set("active", queueSchema, 1, {
 });
 ```
 
+**Auth Backend** - Platform Registration Settings:
+```typescript
+// Controls whether new user registration is allowed platform-wide.
+// When disabled, only existing users can sign in - useful for private deployments.
+const platformRegistrationConfigV1 = z.object({
+  allowRegistration: z
+    .boolean()
+    .default(true)
+    .describe(
+      "When enabled, new users can create accounts. When disabled, only existing users can sign in."
+    ),
+});
+
+// The schema's describe() is automatically shown in DynamicForm settings UI
+await config.set("platform.registration", platformRegistrationConfigV1, 1, {
+  allowRegistration: false, // Lock down registration
+});
+```
+
 ### ✅ Custom Schema Examples
 
 **Health Check Backend** - Check instances:

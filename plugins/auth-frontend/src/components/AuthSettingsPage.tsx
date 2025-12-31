@@ -137,22 +137,6 @@ export const AuthSettingsPage: React.FC = () => {
         configs[strategy.id] = strategy.config || {};
       }
       setStrategyConfigs(configs);
-
-      // Fetch registration schema and status
-      if (canManageRegistration.allowed) {
-        try {
-          const [schema, status] = await Promise.all([
-            authClient.getRegistrationSchema(),
-            authClient.getRegistrationStatus(),
-          ]);
-          setRegistrationSchema(schema as Record<string, unknown>);
-          setRegistrationSettings(status);
-        } catch (error) {
-          console.error("Failed to fetch registration data:", error);
-        } finally {
-          setLoadingRegistration(false);
-        }
-      }
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Failed to fetch data";
@@ -163,9 +147,36 @@ export const AuthSettingsPage: React.FC = () => {
     }
   };
 
+  // Fetch registration data separately when permission becomes available
+  const fetchRegistrationData = async () => {
+    setLoadingRegistration(true);
+    try {
+      const [schema, status] = await Promise.all([
+        authClient.getRegistrationSchema(),
+        authClient.getRegistrationStatus(),
+      ]);
+      setRegistrationSchema(schema as Record<string, unknown>);
+      setRegistrationSettings(status);
+    } catch (error) {
+      console.error("Failed to fetch registration data:", error);
+    } finally {
+      setLoadingRegistration(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Fetch registration data when permission becomes available
+  useEffect(() => {
+    if (canManageRegistration.allowed && !canManageRegistration.loading) {
+      fetchRegistrationData();
+    } else if (!canManageRegistration.loading) {
+      // No permission, stop loading state
+      setLoadingRegistration(false);
+    }
+  }, [canManageRegistration.allowed, canManageRegistration.loading]);
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;

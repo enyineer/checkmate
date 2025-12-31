@@ -75,7 +75,9 @@ export const authContract = {
   getRegistrationStatus: oc
     .meta({ permissions: [] }) // Public endpoint
     .output(z.object({ 
-      allowRegistration: z.boolean() 
+      allowRegistration: z.boolean().describe(
+        "When enabled, new users can create accounts. When disabled, only existing users can sign in."
+      )
     })),
     
   setRegistrationStatus: oc
