@@ -196,7 +196,8 @@ Register the plugin's initialization function.
 **Config:**
 - `schema`: Drizzle schema object (optional)
 - `deps`: Dependencies to inject
-- `init`: Async initialization function
+- `init`: Async initialization function (Phase 2)
+- `afterPluginsReady`: Async function called after all plugins initialized (Phase 3, optional)
 
 ```typescript
 env.registerInit({
@@ -204,9 +205,25 @@ env.registerInit({
   deps: {
     rpc: coreServices.rpc,
     logger: coreServices.logger,
+    rpcClient: coreServices.rpcClient,
   },
+  // Phase 2: Register routers and services
+  // DO NOT make RPC calls to other plugins here
   init: async ({ database, rpc, logger }) => {
-    // Plugin initialization logic
+    const router = createMyRouter(database);
+    rpc.registerRouter("myplugin-backend", router);
+  },
+  // Phase 3: Called after ALL plugins are initialized
+  // Safe to make RPC calls and subscribe to hooks
+  afterPluginsReady: async ({ database, rpcClient, onHook, emitHook }) => {
+    // Call other plugins via RPC
+    const otherClient = rpcClient.forPlugin<OtherClient>("other-backend");
+    await otherClient.someMethod({ ... });
+    
+    // Subscribe to hooks
+    onHook(coreHooks.someEvent, async (payload) => {
+      // Handle event
+    });
   },
 });
 ```

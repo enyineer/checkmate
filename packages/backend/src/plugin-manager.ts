@@ -11,6 +11,7 @@ import { ServiceRegistry } from "./services/service-registry";
 import {
   coreServices,
   BackendPlugin,
+  AfterPluginsReadyContext,
   ServiceRef,
   ExtensionPoint,
   Deps,
@@ -48,11 +49,9 @@ interface PendingInit {
   pluginPath: string;
   deps: Record<string, ServiceRef<unknown>>;
   init: (deps: Record<string, unknown>) => Promise<void>;
+  afterPluginsReady?: (deps: Record<string, unknown>) => Promise<void>;
   schema?: Record<string, unknown>;
 }
-
-// No-op unsubscribe function for deferred hooks
-const noOpUnsubscribe = async () => {};
 
 export class PluginManager {
   private registry = new ServiceRegistry();
@@ -290,12 +289,6 @@ export class PluginManager {
   private deferredPermissionRegistrations: Array<{
     pluginId: string;
     permissions: { id: string; description?: string }[];
-  }> = [];
-  private deferredHookSubscriptions: Array<{
-    pluginId: string;
-    hook: { id: string };
-    listener: (payload: unknown) => Promise<void>;
-    options?: HookSubscribeOptions;
   }> = [];
 
   registerPermissions(pluginId: string, permissions: Permission[]) {
@@ -638,22 +631,62 @@ export class PluginManager {
     // Clear deferred registrations after emission
     this.deferredPermissionRegistrations = [];
 
-    // Now subscribe all deferred hooks
-    rootLogger.debug("🔗 Subscribing deferred hook listeners...");
-    for (const { pluginId, hook, listener, options } of this
-      .deferredHookSubscriptions) {
-      try {
-        const eventBus = await this.registry.get(coreServices.eventBus, "core");
-        await eventBus.subscribe(pluginId, hook, listener, options);
-      } catch (error) {
-        rootLogger.error(
-          `Failed to subscribe hook ${hook.id} for ${pluginId}:`,
-          error
-        );
+    // Phase 3: Run afterPluginsReady callbacks
+    // Now all routers are registered, so cross-plugin RPC calls are safe
+    rootLogger.debug("🔄 Running afterPluginsReady callbacks...");
+    for (const p of pendingInits) {
+      if (p.afterPluginsReady) {
+        try {
+          // Re-resolve deps for the ready phase
+          const resolvedDeps: Record<string, unknown> = {};
+          for (const [key, ref] of Object.entries(p.deps)) {
+            resolvedDeps[key] = await this.registry.get(
+              ref as ServiceRef<unknown>,
+              p.pluginId
+            );
+          }
+
+          // Add database if schema was provided
+          if (p.schema) {
+            const baseUrl = process.env.DATABASE_URL;
+            const assignedSchema = `plugin_${p.pluginId}`;
+            const scopedUrl = `${baseUrl}?options=-c%20search_path%3D${assignedSchema}`;
+            const pluginPool = new Pool({ connectionString: scopedUrl });
+            resolvedDeps["database"] = drizzle(pluginPool, {
+              schema: p.schema,
+            });
+          }
+
+          // Create hook helpers bound to this plugin
+          const eventBus = await this.registry.get(
+            coreServices.eventBus,
+            "core"
+          );
+          resolvedDeps["onHook"] = <T>(
+            hook: { id: string },
+            listener: (payload: T) => Promise<void>,
+            options?: HookSubscribeOptions
+          ) => {
+            return eventBus.subscribe(p.pluginId, hook, listener, options);
+          };
+          resolvedDeps["emitHook"] = async <T>(
+            hook: { id: string },
+            payload: T
+          ) => {
+            await eventBus.emit(hook, payload);
+          };
+
+          await p.afterPluginsReady(resolvedDeps);
+          rootLogger.debug(`   -> ${p.pluginId} afterPluginsReady complete`);
+        } catch (error) {
+          rootLogger.error(
+            `❌ Failed afterPluginsReady for ${p.pluginId}:`,
+            error
+          );
+        }
       }
     }
-    // Clear deferred subscriptions after processing
-    this.deferredHookSubscriptions = [];
+    rootLogger.debug("✅ All afterPluginsReady callbacks complete");
 
     // API route is already registered (before Phase 2)
   }
@@ -779,12 +812,22 @@ export class PluginManager {
               ? unknown
               : { database: NodePgDatabase<NonNullable<S>> })
         ) => Promise<void>;
+        afterPluginsReady?: (
+          deps: ResolvedDeps<D> &
+            (S extends undefined
+              ? unknown
+              : { database: NodePgDatabase<NonNullable<S>> }) &
+            AfterPluginsReadyContext
+        ) => Promise<void>;
       }) => {
         pendingInits.push({
           pluginId: backendPlugin.pluginId,
           pluginPath: pluginPath,
           deps: args.deps,
           init: args.init as (deps: Record<string, unknown>) => Promise<void>,
+          afterPluginsReady: args.afterPluginsReady as
+            | ((deps: Record<string, unknown>) => Promise<void>)
+            | undefined,
           schema: args.schema,
         });
       },
@@ -804,24 +847,6 @@ export class PluginManager {
       },
       registerRouter: (router: unknown) => {
         this.pluginRpcRouters.set(backendPlugin.pluginId, router);
-      },
-      onHook: (hook, listener, options) => {
-        // Defer hook subscription until all plugins are initialized
-        // This ensures queue plugins are available when event bus creates queues
-        this.deferredHookSubscriptions.push({
-          pluginId: backendPlugin.pluginId,
-          hook,
-          listener: listener as (payload: unknown) => Promise<void>,
-          options,
-        });
-
-        // Return a no-op unsubscribe function for now
-        // TODO: Support unsubscribe for deferred hooks if needed
-        return noOpUnsubscribe;
-      },
-      emitHook: async (hook, payload) => {
-        const eventBus = await this.registry.get(coreServices.eventBus, "core");
-        await eventBus.emit(hook, payload);
       },
       pluginManager: {
         getAllPermissions: () => this.getAllPermissions(),

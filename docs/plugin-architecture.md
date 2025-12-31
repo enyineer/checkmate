@@ -88,6 +88,8 @@ See [dependency-linter.md](./dependency-linter.md) for details.
 
 ### Backend Plugin Lifecycle
 
+Backend plugins use a **two-phase initialization** to ensure cross-plugin communication works correctly:
+
 ```mermaid
 graph TD
     A[Plugin Discovery] --> B[Load Plugin Module]
@@ -98,10 +100,25 @@ graph TD
     E --> G[Register Services]
     E --> H[Register Extension Points]
     E --> I[Register Init Function]
-    I --> J[Resolve Dependencies]
-    J --> K[Call init with Dependencies]
-    K --> L[Plugin Active]
+    
+    subgraph "Phase 2: Init"
+        I --> J[Resolve Dependencies]
+        J --> K[Call init - Register routers]
+    end
+    
+    subgraph "Phase 3: After Plugins Ready"
+        K --> L[All Plugins Initialized]
+        L --> M[Call afterPluginsReady]
+        M --> N[Cross-plugin RPC + Hooks]
+    end
+    
+    N --> O[Plugin Active]
 ```
+
+> **Key Point:** The `init` function registers routers and services. The `afterPluginsReady` callback runs after ALL plugins have initialized, making it safe to:
+> - Call other plugins via RPC
+> - Subscribe to hooks (`onHook`)
+> - Emit hooks (`emitHook`)
 
 ### Frontend Plugin Lifecycle
 

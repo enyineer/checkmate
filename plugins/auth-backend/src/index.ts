@@ -60,30 +60,6 @@ export default createBackendPlugin({
 
     env.registerPermissions(permissionList);
 
-    // Helper function (will be defined in init)
-    let syncPermissionsToDb:
-      | ((permissions: { id: string; description?: string }[]) => Promise<void>)
-      | undefined;
-
-    // Subscribe to permission registration hook (work-queue mode = only one instance syncs)
-    env.onHook(
-      coreHooks.permissionsRegistered,
-      async ({ permissions }) => {
-        // Only sync if database is ready and function is initialized
-        if (!db || !syncPermissionsToDb) {
-          return; // Will be synced during initial init
-        }
-
-        // Sync new permissions to database
-        await syncPermissionsToDb(permissions);
-      },
-      {
-        mode: "work-queue",
-        workerGroup: "permission-db-sync",
-        maxRetries: 5,
-      }
-    );
-
     env.registerExtensionPoint(betterAuthExtensionPoint, {
       addStrategy: (s) => {
         // Validate that the strategy schema doesn't have required fields without defaults
@@ -279,8 +255,8 @@ export default createBackendPlugin({
           logger.info("[auth-backend] ✅ Authentication reloaded successfully");
         };
 
-        // Assign the sync function so it's available to the hook listener
-        syncPermissionsToDb = async (
+        // Function to sync permissions to database
+        const syncPermissionsToDb = async (
           permissions: { id: string; description?: string }[]
         ) => {
           logger.debug(
@@ -405,6 +381,72 @@ export default createBackendPlugin({
         }
 
         logger.debug("✅ Auth Backend initialized.");
+      },
+      // Phase 3: Subscribe to hooks after all plugins are ready
+      afterPluginsReady: async ({ database, logger, onHook }) => {
+        // Function to sync permissions to database (same logic as in init)
+        const syncPermissionsToDb = async (
+          permissions: { id: string; description?: string }[]
+        ) => {
+          logger.debug(
+            `🔑 Syncing ${permissions.length} permissions to database...`
+          );
+
+          for (const perm of permissions) {
+            const existing = await database
+              .select()
+              .from(schema.permission)
+              .where(eq(schema.permission.id, perm.id));
+
+            if (existing.length === 0) {
+              await database.insert(schema.permission).values(perm);
+              logger.debug(`   -> Created permission: ${perm.id}`);
+            } else {
+              await database
+                .update(schema.permission)
+                .set({ description: perm.description })
+                .where(eq(schema.permission.id, perm.id));
+            }
+          }
+
+          // Assign all permissions to admin role
+          const adminRolePermissions = await database
+            .select()
+            .from(schema.rolePermission)
+            .where(eq(schema.rolePermission.roleId, "admin"));
+
+          for (const perm of permissions) {
+            const hasPermission = adminRolePermissions.some(
+              (rp) => rp.permissionId === perm.id
+            );
+
+            if (!hasPermission) {
+              await database.insert(schema.rolePermission).values({
+                roleId: "admin",
+                permissionId: perm.id,
+              });
+              logger.debug(
+                `   -> Assigned permission ${perm.id} to admin role`
+              );
+            }
+          }
+        };
+
+        // Subscribe to permission registration hook
+        // This syncs new permissions when other plugins register them dynamically
+        onHook(
+          coreHooks.permissionsRegistered,
+          async ({ permissions }) => {
+            await syncPermissionsToDb(permissions);
+          },
+          {
+            mode: "work-queue",
+            workerGroup: "permission-db-sync",
+            maxRetries: 5,
+          }
+        );
+
+        logger.debug("✅ Auth Backend afterPluginsReady complete.");
       },
     });
   },
