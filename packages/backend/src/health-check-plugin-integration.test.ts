@@ -58,6 +58,16 @@ describe("HealthCheck Plugin Integration", () => {
       },
     });
 
+    // Register mock queueManager since EventBus depends on it
+    pluginManager.registerService(coreServices.queueManager, {
+      getQueue: mock(),
+      getActivePlugin: () => "mock",
+      setActiveBackend: mock(),
+      getQueueStatus: mock(),
+      startPolling: mock(),
+      stopPolling: mock(),
+    } as any);
+
     // 4. Load plugins using the PluginManager with manual injection
     await pluginManager.loadPlugins(mockRouter, [testPlugin]);
 

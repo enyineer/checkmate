@@ -4,6 +4,7 @@ import {
   createServiceRef,
   createExtensionPoint,
   ServiceRef,
+  coreServices,
 } from "@checkmate/backend-api";
 import {
   createMockDbModule,
@@ -151,9 +152,11 @@ describe("PluginManager", () => {
 
     describe("Queue Plugin Ordering", () => {
       it("should initialize queue plugin providers before queue consumers", () => {
-        const queueManagerRef = createServiceRef<any>("core.queueManager");
+        const queueManagerRef = createServiceRef<any>(
+          coreServices.queueManager.id
+        );
         const queueRegistryRef = createServiceRef<any>(
-          "core.queue-plugin-registry"
+          coreServices.queuePluginRegistry.id
         );
 
         const pendingInits = [
@@ -187,9 +190,11 @@ describe("PluginManager", () => {
       });
 
       it("should handle multiple queue providers and consumers", () => {
-        const queueManagerRef = createServiceRef<any>("core.queueManager");
+        const queueManagerRef = createServiceRef<any>(
+          coreServices.queueManager.id
+        );
         const queueRegistryRef = createServiceRef<any>(
-          "core.queue-plugin-registry"
+          coreServices.queuePluginRegistry.id
         );
         const loggerRef = createServiceRef<any>("core.logger");
 
@@ -248,9 +253,11 @@ describe("PluginManager", () => {
       });
 
       it("should respect existing service dependencies while prioritizing queue plugins", () => {
-        const queueManagerRef = createServiceRef<any>("core.queueManager");
+        const queueManagerRef = createServiceRef<any>(
+          coreServices.queueManager.id
+        );
         const queueRegistryRef = createServiceRef<any>(
-          "core.queue-plugin-registry"
+          coreServices.queuePluginRegistry.id
         );
         const customServiceRef = createServiceRef<any>("custom.service");
         const loggerRef = createServiceRef<any>("core.logger");
@@ -297,9 +304,11 @@ describe("PluginManager", () => {
       });
 
       it("should handle plugins that both provide and consume queues", () => {
-        const queueManagerRef = createServiceRef<any>("core.queueManager");
+        const queueManagerRef = createServiceRef<any>(
+          coreServices.queueManager.id
+        );
         const queueRegistryRef = createServiceRef<any>(
-          "core.queue-plugin-registry"
+          coreServices.queuePluginRegistry.id
         );
 
         const pendingInits = [
@@ -333,9 +342,11 @@ describe("PluginManager", () => {
       });
 
       it("should not create circular dependencies with queue ordering", () => {
-        const queueManagerRef = createServiceRef<any>("core.queueManager");
+        const queueManagerRef = createServiceRef<any>(
+          coreServices.queueManager.id
+        );
         const queueRegistryRef = createServiceRef<any>(
-          "core.queue-plugin-registry"
+          coreServices.queuePluginRegistry.id
         );
 
         const pendingInits = [
@@ -434,6 +445,27 @@ describe("PluginManager", () => {
           registerInit({ deps: {}, init: testBackendInit });
         },
       };
+
+      // Register mock queueManager since EventBus depends on it
+      pluginManager.registerService(coreServices.queueManager, {
+        getQueue: () => ({
+          enqueue: mock(),
+          consume: mock(),
+          scheduleRecurring: mock(),
+          cancelRecurring: mock(),
+          listRecurringJobs: mock(),
+          getRecurringJobDetails: mock(),
+          getInFlightCount: mock(),
+          stop: mock(),
+          getStats: mock(),
+          testConnection: mock(),
+        }),
+        getActivePlugin: () => "mock",
+        setActiveBackend: mock(),
+        getQueueStatus: mock(),
+        startPolling: mock(),
+        stopPolling: mock(),
+      } as any);
 
       // Use manual plugin injection to avoid filesystem mocking issues
       await pluginManager.loadPlugins(mockRouter, [testPlugin]);
