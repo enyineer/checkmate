@@ -550,17 +550,7 @@ export default createBackendPlugin({
           logger.info("   -> Created 'anonymous' role.");
         }
 
-        // Initial sync of all registered permissions (after roles exist)
-        const allPermissions = permissionRegistry.getPermissions();
-        await syncPermissionsToDb({
-          database: database as NodePgDatabase<typeof schema>,
-          logger,
-          permissions: allPermissions,
-          fullSync: true,
-        });
-        logger.debug(
-          `   -> Synced ${allPermissions.length} permissions from all plugins`
-        );
+        // Note: Permission sync happens in afterPluginsReady (when all plugins have registered)
 
         // 4. Register oRPC router
         const authRouter = createAuthRouter(
