@@ -59,6 +59,7 @@ export function extractPluginMetadata({
 
 /**
  * Discovers all local plugins in the monorepo workspace
+ * Scans both packages/ (core components) and plugins/ (replaceable providers)
  * @param workspaceRoot - Absolute path to workspace root
  * @param type - Optional filter for plugin type (backend, frontend, or common)
  * @returns Array of PluginMetadata for all valid plugins
@@ -70,25 +71,32 @@ export function discoverLocalPlugins({
   workspaceRoot: string;
   type?: "backend" | "frontend" | "common";
 }): PluginMetadata[] {
-  const pluginsDir = path.join(workspaceRoot, "plugins");
   const discovered: PluginMetadata[] = [];
 
-  if (!fs.existsSync(pluginsDir)) {
-    return discovered;
-  }
+  // Scan both packages/ (core) and plugins/ (providers)
+  const dirsToScan = [
+    path.join(workspaceRoot, "packages"),
+    path.join(workspaceRoot, "plugins"),
+  ];
 
-  const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
+  for (const scanDir of dirsToScan) {
+    if (!fs.existsSync(scanDir)) {
       continue;
     }
 
-    const pluginDir = path.join(pluginsDir, entry.name);
-    const metadata = extractPluginMetadata({ pluginDir });
+    const entries = fs.readdirSync(scanDir, { withFileTypes: true });
 
-    if (metadata && (!type || metadata.type === type)) {
-      discovered.push(metadata);
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const pluginDir = path.join(scanDir, entry.name);
+      const metadata = extractPluginMetadata({ pluginDir });
+
+      if (metadata && (!type || metadata.type === type)) {
+        discovered.push(metadata);
+      }
     }
   }
 

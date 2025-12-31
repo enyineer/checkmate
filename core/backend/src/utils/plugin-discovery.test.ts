@@ -138,13 +138,23 @@ describe("discoverLocalPlugins", () => {
     mockExistsSync.mockReturnValue(true);
   });
 
-  it("should discover all valid backend plugins in monorepo", () => {
-    mockReaddirSync.mockReturnValue([
-      { isDirectory: () => true, name: "auth-backend" },
-      { isDirectory: () => true, name: "catalog-backend" },
-      { isDirectory: () => false, name: "README.md" }, // File, should skip
-      { isDirectory: () => true, name: "invalid-plugin" }, // No -backend suffix
-    ] as any);
+  it("should discover all valid backend plugins from both packages/ and plugins/", () => {
+    // Mock different contents for packages/ and plugins/ directories
+    mockReaddirSync.mockImplementation(((dirPath: string) => {
+      if (dirPath.includes("packages")) {
+        return [
+          { isDirectory: () => true, name: "auth-backend" },
+          { isDirectory: () => false, name: "README.md" }, // File, should skip
+        ];
+      }
+      if (dirPath.includes("plugins")) {
+        return [
+          { isDirectory: () => true, name: "catalog-backend" },
+          { isDirectory: () => true, name: "invalid-plugin" }, // No -backend suffix
+        ];
+      }
+      return [];
+    }) as typeof mockReaddirSync);
 
     // Mock package.json reads
     mockReadFileSync.mockImplementation(((filePath: string) => {
@@ -163,16 +173,28 @@ describe("discoverLocalPlugins", () => {
     const result = discoverLocalPlugins({ workspaceRoot: "/fake/workspace" });
 
     expect(result).toHaveLength(2);
-    expect(result[0].packageName).toBe("@checkmate/auth-backend");
-    expect(result[1].packageName).toBe("@checkmate/catalog-backend");
+    expect(result.map((r) => r.packageName)).toContain(
+      "@checkmate/auth-backend"
+    );
+    expect(result.map((r) => r.packageName)).toContain(
+      "@checkmate/catalog-backend"
+    );
   });
 
   it("should filter plugins by type when type parameter is provided", () => {
-    mockReaddirSync.mockReturnValue([
-      { isDirectory: () => true, name: "auth-backend" },
-      { isDirectory: () => true, name: "auth-frontend" },
-      { isDirectory: () => true, name: "auth-common" },
-    ] as any);
+    // Mock: packages/ has backend and frontend, plugins/ has common
+    mockReaddirSync.mockImplementation(((dirPath: string) => {
+      if (dirPath.includes("packages")) {
+        return [
+          { isDirectory: () => true, name: "auth-backend" },
+          { isDirectory: () => true, name: "auth-frontend" },
+        ];
+      }
+      if (dirPath.includes("plugins")) {
+        return [{ isDirectory: () => true, name: "auth-common" }];
+      }
+      return [];
+    }) as typeof mockReaddirSync);
 
     mockReadFileSync.mockImplementation(((filePath: string) => {
       if (filePath.includes("auth-backend")) {
@@ -202,7 +224,7 @@ describe("discoverLocalPlugins", () => {
     expect(frontendResult[0].type).toBe("frontend");
   });
 
-  it("should return empty array if plugins directory does not exist", () => {
+  it("should return empty array if neither packages/ nor plugins/ directory exists", () => {
     mockExistsSync.mockReturnValue(false);
 
     const result = discoverLocalPlugins({ workspaceRoot: "/fake/workspace" });
@@ -211,11 +233,18 @@ describe("discoverLocalPlugins", () => {
   });
 
   it("should skip directories without valid package.json", () => {
-    mockReaddirSync.mockReturnValue([
-      { isDirectory: () => true, name: "broken-backend" },
-    ] as any);
+    mockReaddirSync.mockImplementation(((dirPath: string) => {
+      if (dirPath.includes("packages")) {
+        return [{ isDirectory: () => true, name: "broken-backend" }];
+      }
+      return [];
+    }) as typeof mockReaddirSync);
 
     mockExistsSync.mockImplementation(((filePath: string) => {
+      // packages/ and plugins/ directories exist
+      if (filePath.endsWith("packages") || filePath.endsWith("plugins")) {
+        return true;
+      }
       // package.json doesn't exist for broken-backend
       return !filePath.includes("broken-backend");
     }) as typeof mockExistsSync);
