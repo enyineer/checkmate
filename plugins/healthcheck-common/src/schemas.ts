@@ -15,7 +15,6 @@ export const HealthCheckConfigurationSchema = z.object({
   strategyId: z.string(),
   config: z.record(z.string(), z.unknown()),
   intervalSeconds: z.number(),
-  enabled: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

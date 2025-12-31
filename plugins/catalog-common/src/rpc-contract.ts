@@ -1,16 +1,12 @@
 import { oc } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
+import type { ProcedureMetadata } from "@checkmate/common";
 import { z } from "zod";
 import { SystemSchema, GroupSchema, ViewSchema, IncidentSchema } from "./types";
 import { permissions } from "./permissions";
 
-// Permission metadata type
-export interface CatalogMetadata {
-  permissions?: string[];
-}
-
-// Base builder with metadata support
-const _base = oc.$meta<CatalogMetadata>({});
+// Base builder with full metadata support
+const _base = oc.$meta<ProcedureMetadata>({});
 
 // Input schemas that match the service layer expectations
 const CreateSystemInputSchema = z.object({
@@ -62,57 +58,71 @@ const CreateIncidentInputSchema = z.object({
 
 // Catalog RPC Contract using oRPC's contract-first pattern
 export const catalogContract = {
-  // Entity management - Read permission
-  getEntities: _base.meta({ permissions: [permissions.catalogRead.id] }).output(
-    z.object({
-      systems: z.array(SystemSchema),
-      groups: z.array(GroupSchema),
-    })
-  ),
+  // ==========================================================================
+  // ENTITY READ ENDPOINTS (userType: "user" with read permission)
+  // ==========================================================================
 
-  // Convenience methods - Read permission
+  getEntities: _base
+    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
+    .output(
+      z.object({
+        systems: z.array(SystemSchema),
+        groups: z.array(GroupSchema),
+      })
+    ),
+
   getSystems: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
     .output(z.array(SystemSchema)),
+
   getGroups: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
     .output(z.array(GroupSchema)),
 
-  // System management - Manage permission
+  // ==========================================================================
+  // SYSTEM MANAGEMENT (userType: "user" with manage permission)
+  // ==========================================================================
+
   createSystem: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(CreateSystemInputSchema)
     .output(SystemSchema),
 
   updateSystem: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(UpdateSystemInputSchema)
     .output(SystemSchema),
 
   deleteSystem: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(z.string())
     .output(z.object({ success: z.boolean() })),
 
-  // Group management - Manage permission
+  // ==========================================================================
+  // GROUP MANAGEMENT (userType: "user" with manage permission)
+  // ==========================================================================
+
   createGroup: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(CreateGroupInputSchema)
     .output(GroupSchema),
 
   updateGroup: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(UpdateGroupInputSchema)
     .output(GroupSchema),
 
   deleteGroup: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(z.string())
     .output(z.object({ success: z.boolean() })),
 
-  // System-Group relationships - Manage permission
+  // ==========================================================================
+  // SYSTEM-GROUP RELATIONSHIPS (userType: "user" with manage permission)
+  // ==========================================================================
+
   addSystemToGroup: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(
       z.object({
         groupId: z.string(),
@@ -122,7 +132,7 @@ export const catalogContract = {
     .output(z.object({ success: z.boolean() })),
 
   removeSystemFromGroup: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(
       z.object({
         groupId: z.string(),
@@ -131,21 +141,29 @@ export const catalogContract = {
     )
     .output(z.object({ success: z.boolean() })),
 
-  // View management - Read permission
+  // ==========================================================================
+  // VIEW MANAGEMENT (userType: "user")
+  // ==========================================================================
+
   getViews: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
     .output(z.array(ViewSchema)),
+
   createView: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(CreateViewInputSchema)
     .output(ViewSchema),
 
-  // Incident management - Read permission for get, Manage for create
+  // ==========================================================================
+  // INCIDENT MANAGEMENT (userType: "user")
+  // ==========================================================================
+
   getIncidents: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
     .output(z.array(IncidentSchema)),
+
   createIncident: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(CreateIncidentInputSchema)
     .output(IncidentSchema),
 };

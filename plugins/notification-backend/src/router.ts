@@ -1,18 +1,12 @@
+import { implement } from "@orpc/server";
 import {
-  os,
-  userProcedure,
-  authedProcedure,
-  serviceProcedure,
-  permissionMiddleware,
-  zod,
+  autoAuthMiddleware,
+  type RpcContext,
+  type RealUser,
   type ConfigService,
   toJsonSchema,
 } from "@checkmate/backend-api";
-import {
-  PaginationInputSchema,
-  RetentionSettingsSchema,
-  permissions,
-} from "@checkmate/notification-common";
+import { notificationContract } from "@checkmate/notification-common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import {
@@ -31,24 +25,31 @@ import {
   RETENTION_CONFIG_ID,
 } from "./retention-config";
 
-// Create middleware for permissions
-const notificationRead = permissionMiddleware(permissions.notificationRead.id);
-const notificationAdmin = permissionMiddleware(
-  permissions.notificationAdmin.id
-);
-
+/**
+ * Creates the notification router using contract-based implementation.
+ *
+ * Auth and permissions are automatically enforced via autoAuthMiddleware
+ * based on the contract's meta.userType and meta.permissions.
+ */
 export const createNotificationRouter = (
   database: NodePgDatabase<typeof schema>,
   configService: ConfigService
 ) => {
-  return os.router({
-    // --- User Notification Endpoints (userProcedure for type-safe user.id) ---
+  // Create contract implementer with context type AND auto auth middleware
+  const os = implement(notificationContract)
+    .$context<RpcContext>()
+    .use(autoAuthMiddleware);
 
-    getNotifications: userProcedure
-      .use(notificationRead)
-      .input(PaginationInputSchema)
-      .handler(async ({ input, context }) => {
-        const userId = context.user.id;
+  return os.router({
+    // ==========================================================================
+    // USER NOTIFICATION ENDPOINTS
+    // Contract meta: userType: "user", permissions: [notificationRead]
+    // ==========================================================================
+
+    getNotifications: os.getNotifications.handler(
+      async ({ input, context }) => {
+        // context.user is guaranteed to be RealUser by contract meta + autoAuthMiddleware
+        const userId = (context.user as RealUser).id;
 
         const result = await getUserNotifications(database, userId, {
           limit: input.limit,
@@ -70,157 +71,131 @@ export const createNotificationRouter = (
           })),
           total: result.total,
         };
-      }),
+      }
+    ),
 
-    getUnreadCount: userProcedure
-      .use(notificationRead)
-      .handler(async ({ context }) => {
-        const userId = context.user.id;
-        const count = await getUnreadCount(database, userId);
-        return { count };
-      }),
+    getUnreadCount: os.getUnreadCount.handler(async ({ context }) => {
+      const userId = (context.user as RealUser).id;
+      const count = await getUnreadCount(database, userId);
+      return { count };
+    }),
 
-    markAsRead: userProcedure
-      .use(notificationRead)
-      .input(zod.object({ notificationId: zod.string().uuid().optional() }))
-      .handler(async ({ input, context }) => {
-        const userId = context.user.id;
-        await markAsRead(database, userId, input.notificationId);
-      }),
+    markAsRead: os.markAsRead.handler(async ({ input, context }) => {
+      const userId = (context.user as RealUser).id;
+      await markAsRead(database, userId, input.notificationId);
+    }),
 
-    deleteNotification: userProcedure
-      .use(notificationRead)
-      .input(zod.object({ notificationId: zod.string().uuid() }))
-      .handler(async ({ input, context }) => {
-        const userId = context.user.id;
+    deleteNotification: os.deleteNotification.handler(
+      async ({ input, context }) => {
+        const userId = (context.user as RealUser).id;
         await deleteNotification(database, userId, input.notificationId);
-      }),
+      }
+    ),
 
-    // --- Group & Subscription Endpoints (user-only) ---
+    // ==========================================================================
+    // GROUP & SUBSCRIPTION ENDPOINTS
+    // ==========================================================================
 
-    getGroups: authedProcedure.use(notificationRead).handler(async () => {
+    getGroups: os.getGroups.handler(async () => {
+      // userType: "both" - accessible by users and services
       const groups = await getAllGroups(database);
       return groups.map((g) => ({
         id: g.id,
         name: g.name,
         description: g.description,
         ownerPlugin: g.ownerPlugin,
+        createdAt: g.createdAt,
       }));
     }),
 
-    getSubscriptions: userProcedure
-      .use(notificationRead)
-      .handler(async ({ context }) => {
-        const userId = context.user.id;
-        const subscriptions = await getEnrichedUserSubscriptions(
-          database,
-          userId
-        );
-        return subscriptions;
-      }),
+    getSubscriptions: os.getSubscriptions.handler(async ({ context }) => {
+      const userId = (context.user as RealUser).id;
+      const subscriptions = await getEnrichedUserSubscriptions(
+        database,
+        userId
+      );
+      return subscriptions;
+    }),
 
-    subscribe: userProcedure
-      .use(notificationRead)
-      .input(zod.object({ groupId: zod.string() }))
-      .handler(async ({ input, context }) => {
-        const userId = context.user.id;
-        await subscribeToGroup(database, userId, input.groupId);
-      }),
+    subscribe: os.subscribe.handler(async ({ input, context }) => {
+      const userId = (context.user as RealUser).id;
+      await subscribeToGroup(database, userId, input.groupId);
+    }),
 
-    unsubscribe: userProcedure
-      .use(notificationRead)
-      .input(zod.object({ groupId: zod.string() }))
-      .handler(async ({ input, context }) => {
-        const userId = context.user.id;
-        await unsubscribeFromGroup(database, userId, input.groupId);
-      }),
+    unsubscribe: os.unsubscribe.handler(async ({ input, context }) => {
+      const userId = (context.user as RealUser).id;
+      await unsubscribeFromGroup(database, userId, input.groupId);
+    }),
 
-    // --- Admin Settings Endpoints ---
+    // ==========================================================================
+    // ADMIN SETTINGS ENDPOINTS
+    // Contract meta: userType: "user", permissions: [notificationAdmin]
+    // ==========================================================================
 
-    getRetentionSchema: authedProcedure.use(notificationAdmin).handler(() => {
-      // Return the JSON schema for DynamicForm
+    getRetentionSchema: os.getRetentionSchema.handler(() => {
       return toJsonSchema(retentionConfigV1);
     }),
 
-    getRetentionSettings: authedProcedure
-      .use(notificationAdmin)
-      .handler(async () => {
-        const config = await configService.get(
-          RETENTION_CONFIG_ID,
-          retentionConfigV1,
-          RETENTION_CONFIG_VERSION
-        );
-        // Return defaults if no config stored
-        return config ?? { enabled: false, retentionDays: 30 };
-      }),
+    getRetentionSettings: os.getRetentionSettings.handler(async () => {
+      const config = await configService.get(
+        RETENTION_CONFIG_ID,
+        retentionConfigV1,
+        RETENTION_CONFIG_VERSION
+      );
+      return config ?? { enabled: false, retentionDays: 30 };
+    }),
 
-    setRetentionSettings: authedProcedure
-      .use(notificationAdmin)
-      .input(RetentionSettingsSchema)
-      .handler(async ({ input }) => {
-        await configService.set(
-          RETENTION_CONFIG_ID,
-          retentionConfigV1,
-          RETENTION_CONFIG_VERSION,
-          input
-        );
-      }),
+    setRetentionSettings: os.setRetentionSettings.handler(async ({ input }) => {
+      await configService.set(
+        RETENTION_CONFIG_ID,
+        retentionConfigV1,
+        RETENTION_CONFIG_VERSION,
+        input
+      );
+    }),
 
-    // --- Backend-to-Backend Group Management (Service-Only) ---
+    // ==========================================================================
+    // BACKEND-TO-BACKEND GROUP MANAGEMENT
+    // Contract meta: userType: "service"
+    // ==========================================================================
 
-    createGroup: serviceProcedure
-      .input(
-        zod.object({
-          groupId: zod.string(),
-          name: zod.string(),
-          description: zod.string(),
-          ownerPlugin: zod.string(),
+    createGroup: os.createGroup.handler(async ({ input }) => {
+      // Service-only - no user context needed
+      const namespacedId = `${input.ownerPlugin}.${input.groupId}`;
+
+      await database
+        .insert(schema.notificationGroups)
+        .values({
+          id: namespacedId,
+          name: input.name,
+          description: input.description,
+          ownerPlugin: input.ownerPlugin,
         })
-      )
-      .handler(async ({ input }) => {
-        // Create the namespaced group ID
-        const namespacedId = `${input.ownerPlugin}.${input.groupId}`;
-
-        await database
-          .insert(schema.notificationGroups)
-          .values({
-            id: namespacedId,
+        .onConflictDoUpdate({
+          target: [schema.notificationGroups.id],
+          set: {
             name: input.name,
             description: input.description,
-            ownerPlugin: input.ownerPlugin,
-          })
-          .onConflictDoUpdate({
-            target: [schema.notificationGroups.id],
-            set: {
-              name: input.name,
-              description: input.description,
-            },
-          });
+          },
+        });
 
-        return { id: namespacedId };
-      }),
+      return { id: namespacedId };
+    }),
 
-    deleteGroup: serviceProcedure
-      .input(
-        zod.object({
-          groupId: zod.string(),
-          ownerPlugin: zod.string(),
-        })
-      )
-      .handler(async ({ input }) => {
-        const { eq, and } = await import("drizzle-orm");
+    deleteGroup: os.deleteGroup.handler(async ({ input }) => {
+      const { eq, and } = await import("drizzle-orm");
 
-        const result = await database
-          .delete(schema.notificationGroups)
-          .where(
-            and(
-              eq(schema.notificationGroups.id, input.groupId),
-              eq(schema.notificationGroups.ownerPlugin, input.ownerPlugin)
-            )
-          );
+      const result = await database
+        .delete(schema.notificationGroups)
+        .where(
+          and(
+            eq(schema.notificationGroups.id, input.groupId),
+            eq(schema.notificationGroups.ownerPlugin, input.ownerPlugin)
+          )
+        );
 
-        return { success: (result.rowCount ?? 0) > 0 };
-      }),
+      return { success: (result.rowCount ?? 0) > 0 };
+    }),
   });
 };
 

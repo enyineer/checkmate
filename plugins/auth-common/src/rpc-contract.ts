@@ -1,15 +1,11 @@
 import { oc } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
+import type { ProcedureMetadata } from "@checkmate/common";
 import { z } from "zod";
 import { permissions } from "./index";
 
-// Permission metadata type
-export interface AuthMetadata {
-  permissions?: string[];
-}
-
-// Base builder with metadata support
-const _base = oc.$meta<AuthMetadata>({});
+// Base builder with full metadata support
+const _base = oc.$meta<ProcedureMetadata>({});
 
 // Zod schemas for return types
 const UserDtoSchema = z.object({
@@ -54,30 +50,44 @@ const RegistrationStatusSchema = z.object({
   allowRegistration: z.boolean(),
 });
 
-// Auth RPC Contract with permission metadata
+// Auth RPC Contract with full metadata
 export const authContract = {
-  // Public endpoint - No authentication required (for login page)
+  // ==========================================================================
+  // ANONYMOUS ENDPOINTS (userType: "anonymous")
+  // These can be called without authentication (login/registration pages)
+  // ==========================================================================
+
   getEnabledStrategies: _base
-    .meta({ permissions: [] }) // Public endpoint
+    .meta({ userType: "anonymous" })
     .output(z.array(EnabledStrategyDtoSchema)),
 
-  // Permission query - Authenticated only (no specific permission required)
+  getRegistrationStatus: _base
+    .meta({ userType: "anonymous" })
+    .output(RegistrationStatusSchema),
+
+  // ==========================================================================
+  // AUTHENTICATED ENDPOINTS (userType: "both" - no specific permission)
+  // ==========================================================================
+
   permissions: _base
-    .meta({ permissions: [] }) // Anyone authenticated can check their own permissions
+    .meta({ userType: "both" }) // Any authenticated user can check their own permissions
     .output(z.object({ permissions: z.array(z.string()) })),
 
-  // User management - Read permission for queries, Manage for mutations
+  // ==========================================================================
+  // USER MANAGEMENT (userType: "user" with permissions)
+  // ==========================================================================
+
   getUsers: _base
-    .meta({ permissions: [permissions.usersRead.id] })
+    .meta({ userType: "user", permissions: [permissions.usersRead.id] })
     .output(z.array(UserDtoSchema)),
 
   deleteUser: _base
-    .meta({ permissions: [permissions.usersManage.id] })
+    .meta({ userType: "user", permissions: [permissions.usersManage.id] })
     .input(z.string())
     .output(z.void()),
 
   updateUserRoles: _base
-    .meta({ permissions: [permissions.usersManage.id] })
+    .meta({ userType: "user", permissions: [permissions.usersManage.id] })
     .input(
       z.object({
         userId: z.string(),
@@ -86,17 +96,20 @@ export const authContract = {
     )
     .output(z.void()),
 
-  // Role management - Read, Create, Update, Delete permissions
+  // ==========================================================================
+  // ROLE MANAGEMENT (userType: "user" with permissions)
+  // ==========================================================================
+
   getRoles: _base
-    .meta({ permissions: [permissions.rolesRead.id] })
+    .meta({ userType: "user", permissions: [permissions.rolesRead.id] })
     .output(z.array(RoleDtoSchema)),
 
   getPermissions: _base
-    .meta({ permissions: [permissions.rolesRead.id] })
+    .meta({ userType: "user", permissions: [permissions.rolesRead.id] })
     .output(z.array(PermissionDtoSchema)),
 
   createRole: _base
-    .meta({ permissions: [permissions.rolesCreate.id] })
+    .meta({ userType: "user", permissions: [permissions.rolesCreate.id] })
     .input(
       z.object({
         name: z.string(),
@@ -107,7 +120,7 @@ export const authContract = {
     .output(z.void()),
 
   updateRole: _base
-    .meta({ permissions: [permissions.rolesUpdate.id] })
+    .meta({ userType: "user", permissions: [permissions.rolesUpdate.id] })
     .input(
       z.object({
         id: z.string(),
@@ -119,16 +132,20 @@ export const authContract = {
     .output(z.void()),
 
   deleteRole: _base
-    .meta({ permissions: [permissions.rolesDelete.id] })
+    .meta({ userType: "user", permissions: [permissions.rolesDelete.id] })
     .input(z.string())
     .output(z.void()),
 
+  // ==========================================================================
+  // STRATEGY MANAGEMENT (userType: "user" with permissions)
+  // ==========================================================================
+
   getStrategies: _base
-    .meta({ permissions: [permissions.strategiesManage.id] })
+    .meta({ userType: "user", permissions: [permissions.strategiesManage.id] })
     .output(z.array(StrategyDtoSchema)),
 
   updateStrategy: _base
-    .meta({ permissions: [permissions.strategiesManage.id] })
+    .meta({ userType: "user", permissions: [permissions.strategiesManage.id] })
     .input(
       z.object({
         id: z.string(),
@@ -139,20 +156,25 @@ export const authContract = {
     .output(z.object({ success: z.boolean() })),
 
   reloadAuth: _base
-    .meta({ permissions: [permissions.strategiesManage.id] })
+    .meta({ userType: "user", permissions: [permissions.strategiesManage.id] })
     .output(z.object({ success: z.boolean() })),
 
-  // Registration management
+  // ==========================================================================
+  // REGISTRATION MANAGEMENT (userType: "user" with permissions)
+  // ==========================================================================
+
   getRegistrationSchema: _base
-    .meta({ permissions: [permissions.registrationManage.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.registrationManage.id],
+    })
     .output(z.record(z.string(), z.unknown())),
 
-  getRegistrationStatus: _base
-    .meta({ permissions: [] }) // Public endpoint - used by anonymous components
-    .output(RegistrationStatusSchema),
-
   setRegistrationStatus: _base
-    .meta({ permissions: [permissions.registrationManage.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.registrationManage.id],
+    })
     .input(RegistrationStatusSchema)
     .output(z.object({ success: z.boolean() })),
 };

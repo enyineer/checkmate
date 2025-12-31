@@ -1,6 +1,9 @@
 import { implement, ORPCError } from "@orpc/server";
-import type { RpcContext, AuthUser, RealUser } from "@checkmate/backend-api";
 import {
+  autoAuthMiddleware,
+  type RpcContext,
+  type AuthUser,
+  type RealUser,
   type AuthStrategy,
   type ConfigService,
   toJsonSchema,
@@ -26,8 +29,15 @@ import {
   PLATFORM_REGISTRATION_CONFIG_ID,
 } from "./platform-registration-config";
 
-// Create implementer from contract with our context
-const os = implement(authContract).$context<RpcContext>();
+/**
+ * Creates the auth router using contract-based implementation.
+ *
+ * Auth and permissions are automatically enforced via autoAuthMiddleware
+ * based on the contract's meta.userType and meta.permissions.
+ */
+const os = implement(authContract)
+  .$context<RpcContext>()
+  .use(autoAuthMiddleware);
 
 /**
  * Get the enabled state for an authentication strategy from its meta config.

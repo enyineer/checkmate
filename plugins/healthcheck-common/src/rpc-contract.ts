@@ -1,5 +1,6 @@
 import { oc } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
+import type { ProcedureMetadata } from "@checkmate/common";
 import { z } from "zod";
 import { permissions } from "./permissions";
 import {
@@ -11,33 +12,34 @@ import {
   HealthCheckRunSchema,
 } from "./schemas";
 
-// Permission metadata type
-export interface HealthCheckMetadata {
-  permissions?: string[];
-}
-
-// Base builder with metadata support
-const _base = oc.$meta<HealthCheckMetadata>({});
+// Base builder with full metadata support
+const _base = oc.$meta<ProcedureMetadata>({});
 
 // Health Check RPC Contract using oRPC's contract-first pattern
 export const healthCheckContract = {
-  // Strategy management - Read permission
+  // ==========================================================================
+  // STRATEGY MANAGEMENT (userType: "user" with read permission)
+  // ==========================================================================
+
   getStrategies: _base
-    .meta({ permissions: [permissions.healthCheckRead.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
     .output(z.array(HealthCheckStrategyDtoSchema)),
 
-  // Configuration management - Read permission for list, Manage for mutations
+  // ==========================================================================
+  // CONFIGURATION MANAGEMENT (userType: "user")
+  // ==========================================================================
+
   getConfigurations: _base
-    .meta({ permissions: [permissions.healthCheckRead.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
     .output(z.array(HealthCheckConfigurationSchema)),
 
   createConfiguration: _base
-    .meta({ permissions: [permissions.healthCheckManage.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckManage.id] })
     .input(CreateHealthCheckConfigurationSchema)
     .output(HealthCheckConfigurationSchema),
 
   updateConfiguration: _base
-    .meta({ permissions: [permissions.healthCheckManage.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckManage.id] })
     .input(
       z.object({
         id: z.string(),
@@ -47,18 +49,21 @@ export const healthCheckContract = {
     .output(HealthCheckConfigurationSchema),
 
   deleteConfiguration: _base
-    .meta({ permissions: [permissions.healthCheckManage.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckManage.id] })
     .input(z.string())
     .output(z.void()),
 
-  // System association - Read permission for get, Manage for mutations
+  // ==========================================================================
+  // SYSTEM ASSOCIATION (userType: "user")
+  // ==========================================================================
+
   getSystemConfigurations: _base
-    .meta({ permissions: [permissions.healthCheckRead.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
     .input(z.string())
     .output(z.array(HealthCheckConfigurationSchema)),
 
   associateSystem: _base
-    .meta({ permissions: [permissions.healthCheckManage.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckManage.id] })
     .input(
       z.object({
         systemId: z.string(),
@@ -68,7 +73,7 @@ export const healthCheckContract = {
     .output(z.void()),
 
   disassociateSystem: _base
-    .meta({ permissions: [permissions.healthCheckManage.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckManage.id] })
     .input(
       z.object({
         systemId: z.string(),
@@ -77,9 +82,12 @@ export const healthCheckContract = {
     )
     .output(z.void()),
 
-  // History - Read permission
+  // ==========================================================================
+  // HISTORY (userType: "user" with read permission)
+  // ==========================================================================
+
   getHistory: _base
-    .meta({ permissions: [permissions.healthCheckRead.id] })
+    .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
     .input(
       z.object({
         systemId: z.string().optional(),

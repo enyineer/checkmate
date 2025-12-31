@@ -1,5 +1,5 @@
 import { implement, ORPCError } from "@orpc/server";
-import type { RpcContext } from "@checkmate/backend-api";
+import { autoAuthMiddleware, type RpcContext } from "@checkmate/backend-api";
 import { catalogContract } from "@checkmate/catalog-common";
 import { EntityService } from "./services/entity-service";
 import { OperationService } from "./services/operation-service";
@@ -7,9 +7,15 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "./schema";
 import type { NotificationClient } from "@checkmate/notification-common";
 
-// Create implementer from contract with our context
-// The contract already includes auto permission middleware via baseContractBuilder
-const os = implement(catalogContract).$context<RpcContext>();
+/**
+ * Creates the catalog router using contract-based implementation.
+ *
+ * Auth and permissions are automatically enforced via autoAuthMiddleware
+ * based on the contract's meta.userType and meta.permissions.
+ */
+const os = implement(catalogContract)
+  .$context<RpcContext>()
+  .use(autoAuthMiddleware);
 
 export const createCatalogRouter = (
   database: NodePgDatabase<typeof schema>,

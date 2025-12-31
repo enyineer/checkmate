@@ -2,6 +2,7 @@ import { oc } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
 import { z } from "zod";
 import { permissions } from "./permissions";
+import type { ProcedureMetadata } from "@checkmate/common";
 import {
   NotificationSchema,
   NotificationGroupSchema,
@@ -10,21 +11,21 @@ import {
   PaginationInputSchema,
 } from "./schemas";
 
-// Permission metadata type
-export interface NotificationMetadata {
-  permissions?: string[];
-}
-
-// Base builder with metadata support
-const _base = oc.$meta<NotificationMetadata>({});
+// Base builder with full metadata support (userType + permissions)
+const _base = oc.$meta<ProcedureMetadata>({});
 
 // Notification RPC Contract
 export const notificationContract = {
-  // --- User Notification Endpoints ---
+  // ==========================================================================
+  // USER NOTIFICATION ENDPOINTS (userType: "user")
+  // ==========================================================================
 
   // Get current user's notifications (paginated)
   getNotifications: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationRead.id],
+    })
     .input(PaginationInputSchema)
     .output(
       z.object({
@@ -35,12 +36,18 @@ export const notificationContract = {
 
   // Get unread count for badge
   getUnreadCount: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationRead.id],
+    })
     .output(z.object({ count: z.number() })),
 
   // Mark notification(s) as read
   markAsRead: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationRead.id],
+    })
     .input(
       z.object({
         notificationId: z.string().uuid().optional(), // If not provided, mark all as read
@@ -50,57 +57,87 @@ export const notificationContract = {
 
   // Delete a notification
   deleteNotification: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationRead.id],
+    })
     .input(z.object({ notificationId: z.string().uuid() }))
     .output(z.void()),
 
-  // --- Group & Subscription Endpoints ---
+  // ==========================================================================
+  // GROUP & SUBSCRIPTION ENDPOINTS (userType: "user")
+  // ==========================================================================
 
   // Get all available notification groups
   getGroups: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "both", // Services can read groups too
+      permissions: [permissions.notificationRead.id],
+    })
     .output(z.array(NotificationGroupSchema)),
 
   // Get current user's subscriptions with group details
   getSubscriptions: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationRead.id],
+    })
     .output(z.array(EnrichedSubscriptionSchema)),
 
-  // Subscribe to a notification group (any authenticated user)
+  // Subscribe to a notification group
   subscribe: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationRead.id],
+    })
     .input(z.object({ groupId: z.string() }))
     .output(z.void()),
 
-  // Unsubscribe from a notification group (any authenticated user)
+  // Unsubscribe from a notification group
   unsubscribe: _base
-    .meta({ permissions: [permissions.notificationRead.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationRead.id],
+    })
     .input(z.object({ groupId: z.string() }))
     .output(z.void()),
 
-  // --- Admin Settings Endpoints ---
+  // ==========================================================================
+  // ADMIN SETTINGS ENDPOINTS (userType: "user" with admin permissions)
+  // ==========================================================================
 
   // Get retention schema for DynamicForm
   getRetentionSchema: _base
-    .meta({ permissions: [permissions.notificationAdmin.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationAdmin.id],
+    })
     .output(z.record(z.string(), z.unknown())),
 
   // Get retention settings
   getRetentionSettings: _base
-    .meta({ permissions: [permissions.notificationAdmin.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationAdmin.id],
+    })
     .output(RetentionSettingsSchema),
 
   // Update retention settings
   setRetentionSettings: _base
-    .meta({ permissions: [permissions.notificationAdmin.id] })
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationAdmin.id],
+    })
     .input(RetentionSettingsSchema)
     .output(z.void()),
 
-  // --- Backend-to-Backend Group Management ---
+  // ==========================================================================
+  // BACKEND-TO-BACKEND GROUP MANAGEMENT (userType: "service")
+  // ==========================================================================
 
   // Create a notification group (for plugins to register their groups)
   createGroup: _base
-    .meta({ permissions: [] }) // Service-to-service, checked by service token
+    .meta({ userType: "service" })
     .input(
       z.object({
         groupId: z
@@ -119,7 +156,7 @@ export const notificationContract = {
 
   // Delete a notification group
   deleteGroup: _base
-    .meta({ permissions: [] }) // Service-to-service, checked by service token
+    .meta({ userType: "service" })
     .input(
       z.object({
         groupId: z.string().describe("Full namespaced group ID to delete"),

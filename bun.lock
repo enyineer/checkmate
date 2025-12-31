@@ -487,6 +487,7 @@
       "name": "@checkmate/notification-common",
       "version": "0.0.1",
       "dependencies": {
+        "@checkmate/backend-api": "workspace:*",
         "@checkmate/common": "workspace:*",
         "@orpc/contract": "^1.13.2",
         "zod": "^4.0.0",

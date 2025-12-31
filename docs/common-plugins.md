@@ -476,74 +476,95 @@ Define your contract in `src/rpc-contract.ts` using the `oc` builder from `@orpc
 
 ```typescript
 import { oc } from "@orpc/contract";
+import type { ProcedureMetadata } from "@checkmate/common";
 import { z } from "zod";
 import { SystemSchema, CreateSystemSchema, UpdateSystemSchema } from "./schemas";
 import { permissions } from "./permissions";
 
-// 1. Define metadata type for type-safe permission declarations
-export interface CatalogMetadata {
-  permissions?: string[];
-}
-
-// 2. Create base builder with metadata support
-// Convention: Use '_base' to avoid shadowing in router implementation
-const _base = oc.$meta<CatalogMetadata>({});
+// Use ProcedureMetadata from @checkmate/common for full auth control
+const _base = oc.$meta<ProcedureMetadata>({});
 
 export const catalogContract = {
-  // Use .meta() to declare required permissions (documentation)
+  // User-only endpoints with permission requirements
   getSystems: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
     .output(z.array(SystemSchema)),
   
   getSystem: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
     .input(z.string())
     .output(SystemSchema),
   
   createSystem: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
+    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(CreateSystemSchema)
     .output(SystemSchema),
   
-  updateSystem: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
-    .input(z.object({
-      id: z.string(),
-      data: UpdateSystemSchema,
-    }))
-    .output(SystemSchema),
-  
-  deleteSystem: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
-    .input(z.string())
+  // Public endpoint (no auth required)
+  getPublicInfo: _base
+    .meta({ userType: "anonymous" })
+    .output(z.object({ version: z.string() })),
+
+  // Service-to-service endpoint
+  internalSync: _base
+    .meta({ userType: "service" })
     .output(z.void()),
 };
 
 export type CatalogContract = typeof catalogContract;
 ```
 
-## Declarative Permission Metadata
+## Contract-Based Auth Enforcement
 
-oRPC allows attaching metadata to procedures. The project uses the `permissions` key to designate required permissions.
-
-By defining these in the contract, you ensure security policies are **self-documenting** and can be:
-- Automatically enforced by the backend (via explicit middleware)
-- Used by the frontend to control UI visibility
+The `ProcedureMetadata` interface from `@checkmate/common` provides declarative auth control:
 
 ```typescript
-export const catalogContract = {
-  getSystems: _base
-    .meta({ permissions: [permissions.catalogRead.id] })
-    .output(z.array(SystemSchema)),
+import type { ProcedureMetadata } from "@checkmate/common";
 
-  createSystem: _base
-    .meta({ permissions: [permissions.catalogManage.id] })
-    .input(CreateSystemSchema)
-    .output(SystemSchema),
-};
+// ProcedureMetadata interface:
+interface ProcedureMetadata {
+  userType?: "anonymous" | "user" | "service" | "both";
+  permissions?: string[];
+}
 ```
 
-The **backend router** uses this metadata as the reference for **explicit manual enforcement** using `authedProcedure.use(permissionMiddleware(...))`. This ensures security is auditable and documented in a single place.
+### userType Options
+
+| Value | Description |
+|-------|-------------|
+| `"anonymous"` | No authentication required (public endpoints) |
+| `"user"` | Only real users (frontend authenticated) |
+| `"service"` | Only services (backend-to-backend) |
+| `"both"` | Either users or services, but must be authenticated (default) |
+
+### Backend Enforcement
+
+The `autoAuthMiddleware` from `@checkmate/backend-api` automatically enforces auth based on contract metadata:
+
+```typescript
+import { implement } from "@orpc/server";
+import { autoAuthMiddleware, type RpcContext, type RealUser } from "@checkmate/backend-api";
+import { catalogContract } from "@checkmate/catalog-common";
+
+// Create implementer with context and auth middleware
+const os = implement(catalogContract)
+  .$context<RpcContext>()
+  .use(autoAuthMiddleware);
+
+// Auth and permissions are automatically enforced!
+return os.router({
+  getSystems: os.getSystems.handler(async ({ context }) => {
+    // context.user is guaranteed to be RealUser by contract meta
+    const userId = (context.user as RealUser).id;
+    // ...
+  }),
+});
+```
+
+This approach:
+- **Self-documenting**: Security requirements are visible in the contract
+- **Automatic enforcement**: No manual middleware chaining needed
+- **Type-safe**: Contract meta determines context.user type
 
 ## Permission Export Pattern
 
@@ -570,8 +591,9 @@ export const permissionList = Object.values(permissions);
 ### In Backend Plugin
 
 ```typescript
-import { permissionList, permissions } from "@checkmate/catalog-common";
-import { permissionMiddleware } from "@checkmate/backend-api";
+import { implement } from "@orpc/server";
+import { autoAuthMiddleware, type RpcContext, type RealUser } from "@checkmate/backend-api";
+import { catalogContract, permissionList } from "@checkmate/catalog-common";
 
 export default createBackendPlugin({
   pluginId: "catalog-backend",
@@ -582,14 +604,17 @@ export default createBackendPlugin({
     env.registerInit({
       // ...
       init: async ({ rpc }) => {
-        const catalogRead = permissionMiddleware(permissions.catalogRead.id);
+        // Contract-based implementation with auto auth enforcement
+        const os = implement(catalogContract)
+          .$context<RpcContext>()
+          .use(autoAuthMiddleware);
         
         const router = os.router({
-          getSystems: authedProcedure
-            .use(catalogRead)
-            .handler(async () => {
-              // Implementation
-            }),
+          getSystems: os.getSystems.handler(async ({ context }) => {
+            // Auth and permissions auto-enforced from contract meta
+            const userId = (context.user as RealUser).id;
+            // Implementation...
+          }),
         });
         
         rpc.registerRouter("catalog-backend", router);

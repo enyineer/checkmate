@@ -1,144 +1,117 @@
+import { implement, ORPCError } from "@orpc/server";
 import {
-  os,
-  authedProcedure,
-  permissionMiddleware,
+  autoAuthMiddleware,
   zod,
+  type RpcContext,
 } from "@checkmate/backend-api";
-import { ORPCError } from "@orpc/server";
-import {
-  CreateHealthCheckConfigurationSchema,
-  UpdateHealthCheckConfigurationSchema,
-  AssociateHealthCheckSchema,
-  permissions,
-} from "@checkmate/healthcheck-common";
+import { healthCheckContract } from "@checkmate/healthcheck-common";
 import { HealthCheckService } from "./service";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
-const healthCheckRead = permissionMiddleware(permissions.healthCheckRead.id);
-const healthCheckManage = permissionMiddleware(
-  permissions.healthCheckManage.id
-);
-
+/**
+ * Creates the healthcheck router using contract-based implementation.
+ *
+ * Auth and permissions are automatically enforced via autoAuthMiddleware
+ * based on the contract's meta.userType and meta.permissions.
+ */
 export const createHealthCheckRouter = (
   database: NodePgDatabase<typeof schema>
 ) => {
+  // Create contract implementer with context type AND auto auth middleware
+  const os = implement(healthCheckContract)
+    .$context<RpcContext>()
+    .use(autoAuthMiddleware);
+
   return os.router({
-    getStrategies: authedProcedure
-      .use(healthCheckRead)
-      .handler(async ({ context }) => {
-        return context.healthCheckRegistry.getStrategies().map((s) => ({
-          id: s.id,
-          displayName: s.displayName,
-          description: s.description,
-          configSchema: zod.toJSONSchema(s.configSchema),
-        }));
-      }),
+    getStrategies: os.getStrategies.handler(async ({ context }) => {
+      return context.healthCheckRegistry.getStrategies().map((s) => ({
+        id: s.id,
+        displayName: s.displayName,
+        description: s.description,
+        configSchema: zod.toJSONSchema(s.configSchema),
+      }));
+    }),
 
-    getConfigurations: authedProcedure
-      .use(healthCheckRead)
-      .handler(async () => {
-        const service = new HealthCheckService(database);
-        return service.getConfigurations();
-      }),
+    getConfigurations: os.getConfigurations.handler(async () => {
+      const service = new HealthCheckService(database);
+      return service.getConfigurations();
+    }),
 
-    createConfiguration: authedProcedure
-      .use(healthCheckManage)
-      .input(CreateHealthCheckConfigurationSchema)
-      .handler(async ({ input }) => {
-        const service = new HealthCheckService(database);
-        return service.createConfiguration(input);
-      }),
+    createConfiguration: os.createConfiguration.handler(async ({ input }) => {
+      const service = new HealthCheckService(database);
+      return service.createConfiguration(input);
+    }),
 
-    updateConfiguration: authedProcedure
-      .use(healthCheckManage)
-      .input(
-        zod.object({
-          id: zod.string(),
-          body: UpdateHealthCheckConfigurationSchema,
-        })
-      )
-      .handler(async ({ input }) => {
-        const service = new HealthCheckService(database);
-        const config = await service.updateConfiguration(input.id, input.body);
-        if (!config) {
-          throw new ORPCError("NOT_FOUND", {
-            message: "Configuration not found",
-          });
-        }
-        return config;
-      }),
+    updateConfiguration: os.updateConfiguration.handler(async ({ input }) => {
+      const service = new HealthCheckService(database);
+      const config = await service.updateConfiguration(input.id, input.body);
+      if (!config) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Configuration not found",
+        });
+      }
+      return config;
+    }),
 
-    deleteConfiguration: authedProcedure
-      .use(healthCheckManage)
-      .input(zod.string())
-      .handler(async ({ input }) => {
-        const service = new HealthCheckService(database);
-        await service.deleteConfiguration(input);
-      }),
+    deleteConfiguration: os.deleteConfiguration.handler(async ({ input }) => {
+      const service = new HealthCheckService(database);
+      await service.deleteConfiguration(input);
+    }),
 
-    getSystemConfigurations: authedProcedure
-      .use(healthCheckRead)
-      .input(zod.string())
-      .handler(async ({ input }) => {
+    getSystemConfigurations: os.getSystemConfigurations.handler(
+      async ({ input }) => {
         const service = new HealthCheckService(database);
         return service.getSystemConfigurations(input);
-      }),
+      }
+    ),
 
-    associateSystem: authedProcedure
-      .use(healthCheckManage)
-      .input(
-        zod.object({ systemId: zod.string(), body: AssociateHealthCheckSchema })
-      )
-      .handler(async ({ input, context }) => {
-        const service = new HealthCheckService(database);
-        await service.associateSystem(
-          input.systemId,
-          input.body.configurationId,
-          input.body.enabled
+    associateSystem: os.associateSystem.handler(async ({ input, context }) => {
+      const service = new HealthCheckService(database);
+      await service.associateSystem(
+        input.systemId,
+        input.body.configurationId,
+        input.body.enabled
+      );
+
+      // If enabling the health check, schedule it immediately
+      if (input.body.enabled) {
+        const config = await service.getConfiguration(
+          input.body.configurationId
         );
-
-        // If enabling the health check, schedule it immediately
-        if (input.body.enabled) {
-          const config = await service.getConfiguration(
-            input.body.configurationId
-          );
-          if (config) {
-            // Import scheduleHealthCheck at the top of the function to avoid circular dependencies
-            const { scheduleHealthCheck } = await import("./queue-executor");
-            await scheduleHealthCheck({
-              queueFactory: context.queueFactory,
-              payload: {
-                configId: config.id,
-                systemId: input.systemId,
-              },
-              intervalSeconds: config.intervalSeconds,
-            });
-          }
+        if (config) {
+          const { scheduleHealthCheck } = await import("./queue-executor");
+          await scheduleHealthCheck({
+            queueFactory: context.queueFactory,
+            payload: {
+              configId: config.id,
+              systemId: input.systemId,
+            },
+            intervalSeconds: config.intervalSeconds,
+          });
         }
-      }),
+      }
+    }),
 
-    disassociateSystem: authedProcedure
-      .use(healthCheckManage)
-      .input(zod.object({ systemId: zod.string(), configId: zod.string() }))
-      .handler(async ({ input }) => {
-        const service = new HealthCheckService(database);
-        await service.disassociateSystem(input.systemId, input.configId);
-      }),
+    disassociateSystem: os.disassociateSystem.handler(async ({ input }) => {
+      const service = new HealthCheckService(database);
+      await service.disassociateSystem(input.systemId, input.configId);
+    }),
 
-    getHistory: authedProcedure
-      .use(healthCheckRead)
-      .input(
-        zod.object({
-          systemId: zod.string().optional(),
-          configurationId: zod.string().optional(),
-          limit: zod.number().optional(),
-        })
-      )
-      .handler(async ({ input }) => {
-        const service = new HealthCheckService(database);
-        return service.getHistory(input);
-      }),
+    getHistory: os.getHistory.handler(async ({ input }) => {
+      const service = new HealthCheckService(database);
+      const history = await service.getHistory(input);
+      // TODO: Refactor database schema to use proper enum for status,
+      // proper timestamp type, and typed jsonb instead of manual casting here
+      return history.map((run) => ({
+        id: run.id,
+        configurationId: run.configurationId,
+        systemId: run.systemId,
+        status: run.status as "healthy" | "unhealthy" | "degraded",
+        result: (run.result as Record<string, unknown>) ?? {},
+        timestamp: run.timestamp.toISOString(),
+      }));
+    }),
   });
 };
 

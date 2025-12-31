@@ -150,6 +150,8 @@ export class HealthCheckService {
       strategyId: row.strategyId,
       config: row.config as Record<string, unknown>,
       intervalSeconds: row.intervalSeconds,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     };
   }
 }

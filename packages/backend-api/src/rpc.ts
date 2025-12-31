@@ -1,8 +1,20 @@
 import { os as baseOs } from "@orpc/server";
 import { HealthCheckRegistry } from "./health-check";
 import { QueuePluginRegistry, QueueFactory } from "@checkmate/queue-api";
+import { ProcedureMetadata } from "@checkmate/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Logger, Fetch, AuthService, AuthUser } from "./types";
+import {
+  Logger,
+  Fetch,
+  AuthService,
+  AuthUser,
+  RealUser,
+  ServiceUser,
+} from "./types";
+
+// =============================================================================
+// CONTEXT TYPES
+// =============================================================================
 
 export interface RpcContext {
   db: NodePgDatabase<Record<string, unknown>>;
@@ -15,14 +27,132 @@ export interface RpcContext {
   queueFactory: QueueFactory;
 }
 
+/** Context with authenticated real user */
+export interface UserRpcContext extends RpcContext {
+  user: RealUser;
+}
+
+/** Context with authenticated service */
+export interface ServiceRpcContext extends RpcContext {
+  user: ServiceUser;
+}
+
 /**
  * The core oRPC server instance for the entire backend.
  * We use $context to define the required initial context for all procedures.
  */
 export const os = baseOs.$context<RpcContext>();
 
+// Re-export ProcedureMetadata from common for convenience
+export type { ProcedureMetadata } from "@checkmate/common";
+
+// =============================================================================
+// UNIFIED AUTH MIDDLEWARE
+// =============================================================================
+
 /**
- * Middleware that ensures the user is authenticated.
+ * Unified authentication and authorization middleware.
+ *
+ * Automatically enforces based on contract metadata:
+ * 1. User type (from meta.userType):
+ *    - "anonymous": No authentication required
+ *    - "user": Only real users (frontend authenticated)
+ *    - "service": Only services (backend-to-backend)
+ *    - "both": Either users or services, but must be authenticated (default)
+ * 2. Permissions (from meta.permissions, only for real users)
+ *
+ * Use this in backend routers: `implement(contract).$context<RpcContext>().use(autoAuthMiddleware)`
+ */
+export const autoAuthMiddleware = os.middleware(
+  async ({ next, context, procedure }) => {
+    const meta = procedure["~orpc"]?.meta as ProcedureMetadata | undefined;
+    const requiredUserType = meta?.userType || "both";
+
+    // 1. Handle anonymous endpoints - no auth required
+    if (requiredUserType === "anonymous") {
+      return next({});
+    }
+
+    // 2. Enforce authentication for all other cases
+    if (!context.user) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = context.user;
+
+    // 3. Enforce user type
+    if (requiredUserType === "user" && user.type !== "user") {
+      throw new Error("Forbidden: This endpoint is for users only");
+    }
+    if (requiredUserType === "service" && user.type !== "service") {
+      throw new Error("Forbidden: This endpoint is for services only");
+    }
+
+    // 4. Enforce permissions (only for real users)
+    if (user.type === "user") {
+      const requiredPermissions = meta?.permissions || [];
+      if (requiredPermissions.length > 0) {
+        const userPermissions = user.permissions || [];
+        const hasPermission = requiredPermissions.some((p: string) => {
+          return userPermissions.includes("*") || userPermissions.includes(p);
+        });
+
+        if (!hasPermission) {
+          throw new Error(
+            `Forbidden: Missing ${requiredPermissions.join(" or ")}`
+          );
+        }
+      }
+    }
+
+    // Pass through - services are trusted with all permissions
+    return next({});
+  }
+);
+
+// =============================================================================
+// CONTRACT BUILDER
+// =============================================================================
+
+/**
+ * Base contract builder with automatic authentication and authorization.
+ *
+ * All plugin contracts should use this builder. It ensures that:
+ * 1. All procedures are authenticated by default
+ * 2. User type is enforced based on meta.userType
+ * 3. Permissions are enforced based on meta.permissions
+ *
+ * @example
+ * import { baseContractBuilder } from "@checkmate/backend-api";
+ * import { permissions } from "./permissions";
+ *
+ * const myContract = {
+ *   // User-only endpoint with specific permission
+ *   getItems: baseContractBuilder
+ *     .meta({ userType: "user", permissions: [permissions.myPluginRead.id] })
+ *     .output(z.array(ItemSchema)),
+ *
+ *   // Service-only endpoint (backend-to-backend)
+ *   internalSync: baseContractBuilder
+ *     .meta({ userType: "service" })
+ *     .input(z.object({ data: z.string() }))
+ *     .output(z.object({ success: z.boolean() })),
+ *
+ *   // Public authenticated endpoint (both users and services)
+ *   getPublicInfo: baseContractBuilder
+ *     .meta({ userType: "both" })
+ *     .output(z.object({ info: z.string() })),
+ * };
+ */
+export const baseContractBuilder = os.use(autoAuthMiddleware).meta({});
+
+// =============================================================================
+// LEGACY MIDDLEWARE (for non-contract-based routers)
+// =============================================================================
+
+/**
+ * Simple auth middleware - just checks user is authenticated.
+ * @deprecated Use contract-based approach with autoAuthMiddleware instead.
  */
 export const authMiddleware = os.middleware(async ({ next, context }) => {
   if (!context.user) {
@@ -35,14 +165,15 @@ export const authMiddleware = os.middleware(async ({ next, context }) => {
   });
 });
 
-/**
- * Base procedure for authenticated requests (users or services).
- */
+/** @deprecated Use contract-based approach with meta.userType: "both" */
 export const authedProcedure = os.use(authMiddleware);
 
+/** @deprecated Alias for authedProcedure */
+export const authenticated = authedProcedure;
+
 /**
- * Middleware that ensures the caller is a service (backend-to-backend).
- * Use this for endpoints that should only be callable by other services.
+ * Middleware for service-only endpoints.
+ * @deprecated Use contract-based approach with meta.userType: "service"
  */
 export const serviceOnlyMiddleware = os.middleware(
   async ({ next, context }) => {
@@ -58,15 +189,12 @@ export const serviceOnlyMiddleware = os.middleware(
   }
 );
 
-/**
- * Procedure for service-to-service calls only.
- * Services are trusted and don't need permission checks.
- */
+/** @deprecated Use contract-based approach with meta.userType: "service" */
 export const serviceProcedure = os.use(serviceOnlyMiddleware);
 
 /**
- * Middleware that ensures the caller is a real user (not a service).
- * Use this for endpoints that should only be callable by frontend users.
+ * Middleware for user-only endpoints.
+ * @deprecated Use contract-based approach with meta.userType: "user"
  */
 export const userOnlyMiddleware = os.middleware(async ({ next, context }) => {
   if (!context.user) {
@@ -75,19 +203,15 @@ export const userOnlyMiddleware = os.middleware(async ({ next, context }) => {
   if (context.user.type !== "user") {
     throw new Error("Forbidden: This endpoint is for user access only");
   }
-  // Narrow context type to RealUser
   return next({ context: { user: context.user } });
 });
 
-/**
- * Procedure for user-facing endpoints only.
- * Narrows context.user to RealUser type for type-safe access to user.id, etc.
- */
+/** @deprecated Use contract-based approach with meta.userType: "user" */
 export const userProcedure = os.use(userOnlyMiddleware);
 
 /**
- * Middleware that checks for a specific permission.
- * Only applies to real users - services are implicitly trusted.
+ * Permission middleware factory.
+ * @deprecated Use contract-based approach with meta.permissions
  */
 export const permissionMiddleware = (permission: string | string[]) =>
   os.middleware(async ({ next, context }) => {
@@ -95,7 +219,6 @@ export const permissionMiddleware = (permission: string | string[]) =>
       throw new Error("Unauthorized");
     }
 
-    // Services are implicitly trusted - skip permission checks
     if (context.user.type === "service") {
       return next({});
     }
@@ -115,95 +238,22 @@ export const permissionMiddleware = (permission: string | string[]) =>
   });
 
 /**
- * Base authenticated procedure - alias for clarity
- */
-export const authenticated = authedProcedure;
-
-/**
- * Helper to create an authenticated procedure with specific permissions.
- * Plugins should use this instead of creating their own permission middleware.
- *
- * @example
- * const getSystems = withPermissions([permissions.catalogRead.id])
- *   .handler(async () => { ... });
+ * @deprecated Use contract-based approach
  */
 export const withPermissions = (permissions: string | string[]) =>
   authenticated.use(permissionMiddleware(permissions));
 
 /**
- * Metadata interface for permission-based procedures.
- * All contracts should extend this metadata type.
+ * @deprecated Use autoAuthMiddleware
  */
-export interface PermissionMetadata {
-  permissions?: string[];
-}
+export const autoPermissionMiddleware = autoAuthMiddleware;
 
-/**
- * Middleware that automatically enforces permissions based on procedure metadata.
- * This reads the `permissions` field from the procedure's metadata and validates
- * the user has at least one of the required permissions.
- *
- * Services are implicitly trusted and skip permission checks.
- *
- * Use this in backend routers: `implement(contract).use(autoPermissionMiddleware)`
- */
-export const autoPermissionMiddleware = os.middleware(
-  async ({ next, context, procedure }) => {
-    // Enforce authentication first
-    if (!context.user) {
-      throw new Error("Unauthorized");
-    }
+// Backward compatibility alias
+export type PermissionMetadata = ProcedureMetadata;
 
-    const user = context.user;
-
-    // Services are implicitly trusted - skip permission checks
-    if (user.type === "service") {
-      return next({});
-    }
-
-    // Check if procedure has permission requirements in metadata
-    const meta = procedure["~orpc"]?.meta as PermissionMetadata | undefined;
-    const requiredPermissions = meta?.permissions;
-
-    if (!requiredPermissions || requiredPermissions.length === 0) {
-      // No permissions required, pass through
-      return next({});
-    }
-
-    // Check user has at least one of the required permissions
-    const userPermissions = user.permissions || [];
-    const hasPermission = requiredPermissions.some((p: string) => {
-      return userPermissions.includes("*") || userPermissions.includes(p);
-    });
-
-    if (!hasPermission) {
-      throw new Error(`Forbidden: Missing ${requiredPermissions.join(" or ")}`);
-    }
-
-    return next({});
-  }
-);
-
-/**
- * Base contract builder with automatic authentication and permission enforcement.
- *
- * All plugin contracts should use this builder instead of raw `oc` from @orpc/contract.
- * This ensures that:
- * 1. All procedures are authenticated by default
- * 2. Permission metadata is automatically enforced
- * 3. Plugins cannot forget to add security middleware
- *
- * @example
- * import { baseContractBuilder } from "@checkmate/backend-api";
- * import { permissions } from "./permissions";
- *
- * const myContract = {
- *   getItems: baseContractBuilder
- *     .meta({ permissions: [permissions.myPluginRead.id] })
- *     .output(z.array(ItemSchema)),
- * };
- */
-export const baseContractBuilder = os.use(autoPermissionMiddleware).meta({});
+// =============================================================================
+// RPC SERVICE INTERFACE
+// =============================================================================
 
 /**
  * Service interface for the RPC registry.

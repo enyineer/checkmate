@@ -23,6 +23,8 @@ export interface HealthCheckConfiguration {
   strategyId: string;
   config: Record<string, unknown>;
   intervalSeconds: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 export interface HealthCheckRun {
   id: string;
