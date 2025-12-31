@@ -50,11 +50,24 @@ export const GetHealthCheckHistoryQuerySchema = z.object({
   limit: z.number().optional(),
 });
 
+/**
+ * Health check status enum - same as database enum.
+ */
+export const HealthCheckStatusSchema = z.enum([
+  "healthy",
+  "unhealthy",
+  "degraded",
+]);
+
+export type HealthCheckStatus = z.infer<typeof HealthCheckStatusSchema>;
+
 export const HealthCheckRunSchema = z.object({
   id: z.string(),
   configurationId: z.string(),
   systemId: z.string(),
-  status: z.enum(["healthy", "unhealthy", "degraded"]),
+  status: HealthCheckStatusSchema,
   result: z.record(z.string(), z.unknown()),
-  timestamp: z.string(),
+  timestamp: z.date(),
 });
+
+export type HealthCheckRun = z.infer<typeof HealthCheckRunSchema>;

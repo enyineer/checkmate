@@ -127,12 +127,12 @@ async function executeHealthCheckJob(props: {
       configRow.config as Record<string, unknown>
     );
 
-    // Store result
+    // Store result (spread to convert structured type to plain record for jsonb)
     await db.insert(healthCheckRuns).values({
       configurationId: configId,
       systemId,
       status: result.status,
-      result,
+      result: { ...result } as Record<string, unknown>,
     });
 
     logger.debug(
@@ -154,7 +154,7 @@ async function executeHealthCheckJob(props: {
       configurationId: configId,
       systemId,
       status: "unhealthy",
-      result: { error: String(error) },
+      result: { error: String(error) } as Record<string, unknown>,
     });
 
     // Propagate status even on failure

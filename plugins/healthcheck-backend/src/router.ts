@@ -101,15 +101,14 @@ export const createHealthCheckRouter = (
     getHistory: os.getHistory.handler(async ({ input }) => {
       const service = new HealthCheckService(database);
       const history = await service.getHistory(input);
-      // TODO: Refactor database schema to use proper enum for status,
-      // proper timestamp type, and typed jsonb instead of manual casting here
+      // Schema now uses pgEnum and typed jsonb - no manual casting needed
       return history.map((run) => ({
         id: run.id,
         configurationId: run.configurationId,
         systemId: run.systemId,
-        status: run.status as "healthy" | "unhealthy" | "degraded",
-        result: (run.result as Record<string, unknown>) ?? {},
-        timestamp: run.timestamp.toISOString(),
+        status: run.status,
+        result: run.result ?? {},
+        timestamp: run.timestamp,
       }));
     }),
   });

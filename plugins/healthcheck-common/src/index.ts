@@ -16,6 +16,7 @@ export interface HealthCheckStrategyDto {
 
 /**
  * Represents a Health Check Configuration (the check definition/template).
+ * NOTE: This is derived from Zod schema but kept as interface for explicit type documentation.
  */
 export interface HealthCheckConfiguration {
   id: string;
@@ -26,13 +27,7 @@ export interface HealthCheckConfiguration {
   createdAt: Date;
   updatedAt: Date;
 }
-export interface HealthCheckRun {
-  id: string;
-  configurationId: string;
-  systemId: string;
-  status: "healthy" | "unhealthy" | "degraded";
-  result: Record<string, unknown>;
-  timestamp: string;
-}
+
+// HealthCheckRun and HealthCheckStatus types are now exported from ./schemas
 
 export * from "./rpc-contract";

@@ -148,7 +148,7 @@ export class HealthCheckService {
       id: row.id,
       name: row.name,
       strategyId: row.strategyId,
-      config: row.config as Record<string, unknown>,
+      config: row.config,
       intervalSeconds: row.intervalSeconds,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

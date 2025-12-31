@@ -7,7 +7,20 @@ import {
   uuid,
   timestamp,
   primaryKey,
+  pgEnum,
 } from "drizzle-orm/pg-core";
+
+/**
+ * Health check status enum for type-safe status values.
+ */
+export const healthCheckStatusEnum = pgEnum("health_check_status", [
+  "healthy",
+  "unhealthy",
+  "degraded",
+]);
+
+export type HealthCheckStatus =
+  (typeof healthCheckStatusEnum.enumValues)[number];
 
 export const healthCheckConfigurations = pgTable(
   "health_check_configurations",
@@ -15,7 +28,7 @@ export const healthCheckConfigurations = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     strategyId: text("strategy_id").notNull(),
-    config: jsonb("config").notNull(),
+    config: jsonb("config").$type<Record<string, unknown>>().notNull(),
     intervalSeconds: integer("interval_seconds").notNull(),
     isTemplate: boolean("is_template").default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -44,8 +57,8 @@ export const healthCheckRuns = pgTable("health_check_runs", {
   configurationId: uuid("configuration_id")
     .notNull()
     .references(() => healthCheckConfigurations.id, { onDelete: "cascade" }),
-  systemId: text("system_id").notNull(), // Snapshotting where it ran
-  status: text("status").notNull(), // 'healthy', 'unhealthy', 'degraded'
-  result: jsonb("result"), // Full result object
+  systemId: text("system_id").notNull(),
+  status: healthCheckStatusEnum("status").notNull(),
+  result: jsonb("result").$type<Record<string, unknown>>(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
