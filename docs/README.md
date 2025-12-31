@@ -14,6 +14,7 @@ New to Checkmate? Start here:
 Understanding the system design:
 
 - **[Plugin Architecture](./architecture/plugin-system.md)** - Core pluggable architecture and extension model
+- **[Packages vs Plugins](./architecture/packages-vs-plugins.md)** - When to use packages vs plugins
 
 ## Backend Development
 

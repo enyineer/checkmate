@@ -1,5 +1,9 @@
 ---
+title: Plugin Architecture Overview
+parent: Architecture
+nav_order: 1
 ---
+
 # Plugin Architecture Overview
 
 ## Introduction
@@ -50,17 +54,25 @@ checkmate/
 │   ├── backend-api/       # Backend plugin API
 │   ├── frontend-api/      # Frontend plugin API
 │   ├── common/            # Shared core types
-│   └── ui/                # Shared UI components
+│   ├── ui/                # Shared UI components
+│   │
+│   ├── auth-*/            # Authentication (essential)
+│   ├── catalog-*/         # Entity management (essential)
+│   ├── notification-*/    # Notifications (essential)
+│   ├── healthcheck-*/     # Health monitoring (essential)
+│   ├── queue-*/           # Queue abstraction (essential)
+│   └── theme-*/           # UI theming (essential)
 │
-└── plugins/
-    ├── catalog-backend/
-    ├── catalog-frontend/
-    ├── catalog-common/
-    ├── auth-backend/
-    ├── auth-frontend/
-    ├── healthcheck-backend/
-    └── ...
+└── plugins/               # Replaceable providers only
+    ├── auth-github-backend/       # GitHub OAuth provider
+    ├── auth-credential-backend/   # Username/password auth
+    ├── auth-ldap-backend/         # LDAP auth provider
+    ├── queue-bullmq-*/            # BullMQ implementation
+    ├── queue-memory-*/            # In-memory implementation
+    └── healthcheck-http-backend/  # HTTP health strategy
 ```
+
+> **Note:** See [Packages vs Plugins Architecture](packages-vs-plugins.md) for decision criteria on when to create a package vs a plugin.
 
 ## Package Types
 
@@ -301,6 +313,7 @@ Mix and match based on scaling needs:
 
 ## Next Steps
 
+- [Packages vs Plugins Architecture](packages-vs-plugins.md)
 - [Backend Plugin Development](../backend/plugins.md)
 - [Frontend Plugin Development](../frontend/plugins.md)
 - [Common Plugin Guidelines](../common/plugins.md)
