@@ -20,7 +20,7 @@ include:
   - README.md
   - _includes
 
-# Navigation structure for sidebar/header
+# Navigation hints for theme
 header_pages:
   - README.md
   - getting-started/contributing.md
@@ -28,39 +28,3 @@ header_pages:
   - backend/plugins.md
   - frontend/plugins.md
   - common/plugins.md
-
-# Default front matter for docs
-defaults:
-  - scope:
-      path: ""
-      type: "pages"
-    values:
-      layout: "default"
-  - scope:
-      path: "backend"
-    values:
-      category: "Backend"
-  - scope:
-      path: "frontend"
-    values:
-      category: "Frontend"
-  - scope:
-      path: "common"
-    values:
-      category: "Common"
-  - scope:
-      path: "security"
-    values:
-      category: "Security"
-  - scope:
-      path: "testing"
-    values:
-      category: "Testing"
-  - scope:
-      path: "tooling"
-    values:
-      category: "Tooling"
-  - scope:
-      path: "examples"
-    values:
-      category: "Examples"
