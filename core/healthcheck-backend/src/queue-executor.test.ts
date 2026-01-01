@@ -9,6 +9,7 @@ import {
   createMockLogger,
   createMockQueueManager,
   createMockDb,
+  createMockSignalService,
 } from "@checkmate/test-utils-backend";
 import type { HealthCheckRegistry } from "@checkmate/backend-api";
 import { mock } from "bun:test";
@@ -88,6 +89,7 @@ describe("Queue-Based Health Check Executor", () => {
         registry: mockRegistry,
         logger: mockLogger,
         queueManager: mockQueueManager,
+        signalService: createMockSignalService(),
       });
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -123,18 +125,29 @@ describe("Queue-Based Health Check Executor", () => {
       ];
 
       // Override select to return a chain that handles subquery with groupBy
-      (mockDb.select as any) = mock(() => ({
-        from: mock(() => ({
-          groupBy: mock(() => ({
-            as: mock(() => ({})), // Returns subquery alias
-          })),
-          innerJoin: mock(() => ({
-            leftJoin: mock(() => ({
-              where: mock(() => Promise.resolve(mockData)),
+      // First call: for enabledChecks query (innerJoin().where)
+      // Second call: for latestRuns query (groupBy)
+      let selectCallCount = 0;
+      (mockDb.select as any) = mock(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          // enabledChecks query
+          return {
+            from: mock(() => ({
+              innerJoin: mock(() => ({
+                where: mock(() => Promise.resolve(mockData)),
+              })),
             })),
-          })),
-        })),
-      }));
+          };
+        } else {
+          // latestRuns query
+          return {
+            from: mock(() => ({
+              groupBy: mock(() => Promise.resolve([])),
+            })),
+          };
+        }
+      });
 
       await bootstrapHealthChecks({
         db: mockDb as any,

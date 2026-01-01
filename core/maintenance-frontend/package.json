@@ -13,6 +13,7 @@
     "@checkmate/common": "workspace:*",
     "@checkmate/frontend-api": "workspace:*",
     "@checkmate/maintenance-common": "workspace:*",
+    "@checkmate/signal-frontend": "workspace:*",
     "@checkmate/ui": "workspace:*",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.344.0",

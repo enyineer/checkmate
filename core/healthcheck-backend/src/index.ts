@@ -22,6 +22,7 @@ export default createBackendPlugin({
         healthCheckRegistry: coreServices.healthCheckRegistry,
         rpc: coreServices.rpc,
         queueManager: coreServices.queueManager,
+        signalService: coreServices.signalService,
       },
       // Phase 2: Register router and setup worker
       init: async ({
@@ -30,6 +31,7 @@ export default createBackendPlugin({
         healthCheckRegistry,
         rpc,
         queueManager,
+        signalService,
       }) => {
         logger.debug("🏥 Initializing Health Check Backend...");
 
@@ -39,6 +41,7 @@ export default createBackendPlugin({
           registry: healthCheckRegistry,
           logger,
           queueManager,
+          signalService,
         });
 
         const healthCheckRouter = createHealthCheckRouter(

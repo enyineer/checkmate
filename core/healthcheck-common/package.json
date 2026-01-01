@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@checkmate/common": "workspace:*",
+    "@checkmate/signal-common": "workspace:*",
     "zod": "^4.2.1"
   },
   "devDependencies": {

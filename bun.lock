@@ -286,6 +286,7 @@
         "@checkmate/catalog-backend": "workspace:*",
         "@checkmate/healthcheck-common": "workspace:*",
         "@checkmate/queue-api": "workspace:*",
+        "@checkmate/signal-common": "workspace:*",
         "@hono/zod-validator": "^0.7.6",
         "drizzle-orm": "^0.45.1",
         "hono": "^4.0.0",
@@ -306,6 +307,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@checkmate/common": "workspace:*",
+        "@checkmate/signal-common": "workspace:*",
         "zod": "^4.2.1",
       },
       "devDependencies": {
@@ -322,6 +324,7 @@
         "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/healthcheck-common": "workspace:*",
+        "@checkmate/signal-frontend": "workspace:*",
         "@checkmate/ui": "workspace:*",
         "@types/prismjs": "^1.26.5",
         "ajv": "^8.17.1",
@@ -349,6 +352,7 @@
         "@checkmate/catalog-common": "workspace:*",
         "@checkmate/maintenance-common": "workspace:*",
         "@checkmate/notification-common": "workspace:*",
+        "@checkmate/signal-common": "workspace:*",
         "drizzle-orm": "^0.45.1",
         "zod": "^4.2.1",
       },
@@ -368,6 +372,7 @@
       "dependencies": {
         "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
+        "@checkmate/signal-common": "workspace:*",
         "@orpc/contract": "^1.13.2",
         "zod": "^4.2.1",
       },
@@ -385,6 +390,7 @@
         "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/maintenance-common": "workspace:*",
+        "@checkmate/signal-frontend": "workspace:*",
         "@checkmate/ui": "workspace:*",
         "date-fns": "^4.1.0",
         "lucide-react": "^0.344.0",

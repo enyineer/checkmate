@@ -147,6 +147,19 @@ const init = async () => {
     return next();
   });
 
+  // 2. Initialize Signal Service (before plugins so they can use it)
+  // SignalService requires EventBus which is a lazy factory depending on QueueManager
+  rootLogger.debug("Initializing signal service...");
+  const eventBus = await pluginManager.getService(coreServices.eventBus);
+  if (!eventBus) {
+    throw new Error("EventBus not available - required for SignalService");
+  }
+  const signalService = new SignalServiceImpl(
+    eventBus,
+    rootLogger.child({ service: "SignalService" })
+  );
+  pluginManager.registerService(coreServices.signalService, signalService);
+
   // 3. Load Plugins
   await pluginManager.loadPlugins(app);
 
@@ -168,19 +181,7 @@ const init = async () => {
   // 7. Start config polling for multi-instance coordination
   queueManager.startPolling(5000);
 
-  // 8. Initialize Signal Service (requires EventBus which is registered during plugin loading)
-  rootLogger.debug("Initializing signal service...");
-  const eventBus = await pluginManager.getService(coreServices.eventBus);
-  if (!eventBus) {
-    throw new Error("EventBus not available - required for SignalService");
-  }
-  const signalService = new SignalServiceImpl(
-    eventBus,
-    rootLogger.child({ service: "SignalService" })
-  );
-  pluginManager.registerService(coreServices.signalService, signalService);
-
-  // 10. Setup plugin lifecycle signal broadcasting to frontend
+  // 9. Setup plugin lifecycle signal broadcasting to frontend
   // Only broadcast for frontend plugins (plugins ending with -frontend)
   await eventBus.subscribe(
     "core",

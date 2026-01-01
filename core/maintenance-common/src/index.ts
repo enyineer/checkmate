@@ -24,3 +24,23 @@ export {
 } from "./schemas";
 export { MaintenanceDetailsSlot, MaintenanceStatusSlot } from "./slots";
 export { maintenanceRoutes } from "./routes";
+
+// =============================================================================
+// REALTIME SIGNALS
+// =============================================================================
+
+import { createSignal } from "@checkmate/signal-common";
+import { z } from "zod";
+
+/**
+ * Broadcast when a maintenance is created, updated, or closed.
+ * Frontend components listening to this signal can refetch state for affected systems.
+ */
+export const MAINTENANCE_UPDATED = createSignal(
+  "maintenance.updated",
+  z.object({
+    maintenanceId: z.string(),
+    systemIds: z.array(z.string()),
+    action: z.enum(["created", "updated", "closed"]),
+  })
+);

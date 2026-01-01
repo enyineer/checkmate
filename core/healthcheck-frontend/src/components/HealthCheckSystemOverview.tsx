@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useApi, type SlotContext } from "@checkmate/frontend-api";
+import { useSignal } from "@checkmate/signal-frontend";
 import { healthCheckApiRef } from "../api";
 import { SystemDetailsSlot } from "@checkmate/catalog-common";
+import { HEALTH_CHECK_STATE_CHANGED } from "@checkmate/healthcheck-common";
 import {
   HealthBadge,
   LoadingSpinner,
@@ -151,7 +153,7 @@ export const HealthCheckSystemOverview: React.FC<SlotProps> = (props) => {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string>();
 
-  useEffect(() => {
+  const refetch = useCallback(() => {
     if (!systemId) return;
 
     api
@@ -159,6 +161,18 @@ export const HealthCheckSystemOverview: React.FC<SlotProps> = (props) => {
       .then((data) => setOverview(data.checks))
       .finally(() => setLoading(false));
   }, [api, systemId]);
+
+  // Initial fetch
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Listen for realtime health check updates
+  useSignal(HEALTH_CHECK_STATE_CHANGED, ({ systemId: changedId }) => {
+    if (changedId === systemId) {
+      refetch();
+    }
+  });
 
   if (loading) return <LoadingSpinner />;
 

@@ -32,3 +32,23 @@ export interface HealthCheckConfiguration {
 
 export * from "./rpc-contract";
 export { healthcheckRoutes } from "./routes";
+
+// =============================================================================
+// REALTIME SIGNALS
+// =============================================================================
+
+import { createSignal } from "@checkmate/signal-common";
+import { z } from "zod";
+
+/**
+ * Broadcast when a health check run completes and status potentially changes.
+ * Frontend components listening to this signal can refetch state for the affected system.
+ */
+export const HEALTH_CHECK_STATE_CHANGED = createSignal(
+  "healthcheck.state.changed",
+  z.object({
+    systemId: z.string(),
+    configurationId: z.string(),
+    status: z.enum(["healthy", "degraded", "unhealthy"]),
+  })
+);

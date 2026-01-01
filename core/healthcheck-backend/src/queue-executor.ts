@@ -8,6 +8,8 @@ import {
 import * as schema from "./schema";
 import { eq, and, max } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { type SignalService } from "@checkmate/signal-common";
+import { HEALTH_CHECK_STATE_CHANGED } from "@checkmate/healthcheck-common";
 
 type Db = NodePgDatabase<typeof schema>;
 
@@ -77,8 +79,9 @@ async function executeHealthCheckJob(props: {
   db: Db;
   registry: HealthCheckRegistry;
   logger: Logger;
+  signalService: SignalService;
 }): Promise<void> {
-  const { payload, db, registry, logger } = props;
+  const { payload, db, registry, logger, signalService } = props;
   const { configId, systemId } = payload;
 
   try {
@@ -137,6 +140,13 @@ async function executeHealthCheckJob(props: {
       `Ran health check ${configId} for system ${systemId}: ${result.status}`
     );
 
+    // Broadcast signal for realtime frontend updates
+    await signalService.broadcast(HEALTH_CHECK_STATE_CHANGED, {
+      systemId,
+      configurationId: configId,
+      status: result.status,
+    });
+
     // Note: No manual rescheduling needed - recurring job handles it automatically
   } catch (error) {
     logger.error(
@@ -152,6 +162,13 @@ async function executeHealthCheckJob(props: {
       result: { error: String(error) } as Record<string, unknown>,
     });
 
+    // Broadcast failure signal for realtime frontend updates
+    await signalService.broadcast(HEALTH_CHECK_STATE_CHANGED, {
+      systemId,
+      configurationId: configId,
+      status: "unhealthy",
+    });
+
     // Note: No manual rescheduling needed - recurring job handles it automatically
   }
 }
@@ -164,8 +181,9 @@ export async function setupHealthCheckWorker(props: {
   registry: HealthCheckRegistry;
   logger: Logger;
   queueManager: QueueManager;
+  signalService: SignalService;
 }): Promise<void> {
-  const { db, registry, logger, queueManager } = props;
+  const { db, registry, logger, queueManager, signalService } = props;
 
   const queue =
     queueManager.getQueue<HealthCheckJobPayload>(HEALTH_CHECK_QUEUE);
@@ -178,6 +196,7 @@ export async function setupHealthCheckWorker(props: {
         db,
         registry,
         logger,
+        signalService,
       });
     },
     {

@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useApi, type SlotContext } from "@checkmate/frontend-api";
+import { useSignal } from "@checkmate/signal-frontend";
 import { resolveRoute } from "@checkmate/common";
 import { SystemDetailsSlot } from "@checkmate/catalog-common";
 import { maintenanceApiRef } from "../api";
-import { maintenanceRoutes } from "@checkmate/maintenance-common";
-import type { MaintenanceWithSystems } from "@checkmate/maintenance-common";
+import {
+  maintenanceRoutes,
+  MAINTENANCE_UPDATED,
+  type MaintenanceWithSystems,
+} from "@checkmate/maintenance-common";
 import {
   Card,
   CardHeader,
@@ -21,7 +25,8 @@ import { formatDistanceToNow, format } from "date-fns";
 type Props = SlotContext<typeof SystemDetailsSlot>;
 
 /**
- * Panel shown on system detail pages displaying active/upcoming maintenances
+ * Panel shown on system detail pages displaying active/upcoming maintenances.
+ * Listens for realtime updates via signals.
  */
 export const SystemMaintenancePanel: React.FC<Props> = ({ system }) => {
   const api = useApi(maintenanceApiRef);
@@ -30,7 +35,7 @@ export const SystemMaintenancePanel: React.FC<Props> = ({ system }) => {
   );
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const refetch = useCallback(() => {
     if (!system?.id) return;
 
     api
@@ -39,6 +44,18 @@ export const SystemMaintenancePanel: React.FC<Props> = ({ system }) => {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [system?.id, api]);
+
+  // Initial fetch
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Listen for realtime maintenance updates
+  useSignal(MAINTENANCE_UPDATED, ({ systemIds }) => {
+    if (system?.id && systemIds.includes(system.id)) {
+      refetch();
+    }
+  });
 
   if (loading) {
     return (

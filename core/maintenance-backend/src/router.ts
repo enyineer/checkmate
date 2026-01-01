@@ -1,9 +1,16 @@
 import { implement, ORPCError } from "@orpc/server";
-import { maintenanceContract } from "@checkmate/maintenance-common";
+import {
+  maintenanceContract,
+  MAINTENANCE_UPDATED,
+} from "@checkmate/maintenance-common";
 import { autoAuthMiddleware, type RpcContext } from "@checkmate/backend-api";
+import type { SignalService } from "@checkmate/signal-common";
 import type { MaintenanceService } from "./service";
 
-export function createRouter(service: MaintenanceService) {
+export function createRouter(
+  service: MaintenanceService,
+  signalService: SignalService
+) {
   const os = implement(maintenanceContract)
     .$context<RpcContext>()
     .use(autoAuthMiddleware);
@@ -27,6 +34,12 @@ export function createRouter(service: MaintenanceService) {
 
     createMaintenance: os.createMaintenance.handler(async ({ input }) => {
       const result = await service.createMaintenance(input);
+      // Broadcast signal for realtime updates
+      await signalService.broadcast(MAINTENANCE_UPDATED, {
+        maintenanceId: result.id,
+        systemIds: result.systemIds,
+        action: "created",
+      });
       return result;
     }),
 
@@ -35,13 +48,29 @@ export function createRouter(service: MaintenanceService) {
       if (!result) {
         throw new ORPCError("NOT_FOUND", { message: "Maintenance not found" });
       }
+      // Broadcast signal for realtime updates
+      await signalService.broadcast(MAINTENANCE_UPDATED, {
+        maintenanceId: result.id,
+        systemIds: result.systemIds,
+        action: "updated",
+      });
       return result;
     }),
 
     addUpdate: os.addUpdate.handler(async ({ input, context }) => {
       const userId =
         context.user && "id" in context.user ? context.user.id : undefined;
-      return service.addUpdate(input, userId);
+      const result = await service.addUpdate(input, userId);
+      // Get maintenance to broadcast with correct systemIds
+      const maintenance = await service.getMaintenance(input.maintenanceId);
+      if (maintenance) {
+        await signalService.broadcast(MAINTENANCE_UPDATED, {
+          maintenanceId: input.maintenanceId,
+          systemIds: maintenance.systemIds,
+          action: "updated",
+        });
+      }
+      return result;
     }),
 
     closeMaintenance: os.closeMaintenance.handler(
@@ -58,12 +87,27 @@ export function createRouter(service: MaintenanceService) {
             message: "Maintenance not found",
           });
         }
+        // Broadcast signal for realtime updates
+        await signalService.broadcast(MAINTENANCE_UPDATED, {
+          maintenanceId: result.id,
+          systemIds: result.systemIds,
+          action: "closed",
+        });
         return result;
       }
     ),
 
     deleteMaintenance: os.deleteMaintenance.handler(async ({ input }) => {
+      // Get maintenance before deleting to get systemIds
+      const maintenance = await service.getMaintenance(input.id);
       const success = await service.deleteMaintenance(input.id);
+      if (success && maintenance) {
+        await signalService.broadcast(MAINTENANCE_UPDATED, {
+          maintenanceId: input.id,
+          systemIds: maintenance.systemIds,
+          action: "closed", // Use "closed" for delete as well
+        });
+      }
       return { success };
     }),
   });

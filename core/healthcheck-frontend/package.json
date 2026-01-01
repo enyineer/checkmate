@@ -13,6 +13,7 @@
     "@checkmate/common": "workspace:*",
     "@checkmate/frontend-api": "workspace:*",
     "@checkmate/healthcheck-common": "workspace:*",
+    "@checkmate/signal-frontend": "workspace:*",
     "@checkmate/ui": "workspace:*",
     "@types/prismjs": "^1.26.5",
     "ajv": "^8.17.1",

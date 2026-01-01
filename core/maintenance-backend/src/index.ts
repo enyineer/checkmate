@@ -15,14 +15,15 @@ export default createBackendPlugin({
       deps: {
         logger: coreServices.logger,
         rpc: coreServices.rpc,
+        signalService: coreServices.signalService,
       },
-      init: async ({ logger, database, rpc }) => {
+      init: async ({ logger, database, rpc, signalService }) => {
         logger.debug("🔧 Initializing Maintenance Backend...");
 
         const service = new MaintenanceService(
           database as NodePgDatabase<typeof schema>
         );
-        const router = createRouter(service);
+        const router = createRouter(service, signalService);
         rpc.registerRouter("maintenance-backend", router);
 
         logger.debug("✅ Maintenance Backend initialized.");
