@@ -10,3 +10,13 @@ export {
   type MockSignalService,
   type RecordedSignal,
 } from "./mock-signal-service";
+export {
+  createMockEventBus,
+  type MockEventBus,
+  type EmittedEvent,
+} from "./mock-event-bus";
+export {
+  createMockPluginInstaller,
+  type MockPluginInstaller,
+  type InstallResult,
+} from "./mock-plugin-installer";
