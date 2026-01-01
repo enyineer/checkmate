@@ -1,5 +1,5 @@
 import { mock } from "bun:test";
-import { RpcContext } from "./rpc";
+import { RpcContext, EmitHookFn } from "./rpc";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HealthCheckRegistry } from "./health-check";
 import { QueuePluginRegistry, QueueManager } from "@checkmate/queue-api";
@@ -56,6 +56,7 @@ export function createMockRpcContext(
       shutdown: mock(),
     } as unknown as QueueManager,
     user: undefined,
+    emitHook: mock() as unknown as EmitHookFn,
     ...overrides,
   };
 }

@@ -11,10 +11,16 @@ import {
   RealUser,
   ServiceUser,
 } from "./types";
+import type { Hook } from "./hooks";
 
 // =============================================================================
 // CONTEXT TYPES
 // =============================================================================
+
+/**
+ * Function type for emitting hooks from request handlers.
+ */
+export type EmitHookFn = <T>(hook: Hook<T>, payload: T) => Promise<void>;
 
 export interface RpcContext {
   /** The plugin ID this request is being handled by (extracted from URL path) */
@@ -27,6 +33,8 @@ export interface RpcContext {
   healthCheckRegistry: HealthCheckRegistry;
   queuePluginRegistry: QueuePluginRegistry;
   queueManager: QueueManager;
+  /** Emit a hook event for cross-plugin communication */
+  emitHook: EmitHookFn;
 }
 
 /** Context with authenticated real user */

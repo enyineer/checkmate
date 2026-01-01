@@ -8,9 +8,12 @@ import {
   Logger,
   Fetch,
   HealthCheckRegistry,
+  type EmitHookFn,
+  type Hook,
 } from "@checkmate/backend-api";
 import type { QueuePluginRegistry, QueueManager } from "@checkmate/queue-api";
 import type { ServiceRegistry } from "../services/service-registry";
+import type { EventBus } from "@checkmate/backend-api";
 
 /**
  * Creates the API route handler for Hono.
@@ -65,6 +68,7 @@ export function createApiRouteHandler({
       coreServices.queuePluginRegistry
     );
     const queueManager = await getService(coreServices.queueManager);
+    const eventBus = await getService(coreServices.eventBus);
 
     if (
       !auth ||
@@ -73,12 +77,18 @@ export function createApiRouteHandler({
       !fetch ||
       !healthCheckRegistry ||
       !queuePluginRegistry ||
-      !queueManager
+      !queueManager ||
+      !eventBus
     ) {
       return c.json({ error: "Core services not initialized" }, 500);
     }
 
     const user = await (auth as AuthService).authenticate(c.req.raw);
+
+    // Create emitHook function using eventBus
+    const emitHook: EmitHookFn = async <T>(hook: Hook<T>, payload: T) => {
+      await (eventBus as EventBus).emit(hook, payload);
+    };
 
     const context: RpcContext = {
       pluginId,
@@ -90,6 +100,7 @@ export function createApiRouteHandler({
       queuePluginRegistry: queuePluginRegistry as QueuePluginRegistry,
       queueManager: queueManager as QueueManager,
       user,
+      emitHook,
     };
 
     // 1. Try oRPC first

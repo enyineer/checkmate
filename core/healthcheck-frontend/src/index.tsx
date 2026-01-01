@@ -7,7 +7,7 @@ import {
 import { healthCheckApiRef, type HealthCheckApi } from "./api";
 import { HealthCheckConfigPage } from "./pages/HealthCheckConfigPage";
 import { HealthCheckMenuItems } from "./components/HealthCheckMenuItems";
-import { HealthCheckHistory } from "./components/HealthCheckHistory";
+import { HealthCheckSystemOverview } from "./components/HealthCheckSystemOverview";
 import { SystemHealthCheckAssignment } from "./components/SystemHealthCheckAssignment";
 import { SystemHealthBadge } from "./components/SystemHealthBadge";
 
@@ -50,8 +50,8 @@ export default createFrontendPlugin({
       component: SystemHealthBadge,
     }),
     createSlotExtension(SystemDetailsSlot, {
-      id: "healthcheck.system-details.history",
-      component: HealthCheckHistory,
+      id: "healthcheck.system-details.overview",
+      component: HealthCheckSystemOverview,
     }),
     createSlotExtension(CatalogSystemActionsSlot, {
       id: "healthcheck.catalog.system-actions",

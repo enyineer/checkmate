@@ -7,6 +7,8 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { permissionList } from "@checkmate/healthcheck-common";
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { createHealthCheckRouter } from "./router";
+import { HealthCheckService } from "./service";
+import { catalogHooks } from "@checkmate/catalog-backend";
 
 export default createBackendPlugin({
   pluginId: "healthcheck-backend",
@@ -46,14 +48,31 @@ export default createBackendPlugin({
 
         logger.debug("✅ Health Check Backend initialized.");
       },
-      // Phase 3: Bootstrap health checks after all plugins are ready
-      afterPluginsReady: async ({ database, queueManager, logger }) => {
+      // Phase 3: Bootstrap health checks and subscribe to catalog events
+      afterPluginsReady: async ({ database, queueManager, logger, onHook }) => {
+        const typedDb = database as unknown as NodePgDatabase<typeof schema>;
+
         // Bootstrap all enabled health checks
         await bootstrapHealthChecks({
-          db: database as unknown as NodePgDatabase<typeof schema>,
+          db: typedDb,
           queueManager,
           logger,
         });
+
+        // Subscribe to catalog system deletion to clean up associations
+        const service = new HealthCheckService(typedDb);
+        onHook(
+          catalogHooks.systemDeleted,
+          async (payload) => {
+            logger.debug(
+              `Cleaning up health check associations for deleted system: ${payload.systemId}`
+            );
+            await service.removeAllSystemAssociations(payload.systemId);
+          },
+          { mode: "work-queue", workerGroup: "system-cleanup" }
+        );
+
+        logger.debug("✅ Health Check Backend afterPluginsReady complete.");
       },
     });
   },

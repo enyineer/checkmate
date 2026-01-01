@@ -128,10 +128,16 @@ export const healthCheckContract = {
       z.object({
         systemId: z.string().optional(),
         configurationId: z.string().optional(),
-        limit: z.number().optional(),
+        limit: z.number().optional().default(10),
+        offset: z.number().optional().default(0),
       })
     )
-    .output(z.array(HealthCheckRunSchema)),
+    .output(
+      z.object({
+        runs: z.array(HealthCheckRunSchema),
+        total: z.number(),
+      })
+    ),
 
   /**
    * Get evaluateted health status for a system based on configured thresholds.
@@ -141,6 +147,37 @@ export const healthCheckContract = {
     .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
     .input(z.object({ systemId: z.string() }))
     .output(SystemHealthStatusResponseSchema),
+
+  /**
+   * Get comprehensive health overview for a system.
+   * Returns all health checks with their last 25 runs for sparkline visualization.
+   */
+  getSystemHealthOverview: _base
+    .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
+    .input(z.object({ systemId: z.string() }))
+    .output(
+      z.object({
+        systemId: z.string(),
+        checks: z.array(
+          z.object({
+            configurationId: z.string(),
+            configurationName: z.string(),
+            strategyId: z.string(),
+            intervalSeconds: z.number(),
+            enabled: z.boolean(),
+            status: HealthCheckStatusSchema,
+            stateThresholds: StateThresholdsSchema.optional(),
+            recentRuns: z.array(
+              z.object({
+                id: z.string(),
+                status: HealthCheckStatusSchema,
+                timestamp: z.date(),
+              })
+            ),
+          })
+        ),
+      })
+    ),
 };
 
 // Export contract type for frontend

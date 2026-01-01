@@ -5,6 +5,7 @@ import { EntityService } from "./services/entity-service";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "./schema";
 import type { NotificationClient } from "@checkmate/notification-common";
+import { catalogHooks } from "./hooks";
 
 /**
  * Creates the catalog router using contract-based implementation.
@@ -133,11 +134,14 @@ export const createCatalogRouter = (
     };
   });
 
-  const deleteSystem = os.deleteSystem.handler(async ({ input }) => {
+  const deleteSystem = os.deleteSystem.handler(async ({ input, context }) => {
     await entityService.deleteSystem(input);
 
     // Delete the notification group for this system
     await deleteNotificationGroup("system", input);
+
+    // Emit hook for other plugins to clean up related data
+    await context.emitHook(catalogHooks.systemDeleted, { systemId: input });
 
     return { success: true };
   });
@@ -184,11 +188,14 @@ export const createCatalogRouter = (
     };
   });
 
-  const deleteGroup = os.deleteGroup.handler(async ({ input }) => {
+  const deleteGroup = os.deleteGroup.handler(async ({ input, context }) => {
     await entityService.deleteGroup(input);
 
     // Delete the notification group for this catalog group
     await deleteNotificationGroup("group", input);
+
+    // Emit hook for other plugins to clean up related data
+    await context.emitHook(catalogHooks.groupDeleted, { groupId: input });
 
     return { success: true };
   });

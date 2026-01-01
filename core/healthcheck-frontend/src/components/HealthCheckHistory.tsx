@@ -34,7 +34,7 @@ export const HealthCheckHistory: React.FC<SlotProps> = (props) => {
     // we might want to skip or handle it.
     healthCheckApi
       .getHistory({ systemId, configurationId, limit })
-      .then(setHistory)
+      .then((response) => setHistory(response.runs))
       .finally(() => setLoading(false));
   }, [healthCheckApi, systemId, configurationId, limit]);
 

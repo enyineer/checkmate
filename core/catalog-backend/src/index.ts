@@ -12,6 +12,9 @@ export let db: NodePgDatabase<typeof schema> | undefined;
 
 const PLUGIN_ID = "catalog-backend";
 
+// Export hooks for other plugins to subscribe to
+export { catalogHooks } from "./hooks";
+
 export default createBackendPlugin({
   pluginId: PLUGIN_ID,
   register(env) {

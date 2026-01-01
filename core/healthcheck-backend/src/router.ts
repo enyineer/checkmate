@@ -102,21 +102,18 @@ export const createHealthCheckRouter = (
     }),
 
     getHistory: os.getHistory.handler(async ({ input }) => {
-      const history = await service.getHistory(input);
-      // Schema now uses pgEnum and typed jsonb - no manual casting needed
-      return history.map((run) => ({
-        id: run.id,
-        configurationId: run.configurationId,
-        systemId: run.systemId,
-        status: run.status,
-        result: run.result ?? {},
-        timestamp: run.timestamp,
-      }));
+      return service.getHistory(input);
     }),
 
     getSystemHealthStatus: os.getSystemHealthStatus.handler(
       async ({ input }) => {
         return service.getSystemHealthStatus(input.systemId);
+      }
+    ),
+
+    getSystemHealthOverview: os.getSystemHealthOverview.handler(
+      async ({ input }) => {
+        return service.getSystemHealthOverview(input.systemId);
       }
     ),
   });

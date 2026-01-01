@@ -143,6 +143,16 @@ export class HealthCheckService {
       );
   }
 
+  /**
+   * Remove all health check associations for a system.
+   * Called when a system is deleted from the catalog.
+   */
+  async removeAllSystemAssociations(systemId: string) {
+    await this.db
+      .delete(systemHealthChecks)
+      .where(eq(systemHealthChecks.systemId, systemId));
+  }
+
   async getSystemConfigurations(
     systemId: string
   ): Promise<HealthCheckConfiguration[]> {
@@ -290,26 +300,122 @@ export class HealthCheckService {
     };
   }
 
+  /**
+   * Get comprehensive health overview for a system.
+   * Returns all health checks with their last 25 runs for sparkline visualization.
+   */
+  async getSystemHealthOverview(systemId: string) {
+    // Get all associations with config details
+    const associations = await this.db
+      .select({
+        configurationId: systemHealthChecks.configurationId,
+        configName: healthCheckConfigurations.name,
+        strategyId: healthCheckConfigurations.strategyId,
+        intervalSeconds: healthCheckConfigurations.intervalSeconds,
+        enabled: systemHealthChecks.enabled,
+        stateThresholds: systemHealthChecks.stateThresholds,
+      })
+      .from(systemHealthChecks)
+      .innerJoin(
+        healthCheckConfigurations,
+        eq(systemHealthChecks.configurationId, healthCheckConfigurations.id)
+      )
+      .where(eq(systemHealthChecks.systemId, systemId));
+
+    const checks = [];
+    const sparklineLimit = 25;
+
+    for (const assoc of associations) {
+      // Get last 25 runs for sparkline
+      const runs = await this.db
+        .select({
+          id: healthCheckRuns.id,
+          status: healthCheckRuns.status,
+          timestamp: healthCheckRuns.timestamp,
+        })
+        .from(healthCheckRuns)
+        .where(
+          and(
+            eq(healthCheckRuns.systemId, systemId),
+            eq(healthCheckRuns.configurationId, assoc.configurationId)
+          )
+        )
+        .orderBy(desc(healthCheckRuns.timestamp))
+        .limit(sparklineLimit);
+
+      // Migrate and extract thresholds
+      let thresholds: StateThresholds | undefined;
+      if (assoc.stateThresholds) {
+        const migrated = await migrateStateThresholds(assoc.stateThresholds);
+        thresholds = migrated.data;
+      }
+
+      // Evaluate current status
+      const status = evaluateHealthStatus({
+        runs: runs as Array<{ status: HealthCheckStatus; timestamp: Date }>,
+        thresholds,
+      });
+
+      checks.push({
+        configurationId: assoc.configurationId,
+        configurationName: assoc.configName,
+        strategyId: assoc.strategyId,
+        intervalSeconds: assoc.intervalSeconds,
+        enabled: assoc.enabled,
+        status,
+        stateThresholds: thresholds,
+        recentRuns: runs.map((r) => ({
+          id: r.id,
+          status: r.status,
+          timestamp: r.timestamp,
+        })),
+      });
+    }
+
+    return { systemId, checks };
+  }
+
   async getHistory(props: {
     systemId?: string;
     configurationId?: string;
     limit?: number;
+    offset?: number;
   }) {
-    const { systemId, configurationId, limit = 50 } = props;
-
-    let query = this.db.select().from(healthCheckRuns);
+    const { systemId, configurationId, limit = 10, offset = 0 } = props;
 
     const conditions = [];
     if (systemId) conditions.push(eq(healthCheckRuns.systemId, systemId));
     if (configurationId)
       conditions.push(eq(healthCheckRuns.configurationId, configurationId));
 
-    if (conditions.length > 0) {
-      // @ts-expect-error drizzle-orm type mismatch in where block with dynamic array
-      query = query.where(and(...conditions));
-    }
+    // Build where clause
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    return query.orderBy(desc(healthCheckRuns.timestamp)).limit(limit);
+    // Get total count using drizzle $count
+    const total = await this.db.$count(healthCheckRuns, whereClause);
+
+    // Get paginated runs
+    let query = this.db.select().from(healthCheckRuns);
+    if (whereClause) {
+      // @ts-expect-error drizzle-orm type mismatch
+      query = query.where(whereClause);
+    }
+    const runs = await query
+      .orderBy(desc(healthCheckRuns.timestamp))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      runs: runs.map((run) => ({
+        id: run.id,
+        configurationId: run.configurationId,
+        systemId: run.systemId,
+        status: run.status,
+        result: run.result ?? {},
+        timestamp: run.timestamp,
+      })),
+      total,
+    };
   }
 
   private mapConfig(
