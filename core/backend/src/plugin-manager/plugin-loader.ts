@@ -39,6 +39,10 @@ export interface PluginLoaderDeps {
   registeredPermissions: (Permission & { pluginId: string })[];
   getAllPermissions: () => Permission[];
   db: NodePgDatabase<Record<string, unknown>>;
+  /**
+   * Map of pluginId -> cleanup handlers (stored in registration order, executed LIFO)
+   */
+  cleanupHandlers: Map<string, Array<() => Promise<void>>>;
 }
 
 /**
@@ -115,6 +119,14 @@ export function registerPlugin({
     },
     registerRouter: (router: unknown) => {
       deps.pluginRpcRouters.set(backendPlugin.pluginId, router);
+    },
+    registerCleanup: (cleanup: () => Promise<void>) => {
+      const existing = deps.cleanupHandlers.get(backendPlugin.pluginId) || [];
+      existing.push(cleanup);
+      deps.cleanupHandlers.set(backendPlugin.pluginId, existing);
+      rootLogger.debug(
+        `   -> Registered cleanup handler for ${backendPlugin.pluginId}`
+      );
     },
     pluginManager: {
       getAllPermissions: () => deps.getAllPermissions(),
@@ -291,12 +303,27 @@ export async function loadPlugins({
     }
   }
 
+  // Emit pluginInitialized hooks for all plugins after Phase 2 completes
+  // (EventBus is now available)
+  const eventBus = await deps.registry.get(coreServices.eventBus, "core");
+  for (const p of pendingInits) {
+    try {
+      await eventBus.emit(coreHooks.pluginInitialized, {
+        pluginId: p.pluginId,
+      });
+    } catch (error) {
+      rootLogger.error(
+        `Failed to emit pluginInitialized hook for ${p.pluginId}:`,
+        error
+      );
+    }
+  }
+
   // Phase 3: Run afterPluginsReady callbacks
   rootLogger.debug("🔄 Running afterPluginsReady callbacks...");
 
   // Emit permission registration hooks at start of Phase 3
-  // (EventBus is now available, all plugins can receive notifications)
-  const eventBus = await deps.registry.get(coreServices.eventBus, "core");
+  // (EventBus already retrieved above, all plugins can receive notifications)
   const permissionsByPlugin = new Map<string, Permission[]>();
   for (const perm of deps.registeredPermissions) {
     if (!permissionsByPlugin.has(perm.pluginId)) {

@@ -18,6 +18,7 @@ import {
   SignalServiceImpl,
   type WebSocketData,
 } from "@checkmate/signal-backend";
+import { createPluginAdminRouter } from "./plugin-manager/plugin-admin-router";
 
 import { cors } from "hono/cors";
 
@@ -115,33 +116,6 @@ const init = async () => {
   );
   pluginManager.registerService(coreServices.queueManager, queueManager);
 
-  // Endpoint to install a new plugin
-  app.post("/api/plugins/install", async (c) => {
-    const { packageName } = await c.req.json();
-    if (!packageName) return c.json({ error: "packageName is required" }, 400);
-
-    try {
-      const result = await installer.install(packageName);
-
-      // Register in DB
-      await db
-        .insert(plugins)
-        .values({
-          name: result.name,
-          path: result.path,
-          enabled: true,
-        })
-        .onConflictDoUpdate({
-          target: [plugins.name],
-          set: { path: result.path, enabled: true },
-        });
-
-      return c.json({ success: true, plugin: result });
-    } catch (error) {
-      return c.json({ error: String(error) }, 500);
-    }
-  });
-
   // Serve static assets for runtime plugins
   // e.g. /assets/plugins/my-plugin/index.js -> runtime_plugins/node_modules/my-plugin/dist/index.js
   app.use("/assets/plugins/:pluginName/*", async (c, next) => {
@@ -167,14 +141,25 @@ const init = async () => {
   // 3. Load Plugins
   await pluginManager.loadPlugins(app);
 
-  // 4. Load Queue Configuration AFTER plugins (queue plugins register first)
+  // 4. Register plugin admin router (core admin endpoints)
+  const pluginAdminRouter = createPluginAdminRouter({
+    pluginManager,
+    installer,
+  });
+  // Register as core router - available at /api/core/
+  pluginManager.registerCoreRouter("core", pluginAdminRouter);
+
+  // 5. Setup lifecycle listeners for multi-instance coordination
+  await pluginManager.setupLifecycleListeners();
+
+  // 6. Load Queue Configuration AFTER plugins (queue plugins register first)
   rootLogger.info("📋 Loading queue configuration...");
   await queueManager.loadConfiguration();
 
-  // 5. Start config polling for multi-instance coordination
+  // 7. Start config polling for multi-instance coordination
   queueManager.startPolling(5000);
 
-  // 6. Initialize Signal Service (requires EventBus which is registered during plugin loading)
+  // 8. Initialize Signal Service (requires EventBus which is registered during plugin loading)
   rootLogger.debug("Initializing signal service...");
   const eventBus = await pluginManager.getService(coreServices.eventBus);
   if (!eventBus) {
@@ -186,7 +171,7 @@ const init = async () => {
   );
   pluginManager.registerService(coreServices.signalService, signalService);
 
-  // 7. Create WebSocket handler for realtime signals
+  // 9. Create WebSocket handler for realtime signals
   wsHandler = createWebSocketHandler({
     eventBus,
     logger: rootLogger.child({ service: "WebSocket" }),

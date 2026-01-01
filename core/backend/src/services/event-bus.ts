@@ -18,6 +18,13 @@ interface ListenerRegistration {
   mode: "broadcast" | "work-queue";
 }
 
+interface LocalListenerRegistration {
+  id: string;
+  pluginId: string;
+  hookId: string;
+  listener: HookListener<unknown>;
+}
+
 /**
  * EventBus service for distributed event/hook system
  *
@@ -27,6 +34,7 @@ interface ListenerRegistration {
 export class EventBus implements IEventBus {
   private queueChannels = new Map<string, Queue<unknown>>();
   private listeners = new Map<string, ListenerRegistration[]>();
+  private localListeners = new Map<string, LocalListenerRegistration[]>();
   private workerGroups = new Map<string, Set<string>>(); // pluginId -> Set<workerGroup>
   private instanceId = crypto.randomUUID();
 
@@ -45,7 +53,12 @@ export class EventBus implements IEventBus {
     const mode = options.mode ?? "broadcast";
     const workerGroup =
       "workerGroup" in options ? options.workerGroup : undefined;
-    const maxRetries = options.maxRetries ?? 3;
+    const maxRetries = "maxRetries" in options ? options.maxRetries ?? 3 : 3;
+
+    // Handle instance-local mode separately (no queue involvement)
+    if (mode === "instance-local") {
+      return this.subscribeLocal(pluginId, hook, listener);
+    }
 
     // Validation: workerGroup required for work-queue mode
     if (mode === "work-queue" && !workerGroup) {
@@ -185,6 +198,90 @@ export class EventBus implements IEventBus {
 
     await channel.enqueue(payload);
     this.logger.debug(`Emitted hook: ${hook.id}`);
+  }
+
+  /**
+   * Emit a hook locally only (not distributed).
+   * Use this for instance-local hooks like pluginDeregistering.
+   * Uses Promise.allSettled to ensure one listener error doesn't block others.
+   */
+  async emitLocal<T>(hook: Hook<T>, payload: T): Promise<void> {
+    const registrations = this.localListeners.get(hook.id) || [];
+
+    if (registrations.length === 0) {
+      this.logger.debug(`No local listeners for hook: ${hook.id}`);
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      registrations.map(async (reg) => {
+        try {
+          await reg.listener(payload);
+          this.logger.debug(
+            `Local listener ${reg.id} (${reg.pluginId}) processed successfully`
+          );
+        } catch (error) {
+          this.logger.error(
+            `Local listener ${reg.id} (${reg.pluginId}) failed:`,
+            error
+          );
+          throw error;
+        }
+      })
+    );
+
+    const failures = results.filter((r) => r.status === "rejected");
+    if (failures.length > 0) {
+      this.logger.warn(
+        `${failures.length}/${registrations.length} local listeners failed for hook: ${hook.id}`
+      );
+    }
+
+    this.logger.debug(
+      `Emitted local hook: ${hook.id} (${registrations.length} listeners)`
+    );
+  }
+
+  /**
+   * Subscribe to a hook in instance-local mode (not distributed)
+   */
+  private async subscribeLocal<T>(
+    pluginId: string,
+    hook: Hook<T>,
+    listener: HookListener<T>
+  ): Promise<HookUnsubscribe> {
+    const listenerId = crypto.randomUUID();
+
+    const registration: LocalListenerRegistration = {
+      id: listenerId,
+      pluginId,
+      hookId: hook.id,
+      listener: listener as HookListener<unknown>,
+    };
+
+    const registrations = this.localListeners.get(hook.id) || [];
+    registrations.push(registration);
+    this.localListeners.set(hook.id, registrations);
+
+    this.logger.debug(
+      `Subscribed to local hook ${hook.id} (plugin: ${pluginId})`
+    );
+
+    // Return unsubscribe function
+    return async () => {
+      const current = this.localListeners.get(hook.id) || [];
+      const updated = current.filter((l) => l.id !== listenerId);
+
+      if (updated.length === 0) {
+        this.localListeners.delete(hook.id);
+      } else {
+        this.localListeners.set(hook.id, updated);
+      }
+
+      this.logger.debug(
+        `Unsubscribed local listener ${listenerId} from hook ${hook.id}`
+      );
+    };
   }
 
   /**

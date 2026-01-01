@@ -69,6 +69,11 @@ export type BackendPluginRegistry = {
   getExtensionPoint: <T>(ref: ExtensionPoint<T>) => T;
   registerPermissions: (permissions: Permission[]) => void;
   registerRouter: (router: unknown) => void;
+  /**
+   * Register cleanup logic to be called when the plugin is deregistered.
+   * Multiple cleanup handlers can be registered; they run in LIFO order.
+   */
+  registerCleanup: (cleanup: () => Promise<void>) => void;
   pluginManager: {
     getAllPermissions: () => { id: string; description?: string }[];
   };

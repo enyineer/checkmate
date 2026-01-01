@@ -287,6 +287,150 @@ env.registerInit({
 });
 ```
 
+## Hooks and Events
+
+The platform provides a distributed hook/event system for cross-plugin communication. Hooks are delivered via the queue system for reliable multi-instance support.
+
+### Hook Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `broadcast` (default) | All instances receive and process | UI updates, config changes |
+| `work-queue` | Only one instance processes (load-balanced) | DB writes, external API calls |
+| `instance-local` | In-memory only, not distributed | Cleanup hooks, shutdown |
+
+### Subscribing to Hooks
+
+```typescript
+afterPluginsReady: async ({ onHook }) => {
+  // Broadcast mode (default) - all instances receive
+  onHook(coreHooks.configUpdated, async ({ pluginId, key, value }) => {
+    // Handle config change
+  });
+
+  // Work-queue mode - only one instance handles
+  onHook(
+    coreHooks.permissionsRegistered,
+    async ({ pluginId, permissions }) => {
+      // Sync to database
+    },
+    {
+      mode: "work-queue",
+      workerGroup: "permission-sync", // Namespaced automatically
+      maxRetries: 5,
+    }
+  );
+
+  // Instance-local mode - not distributed
+  onHook(
+    coreHooks.pluginDeregistering,
+    async ({ pluginId, reason }) => {
+      // Cleanup local resources
+    },
+    { mode: "instance-local" }
+  );
+}
+```
+
+### Emitting Hooks
+
+```typescript
+afterPluginsReady: async ({ emitHook }) => {
+  // Regular emit (distributed via queue)
+  await emitHook(coreHooks.configUpdated, {
+    pluginId: "my-plugin",
+    key: "apiKey",
+    value: "new-value",
+  });
+}
+```
+
+### Core Hooks Reference
+
+| Hook | Payload | Description |
+|------|---------|-------------|
+| `permissionsRegistered` | `{ pluginId, permissions }` | Plugin registered permissions |
+| `configUpdated` | `{ pluginId, key, value }` | Configuration changed |
+| `pluginInitialized` | `{ pluginId }` | Plugin completed init (Phase 2) |
+| **Installation** | | |
+| `pluginInstallationRequested` | `{ pluginId, pluginPath }` | Installation broadcast |
+| `pluginInstalling` | `{ pluginId }` | **LOCAL**: Loading on THIS instance |
+| `pluginInstalled` | `{ pluginId }` | Plugin fully loaded |
+| **Deregistration** | | |
+| `pluginDeregistrationRequested` | `{ pluginId, deleteSchema }` | Deregistration broadcast |
+| `pluginDeregistering` | `{ pluginId, reason }` | **LOCAL**: Cleanup on THIS instance |
+| `pluginDeregistered` | `{ pluginId }` | Plugin fully removed |
+| **Lifecycle** | | |
+| `platformShutdown` | `{ reason }` | Platform shutting down |
+
+### Multi-Instance Installation Flow
+
+When a plugin is installed at runtime in a multi-instance setup:
+
+```mermaid
+sequenceDiagram
+    participant API as Instance A (API)
+    participant FS as Shared Filesystem
+    participant Q as Queue (Broadcast)
+    participant B as Instance B
+
+    API->>FS: 1. npm install plugin
+    API->>API: 2. Set DB enabled=true
+    API->>Q: 3. Emit pluginInstallationRequested (broadcast)
+    Q-->>API: 4a. Receives broadcast
+    Q-->>B: 4b. Receives broadcast
+    
+    par Each instance locally
+        API->>API: 5a. emitLocal pluginInstalling
+        API->>API: 6a. Load plugin into memory
+        B->>B: 5b. emitLocal pluginInstalling
+        B->>B: 6b. Load plugin into memory
+    end
+    
+    API->>Q: 7. Emit pluginInstalled (work-queue)
+    Note over Q: Only ONE instance handles DB sync
+```
+
+### Multi-Instance Deregistration Flow
+
+When a plugin is deregistered in a multi-instance setup:
+
+```mermaid
+sequenceDiagram
+    participant API as Instance A (API)
+    participant Q as Queue (Broadcast)
+    participant B as Instance B
+
+    API->>API: 1. Set DB enabled=false
+    API->>Q: 2. Emit pluginDeregistrationRequested (broadcast)
+    Q-->>API: 3a. Receives broadcast
+    Q-->>B: 3b. Receives broadcast
+    
+    par Each instance locally
+        API->>API: 4a. emitLocal pluginDeregistering
+        API->>API: 5a. Run cleanup handlers
+        B->>B: 4b. emitLocal pluginDeregistering
+        B->>B: 5b. Run cleanup handlers
+    end
+    
+    API->>Q: 6. Emit pluginDeregistered (work-queue)
+    Note over Q: Only ONE instance handles DB cleanup
+```
+
+### Registering Cleanup Handlers
+
+Plugins can register cleanup logic that runs when deregistered:
+
+```typescript
+register: (env) => {
+  // Register cleanup handler (runs LIFO on deregistration)
+  env.registerCleanup(async () => {
+    // Cancel recurring jobs, close connections, etc.
+    await myQueue.cancelRecurring("my-job");
+  });
+}
+```
+
 #### `env.registerService<S>(ref: ServiceRef<S>, impl: S)`
 
 Register a service that other plugins can use.

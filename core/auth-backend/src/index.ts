@@ -642,6 +642,46 @@ export default createBackendPlugin({
           }
         );
 
+        // Subscribe to plugin deregistered hook for permission cleanup
+        // When a plugin is removed at runtime, delete its permissions from DB
+        onHook(
+          coreHooks.pluginDeregistered,
+          async ({ pluginId }) => {
+            logger.debug(
+              `[auth-backend] Cleaning up permissions for deregistered plugin: ${pluginId}`
+            );
+
+            // Delete all permissions with this plugin's prefix
+            const allDbPermissions = await database
+              .select()
+              .from(schema.permission);
+            const pluginPermissions = allDbPermissions.filter((p) =>
+              p.id.startsWith(`${pluginId}.`)
+            );
+
+            for (const perm of pluginPermissions) {
+              // Delete role_permission entries first
+              await database
+                .delete(schema.rolePermission)
+                .where(eq(schema.rolePermission.permissionId, perm.id));
+              // Then delete the permission itself
+              await database
+                .delete(schema.permission)
+                .where(eq(schema.permission.id, perm.id));
+              logger.debug(`   -> Removed permission: ${perm.id}`);
+            }
+
+            logger.debug(
+              `[auth-backend] Cleaned up ${pluginPermissions.length} permissions for ${pluginId}`
+            );
+          },
+          {
+            mode: "work-queue",
+            workerGroup: "permission-cleanup",
+            maxRetries: 3,
+          }
+        );
+
         logger.debug("✅ Auth Backend afterPluginsReady complete.");
       },
     });
