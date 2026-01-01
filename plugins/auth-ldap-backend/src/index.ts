@@ -11,8 +11,6 @@ import {
 import type { AuthClient } from "@checkmate/auth-common";
 import { z } from "zod";
 import { Client as LdapClient } from "ldapts";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { sql } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 
 // LDAP Configuration Schema V1
@@ -206,11 +204,13 @@ export default createBackendPlugin({
         rpc: coreServices.rpc,
         logger: coreServices.logger,
         config: coreServices.config,
-        database: coreServices.database,
         rpcClient: coreServices.rpcClient,
       },
-      init: async ({ rpc, logger, config, database, rpcClient }) => {
+      init: async ({ rpc, logger, config, rpcClient }) => {
         logger.debug("[auth-ldap-backend] Initializing LDAP authentication...");
+
+        // Create auth client once for reuse
+        const authClient = rpcClient.forPlugin<AuthClient>("auth-backend");
 
         // Helper function to authenticate against LDAP
         const authenticateLdap = async (
@@ -332,7 +332,7 @@ export default createBackendPlugin({
           }
         };
 
-        // Helper function to create or update user in database
+        // Helper function to create or update user via RPC
         const syncUser = async (
           username: string,
           ldapAttributes: Record<string, unknown>
@@ -365,78 +365,32 @@ export default createBackendPlugin({
             name = username;
           }
 
-          // Use raw SQL to access auth-backend schema tables
-          // Check if user exists by email
-          const existingUsers = await (
-            database as NodePgDatabase<Record<string, unknown>>
-          ).execute(
-            sql`SELECT id FROM plugin_auth_backend."user" WHERE email = ${email}`
-          );
-
-          let userId: string;
-
-          if (existingUsers.rows && existingUsers.rows.length > 0) {
-            // User exists - update if autoUpdateUsers is enabled
-            userId = (existingUsers.rows[0] as Record<string, string>).id;
-
-            if (ldapConfig.autoUpdateUsers) {
-              await (
-                database as NodePgDatabase<Record<string, unknown>>
-              ).execute(
-                sql`
-                  UPDATE plugin_auth_backend."user" 
-                  SET name = ${name}, updated_at = NOW() 
-                  WHERE id = ${userId}
-                `
-              );
-              logger.debug(`Updated LDAP user: ${email}`);
-            }
-          } else {
-            // Create new user
-            if (!ldapConfig.autoCreateUsers) {
+          // Check if auto-creation is disabled and user doesn't exist
+          if (!ldapConfig.autoCreateUsers) {
+            const existingUser = await authClient.findUserByEmail({ email });
+            if (!existingUser) {
               throw new Error(
                 "User does not exist and auto-creation is disabled"
               );
             }
+          }
 
-            // Check platform registration setting via typed RPC client
-            try {
-              const authClient =
-                rpcClient.forPlugin<AuthClient>("auth-backend");
-              const { allowRegistration } =
-                await authClient.getRegistrationStatus();
-              if (!allowRegistration) {
-                throw new Error(
-                  "Registration is disabled. Please contact an administrator."
-                );
-              }
-            } catch (error) {
-              logger.warn("Failed to check registration status:", error);
-              // Allow user creation if registration check fails to avoid blocking existing workflows
-            }
+          // Use RPC to upsert user (handles registration check, user/account creation)
+          const hashedPassword = await hashPassword(crypto.randomUUID()); // Random password, won't be used
 
-            userId = crypto.randomUUID();
-            await (database as NodePgDatabase<Record<string, unknown>>).execute(
-              sql`
-                INSERT INTO plugin_auth_backend."user" 
-                (id, email, name, email_verified, created_at, updated_at)
-                VALUES (${userId}, ${email}, ${name}, false, NOW(), NOW())
-              `
-            );
+          const { userId, created } = await authClient.upsertExternalUser({
+            email,
+            name,
+            providerId: "ldap",
+            accountId: username,
+            password: hashedPassword,
+            autoUpdateUser: ldapConfig.autoUpdateUsers,
+          });
 
-            // Create LDAP account entry
-            const accountId = crypto.randomUUID();
-            const hashedPassword = await hashPassword(crypto.randomUUID()); // Random password, won't be used
-
-            await (database as NodePgDatabase<Record<string, unknown>>).execute(
-              sql`
-                INSERT INTO plugin_auth_backend."account" 
-                (id, account_id, provider_id, user_id, password, created_at, updated_at)
-                VALUES (${accountId}, ${username}, 'ldap', ${userId}, ${hashedPassword}, NOW(), NOW())
-              `
-            );
-
+          if (created) {
             logger.info(`Created new user from LDAP: ${email}`);
+          } else if (ldapConfig.autoUpdateUsers) {
+            logger.debug(`Updated LDAP user: ${email}`);
           }
 
           return { userId, email, name };
@@ -471,20 +425,15 @@ export default createBackendPlugin({
                 authResult.userAttributes!
               );
 
-              // Create better-auth session manually
-              const sessionId = crypto.randomUUID();
+              // Create session via RPC
               const sessionToken = crypto.randomUUID();
               const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-              await (
-                database as NodePgDatabase<Record<string, unknown>>
-              ).execute(
-                sql`
-                  INSERT INTO plugin_auth_backend."session" 
-                  (id, user_id, token, expires_at, created_at, updated_at)
-                  VALUES (${sessionId}, ${userId}, ${sessionToken}, ${expiresAt}, NOW(), NOW())
-                `
-              );
+              await authClient.createSession({
+                userId,
+                token: sessionToken,
+                expiresAt,
+              });
 
               logger.info(`Created session for LDAP user: ${email}`);
 

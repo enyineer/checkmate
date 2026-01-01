@@ -52,6 +52,40 @@ const RegistrationStatusSchema = z.object({
   allowRegistration: z.boolean(),
 });
 
+// ==========================================================================
+// SERVICE-TO-SERVICE SCHEMAS (for auth provider plugins like LDAP)
+// ==========================================================================
+
+const FindUserByEmailInputSchema = z.object({
+  email: z.string().email(),
+});
+
+const FindUserByEmailOutputSchema = z
+  .object({
+    id: z.string(),
+  })
+  .optional();
+
+const UpsertExternalUserInputSchema = z.object({
+  email: z.string().email(),
+  name: z.string(),
+  providerId: z.string(), // e.g., "ldap"
+  accountId: z.string(), // Provider-specific account ID (e.g., LDAP username)
+  password: z.string(), // Hashed password
+  autoUpdateUser: z.boolean().optional(), // Update existing user's name
+});
+
+const UpsertExternalUserOutputSchema = z.object({
+  userId: z.string(),
+  created: z.boolean(), // true if new user was created, false if existing
+});
+
+const CreateSessionInputSchema = z.object({
+  userId: z.string(),
+  token: z.string(),
+  expiresAt: z.coerce.date(),
+});
+
 // Auth RPC Contract with full metadata
 export const authContract = {
   // ==========================================================================
@@ -191,6 +225,34 @@ export const authContract = {
   getAnonymousPermissions: _base
     .meta({ userType: "service" })
     .output(z.array(z.string())),
+
+  /**
+   * Find a user by email address.
+   * Used by external auth providers (e.g., LDAP) to check if a user exists.
+   */
+  findUserByEmail: _base
+    .meta({ userType: "service" })
+    .input(FindUserByEmailInputSchema)
+    .output(FindUserByEmailOutputSchema),
+
+  /**
+   * Upsert a user from an external auth provider.
+   * Creates user + account if new, or updates user if autoUpdateUser is true.
+   * Used by external auth providers (e.g., LDAP) to sync users.
+   */
+  upsertExternalUser: _base
+    .meta({ userType: "service" })
+    .input(UpsertExternalUserInputSchema)
+    .output(UpsertExternalUserOutputSchema),
+
+  /**
+   * Create a session for a user.
+   * Used by external auth providers (e.g., LDAP) after successful authentication.
+   */
+  createSession: _base
+    .meta({ userType: "service" })
+    .input(CreateSessionInputSchema)
+    .output(z.object({ sessionId: z.string() })),
 };
 
 // Export contract type for frontend

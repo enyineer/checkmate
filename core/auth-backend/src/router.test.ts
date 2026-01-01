@@ -229,4 +229,123 @@ describe("Auth Router", () => {
       { allowRegistration: false }
     );
   });
+
+  // ==========================================================================
+  // SERVICE-TO-SERVICE TESTS
+  // ==========================================================================
+
+  const mockServiceUser = {
+    type: "service" as const,
+    pluginId: "auth-ldap-backend",
+  } as any;
+
+  it("findUserByEmail returns user when found", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "user-123" }])),
+    }));
+
+    const result = await call(
+      router.findUserByEmail,
+      { email: "test@example.com" },
+      { context }
+    );
+    expect(result).toEqual({ id: "user-123" });
+  });
+
+  it("findUserByEmail returns undefined when not found", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])),
+    }));
+
+    const result = await call(
+      router.findUserByEmail,
+      { email: "nonexistent@example.com" },
+      { context }
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it("upsertExternalUser creates new user and account", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock user not found (empty result)
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])),
+    }));
+
+    // Mock registration allowed
+    mockConfigService.get.mockResolvedValueOnce({ allowRegistration: true });
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "ldap-user@example.com",
+        name: "LDAP User",
+        providerId: "ldap",
+        accountId: "ldapuser",
+        password: "hashed-password",
+      },
+      { context }
+    );
+
+    expect(result.created).toBe(true);
+    expect(result.userId).toBeDefined();
+    expect(mockDb.transaction).toHaveBeenCalled();
+  });
+
+  it("upsertExternalUser updates existing user when autoUpdateUser is true", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock existing user found
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "existing-user-id" }])),
+    }));
+
+    // Mock update chain
+    mockDb.update = mock(() => ({
+      set: mock(() => ({
+        where: mock(() => Promise.resolve()),
+      })),
+    }));
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "existing@example.com",
+        name: "Updated Name",
+        providerId: "ldap",
+        accountId: "existinguser",
+        password: "hashed-password",
+        autoUpdateUser: true,
+      },
+      { context }
+    );
+
+    expect(result.created).toBe(false);
+    expect(result.userId).toBe("existing-user-id");
+    expect(mockDb.update).toHaveBeenCalled();
+  });
+
+  it("createSession creates session record", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const result = await call(
+      router.createSession,
+      {
+        userId: "user-123",
+        token: "session-token",
+        expiresAt,
+      },
+      { context }
+    );
+
+    expect(result.sessionId).toBeDefined();
+    expect(mockDb.insert).toHaveBeenCalled();
+  });
 });

@@ -574,6 +574,105 @@ export const createAuthRouter = (
     }
   );
 
+  // ==========================================================================
+  // SERVICE-TO-SERVICE ENDPOINTS (for external auth providers like LDAP)
+  // ==========================================================================
+
+  const findUserByEmail = os.findUserByEmail.handler(async ({ input }) => {
+    const users = await internalDb
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.email, input.email))
+      .limit(1);
+
+    return users.length > 0 ? { id: users[0].id } : undefined;
+  });
+
+  const upsertExternalUser = os.upsertExternalUser.handler(
+    async ({ input, context }) => {
+      const { email, name, providerId, accountId, password, autoUpdateUser } =
+        input;
+
+      // Check if user exists
+      const existingUsers = await internalDb
+        .select({ id: schema.user.id })
+        .from(schema.user)
+        .where(eq(schema.user.email, email))
+        .limit(1);
+
+      if (existingUsers.length > 0) {
+        // User exists - update if autoUpdateUser is enabled
+        const userId = existingUsers[0].id;
+
+        if (autoUpdateUser) {
+          await internalDb
+            .update(schema.user)
+            .set({ name, updatedAt: new Date() })
+            .where(eq(schema.user.id, userId));
+        }
+
+        return { userId, created: false };
+      }
+
+      // Check if registration is allowed before creating new user
+      const registrationAllowed = await isRegistrationAllowed(configService);
+      if (!registrationAllowed) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "Registration is disabled. Please contact an administrator.",
+        });
+      }
+
+      // Create new user and account in a transaction
+      const userId = crypto.randomUUID();
+      const accountEntryId = crypto.randomUUID();
+      const now = new Date();
+
+      await internalDb.transaction(async (tx) => {
+        // Create user
+        await tx.insert(schema.user).values({
+          id: userId,
+          email,
+          name,
+          emailVerified: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        // Create account
+        await tx.insert(schema.account).values({
+          id: accountEntryId,
+          accountId,
+          providerId,
+          userId,
+          password,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      context.logger.info(`Created new user from ${providerId}: ${email}`);
+
+      return { userId, created: true };
+    }
+  );
+
+  const createSession = os.createSession.handler(async ({ input }) => {
+    const { userId, token, expiresAt } = input;
+    const sessionId = crypto.randomUUID();
+    const now = new Date();
+
+    await internalDb.insert(schema.session).values({
+      id: sessionId,
+      userId,
+      token,
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { sessionId };
+  });
+
   return os.router({
     getEnabledStrategies,
     permissions,
@@ -592,6 +691,9 @@ export const createAuthRouter = (
     getRegistrationStatus,
     setRegistrationStatus,
     getAnonymousPermissions,
+    findUserByEmail,
+    upsertExternalUser,
+    createSession,
   });
 };
 
