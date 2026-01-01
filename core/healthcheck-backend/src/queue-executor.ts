@@ -204,9 +204,10 @@ export async function bootstrapHealthChecks(props: {
     .select({
       systemId: healthCheckRuns.systemId,
       configurationId: healthCheckRuns.configurationId,
-      maxTimestamp: sql<Date>`MAX(${healthCheckRuns.timestamp})`.as(
-        "max_timestamp"
-      ),
+      maxTimestamp: sql<Date>`MAX(${healthCheckRuns.timestamp})`
+        // eslint-disable-next-line unicorn/no-null
+        .mapWith((v) => (v ? new Date(v) : null))
+        .as("max_timestamp"),
     })
     .from(healthCheckRuns)
     .groupBy(healthCheckRuns.systemId, healthCheckRuns.configurationId)
@@ -237,7 +238,7 @@ export async function bootstrapHealthChecks(props: {
   logger.debug(`Bootstrapping ${enabledChecks.length} health checks`);
 
   for (const check of enabledChecks) {
-    // Calculate delta for first run
+    // Calculate delay for first run based on time since last run
     let startDelay = 0;
     if (check.lastRun) {
       const elapsedSeconds = Math.floor(
