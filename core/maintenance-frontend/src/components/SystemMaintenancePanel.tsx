@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useApi, type SlotContext } from "@checkmate/frontend-api";
+import { resolveRoute } from "@checkmate/common";
 import { SystemDetailsSlot } from "@checkmate/catalog-common";
 import { maintenanceApiRef } from "../api";
+import { maintenanceRoutes } from "@checkmate/maintenance-common";
 import type { MaintenanceWithSystems } from "@checkmate/maintenance-common";
 import {
   Card,
@@ -10,8 +13,9 @@ import {
   CardContent,
   Badge,
   LoadingSpinner,
+  Button,
 } from "@checkmate/ui";
-import { Wrench, Clock, Calendar } from "lucide-react";
+import { Wrench, Clock, Calendar, History, ChevronRight } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
 type Props = SlotContext<typeof SystemDetailsSlot>;
@@ -67,21 +71,39 @@ export const SystemMaintenancePanel: React.FC<Props> = ({ system }) => {
   return (
     <Card className="border-warning/30 bg-warning/5">
       <CardHeader className="border-b border-border bg-warning/10">
-        <div className="flex items-center gap-2">
-          <Wrench className="h-5 w-5 text-warning" />
-          <CardTitle className="text-lg font-semibold">
-            Planned Maintenance
-          </CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wrench className="h-5 w-5 text-warning" />
+            <CardTitle className="text-lg font-semibold">
+              Planned Maintenance
+            </CardTitle>
+          </div>
+          <Button variant="ghost" size="sm" asChild>
+            <Link
+              to={resolveRoute(maintenanceRoutes.routes.systemHistory, {
+                systemId: system.id,
+              })}
+            >
+              <History className="h-4 w-4 mr-1" />
+              View History
+            </Link>
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="p-4 space-y-3">
         {maintenances.map((m) => (
-          <div
+          <Link
             key={m.id}
-            className="p-3 rounded-lg border border-border bg-background"
+            to={resolveRoute(maintenanceRoutes.routes.detail, {
+              maintenanceId: m.id,
+            })}
+            className="block p-3 rounded-lg border border-border bg-background hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-start justify-between mb-2">
-              <h4 className="font-medium text-foreground">{m.title}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium text-foreground">{m.title}</h4>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
               {getStatusBadge(m.status)}
             </div>
             {m.description && (
@@ -107,7 +129,7 @@ export const SystemMaintenancePanel: React.FC<Props> = ({ system }) => {
                 </span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </CardContent>
     </Card>

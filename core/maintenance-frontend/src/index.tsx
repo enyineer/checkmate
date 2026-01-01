@@ -9,6 +9,8 @@ import { maintenanceApiRef, type MaintenanceApi } from "./api";
 import { maintenanceRoutes } from "@checkmate/maintenance-common";
 import { SystemDetailsTopSlot } from "@checkmate/catalog-common";
 import { MaintenanceConfigPage } from "./pages/MaintenanceConfigPage";
+import { SystemMaintenanceHistoryPage } from "./pages/SystemMaintenanceHistoryPage";
+import { MaintenanceDetailPage } from "./pages/MaintenanceDetailPage";
 import { SystemMaintenancePanel } from "./components/SystemMaintenancePanel";
 import { MaintenanceMenuItems } from "./components/MaintenanceMenuItems";
 
@@ -20,6 +22,16 @@ export default createFrontendPlugin({
       element: <MaintenanceConfigPage />,
       title: "Maintenances",
       permission: "maintenance-backend.maintenance.manage",
+    },
+    {
+      route: maintenanceRoutes.routes.systemHistory,
+      element: <SystemMaintenanceHistoryPage />,
+      title: "System Maintenance History",
+    },
+    {
+      route: maintenanceRoutes.routes.detail,
+      element: <MaintenanceDetailPage />,
+      title: "Maintenance Details",
     },
   ],
   apis: [

@@ -26,4 +26,6 @@ import { createRoutes } from "@checkmate/common";
  */
 export const maintenanceRoutes = createRoutes("maintenance", {
   config: "/config",
+  systemHistory: "/system/:systemId/history",
+  detail: "/:maintenanceId",
 });
