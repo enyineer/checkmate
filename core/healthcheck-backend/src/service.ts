@@ -2,18 +2,40 @@ import {
   HealthCheckConfiguration,
   CreateHealthCheckConfiguration,
   UpdateHealthCheckConfiguration,
+  StateThresholds,
+  HealthCheckStatus,
 } from "@checkmate/healthcheck-common";
 import {
   healthCheckConfigurations,
   systemHealthChecks,
   healthCheckRuns,
+  VersionedStateThresholds,
 } from "./schema";
 import * as schema from "./schema";
 import { eq, and, InferSelectModel, desc } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { evaluateHealthStatus } from "./state-evaluator";
+import {
+  STATE_THRESHOLDS_VERSION,
+  migrateStateThresholds,
+} from "./state-thresholds-migrations";
 
 // Drizzle type helper
 type Db = NodePgDatabase<typeof schema>;
+
+interface SystemCheckStatus {
+  configurationId: string;
+  configurationName: string;
+  status: HealthCheckStatus;
+  runsConsidered: number;
+  lastRunAt?: Date;
+}
+
+interface SystemHealthStatusResponse {
+  status: HealthCheckStatus;
+  evaluatedAt: Date;
+  checkStatuses: SystemCheckStatus[];
+}
 
 export class HealthCheckService {
   constructor(private db: Db) {}
@@ -70,24 +92,43 @@ export class HealthCheckService {
     return configs.map((c) => this.mapConfig(c));
   }
 
-  async associateSystem(
-    systemId: string,
-    configurationId: string,
-    enabled = true
-  ) {
+  async associateSystem(props: {
+    systemId: string;
+    configurationId: string;
+    enabled?: boolean;
+    stateThresholds?: StateThresholds;
+  }) {
+    const {
+      systemId,
+      configurationId,
+      enabled = true,
+      stateThresholds,
+    } = props;
+
+    // Wrap thresholds in versioned config if provided
+    const versionedThresholds: VersionedStateThresholds | undefined =
+      stateThresholds
+        ? { version: STATE_THRESHOLDS_VERSION, data: stateThresholds }
+        : undefined;
+
     await this.db
       .insert(systemHealthChecks)
       .values({
         systemId,
         configurationId,
         enabled,
+        stateThresholds: versionedThresholds,
       })
       .onConflictDoUpdate({
         target: [
           systemHealthChecks.systemId,
           systemHealthChecks.configurationId,
         ],
-        set: { enabled },
+        set: {
+          enabled,
+          stateThresholds: versionedThresholds,
+          updatedAt: new Date(),
+        },
       });
   }
 
@@ -117,6 +158,100 @@ export class HealthCheckService {
       .where(eq(systemHealthChecks.systemId, systemId));
 
     return rows.map((r) => this.mapConfig(r.config));
+  }
+
+  /**
+   * Get the evaluated health status for a system based on configured thresholds.
+   * Aggregates status from all health check configurations for this system.
+   */
+  async getSystemHealthStatus(
+    systemId: string
+  ): Promise<SystemHealthStatusResponse> {
+    // Get all associations for this system with their thresholds and config names
+    const associations = await this.db
+      .select({
+        configurationId: systemHealthChecks.configurationId,
+        stateThresholds: systemHealthChecks.stateThresholds,
+        configName: healthCheckConfigurations.name,
+        enabled: systemHealthChecks.enabled,
+      })
+      .from(systemHealthChecks)
+      .innerJoin(
+        healthCheckConfigurations,
+        eq(systemHealthChecks.configurationId, healthCheckConfigurations.id)
+      )
+      .where(
+        and(
+          eq(systemHealthChecks.systemId, systemId),
+          eq(systemHealthChecks.enabled, true)
+        )
+      );
+
+    if (associations.length === 0) {
+      // No health checks configured - default healthy
+      return {
+        status: "healthy",
+        evaluatedAt: new Date(),
+        checkStatuses: [],
+      };
+    }
+
+    // For each association, get recent runs and evaluate status
+    const checkStatuses: SystemCheckStatus[] = [];
+    const maxWindowSize = 100; // Max configurable window size
+
+    for (const assoc of associations) {
+      const runs = await this.db
+        .select({
+          status: healthCheckRuns.status,
+          timestamp: healthCheckRuns.timestamp,
+        })
+        .from(healthCheckRuns)
+        .where(
+          and(
+            eq(healthCheckRuns.systemId, systemId),
+            eq(healthCheckRuns.configurationId, assoc.configurationId)
+          )
+        )
+        .orderBy(desc(healthCheckRuns.timestamp))
+        .limit(maxWindowSize);
+
+      // Extract and migrate thresholds from versioned config
+      let thresholds: StateThresholds | undefined;
+      if (assoc.stateThresholds) {
+        const migrated = await migrateStateThresholds(assoc.stateThresholds);
+        thresholds = migrated.data;
+      }
+
+      const status = evaluateHealthStatus({ runs, thresholds });
+
+      checkStatuses.push({
+        configurationId: assoc.configurationId,
+        configurationName: assoc.configName,
+        status,
+        runsConsidered: runs.length,
+        lastRunAt: runs[0]?.timestamp,
+      });
+    }
+
+    // Aggregate status: worst status wins (unhealthy > degraded > healthy)
+    let aggregateStatus: HealthCheckStatus = "healthy";
+    for (const cs of checkStatuses) {
+      if (cs.status === "unhealthy") {
+        aggregateStatus = "unhealthy";
+        break; // Can't get worse
+      }
+      if (cs.status === "degraded") {
+        aggregateStatus = "degraded";
+        // Don't break - keep looking for unhealthy
+      }
+    }
+
+    return {
+      status: aggregateStatus,
+      evaluatedAt: new Date(),
+      checkStatuses,
+    };
   }
 
   async getHistory(props: {

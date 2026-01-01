@@ -68,11 +68,12 @@ export const createHealthCheckRouter = (
 
     associateSystem: os.associateSystem.handler(async ({ input, context }) => {
       const service = new HealthCheckService(database);
-      await service.associateSystem(
-        input.systemId,
-        input.body.configurationId,
-        input.body.enabled
-      );
+      await service.associateSystem({
+        systemId: input.systemId,
+        configurationId: input.body.configurationId,
+        enabled: input.body.enabled,
+        stateThresholds: input.body.stateThresholds,
+      });
 
       // If enabling the health check, schedule it immediately
       if (input.body.enabled) {
@@ -111,6 +112,13 @@ export const createHealthCheckRouter = (
         timestamp: run.timestamp,
       }));
     }),
+
+    getSystemHealthStatus: os.getSystemHealthStatus.handler(
+      async ({ input }) => {
+        const service = new HealthCheckService(database);
+        return service.getSystemHealthStatus(input.systemId);
+      }
+    ),
   });
 };
 

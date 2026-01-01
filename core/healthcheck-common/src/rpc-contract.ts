@@ -10,10 +10,27 @@ import {
   UpdateHealthCheckConfigurationSchema,
   AssociateHealthCheckSchema,
   HealthCheckRunSchema,
+  HealthCheckStatusSchema,
 } from "./schemas";
 
 // Base builder with full metadata support
 const _base = oc.$meta<ProcedureMetadata>({});
+
+// --- Response Schemas for Evaluated Status ---
+
+const SystemCheckStatusSchema = z.object({
+  configurationId: z.string(),
+  configurationName: z.string(),
+  status: HealthCheckStatusSchema,
+  runsConsidered: z.number(),
+  lastRunAt: z.date().optional(),
+});
+
+const SystemHealthStatusResponseSchema = z.object({
+  status: HealthCheckStatusSchema,
+  evaluatedAt: z.date(),
+  checkStatuses: z.array(SystemCheckStatusSchema),
+});
 
 // Health Check RPC Contract using oRPC's contract-first pattern
 export const healthCheckContract = {
@@ -83,7 +100,7 @@ export const healthCheckContract = {
     .output(z.void()),
 
   // ==========================================================================
-  // HISTORY (userType: "user" with read permission)
+  // HISTORY & STATUS (userType: "user" with read permission)
   // ==========================================================================
 
   getHistory: _base
@@ -96,6 +113,15 @@ export const healthCheckContract = {
       })
     )
     .output(z.array(HealthCheckRunSchema)),
+
+  /**
+   * Get evaluateted health status for a system based on configured thresholds.
+   * Aggregates all health check statuses for the system.
+   */
+  getSystemHealthStatus: _base
+    .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
+    .input(z.object({ systemId: z.string() }))
+    .output(SystemHealthStatusResponseSchema),
 };
 
 // Export contract type for frontend

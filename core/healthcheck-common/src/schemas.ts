@@ -37,19 +37,6 @@ export type UpdateHealthCheckConfiguration = z.infer<
   typeof UpdateHealthCheckConfigurationSchema
 >;
 
-export const AssociateHealthCheckSchema = z.object({
-  configurationId: z.string().uuid(),
-  enabled: z.boolean().default(true),
-});
-
-export type AssociateHealthCheck = z.infer<typeof AssociateHealthCheckSchema>;
-
-export const GetHealthCheckHistoryQuerySchema = z.object({
-  systemId: z.string().uuid().optional(),
-  configurationId: z.string().uuid().optional(),
-  limit: z.number().optional(),
-});
-
 /**
  * Health check status enum - same as database enum.
  */
@@ -60,6 +47,84 @@ export const HealthCheckStatusSchema = z.enum([
 ]);
 
 export type HealthCheckStatus = z.infer<typeof HealthCheckStatusSchema>;
+
+// --- State Threshold Schemas ---
+
+/**
+ * Consecutive mode: evaluates based on sequential identical results.
+ * Good for stable systems where transient failures are rare.
+ */
+export const ConsecutiveThresholdsSchema = z.object({
+  mode: z.literal("consecutive"),
+  /** Minimum consecutive successes to transition to healthy */
+  healthy: z.object({
+    minSuccessCount: z.number().int().min(1).default(1),
+  }),
+  /** Minimum consecutive failures to transition to degraded */
+  degraded: z.object({
+    minFailureCount: z.number().int().min(1).default(2),
+  }),
+  /** Minimum consecutive failures to transition to unhealthy */
+  unhealthy: z.object({
+    minFailureCount: z.number().int().min(1).default(5),
+  }),
+});
+
+export type ConsecutiveThresholds = z.infer<typeof ConsecutiveThresholdsSchema>;
+
+/**
+ * Window mode: evaluates based on failure count within a sliding window.
+ * Better for flickering systems where failures are intermittent.
+ */
+export const WindowThresholdsSchema = z.object({
+  mode: z.literal("window"),
+  /** Number of recent runs to evaluate */
+  windowSize: z.number().int().min(3).max(100).default(10),
+  /** Minimum failures in window to transition to degraded */
+  degraded: z.object({
+    minFailureCount: z.number().int().min(1).default(3),
+  }),
+  /** Minimum failures in window to transition to unhealthy */
+  unhealthy: z.object({
+    minFailureCount: z.number().int().min(1).default(7),
+  }),
+});
+
+export type WindowThresholds = z.infer<typeof WindowThresholdsSchema>;
+
+/**
+ * Discriminated union of threshold modes
+ */
+export const StateThresholdsSchema = z.discriminatedUnion("mode", [
+  ConsecutiveThresholdsSchema,
+  WindowThresholdsSchema,
+]);
+
+export type StateThresholds = z.infer<typeof StateThresholdsSchema>;
+
+/**
+ * Default thresholds for backward compatibility
+ */
+export const DEFAULT_STATE_THRESHOLDS: StateThresholds = {
+  mode: "consecutive",
+  healthy: { minSuccessCount: 1 },
+  degraded: { minFailureCount: 2 },
+  unhealthy: { minFailureCount: 5 },
+};
+
+export const AssociateHealthCheckSchema = z.object({
+  configurationId: z.string().uuid(),
+  enabled: z.boolean().default(true),
+  stateThresholds: StateThresholdsSchema.optional(),
+});
+
+export type AssociateHealthCheck = z.infer<typeof AssociateHealthCheckSchema>;
+
+export const GetHealthCheckHistoryQuerySchema = z.object({
+  systemId: z.string().uuid().optional(),
+  configurationId: z.string().uuid().optional(),
+  limit: z.number().optional(),
+});
 
 export const HealthCheckRunSchema = z.object({
   id: z.string(),

@@ -9,6 +9,14 @@ import {
   primaryKey,
   pgEnum,
 } from "drizzle-orm/pg-core";
+import type { StateThresholds } from "@checkmate/healthcheck-common";
+import type { VersionedData } from "@checkmate/backend-api";
+
+/**
+ * Type alias for versioned state thresholds stored in the database.
+ * Uses VersionedData generic base for migration support.
+ */
+export type VersionedStateThresholds = VersionedData<StateThresholds>;
 
 /**
  * Health check status enum for type-safe status values.
@@ -44,6 +52,12 @@ export const systemHealthChecks = pgTable(
       .notNull()
       .references(() => healthCheckConfigurations.id, { onDelete: "cascade" }),
     enabled: boolean("enabled").default(true).notNull(),
+    /**
+     * State thresholds for evaluating health status.
+     * Versioned to allow schema evolution without migrations for existing rows.
+     */
+    stateThresholds:
+      jsonb("state_thresholds").$type<VersionedStateThresholds>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
