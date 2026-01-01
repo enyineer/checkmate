@@ -15,6 +15,7 @@
     "@checkmate/common": "workspace:*",
     "@checkmate/queue-api": "workspace:*",
     "@checkmate/signal-backend": "workspace:*",
+    "@checkmate/signal-common": "workspace:*",
     "@hono/zod-validator": "^0.7.6",
     "@orpc/client": "^1.13.2",
     "@orpc/openapi": "^1.13.2",

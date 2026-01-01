@@ -119,3 +119,29 @@ export interface SignalService {
     payload: T
   ): Promise<void>;
 }
+
+// =============================================================================
+// CORE PLUGIN LIFECYCLE SIGNALS
+// =============================================================================
+
+/**
+ * Broadcast to all frontends when a plugin has been fully installed on the backend.
+ * Frontends should dynamically load the plugin's UI assets.
+ */
+export const PLUGIN_INSTALLED = createSignal(
+  "core.plugin.installed",
+  z.object({
+    pluginId: z.string(),
+  })
+);
+
+/**
+ * Broadcast to all frontends when a plugin has been deregistered from the backend.
+ * Frontends should remove the plugin's extensions and routes.
+ */
+export const PLUGIN_DEREGISTERED = createSignal(
+  "core.plugin.deregistered",
+  z.object({
+    pluginId: z.string(),
+  })
+);

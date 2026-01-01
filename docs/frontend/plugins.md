@@ -1013,9 +1013,79 @@ apis: [
 - Automatic type inference
 - Compile-time contract validation
 
+## Dynamic Plugin Loading
+
+Frontend plugins can be loaded and unloaded at runtime without a page refresh. When a frontend plugin is installed or uninstalled on the backend, the platform broadcasts a signal to all connected frontends, triggering automatic UI updates.
+
+### Architecture
+
+```mermaid
+sequenceDiagram
+    participant Admin as Admin UI
+    participant Backend as Backend
+    participant Signal as Signal Service
+    participant Frontend as Frontend
+    participant Registry as Plugin Registry
+
+    Admin->>Backend: Install plugin
+    Backend->>Backend: Load plugin
+    Backend->>Signal: Broadcast PLUGIN_INSTALLED
+    Signal->>Frontend: WebSocket signal
+    Frontend->>Frontend: loadSinglePlugin()
+    Frontend->>Registry: register(plugin)
+    Registry->>Frontend: Re-render UI
+```
+
+### How It Works
+
+1. **Signal Emission**: The backend emits `PLUGIN_INSTALLED` or `PLUGIN_DEREGISTERED` signals only for frontend plugins (those ending with `-frontend`)
+
+2. **Frontend Signal Subscription**: The `usePluginLifecycle` hook listens for these signals:
+   ```typescript
+   // Automatically handled in App.tsx via usePluginLifecycle()
+   useSignal(PLUGIN_INSTALLED, ({ pluginId }) => {
+     loadSinglePlugin(pluginId);  // Dynamically loads JS/CSS
+   });
+
+   useSignal(PLUGIN_DEREGISTERED, ({ pluginId }) => {
+     unloadPlugin(pluginId);  // Removes from registry
+   });
+   ```
+
+3. **Registry Updates**: When a plugin is loaded/unloaded, the `pluginRegistry` increments its version, triggering React re-renders to pick up new routes and extensions.
+
+### Plugin Registry Reactivity
+
+The `pluginRegistry` supports dynamic updates:
+
+```typescript
+// Subscribe to registry changes
+pluginRegistry.subscribe(() => {
+  console.log("Registry changed, re-render!");
+});
+
+// Check if a plugin is registered
+if (pluginRegistry.hasPlugin("my-plugin-frontend")) {
+  // Plugin is available
+}
+
+// Get current version (increments on every change)
+const version = pluginRegistry.getVersion();
+```
+
+### Signals Used
+
+| Signal | Payload | Description |
+|--------|---------|-------------|
+| `PLUGIN_INSTALLED` | `{ pluginId: string }` | Frontend plugin was installed |
+| `PLUGIN_DEREGISTERED` | `{ pluginId: string }` | Frontend plugin was removed |
+
+> **Note**: Only plugins ending with `-frontend` trigger signals. Backend-only plugins are not signaled to the frontend.
+
 ## Next Steps
 
 - [Backend Plugin Development](../backend/plugins.md)
 - [Common Plugin Guidelines](../common/plugins.md)
 - [Extension Points](./extension-points.md)
 - [UI Component Library](../core/ui/README.md)
+

@@ -16,6 +16,7 @@
     "@checkmate/catalog-frontend": "workspace:*",
     "@checkmate/common": "workspace:*",
     "@checkmate/frontend-api": "workspace:*",
+    "@checkmate/signal-common": "workspace:*",
     "@checkmate/signal-frontend": "workspace:*",
     "@checkmate/ui": "workspace:*",
     "@orpc/client": "^1.13.2",

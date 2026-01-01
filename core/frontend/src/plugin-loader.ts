@@ -133,3 +133,74 @@ function isFrontendPlugin(candidate: unknown): candidate is FrontendPlugin {
     "navItems" in p
   );
 }
+
+/**
+ * Load a single plugin at runtime (for dynamic installation).
+ * Fetches the plugin from the backend and registers it.
+ *
+ * @param pluginId - The frontend plugin ID (e.g., "my-plugin-frontend")
+ */
+export async function loadSinglePlugin(pluginId: string): Promise<void> {
+  console.log(`🔌 Loading single plugin: ${pluginId}`);
+
+  // Skip if already registered
+  if (pluginRegistry.hasPlugin(pluginId)) {
+    console.warn(`⚠️ Plugin ${pluginId} already registered`);
+    return;
+  }
+
+  try {
+    // 1. Load CSS if it exists
+    const remoteCssUrl = `/assets/plugins/${pluginId}/index.css`;
+    try {
+      const cssCheck = await fetch(remoteCssUrl, { method: "HEAD" });
+      if (cssCheck.ok) {
+        console.log(`🎨 Loading remote styles for: ${pluginId}`);
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = remoteCssUrl;
+        link.id = `plugin-css-${pluginId}`;
+        document.head.append(link);
+      }
+    } catch (error) {
+      console.debug(`No separate CSS found for ${pluginId}`, error);
+    }
+
+    // 2. Load JS entry point
+    const remoteUrl = `/assets/plugins/${pluginId}/index.js`;
+    const mod = await import(/* @vite-ignore */ remoteUrl);
+
+    const pluginExport = Object.values(mod as Record<string, unknown>).find(
+      (exp): exp is FrontendPlugin => isFrontendPlugin(exp)
+    );
+
+    if (pluginExport) {
+      console.log(`🔌 Registering plugin: ${pluginExport.name}`);
+      pluginRegistry.register(pluginExport);
+    } else {
+      console.warn(`⚠️ No valid FrontendPlugin export found for ${pluginId}`);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to load plugin ${pluginId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Unload a plugin at runtime (for dynamic deregistration).
+ * Removes the plugin from the registry and cleans up CSS.
+ *
+ * @param pluginId - The frontend plugin ID (e.g., "my-plugin-frontend")
+ */
+export function unloadPlugin(pluginId: string): void {
+  console.log(`🔌 Unloading plugin: ${pluginId}`);
+
+  // Remove from registry
+  pluginRegistry.unregister(pluginId);
+
+  // Remove CSS if we added it
+  const cssLink = document.querySelector(`#plugin-css-${pluginId}`);
+  if (cssLink) {
+    cssLink.remove();
+  }
+}

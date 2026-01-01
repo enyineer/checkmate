@@ -7,7 +7,7 @@ import { db } from "./db";
 import path from "node:path";
 import fs from "node:fs";
 import { rootLogger } from "./logger";
-import { coreServices } from "@checkmate/backend-api";
+import { coreServices, coreHooks } from "@checkmate/backend-api";
 import { plugins } from "./schema";
 import { eq, and } from "drizzle-orm";
 import { PluginLocalInstaller } from "./services/plugin-installer";
@@ -18,6 +18,10 @@ import {
   SignalServiceImpl,
   type WebSocketData,
 } from "@checkmate/signal-backend";
+import {
+  PLUGIN_INSTALLED,
+  PLUGIN_DEREGISTERED,
+} from "@checkmate/signal-common";
 import { createPluginAdminRouter } from "./plugin-manager/plugin-admin-router";
 
 import { cors } from "hono/cors";
@@ -116,8 +120,9 @@ const init = async () => {
   );
   pluginManager.registerService(coreServices.queueManager, queueManager);
 
-  // Serve static assets for runtime plugins
-  // e.g. /assets/plugins/my-plugin/index.js -> runtime_plugins/node_modules/my-plugin/dist/index.js
+  // Serve static assets for runtime frontend plugins only
+  // Backend plugins don't need public assets - only frontend plugins do
+  // e.g. /assets/plugins/my-plugin-frontend/index.js -> runtime_plugins/node_modules/my-plugin-frontend/dist/index.js
   app.use("/assets/plugins/:pluginName/*", async (c, next) => {
     const pluginName = c.req.param("pluginName");
     // Find plugin in DB to get path
@@ -126,7 +131,11 @@ const init = async () => {
       .from(plugins)
       .where(eq(plugins.name, pluginName));
     const plugin = results[0];
-    if (!plugin) return next();
+
+    // Only serve assets for frontend plugins
+    if (!plugin || plugin.type !== "frontend") {
+      return next();
+    }
 
     // We assume plugins are built into 'dist' folder
     const assetPath = c.req.path.split(`/assets/plugins/${pluginName}/`)[1];
@@ -171,7 +180,44 @@ const init = async () => {
   );
   pluginManager.registerService(coreServices.signalService, signalService);
 
-  // 9. Create WebSocket handler for realtime signals
+  // 10. Setup plugin lifecycle signal broadcasting to frontend
+  // Only broadcast for frontend plugins (plugins ending with -frontend)
+  await eventBus.subscribe(
+    "core",
+    coreHooks.pluginInstalled,
+    async ({ pluginId }) => {
+      // Only signal frontend plugin installations to the frontend
+      if (!pluginId.endsWith("-frontend")) {
+        rootLogger.debug(
+          `Skipping PLUGIN_INSTALLED signal for non-frontend plugin: ${pluginId}`
+        );
+        return;
+      }
+      rootLogger.debug(`Broadcasting PLUGIN_INSTALLED signal for: ${pluginId}`);
+      await signalService.broadcast(PLUGIN_INSTALLED, { pluginId });
+    },
+    { mode: "work-queue", workerGroup: "frontend-signal" }
+  );
+  await eventBus.subscribe(
+    "core",
+    coreHooks.pluginDeregistered,
+    async ({ pluginId }) => {
+      // Only signal frontend plugin deregistrations to the frontend
+      if (!pluginId.endsWith("-frontend")) {
+        rootLogger.debug(
+          `Skipping PLUGIN_DEREGISTERED signal for non-frontend plugin: ${pluginId}`
+        );
+        return;
+      }
+      rootLogger.debug(
+        `Broadcasting PLUGIN_DEREGISTERED signal for: ${pluginId}`
+      );
+      await signalService.broadcast(PLUGIN_DEREGISTERED, { pluginId });
+    },
+    { mode: "work-queue", workerGroup: "frontend-signal" }
+  );
+
+  // 11. Create WebSocket handler for realtime signals
   wsHandler = createWebSocketHandler({
     eventBus,
     logger: rootLogger.child({ service: "WebSocket" }),

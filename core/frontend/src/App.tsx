@@ -21,6 +21,7 @@ import {
   SLOT_NAVBAR,
   SLOT_NAVBAR_MAIN,
 } from "@checkmate/common";
+import { usePluginLifecycle } from "./hooks/usePluginLifecycle";
 
 const RouteGuard: React.FC<{
   children: React.ReactNode;
@@ -45,6 +46,60 @@ const RouteGuard: React.FC<{
 
   return <>{children}</>;
 };
+
+/**
+ * Inner component that handles plugin lifecycle and reactive routing.
+ * Must be inside SignalProvider to receive plugin signals.
+ */
+function AppContent() {
+  // Enable dynamic plugin loading/unloading via signals
+  // This causes re-renders when plugins change
+  usePluginLifecycle();
+
+  return (
+    <BrowserRouter>
+      <div className="min-h-screen bg-background text-foreground font-sans">
+        <header className="p-4 bg-card shadow-sm border-b border-border flex justify-between items-center z-50 relative">
+          <div className="flex items-center gap-8">
+            <Link to="/">
+              <h1 className="text-xl font-bold text-primary">Checkmate</h1>
+            </Link>
+            <nav className="hidden md:flex gap-1">
+              <ExtensionSlot id={SLOT_NAVBAR_MAIN} />
+            </nav>
+          </div>
+          <div className="flex gap-2">
+            <ExtensionSlot id={SLOT_NAVBAR} />
+          </div>
+        </header>
+        <main className="p-8 max-w-7xl mx-auto">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <div className="space-y-6">
+                  <ExtensionSlot id={SLOT_DASHBOARD} />
+                </div>
+              }
+            />
+            {/* Plugin Routes */}
+            {pluginRegistry.getAllRoutes().map((route) => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  <RouteGuard permission={route.permission}>
+                    {route.element}
+                  </RouteGuard>
+                }
+              />
+            ))}
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}
 
 function App() {
   const apiRegistry = useMemo(() => {
@@ -86,49 +141,7 @@ function App() {
     <ApiProvider registry={apiRegistry}>
       <SignalProvider backendUrl={import.meta.env.VITE_BACKEND_URL}>
         <ToastProvider>
-          <BrowserRouter>
-            <div className="min-h-screen bg-background text-foreground font-sans">
-              <header className="p-4 bg-card shadow-sm border-b border-border flex justify-between items-center z-50 relative">
-                <div className="flex items-center gap-8">
-                  <Link to="/">
-                    <h1 className="text-xl font-bold text-primary">
-                      Checkmate
-                    </h1>
-                  </Link>
-                  <nav className="hidden md:flex gap-1">
-                    <ExtensionSlot id={SLOT_NAVBAR_MAIN} />
-                  </nav>
-                </div>
-                <div className="flex gap-2">
-                  <ExtensionSlot id={SLOT_NAVBAR} />
-                </div>
-              </header>
-              <main className="p-8 max-w-7xl mx-auto">
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      <div className="space-y-6">
-                        <ExtensionSlot id={SLOT_DASHBOARD} />
-                      </div>
-                    }
-                  />
-                  {/* Plugin Routes */}
-                  {pluginRegistry.getAllRoutes().map((route) => (
-                    <Route
-                      key={route.path}
-                      path={route.path}
-                      element={
-                        <RouteGuard permission={route.permission}>
-                          {route.element}
-                        </RouteGuard>
-                      }
-                    />
-                  ))}
-                </Routes>
-              </main>
-            </div>
-          </BrowserRouter>
+          <AppContent />
         </ToastProvider>
       </SignalProvider>
     </ApiProvider>
