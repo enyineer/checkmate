@@ -1,1 +1,0 @@
-ALTER TABLE "system_health_checks" ADD COLUMN "state_thresholds" jsonb;

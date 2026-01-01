@@ -228,12 +228,9 @@ export function registerCoreServices({
 
   // 7. RPC Service (Scoped Factory - uses pluginId for path derivation)
   registry.registerFactory(coreServices.rpc, (pluginId) => {
-    // Derive the API path from plugin ID (remove -backend suffix)
-    const pluginName = pluginId.replace(/-backend$/, "");
-
     return {
       registerRouter: (router: unknown, subpath?: string): void => {
-        const fullPath = subpath ? `${pluginName}${subpath}` : pluginName;
+        const fullPath = subpath ? `${pluginId}${subpath}` : pluginId;
         pluginRpcRouters.set(fullPath, router);
         rootLogger.debug(
           `   -> Registered oRPC router for '${pluginId}' at '/api/${fullPath}'`
@@ -243,7 +240,7 @@ export function registerCoreServices({
         handler: (req: Request) => Promise<Response>,
         path = "/"
       ): void => {
-        const fullPath = `/api/${pluginName}${path === "/" ? "" : path}`;
+        const fullPath = `/api/${pluginId}${path === "/" ? "" : path}`;
         pluginHttpHandlers.set(fullPath, handler);
         rootLogger.debug(
           `   -> Registered HTTP handler for '${pluginId}' at '${fullPath}'`

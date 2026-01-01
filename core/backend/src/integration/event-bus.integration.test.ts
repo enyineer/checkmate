@@ -46,7 +46,7 @@ describe("EventBus Integration Tests", () => {
 
       // Emit permission registration events from different plugins
       await eventBus.emit(permissionsRegistered, {
-        pluginId: "catalog-backend",
+        pluginId: "catalog",
         permissions: [
           { id: "catalog-backend.read", description: "Read catalog" },
           { id: "catalog-backend.manage", description: "Manage catalog" },
@@ -54,7 +54,7 @@ describe("EventBus Integration Tests", () => {
       });
 
       await eventBus.emit(permissionsRegistered, {
-        pluginId: "queue-backend",
+        pluginId: "queue",
         permissions: [
           { id: "queue-backend.read", description: "Read queue" },
           { id: "queue-backend.manage", description: "Manage queue" },

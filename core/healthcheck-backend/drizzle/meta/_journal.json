@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1766244866579,
-      "tag": "0000_left_famine",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1767099451728,
-      "tag": "0001_happy_guardian",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1767101276963,
-      "tag": "0002_real_nocturne",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1767148384987,
-      "tag": "0003_goofy_warstar",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1767295962345,
-      "tag": "0004_serious_morlun",
+      "when": 1767310945163,
+      "tag": "0000_numerous_dazzler",
       "breakpoints": true
     }
   ]

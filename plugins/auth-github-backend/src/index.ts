@@ -44,7 +44,7 @@ const githubStrategy: AuthStrategy<z.infer<typeof githubConfigV2>> = {
 };
 
 export default createBackendPlugin({
-  pluginId: "auth-github-backend",
+  pluginId: "auth-github",
   register(env) {
     const extensionPoint = env.getExtensionPoint(betterAuthExtensionPoint);
     extensionPoint.addStrategy(githubStrategy);

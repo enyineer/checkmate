@@ -10,7 +10,7 @@ import * as schema from "./schema";
 
 export let db: NodePgDatabase<typeof schema> | undefined;
 
-const PLUGIN_ID = "catalog-backend";
+const PLUGIN_ID = "catalog";
 
 // Export hooks for other plugins to subscribe to
 export { catalogHooks } from "./hooks";

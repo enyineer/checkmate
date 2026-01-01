@@ -11,7 +11,7 @@ import { HealthCheckService } from "./service";
 import { catalogHooks } from "@checkmate/catalog-backend";
 
 export default createBackendPlugin({
-  pluginId: "healthcheck-backend",
+  pluginId: "healthcheck",
   register(env) {
     env.registerPermissions(permissionList);
 

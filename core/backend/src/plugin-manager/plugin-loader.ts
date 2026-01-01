@@ -107,7 +107,7 @@ export function registerPlugin({
       return deps.extensionPointManager.getExtensionPoint(ref);
     },
     registerPermissions: (permissions: Permission[]) => {
-      // Store permissions with pluginId for Phase 3 emission
+      // Store permissions with pluginId prefix to namespace them
       const prefixed = permissions.map((p) => ({
         pluginId: backendPlugin.pluginId,
         id: `${backendPlugin.pluginId}.${p.id}`,
@@ -124,8 +124,9 @@ export function registerPlugin({
       router: Router<AnyContractRouter, RpcContext>,
       subpath?: string
     ) => {
-      const pluginName = backendPlugin.pluginId.replace(/-backend$/, "");
-      const fullPath = subpath ? `${pluginName}${subpath}` : pluginName;
+      const fullPath = subpath
+        ? `${backendPlugin.pluginId}${subpath}`
+        : backendPlugin.pluginId;
       deps.pluginRpcRouters.set(fullPath, router);
     },
     registerCleanup: (cleanup: () => Promise<void>) => {

@@ -3,7 +3,7 @@ import { permissionList } from "@checkmate/queue-common";
 import { createQueueRouter } from "./router";
 
 export default createBackendPlugin({
-  pluginId: "queue-backend",
+  pluginId: "queue",
   register(env) {
     env.registerPermissions(permissionList);
 

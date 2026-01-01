@@ -89,10 +89,13 @@ async function syncPermissionsToDb({
     );
 
     if (!hasPermission) {
-      await database.insert(schema.rolePermission).values({
-        roleId: "admin",
-        permissionId: perm.id,
-      });
+      await database
+        .insert(schema.rolePermission)
+        .values({
+          roleId: "admin",
+          permissionId: perm.id,
+        })
+        .onConflictDoNothing();
       logger.debug(`   -> Assigned permission ${perm.id} to admin role`);
     }
   }
@@ -271,7 +274,7 @@ async function syncPublicDefaultPermissionsToAnonymousRole({
 }
 
 export default createBackendPlugin({
-  pluginId: "auth-backend",
+  pluginId: "auth",
   register(env) {
     let auth: ReturnType<typeof betterAuth> | undefined;
     let db: NodePgDatabase<typeof schema> | undefined;

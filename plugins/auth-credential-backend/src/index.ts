@@ -16,7 +16,7 @@ const credentialStrategy: AuthStrategy<z.infer<typeof credentialConfigV1>> = {
 };
 
 export default createBackendPlugin({
-  pluginId: "auth-credential-backend",
+  pluginId: "auth-credential",
   register(env) {
     const extensionPoint = env.getExtensionPoint(betterAuthExtensionPoint);
     extensionPoint.addStrategy(credentialStrategy);

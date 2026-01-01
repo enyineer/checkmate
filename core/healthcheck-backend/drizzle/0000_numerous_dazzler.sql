@@ -1,3 +1,4 @@
+CREATE TYPE "health_check_status" AS ENUM('healthy', 'unhealthy', 'degraded');--> statement-breakpoint
 CREATE TABLE "health_check_configurations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
@@ -13,7 +14,7 @@ CREATE TABLE "health_check_runs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"configuration_id" uuid NOT NULL,
 	"system_id" text NOT NULL,
-	"status" text NOT NULL,
+	"status" "health_check_status" NOT NULL,
 	"result" jsonb,
 	"timestamp" timestamp DEFAULT now() NOT NULL
 );
@@ -22,6 +23,7 @@ CREATE TABLE "system_health_checks" (
 	"system_id" text NOT NULL,
 	"configuration_id" uuid NOT NULL,
 	"enabled" boolean DEFAULT true NOT NULL,
+	"state_thresholds" jsonb,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "system_health_checks_system_id_configuration_id_pk" PRIMARY KEY("system_id","configuration_id")

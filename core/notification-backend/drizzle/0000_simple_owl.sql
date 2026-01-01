@@ -6,12 +6,6 @@ CREATE TABLE "notification_groups" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "notification_settings" (
-	"id" text PRIMARY KEY NOT NULL,
-	"value" jsonb NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "notification_subscriptions" (
 	"user_id" text NOT NULL,
 	"group_id" text NOT NULL,

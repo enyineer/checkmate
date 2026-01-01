@@ -98,9 +98,10 @@ export const autoAuthMiddleware = os.middleware(
         // Authenticated user - check their permissions
         if (context.user.type === "user" && requiredPermissions.length > 0) {
           const userPermissions = context.user.permissions || [];
-          const hasPermission = requiredPermissions.some((p: string) => {
-            return userPermissions.includes("*") || userPermissions.includes(p);
-          });
+          const hasPermission = requiredPermissions.some(
+            (p: string) =>
+              userPermissions.includes("*") || userPermissions.includes(p)
+          );
 
           if (!hasPermission) {
             throw new ORPCError("FORBIDDEN", {
@@ -116,9 +117,9 @@ export const autoAuthMiddleware = os.middleware(
         if (requiredPermissions.length > 0) {
           const anonymousPermissions =
             await context.auth.getAnonymousPermissions();
-          const hasPermission = requiredPermissions.some((p: string) => {
-            return anonymousPermissions.includes(p);
-          });
+          const hasPermission = requiredPermissions.some((p: string) =>
+            anonymousPermissions.includes(p)
+          );
 
           if (!hasPermission) {
             throw new ORPCError("FORBIDDEN", {
@@ -154,9 +155,10 @@ export const autoAuthMiddleware = os.middleware(
     // 5. Enforce permissions (only for real users)
     if (user.type === "user" && requiredPermissions.length > 0) {
       const userPermissions = user.permissions || [];
-      const hasPermission = requiredPermissions.some((p: string) => {
-        return userPermissions.includes("*") || userPermissions.includes(p);
-      });
+      const hasPermission = requiredPermissions.some(
+        (p: string) =>
+          userPermissions.includes("*") || userPermissions.includes(p)
+      );
 
       if (!hasPermission) {
         throw new ORPCError("FORBIDDEN", {

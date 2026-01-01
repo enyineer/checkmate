@@ -3,7 +3,7 @@ import { InMemoryQueuePlugin } from "./plugin";
 import { permissionList } from "@checkmate/queue-memory-common";
 
 export default createBackendPlugin({
-  pluginId: "queue-memory-backend",
+  pluginId: "queue-memory",
   register(env) {
     env.registerPermissions(permissionList);
 

@@ -1,47 +1,12 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1766172648587,
-      "tag": "0000_elite_sue_storm",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
       "version": "7",
-      "when": 1766236973668,
-      "tag": "0001_loud_the_hood",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1766256842911,
-      "tag": "0002_short_naoko",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1767011078250,
-      "tag": "0003_slim_killraven",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1767289009608,
-      "tag": "0004_first_susan_delgado",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1767293524616,
-      "tag": "0005_powerful_spitfire",
+      "when": 1767310283342,
+      "tag": "0000_massive_killraven",
       "breakpoints": true
     }
   ]

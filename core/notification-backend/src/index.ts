@@ -20,7 +20,7 @@ export type {
 } from "./service";
 
 export default createBackendPlugin({
-  pluginId: "notification-backend",
+  pluginId: "notification",
 
   register(env) {
     // Register permissions

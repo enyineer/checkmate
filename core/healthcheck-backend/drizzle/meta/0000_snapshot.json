@@ -1,5 +1,5 @@
 {
-  "id": "dd09e6a8-d0a9-4473-834b-5a3fdc8a8d33",
+  "id": "70c645f9-a220-46d7-a06e-c81ba5124752",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -94,7 +94,8 @@
         },
         "status": {
           "name": "status",
-          "type": "text",
+          "type": "health_check_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -157,6 +158,12 @@
           "notNull": true,
           "default": true
         },
+        "state_thresholds": {
+          "name": "state_thresholds",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -203,7 +210,17 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.health_check_status": {
+      "name": "health_check_status",
+      "schema": "public",
+      "values": [
+        "healthy",
+        "unhealthy",
+        "degraded"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

@@ -2,7 +2,7 @@ import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { HttpHealthCheckStrategy } from "./strategy";
 
 export default createBackendPlugin({
-  pluginId: "healthcheck-http-backend",
+  pluginId: "healthcheck-http",
   register(env) {
     env.registerInit({
       deps: {

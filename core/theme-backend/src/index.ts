@@ -3,7 +3,7 @@ import * as schema from "./schema";
 import { createThemeRouter } from "./router";
 
 export default createBackendPlugin({
-  pluginId: "theme-backend",
+  pluginId: "theme",
 
   register(env) {
     // Register initialization logic with schema

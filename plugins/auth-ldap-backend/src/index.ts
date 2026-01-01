@@ -192,7 +192,7 @@ const ldapStrategy: AuthStrategy<LdapConfig> = {
 };
 
 export default createBackendPlugin({
-  pluginId: "auth-ldap-backend",
+  pluginId: "auth-ldap",
   register(env) {
     // Register the LDAP strategy
     const extensionPoint = env.getExtensionPoint(betterAuthExtensionPoint);

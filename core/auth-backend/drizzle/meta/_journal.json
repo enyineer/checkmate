@@ -1,47 +1,12 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1766158129109,
-      "tag": "0000_sloppy_squirrel_girl",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
       "version": "7",
-      "when": 1766960944721,
-      "tag": "0001_stale_ender_wiggin",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1767035369414,
-      "tag": "0002_faulty_oracle",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1767065019488,
-      "tag": "0003_glorious_zaran",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1767186261243,
-      "tag": "0004_unique_anthem",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1767198193280,
-      "tag": "0005_wonderful_hedge_knight",
+      "when": 1767310312347,
+      "tag": "0000_real_maria_hill",
       "breakpoints": true
     }
   ]

@@ -6,7 +6,7 @@ import { MaintenanceService } from "./service";
 import { createRouter } from "./router";
 
 export default createBackendPlugin({
-  pluginId: "maintenance-backend",
+  pluginId: "maintenance",
   register(env) {
     env.registerPermissions(permissionList);
 

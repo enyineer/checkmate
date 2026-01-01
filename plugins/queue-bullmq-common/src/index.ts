@@ -1,14 +1,16 @@
-import { Permission } from "@checkmate/common";
+import { createPermission, Permission } from "@checkmate/common";
 
 export const permissions = {
-  queueRead: {
-    id: "queue.read",
-    description: "View queue configuration and statistics",
-  } satisfies Permission,
-  queueWrite: {
-    id: "queue.write",
-    description: "Modify queue configuration",
-  } satisfies Permission,
+  queueRead: createPermission(
+    "queue-bullmq",
+    "read",
+    "View queue configuration and statistics"
+  ),
+  queueWrite: createPermission(
+    "queue-bullmq",
+    "manage",
+    "Modify queue configuration"
+  ),
 };
 
 export const permissionList: Permission[] = Object.values(permissions);

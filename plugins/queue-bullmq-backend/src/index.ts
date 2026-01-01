@@ -3,7 +3,7 @@ import { BullMQPlugin } from "./plugin";
 import { permissionList } from "@checkmate/queue-bullmq-common";
 
 export default createBackendPlugin({
-  pluginId: "queue-bullmq-backend",
+  pluginId: "queue-bullmq",
   register(env) {
     env.registerPermissions(permissionList);
 
