@@ -286,4 +286,184 @@ describe("EventBus", () => {
       expect(mockLogger.info).toHaveBeenCalledWith("EventBus shut down");
     });
   });
+
+  describe("Instance-Local Hooks", () => {
+    it("should subscribe via instance-local mode", async () => {
+      const testHook = createHook<{ value: number }>("test.local.hook");
+      const received: number[] = [];
+
+      await eventBus.subscribe(
+        "test-plugin",
+        testHook,
+        async (payload) => {
+          received.push(payload.value);
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.emitLocal(testHook, { value: 42 });
+
+      // Local hooks are synchronous-ish (no queue involved)
+      expect(received).toEqual([42]);
+    });
+
+    it("should call all local listeners on emitLocal", async () => {
+      const testHook = createHook<{ value: string }>("test.local.hook");
+      const calls: string[] = [];
+
+      await eventBus.subscribe(
+        "plugin-a",
+        testHook,
+        async () => {
+          calls.push("a");
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.subscribe(
+        "plugin-b",
+        testHook,
+        async () => {
+          calls.push("b");
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.emitLocal(testHook, { value: "test" });
+
+      expect(calls).toContain("a");
+      expect(calls).toContain("b");
+      expect(calls.length).toBe(2);
+    });
+
+    it("should isolate failures via Promise.allSettled - one listener error does not block others", async () => {
+      const testHook = createHook<{ value: number }>("test.local.hook");
+      const successfulCalls: number[] = [];
+
+      await eventBus.subscribe(
+        "plugin-a",
+        testHook,
+        async (payload) => {
+          successfulCalls.push(payload.value);
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.subscribe(
+        "plugin-b",
+        testHook,
+        async () => {
+          throw new Error("Intentional failure");
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.subscribe(
+        "plugin-c",
+        testHook,
+        async (payload) => {
+          successfulCalls.push(payload.value * 2);
+        },
+        { mode: "instance-local" }
+      );
+
+      // Should NOT throw despite plugin-b failing
+      await eventBus.emitLocal(testHook, { value: 10 });
+
+      // Both successful listeners should have executed
+      expect(successfulCalls).toContain(10);
+      expect(successfulCalls).toContain(20);
+      expect(successfulCalls.length).toBe(2);
+
+      // Error should be logged
+      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockLogger.warn).toHaveBeenCalled();
+    });
+
+    it("should unsubscribe local listeners correctly", async () => {
+      const testHook = createHook<{ value: number }>("test.local.hook");
+      const calls: number[] = [];
+
+      const unsubscribe = await eventBus.subscribe(
+        "test-plugin",
+        testHook,
+        async (payload) => {
+          calls.push(payload.value);
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.emitLocal(testHook, { value: 1 });
+      expect(calls).toEqual([1]);
+
+      // Unsubscribe
+      await unsubscribe();
+
+      await eventBus.emitLocal(testHook, { value: 2 });
+      // Should NOT receive second event
+      expect(calls).toEqual([1]);
+    });
+
+    it("should not trigger local listeners on distributed emit", async () => {
+      const testHook = createHook<{ value: number }>("test.local.hook");
+      const localCalls: number[] = [];
+      const distributedCalls: number[] = [];
+
+      await eventBus.subscribe(
+        "test-plugin",
+        testHook,
+        async (payload) => {
+          localCalls.push(payload.value);
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.subscribe("test-plugin", testHook, async (payload) => {
+        distributedCalls.push(payload.value);
+      });
+
+      // Distributed emit - should only trigger distributed listener
+      await eventBus.emit(testHook, { value: 42 });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(distributedCalls).toContain(42);
+      expect(localCalls).toEqual([]); // Local listener should NOT be triggered
+    });
+
+    it("should not trigger distributed listeners on emitLocal", async () => {
+      const testHook = createHook<{ value: number }>("test.local.hook");
+      const localCalls: number[] = [];
+      const distributedCalls: number[] = [];
+
+      await eventBus.subscribe(
+        "test-plugin",
+        testHook,
+        async (payload) => {
+          localCalls.push(payload.value);
+        },
+        { mode: "instance-local" }
+      );
+
+      await eventBus.subscribe("test-plugin", testHook, async (payload) => {
+        distributedCalls.push(payload.value);
+      });
+
+      // Local emit - should only trigger local listener
+      await eventBus.emitLocal(testHook, { value: 99 });
+
+      expect(localCalls).toEqual([99]);
+      expect(distributedCalls).toEqual([]); // Distributed listener should NOT be triggered
+    });
+
+    it("should handle emitLocal with no listeners gracefully", async () => {
+      const testHook = createHook<{ value: number }>("test.no.listeners");
+
+      // Should not throw
+      await eventBus.emitLocal(testHook, { value: 42 });
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        `No local listeners for hook: ${testHook.id}`
+      );
+    });
+  });
 });
