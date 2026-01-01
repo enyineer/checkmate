@@ -2,7 +2,7 @@ import { oc } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
 import type { ProcedureMetadata } from "@checkmate/common";
 import { z } from "zod";
-import { SystemSchema, GroupSchema, ViewSchema, IncidentSchema } from "./types";
+import { SystemSchema, GroupSchema, ViewSchema } from "./types";
 import { permissions } from "./permissions";
 
 // Base builder with full metadata support
@@ -45,15 +45,6 @@ const CreateViewInputSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   configuration: z.unknown(),
-});
-
-const CreateIncidentInputSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  status: z.string().optional(),
-  severity: z.string().optional(),
-  systemId: z.string().nullable().optional(),
-  groupId: z.string().nullable().optional(),
 });
 
 // Catalog RPC Contract using oRPC's contract-first pattern
@@ -153,19 +144,6 @@ export const catalogContract = {
     .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
     .input(CreateViewInputSchema)
     .output(ViewSchema),
-
-  // ==========================================================================
-  // INCIDENT MANAGEMENT (userType: "user")
-  // ==========================================================================
-
-  getIncidents: _base
-    .meta({ userType: "user", permissions: [permissions.catalogRead.id] })
-    .output(z.array(IncidentSchema)),
-
-  createIncident: _base
-    .meta({ userType: "user", permissions: [permissions.catalogManage.id] })
-    .input(CreateIncidentInputSchema)
-    .output(IncidentSchema),
 };
 
 // Export contract type for frontend

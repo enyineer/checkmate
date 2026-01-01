@@ -1,6 +1,7 @@
 import React from "react";
 import { ApiRef } from "./api-ref";
 import type { SlotDefinition } from "./slots";
+import type { RouteDefinition } from "@checkmate/common";
 
 /**
  * Extract the context type from a SlotDefinition
@@ -18,8 +19,7 @@ export interface SlotExtension<TSlot extends SlotDefinition<unknown>> {
 }
 
 /**
- * Legacy extension interface for backward compatibility.
- * @deprecated Use SlotExtension for type-safe extensions
+ * Extension interface for slot registration.
  */
 export interface Extension<T = unknown> {
   id: string;
@@ -41,8 +41,26 @@ export function createSlotExtension<TSlot extends SlotDefinition<unknown>>(
   };
 }
 
-// Type that accepts both legacy Extension and new SlotExtension
+// Type that accepts both Extension and SlotExtension
 type AnyExtension = Extension<unknown> | SlotExtension<SlotDefinition<unknown>>;
+
+/**
+ * Route configuration for a frontend plugin.
+ * Uses RouteDefinition from the plugin's common package.
+ */
+export interface PluginRoute {
+  /** Route definition from common package */
+  route: RouteDefinition;
+
+  /** React element to render */
+  element?: React.ReactNode;
+
+  /** Page title */
+  title?: string;
+
+  /** Permission required to access this route */
+  permission?: string;
+}
 
 export interface FrontendPlugin {
   name: string;
@@ -51,12 +69,7 @@ export interface FrontendPlugin {
     ref: ApiRef<unknown>;
     factory: (deps: { get: <T>(ref: ApiRef<T>) => T }) => unknown;
   }[];
-  routes?: {
-    path: string;
-    element?: React.ReactNode;
-    title?: string;
-    permission?: string;
-  }[];
+  routes?: PluginRoute[];
   navItems?: {
     title: string;
     path: string;

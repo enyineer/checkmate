@@ -35,16 +35,3 @@ export const ViewSchema = z.object({
   updatedAt: z.date(),
 });
 export type View = z.infer<typeof ViewSchema>;
-
-export const IncidentSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-  status: z.string(),
-  severity: z.string(),
-  systemId: z.string().nullable(),
-  groupId: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-});
-export type Incident = z.infer<typeof IncidentSchema>;

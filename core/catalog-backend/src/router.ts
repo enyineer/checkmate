@@ -2,7 +2,6 @@ import { implement, ORPCError } from "@orpc/server";
 import { autoAuthMiddleware, type RpcContext } from "@checkmate/backend-api";
 import { catalogContract } from "@checkmate/catalog-common";
 import { EntityService } from "./services/entity-service";
-import { OperationService } from "./services/operation-service";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "./schema";
 import type { NotificationClient } from "@checkmate/notification-common";
@@ -23,7 +22,6 @@ export const createCatalogRouter = (
   pluginId: string
 ) => {
   const entityService = new EntityService(database);
-  const operationService = new OperationService(database);
 
   // Helper to create notification group for an entity
   const createNotificationGroup = async (
@@ -216,19 +214,10 @@ export const createCatalogRouter = (
   const getViews = os.getViews.handler(async () => entityService.getViews());
 
   const createView = os.createView.handler(async ({ input }) => {
-    return entityService.createView(input);
-  });
-
-  const getIncidents = os.getIncidents.handler(async () =>
-    operationService.getIncidents()
-  );
-
-  const createIncident = os.createIncident.handler(async ({ input }) => {
-    // Ensure status and severity have defaults
-    return operationService.createIncident({
-      ...input,
-      status: input.status ?? "open",
-      severity: input.severity ?? "medium",
+    return entityService.createView({
+      name: input.name,
+      type: "custom",
+      config: input.configuration as Record<string, unknown>,
     });
   });
 
@@ -247,8 +236,6 @@ export const createCatalogRouter = (
     removeSystemFromGroup,
     getViews,
     createView,
-    getIncidents,
-    createIncident,
   });
 };
 

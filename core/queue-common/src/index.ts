@@ -6,3 +6,4 @@ export {
   type QueueClient,
   type QueueMetadata,
 } from "./rpc-contract";
+export { queueRoutes } from "./routes";

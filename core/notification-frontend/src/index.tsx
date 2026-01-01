@@ -1,5 +1,6 @@
 import { createFrontendPlugin } from "@checkmate/frontend-api";
 import { SLOT_NAVBAR, SLOT_USER_MENU_ITEMS } from "@checkmate/common";
+import { notificationRoutes } from "@checkmate/notification-common";
 import { NotificationBell } from "./components/NotificationBell";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { NotificationSettingsPage } from "./pages/NotificationSettingsPage";
@@ -9,11 +10,11 @@ export const notificationPlugin = createFrontendPlugin({
   name: "notification-frontend",
   routes: [
     {
-      path: "/",
+      route: notificationRoutes.routes.home,
       element: <NotificationsPage />,
     },
     {
-      path: "/settings",
+      route: notificationRoutes.routes.settings,
       element: <NotificationSettingsPage />,
     },
   ],

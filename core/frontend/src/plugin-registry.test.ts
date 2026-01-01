@@ -1,7 +1,18 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { pluginRegistry } from "@checkmate/frontend-api";
 import { FrontendPlugin } from "@checkmate/frontend-api";
+import { createRoutes } from "@checkmate/common";
 import React from "react";
+
+// Create test routes using the new pattern
+const testRoutes = createRoutes("test", {
+  home: "/",
+  config: "/config",
+});
+
+const pluginBRoutes = createRoutes("plugin-b", {
+  home: "/",
+});
 
 describe("PluginRegistry", () => {
   beforeEach(() => {
@@ -14,7 +25,7 @@ describe("PluginRegistry", () => {
   });
 
   const mockPlugin: FrontendPlugin = {
-    name: "test-plugin",
+    name: "test-frontend",
     extensions: [
       {
         id: "extension-1",
@@ -24,7 +35,7 @@ describe("PluginRegistry", () => {
     ],
     routes: [
       {
-        path: "/test",
+        route: testRoutes.routes.home,
         element: React.createElement("div", null, "Test Route"),
       },
     ],
@@ -46,8 +57,8 @@ describe("PluginRegistry", () => {
 
   it("should aggregate all routes from registered plugins", () => {
     const pluginB: FrontendPlugin = {
-      name: "plugin-b",
-      routes: [{ path: "/b" }],
+      name: "plugin-b-frontend",
+      routes: [{ route: pluginBRoutes.routes.home }],
     };
 
     pluginRegistry.register(mockPlugin);
@@ -55,14 +66,13 @@ describe("PluginRegistry", () => {
 
     const routes = pluginRegistry.getAllRoutes();
     expect(routes).toHaveLength(2);
-    expect(routes.map((r) => r.path)).toContain("/test");
-    expect(routes.map((r) => r.path)).toContain("/b");
-    expect(routes.map((r) => r.path)).toContain("/b");
+    expect(routes.map((r) => r.path)).toContain("/test/");
+    expect(routes.map((r) => r.path)).toContain("/plugin-b/");
   });
 
   it("should allow multiple plugins to register extensions for the same slot", () => {
     const pluginA: FrontendPlugin = {
-      name: "plugin-a",
+      name: "plugin-a-frontend",
       extensions: [
         {
           id: "ext-a",
@@ -73,7 +83,7 @@ describe("PluginRegistry", () => {
     };
 
     const pluginB: FrontendPlugin = {
-      name: "plugin-b",
+      name: "plugin-b-frontend",
       extensions: [
         {
           id: "ext-b",

@@ -6,16 +6,17 @@ import {
 } from "@checkmate/frontend-api";
 import { SLOT_USER_MENU_ITEMS } from "@checkmate/common";
 import { maintenanceApiRef, type MaintenanceApi } from "./api";
+import { maintenanceRoutes } from "@checkmate/maintenance-common";
+import { SystemDetailsTopSlot } from "@checkmate/catalog-common";
 import { MaintenanceConfigPage } from "./pages/MaintenanceConfigPage";
 import { SystemMaintenancePanel } from "./components/SystemMaintenancePanel";
 import { MaintenanceMenuItems } from "./components/MaintenanceMenuItems";
-import { SystemDetailsTopSlot } from "@checkmate/catalog-common";
 
 export default createFrontendPlugin({
   name: "maintenance-frontend",
   routes: [
     {
-      path: "/config",
+      route: maintenanceRoutes.routes.config,
       element: <MaintenanceConfigPage />,
       title: "Maintenances",
       permission: "maintenance-backend.maintenance.manage",

@@ -27,7 +27,11 @@ import { Settings2 } from "lucide-react";
 import { DropdownMenuItem } from "@checkmate/ui";
 import { useApi } from "@checkmate/frontend-api";
 import { AuthSettingsPage } from "./components/AuthSettingsPage";
-import { permissions as authPermissions } from "@checkmate/auth-common";
+import {
+  permissions as authPermissions,
+  authRoutes,
+} from "@checkmate/auth-common";
+import { resolveRoute } from "@checkmate/common";
 
 class AuthPermissionApi implements PermissionApi {
   usePermission(permission: string): { loading: boolean; allowed: boolean } {
@@ -118,7 +122,9 @@ class BetterAuthApi implements AuthApi {
     await authClient.signIn.social({
       provider,
       callbackURL: frontendUrl,
-      errorCallbackURL: `${frontendUrl}/auth/error`,
+      errorCallbackURL: `${frontendUrl}${resolveRoute(
+        authRoutes.routes.error
+      )}`,
     });
   }
 
@@ -172,19 +178,19 @@ export const authPlugin = createFrontendPlugin({
   ],
   routes: [
     {
-      path: "/login",
+      route: authRoutes.routes.login,
       element: <LoginPage />,
     },
     {
-      path: "/register",
+      route: authRoutes.routes.register,
       element: <RegisterPage />,
     },
     {
-      path: "/error",
+      route: authRoutes.routes.error,
       element: <AuthErrorPage />,
     },
     {
-      path: "/settings",
+      route: authRoutes.routes.settings,
       element: <AuthSettingsPage />,
     },
   ],
@@ -209,7 +215,7 @@ export const authPlugin = createFrontendPlugin({
 
         return (
           <DropdownMenuItem
-            onClick={() => navigate("/auth/settings")}
+            onClick={() => navigate(resolveRoute(authRoutes.routes.settings))}
             icon={<Settings2 className="h-4 w-4" />}
           >
             Auth Settings

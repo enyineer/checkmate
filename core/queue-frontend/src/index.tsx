@@ -4,6 +4,7 @@ import { queueApiRef, type QueueApi } from "./api";
 import { createFrontendPlugin } from "@checkmate/frontend-api";
 import { QueueConfigPage } from "./pages/QueueConfigPage";
 import { QueueUserMenuItems } from "./components/UserMenuItems";
+import { queueRoutes } from "@checkmate/queue-common";
 
 export const queuePlugin = createFrontendPlugin({
   name: "queue-frontend",
@@ -18,7 +19,7 @@ export const queuePlugin = createFrontendPlugin({
   ],
   routes: [
     {
-      path: "/config",
+      route: queueRoutes.routes.config,
       element: <QueueConfigPage />,
       permission: "queue.read",
     },

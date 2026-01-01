@@ -23,3 +23,4 @@ export {
   type AddMaintenanceUpdateInput,
 } from "./schemas";
 export { MaintenanceDetailsSlot, MaintenanceStatusSlot } from "./slots";
+export { maintenanceRoutes } from "./routes";

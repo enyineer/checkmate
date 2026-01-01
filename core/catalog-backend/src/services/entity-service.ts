@@ -1,8 +1,27 @@
 import { eq, and } from "drizzle-orm";
-import { NewSystem, NewGroup, NewView } from "./types";
 import * as schema from "../schema";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { v4 as uuidv4 } from "uuid";
+
+// Type aliases for entity creation
+type NewSystem = {
+  name: string;
+  description?: string;
+  owner?: string;
+  status?: "healthy" | "degraded" | "unhealthy";
+  metadata?: Record<string, unknown>;
+};
+
+type NewGroup = {
+  name: string;
+  metadata?: Record<string, unknown>;
+};
+
+type NewView = {
+  name: string;
+  type: string;
+  config: Record<string, unknown>;
+};
 
 export class EntityService {
   private database: NodePgDatabase<typeof schema>;

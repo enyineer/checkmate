@@ -2,6 +2,7 @@ import { rpcApiRef, ApiRef } from "@checkmate/frontend-api";
 import { SLOT_USER_MENU_ITEMS } from "@checkmate/common";
 import { catalogApiRef, type CatalogApi } from "./api";
 import { createFrontendPlugin } from "@checkmate/frontend-api";
+import { catalogRoutes } from "@checkmate/catalog-common";
 
 import { CatalogPage } from "./components/CatalogPage";
 import { CatalogConfigPage } from "./components/CatalogConfigPage";
@@ -22,16 +23,16 @@ export const catalogPlugin = createFrontendPlugin({
   ],
   routes: [
     {
-      path: "/",
+      route: catalogRoutes.routes.home,
       element: <CatalogPage />,
     },
     {
-      path: "/config",
+      route: catalogRoutes.routes.config,
       element: <CatalogConfigPage />,
       permission: "catalog.manage",
     },
     {
-      path: "/system/:systemId",
+      route: catalogRoutes.routes.systemDetail,
       element: <SystemDetailPage />,
     },
   ],

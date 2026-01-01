@@ -15,12 +15,13 @@ import {
   SystemDetailsSlot,
   CatalogSystemActionsSlot,
 } from "@checkmate/catalog-common";
+import { healthcheckRoutes } from "@checkmate/healthcheck-common";
 
 export default createFrontendPlugin({
   name: "healthcheck-frontend",
   routes: [
     {
-      path: "/config",
+      route: healthcheckRoutes.routes.config,
       element: <HealthCheckConfigPage />,
       title: "Health Checks",
       permission: "healthcheck.read",

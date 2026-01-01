@@ -31,3 +31,4 @@ export interface HealthCheckConfiguration {
 // HealthCheckRun and HealthCheckStatus types are now exported from ./schemas
 
 export * from "./rpc-contract";
+export { healthcheckRoutes } from "./routes";
