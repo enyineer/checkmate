@@ -51,7 +51,29 @@ export const SystemMaintenancePanel: React.FC<Props> = ({ system }) => {
   }
 
   if (maintenances.length === 0) {
-    return; // Don't show card if no maintenances
+    // Show a subtle card with just the history button when no active maintenances
+    return (
+      <Card className="border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Wrench className="h-4 w-4" />
+              <span className="text-sm">No active maintenances</span>
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link
+                to={resolveRoute(maintenanceRoutes.routes.systemHistory, {
+                  systemId: system.id,
+                })}
+              >
+                <History className="h-4 w-4 mr-1" />
+                View History
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const getStatusBadge = (status: string) => {
