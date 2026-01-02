@@ -22,7 +22,6 @@ import type { Permission } from "@checkmate/common";
 import { rootLogger } from "../logger";
 import type { ServiceRegistry } from "../services/service-registry";
 import { plugins } from "../schema";
-import { fixMigrationsSchemaReferences } from "../utils/fix-migrations";
 import {
   discoverLocalPlugins,
   syncPluginsToDatabase,
@@ -67,11 +66,13 @@ export function registerPlugin({
   if (!backendPlugin || typeof backendPlugin.register !== "function") {
     rootLogger.warn(
       `Plugin ${
-        backendPlugin?.pluginId || "unknown"
+        backendPlugin?.metadata?.pluginId || "unknown"
       } is not using new API. Skipping.`
     );
     return;
   }
+
+  const pluginId = backendPlugin.metadata.pluginId;
 
   // Execute Register
   backendPlugin.register({
@@ -87,7 +88,7 @@ export function registerPlugin({
       ) => Promise<void>;
     }) => {
       pendingInits.push({
-        pluginId: backendPlugin.pluginId,
+        pluginId: pluginId,
         pluginPath: pluginPath,
         deps: args.deps,
         init: args.init as InitCallback,
@@ -97,7 +98,7 @@ export function registerPlugin({
     },
     registerService: (ref: ServiceRef<unknown>, impl: unknown) => {
       deps.registry.register(ref, impl);
-      providedBy.set(ref.id, backendPlugin.pluginId);
+      providedBy.set(ref.id, pluginId);
       rootLogger.debug(`   -> Registered service '${ref.id}'`);
     },
     registerExtensionPoint: (ref, impl) => {
@@ -109,33 +110,29 @@ export function registerPlugin({
     registerPermissions: (permissions: Permission[]) => {
       // Store permissions with pluginId prefix to namespace them
       const prefixed = permissions.map((p) => ({
-        pluginId: backendPlugin.pluginId,
-        id: `${backendPlugin.pluginId}.${p.id}`,
+        pluginId: pluginId,
+        id: `${pluginId}.${p.id}`,
         description: p.description,
         isAuthenticatedDefault: p.isAuthenticatedDefault,
         isPublicDefault: p.isPublicDefault,
       }));
       deps.registeredPermissions.push(...prefixed);
       rootLogger.debug(
-        `   -> Registered ${prefixed.length} permissions for ${backendPlugin.pluginId}`
+        `   -> Registered ${prefixed.length} permissions for ${pluginId}`
       );
     },
     registerRouter: (
       router: Router<AnyContractRouter, RpcContext>,
       subpath?: string
     ) => {
-      const fullPath = subpath
-        ? `${backendPlugin.pluginId}${subpath}`
-        : backendPlugin.pluginId;
+      const fullPath = subpath ? `${pluginId}${subpath}` : pluginId;
       deps.pluginRpcRouters.set(fullPath, router);
     },
     registerCleanup: (cleanup: () => Promise<void>) => {
-      const existing = deps.cleanupHandlers.get(backendPlugin.pluginId) || [];
+      const existing = deps.cleanupHandlers.get(pluginId) || [];
       existing.push(cleanup);
-      deps.cleanupHandlers.set(backendPlugin.pluginId, existing);
-      rootLogger.debug(
-        `   -> Registered cleanup handler for ${backendPlugin.pluginId}`
-      );
+      deps.cleanupHandlers.set(pluginId, existing);
+      rootLogger.debug(`   -> Registered cleanup handler for ${pluginId}`);
     },
     pluginManager: {
       getAllPermissions: () => deps.getAllPermissions(),
@@ -264,7 +261,6 @@ export async function loadPlugins({
       const migrationsFolder = path.join(p.pluginPath, "drizzle");
       if (fs.existsSync(migrationsFolder)) {
         try {
-          fixMigrationsSchemaReferences(migrationsFolder);
           rootLogger.debug(
             `   -> Running migrations for ${p.pluginId} from ${migrationsFolder}`
           );

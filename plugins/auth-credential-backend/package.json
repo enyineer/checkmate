@@ -13,7 +13,8 @@
   "dependencies": {
     "@checkmate/backend-api": "workspace:*",
     "@checkmate/auth-backend": "workspace:*",
-    "zod": "^4.2.1"
+    "zod": "^4.2.1",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
     "@checkmate/tsconfig": "workspace:*",

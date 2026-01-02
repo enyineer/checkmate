@@ -1,12 +1,12 @@
 {
-  "id": "76fbd309-bad4-46c9-9b8f-e3e9d5a225b0",
+  "id": "d2bda650-0fe3-4606-9765-9ea3e48d2e04",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.groups": {
+    "plugin_catalog.groups": {
       "name": "groups",
-      "schema": "",
+      "schema": "plugin_catalog",
       "columns": {
         "id": {
           "name": "id",
@@ -50,9 +50,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.systems": {
+    "plugin_catalog.systems": {
       "name": "systems",
-      "schema": "",
+      "schema": "plugin_catalog",
       "columns": {
         "id": {
           "name": "id",
@@ -108,9 +108,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.systems_groups": {
+    "plugin_catalog.systems_groups": {
       "name": "systems_groups",
-      "schema": "",
+      "schema": "plugin_catalog",
       "columns": {
         "system_id": {
           "name": "system_id",
@@ -131,6 +131,7 @@
           "name": "systems_groups_system_id_systems_id_fk",
           "tableFrom": "systems_groups",
           "tableTo": "systems",
+          "schemaTo": "plugin_catalog",
           "columnsFrom": [
             "system_id"
           ],
@@ -144,6 +145,7 @@
           "name": "systems_groups_group_id_groups_id_fk",
           "tableFrom": "systems_groups",
           "tableTo": "groups",
+          "schemaTo": "plugin_catalog",
           "columnsFrom": [
             "group_id"
           ],
@@ -168,9 +170,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.views": {
+    "plugin_catalog.views": {
       "name": "views",
-      "schema": "",
+      "schema": "plugin_catalog",
       "columns": {
         "id": {
           "name": "id",

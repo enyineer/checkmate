@@ -9,9 +9,10 @@ import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { createHealthCheckRouter } from "./router";
 import { HealthCheckService } from "./service";
 import { catalogHooks } from "@checkmate/catalog-backend";
+import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
-  pluginId: "healthcheck",
+  metadata: pluginMetadata,
   register(env) {
     env.registerPermissions(permissionList);
 

@@ -45,7 +45,7 @@ describe("HealthCheck Plugin Integration", () => {
 
     // 2. Define a mock plugin that registers this strategy
     const testPlugin = createBackendPlugin({
-      pluginId: "test-plugin",
+      metadata: { pluginId: "test-plugin" },
       register(env) {
         env.registerInit({
           deps: {

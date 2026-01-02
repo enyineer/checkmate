@@ -1,5 +1,5 @@
 import {
-  pgTable,
+  pgSchema,
   text,
   jsonb,
   integer,
@@ -7,10 +7,16 @@ import {
   uuid,
   timestamp,
   primaryKey,
-  pgEnum,
 } from "drizzle-orm/pg-core";
 import type { StateThresholds } from "@checkmate/healthcheck-common";
 import type { VersionedData } from "@checkmate/backend-api";
+import { getPluginSchemaName } from "@checkmate/drizzle-helper";
+import { pluginMetadata } from "./plugin-metadata";
+
+// Get the schema name from the plugin's pluginId
+const healthcheckSchema = pgSchema(
+  getPluginSchemaName(pluginMetadata.pluginId)
+);
 
 /**
  * Type alias for versioned state thresholds stored in the database.
@@ -21,16 +27,15 @@ export type VersionedStateThresholds = VersionedData<StateThresholds>;
 /**
  * Health check status enum for type-safe status values.
  */
-export const healthCheckStatusEnum = pgEnum("health_check_status", [
-  "healthy",
-  "unhealthy",
-  "degraded",
-]);
+export const healthCheckStatusEnum = healthcheckSchema.enum(
+  "health_check_status",
+  ["healthy", "unhealthy", "degraded"]
+);
 
 export type HealthCheckStatus =
   (typeof healthCheckStatusEnum.enumValues)[number];
 
-export const healthCheckConfigurations = pgTable(
+export const healthCheckConfigurations = healthcheckSchema.table(
   "health_check_configurations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -44,7 +49,7 @@ export const healthCheckConfigurations = pgTable(
   }
 );
 
-export const systemHealthChecks = pgTable(
+export const systemHealthChecks = healthcheckSchema.table(
   "system_health_checks",
   {
     systemId: text("system_id").notNull(),
@@ -66,7 +71,7 @@ export const systemHealthChecks = pgTable(
   })
 );
 
-export const healthCheckRuns = pgTable("health_check_runs", {
+export const healthCheckRuns = healthcheckSchema.table("health_check_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
   configurationId: uuid("configuration_id")
     .notNull()

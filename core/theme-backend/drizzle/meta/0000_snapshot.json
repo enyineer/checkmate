@@ -1,12 +1,12 @@
 {
-  "id": "a8b8b562-44c6-40df-9ded-ed75c76912ad",
+  "id": "60de9136-99a7-49a7-aead-198395cacc64",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.user_theme_preference": {
+    "plugin_theme.user_theme_preference": {
       "name": "user_theme_preference",
-      "schema": "",
+      "schema": "plugin_theme",
       "columns": {
         "user_id": {
           "name": "user_id",

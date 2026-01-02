@@ -12,7 +12,8 @@
     "@checkmate/backend-api": "workspace:*",
     "@checkmate/queue-api": "workspace:*",
     "@checkmate/queue-memory-common": "workspace:*",
-    "zod": "^4.2.1"
+    "zod": "^4.2.1",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

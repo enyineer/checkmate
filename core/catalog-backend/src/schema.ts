@@ -1,12 +1,17 @@
 import {
-  pgTable,
+  pgSchema,
   text,
   timestamp,
   json,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { getPluginSchemaName } from "@checkmate/drizzle-helper";
+import { pluginMetadata } from "./plugin-metadata";
 
-export const systems = pgTable("systems", {
+// Get the schema name from the plugin's pluginId
+const catalogSchema = pgSchema(getPluginSchemaName(pluginMetadata.pluginId));
+
+export const systems = catalogSchema.table("systems", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
@@ -16,7 +21,7 @@ export const systems = pgTable("systems", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const groups = pgTable("groups", {
+export const groups = catalogSchema.table("groups", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
 
@@ -25,7 +30,7 @@ export const groups = pgTable("groups", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const systemsGroups = pgTable(
+export const systemsGroups = catalogSchema.table(
   "systems_groups",
   {
     systemId: text("system_id")
@@ -40,7 +45,7 @@ export const systemsGroups = pgTable(
   })
 );
 
-export const views = pgTable("views", {
+export const views = catalogSchema.table("views", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),

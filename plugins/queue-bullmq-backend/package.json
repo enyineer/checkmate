@@ -13,7 +13,8 @@
     "@checkmate/queue-api": "workspace:*",
     "@checkmate/queue-bullmq-common": "workspace:*",
     "bullmq": "^5.66.4",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

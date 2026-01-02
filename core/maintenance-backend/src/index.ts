@@ -4,9 +4,10 @@ import { permissionList } from "@checkmate/maintenance-common";
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { MaintenanceService } from "./service";
 import { createRouter } from "./router";
+import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
-  pluginId: "maintenance",
+  metadata: pluginMetadata,
   register(env) {
     env.registerPermissions(permissionList);
 

@@ -4,6 +4,7 @@ import {
   secret,
   coreServices,
 } from "@checkmate/backend-api";
+import { pluginMetadata } from "./plugin-metadata";
 import {
   betterAuthExtensionPoint,
   redirectToAuthError,
@@ -192,7 +193,7 @@ const ldapStrategy: AuthStrategy<LdapConfig> = {
 };
 
 export default createBackendPlugin({
-  pluginId: "auth-ldap",
+  metadata: pluginMetadata,
   register(env) {
     // Register the LDAP strategy
     const extensionPoint = env.getExtensionPoint(betterAuthExtensionPoint);

@@ -1,9 +1,10 @@
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import * as schema from "./schema";
 import { createThemeRouter } from "./router";
+import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
-  pluginId: "theme",
+  metadata: pluginMetadata,
 
   register(env) {
     // Register initialization logic with schema

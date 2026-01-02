@@ -5,6 +5,7 @@ import {
 } from "@checkmate/backend-api";
 import { betterAuthExtensionPoint } from "@checkmate/auth-backend";
 import { z } from "zod";
+import { pluginMetadata } from "./plugin-metadata";
 
 /**
  * GitHub OAuth configuration schema.
@@ -44,7 +45,7 @@ const githubStrategy: AuthStrategy<z.infer<typeof githubConfigV2>> = {
 };
 
 export default createBackendPlugin({
-  pluginId: "auth-github",
+  metadata: pluginMetadata,
   register(env) {
     const extensionPoint = env.getExtensionPoint(betterAuthExtensionPoint);
     extensionPoint.addStrategy(githubStrategy);

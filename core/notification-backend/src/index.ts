@@ -5,6 +5,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { createNotificationRouter } from "./router";
 import { NotificationService } from "./service";
+import { pluginMetadata } from "./plugin-metadata";
 
 // Export service ref for other plugins to depend on
 export const notificationServiceRef = createServiceRef<NotificationService>(
@@ -20,7 +21,7 @@ export type {
 } from "./service";
 
 export default createBackendPlugin({
-  pluginId: "notification",
+  metadata: pluginMetadata,
 
   register(env) {
     // Register permissions

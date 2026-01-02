@@ -19,9 +19,11 @@
     "hono": "^4.0.0",
     "jose": "^6.1.3",
     "zod": "^4.2.1",
-    "zod-to-json-schema": "^3.25.1"
+    "zod-to-json-schema": "^3.25.1",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
+    "@checkmate/drizzle-helper": "workspace:*",
     "@checkmate/scripts": "workspace:*",
     "@checkmate/tsconfig": "workspace:*",
     "@orpc/server": "^1.13.2",

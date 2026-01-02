@@ -1,7 +1,7 @@
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ServiceRef } from "./service-ref";
 import { ExtensionPoint } from "./extension-point";
-import type { Permission } from "@checkmate/common";
+import type { Permission, PluginMetadata } from "@checkmate/common";
 import type { Hook, HookSubscribeOptions, HookUnsubscribe } from "./hooks";
 import { Router } from "@orpc/server";
 import { RpcContext } from "./rpc";
@@ -85,7 +85,11 @@ export type BackendPluginRegistry = {
 };
 
 export type BackendPlugin = {
-  pluginId: string;
+  /**
+   * Plugin metadata containing the pluginId.
+   * This should be imported from the plugin's common package.
+   */
+  metadata: PluginMetadata;
   register: (env: BackendPluginRegistry) => void;
 };
 

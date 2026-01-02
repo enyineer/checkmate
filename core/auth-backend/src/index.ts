@@ -3,10 +3,12 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import {
   createBackendPlugin,
+  coreServices,
+  coreHooks,
   authenticationStrategyServiceRef,
   type AuthStrategy,
 } from "@checkmate/backend-api";
-import { coreServices, coreHooks } from "@checkmate/backend-api";
+import { pluginMetadata } from "./plugin-metadata";
 import { userInfoRef } from "./services/user-info";
 import * as schema from "./schema";
 import { eq } from "drizzle-orm";
@@ -274,7 +276,7 @@ async function syncPublicDefaultPermissionsToAnonymousRole({
 }
 
 export default createBackendPlugin({
-  pluginId: "auth",
+  metadata: pluginMetadata,
   register(env) {
     let auth: ReturnType<typeof betterAuth> | undefined;
     let db: NodePgDatabase<typeof schema> | undefined;

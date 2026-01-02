@@ -20,9 +20,11 @@
     "@checkmate/signal-common": "workspace:*",
     "@checkmate/queue-api": "workspace:*",
     "drizzle-orm": "^0.45.1",
-    "zod": "^4.2.1"
+    "zod": "^4.2.1",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
+    "@checkmate/drizzle-helper": "workspace:*",
     "@checkmate/scripts": "workspace:*",
     "@checkmate/tsconfig": "workspace:*",
     "@checkmate/test-utils-backend": "workspace:*",

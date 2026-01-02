@@ -1,9 +1,10 @@
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { BullMQPlugin } from "./plugin";
 import { permissionList } from "@checkmate/queue-bullmq-common";
+import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
-  pluginId: "queue-bullmq",
+  metadata: pluginMetadata,
   register(env) {
     env.registerPermissions(permissionList);
 

@@ -1,9 +1,10 @@
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { InMemoryQueuePlugin } from "./plugin";
 import { permissionList } from "@checkmate/queue-memory-common";
+import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
-  pluginId: "queue-memory",
+  metadata: pluginMetadata,
   register(env) {
     env.registerPermissions(permissionList);
 

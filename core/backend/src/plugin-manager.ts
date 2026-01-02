@@ -315,6 +315,8 @@ export class PluginManager {
         );
       }
 
+      const metaPluginId = backendPlugin.metadata.pluginId;
+
       // 2. Register plugin (Phase 1)
       const pendingInits: { pluginId: string; init: () => Promise<void> }[] =
         [];
@@ -322,14 +324,14 @@ export class PluginManager {
       backendPlugin.register({
         registerInit: (args) => {
           pendingInits.push({
-            pluginId: backendPlugin.pluginId,
+            pluginId: metaPluginId,
             init: async () => {
               // Resolve dependencies
               const resolvedDeps: Record<string, unknown> = {};
               for (const [key, ref] of Object.entries(args.deps)) {
                 resolvedDeps[key] = await this.registry.get(
                   ref as ServiceRef<unknown>,
-                  backendPlugin.pluginId
+                  metaPluginId
                 );
               }
               await args.init(resolvedDeps as never);
@@ -339,14 +341,14 @@ export class PluginManager {
         registerPermissions: (permissions) => {
           const prefixed = permissions.map((p) => ({
             ...p,
-            id: `${backendPlugin.pluginId}.${p.id}`,
-            pluginId: backendPlugin.pluginId,
+            id: `${metaPluginId}.${p.id}`,
+            pluginId: metaPluginId,
           }));
           this.registeredPermissions.push(...prefixed);
 
           // Emit permission hook
           eventBus.emit(coreHooks.permissionsRegistered, {
-            pluginId: backendPlugin.pluginId,
+            pluginId: metaPluginId,
             permissions: prefixed,
           });
         },
@@ -357,15 +359,14 @@ export class PluginManager {
           this.extensionPointManager.registerExtensionPoint(ref, impl);
         },
         registerCleanup: (cleanup) => {
-          const handlers =
-            this.cleanupHandlers.get(backendPlugin.pluginId) || [];
+          const handlers = this.cleanupHandlers.get(metaPluginId) || [];
           handlers.push(cleanup);
-          this.cleanupHandlers.set(backendPlugin.pluginId, handlers);
+          this.cleanupHandlers.set(metaPluginId, handlers);
         },
         getExtensionPoint: <T>(ref: ExtensionPoint<T>) =>
           this.extensionPointManager.getExtensionPoint(ref),
         registerRouter: (router: unknown) => {
-          this.pluginRpcRouters.set(backendPlugin.pluginId, router);
+          this.pluginRpcRouters.set(metaPluginId, router);
         },
         pluginManager: {
           getAllPermissions: () => this.getAllPermissions(),

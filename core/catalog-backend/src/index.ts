@@ -4,19 +4,18 @@ import { coreServices } from "@checkmate/backend-api";
 import { permissionList } from "@checkmate/catalog-common";
 import { createCatalogRouter } from "./router";
 import type { NotificationClient } from "@checkmate/notification-common";
+import { pluginMetadata } from "./plugin-metadata";
 
 // Database schema is still needed for types in creating the router
 import * as schema from "./schema";
 
 export let db: NodePgDatabase<typeof schema> | undefined;
 
-const PLUGIN_ID = "catalog";
-
 // Export hooks for other plugins to subscribe to
 export { catalogHooks } from "./hooks";
 
 export default createBackendPlugin({
-  pluginId: PLUGIN_ID,
+  metadata: pluginMetadata,
   register(env) {
     env.registerPermissions(permissionList);
 
@@ -41,7 +40,7 @@ export default createBackendPlugin({
         const catalogRouter = createCatalogRouter(
           typedDb,
           notificationClient,
-          PLUGIN_ID
+          pluginMetadata.pluginId
         );
         rpc.registerRouter(catalogRouter);
 
@@ -79,7 +78,7 @@ async function bootstrapNotificationGroups(
         groupId: `system.${system.id}`,
         name: `${system.name} Notifications`,
         description: `Notifications for the ${system.name} system`,
-        ownerPlugin: PLUGIN_ID,
+        ownerPlugin: pluginMetadata.pluginId,
       });
     }
 
@@ -89,7 +88,7 @@ async function bootstrapNotificationGroups(
         groupId: `group.${group.id}`,
         name: `${group.name} Notifications`,
         description: `Notifications for the ${group.name} group`,
-        ownerPlugin: PLUGIN_ID,
+        ownerPlugin: pluginMetadata.pluginId,
       });
     }
 

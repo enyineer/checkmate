@@ -17,7 +17,8 @@
     "@checkmate/queue-common": "workspace:*",
     "@hono/zod-validator": "^0.4.1",
     "hono": "^4.6.14",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
     "@checkmate/scripts": "workspace:*",

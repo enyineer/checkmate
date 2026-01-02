@@ -440,7 +440,7 @@ describe("PluginManager", () => {
       const testBackendInit = mock(async () => {});
 
       const testPlugin = {
-        pluginId: "test-backend",
+        metadata: { pluginId: "test-backend" },
         register: ({ registerInit }: any) => {
           registerInit({ deps: {}, init: testBackendInit });
         },

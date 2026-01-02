@@ -1,6 +1,7 @@
 import { createBackendPlugin, type AuthStrategy } from "@checkmate/backend-api";
 import { betterAuthExtensionPoint } from "@checkmate/auth-backend";
 import { z } from "zod";
+import { pluginMetadata } from "./plugin-metadata";
 
 // Credential strategy has no configuration - it's built into better-auth
 const credentialConfigV1 = z.object({});
@@ -16,7 +17,7 @@ const credentialStrategy: AuthStrategy<z.infer<typeof credentialConfigV1>> = {
 };
 
 export default createBackendPlugin({
-  pluginId: "auth-credential",
+  metadata: pluginMetadata,
   register(env) {
     const extensionPoint = env.getExtensionPoint(betterAuthExtensionPoint);
     extensionPoint.addStrategy(credentialStrategy);

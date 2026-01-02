@@ -17,7 +17,8 @@
     "better-auth": "^1.4.9",
     "drizzle-orm": "^0.45.1",
     "ldapts": "^8.0.0",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
     "@checkmate/tsconfig": "workspace:*",

@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@checkmate/backend-api": "workspace:*",
-    "jsonpath-plus": "^10.3.0"
+    "jsonpath-plus": "^10.3.0",
+    "@checkmate/common": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "^1.0.0",
