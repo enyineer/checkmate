@@ -1,0 +1,32 @@
+{
+  "name": "@checkmate/incident-backend",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "lint": "bun run lint:code",
+    "lint:code": "eslint . --max-warnings 0"
+  },
+  "dependencies": {
+    "@checkmate/backend-api": "workspace:*",
+    "@checkmate/incident-common": "workspace:*",
+    "@checkmate/catalog-common": "workspace:*",
+    "@checkmate/catalog-backend": "workspace:*",
+    "@checkmate/signal-common": "workspace:*",
+    "@checkmate/common": "workspace:*",
+    "drizzle-orm": "^0.45.1",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@checkmate/drizzle-helper": "workspace:*",
+    "@checkmate/scripts": "workspace:*",
+    "@checkmate/test-utils-backend": "workspace:*",
+    "@checkmate/tsconfig": "workspace:*",
+    "@orpc/server": "^1.13.2",
+    "@types/bun": "^1.0.0",
+    "drizzle-kit": "^0.31.8",
+    "typescript": "^5.0.0"
+  }
+}

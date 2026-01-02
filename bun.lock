@@ -362,6 +362,68 @@
         "typescript": "^5.0.0",
       },
     },
+    "core/incident-backend": {
+      "name": "@checkmate/incident-backend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/backend-api": "workspace:*",
+        "@checkmate/catalog-backend": "workspace:*",
+        "@checkmate/catalog-common": "workspace:*",
+        "@checkmate/common": "workspace:*",
+        "@checkmate/incident-common": "workspace:*",
+        "@checkmate/signal-common": "workspace:*",
+        "drizzle-orm": "^0.45.1",
+        "zod": "^4.2.1",
+      },
+      "devDependencies": {
+        "@checkmate/drizzle-helper": "workspace:*",
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/test-utils-backend": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "@orpc/server": "^1.13.2",
+        "@types/bun": "^1.0.0",
+        "drizzle-kit": "^0.31.8",
+        "typescript": "^5.0.0",
+      },
+    },
+    "core/incident-common": {
+      "name": "@checkmate/incident-common",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/common": "workspace:*",
+        "@checkmate/frontend-api": "workspace:*",
+        "@checkmate/signal-common": "workspace:*",
+        "@orpc/contract": "^1.13.2",
+        "zod": "^4.2.1",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "typescript": "^5.7.2",
+      },
+    },
+    "core/incident-frontend": {
+      "name": "@checkmate/incident-frontend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate/catalog-common": "workspace:*",
+        "@checkmate/common": "workspace:*",
+        "@checkmate/frontend-api": "workspace:*",
+        "@checkmate/incident-common": "workspace:*",
+        "@checkmate/signal-frontend": "workspace:*",
+        "@checkmate/ui": "workspace:*",
+        "date-fns": "^4.1.0",
+        "lucide-react": "^0.344.0",
+        "react": "^18.2.0",
+        "react-router-dom": "^6.20.0",
+      },
+      "devDependencies": {
+        "@checkmate/scripts": "workspace:*",
+        "@checkmate/tsconfig": "workspace:*",
+        "@types/react": "^18.2.0",
+        "typescript": "^5.0.0",
+      },
+    },
     "core/maintenance-backend": {
       "name": "@checkmate/maintenance-backend",
       "version": "0.0.1",
@@ -986,6 +1048,12 @@
     "@checkmate/healthcheck-frontend": ["@checkmate/healthcheck-frontend@workspace:core/healthcheck-frontend"],
 
     "@checkmate/healthcheck-http-backend": ["@checkmate/healthcheck-http-backend@workspace:plugins/healthcheck-http-backend"],
+
+    "@checkmate/incident-backend": ["@checkmate/incident-backend@workspace:core/incident-backend"],
+
+    "@checkmate/incident-common": ["@checkmate/incident-common@workspace:core/incident-common"],
+
+    "@checkmate/incident-frontend": ["@checkmate/incident-frontend@workspace:core/incident-frontend"],
 
     "@checkmate/maintenance-backend": ["@checkmate/maintenance-backend@workspace:core/maintenance-backend"],
 
