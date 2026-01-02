@@ -1,7 +1,110 @@
 {
+  "id": "0f04d1ab-b47d-4057-b267-4b904deebd99",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.jwt_keys": {
+      "name": "jwt_keys",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_key": {
+          "name": "public_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "private_key": {
+          "name": "private_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "algorithm": {
+          "name": "algorithm",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.plugin_configs": {
+      "name": "plugin_configs",
+      "schema": "",
+      "columns": {
+        "plugin_id": {
+          "name": "plugin_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config_id": {
+          "name": "config_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "plugin_configs_plugin_id_config_id_pk": {
+          "name": "plugin_configs_plugin_id_config_id_pk",
+          "columns": [
+            "plugin_id",
+            "config_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.plugins": {
       "name": "plugins",
       "schema": "",
@@ -44,6 +147,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'backend'"
         }
       },
       "indexes": {},
@@ -52,28 +162,26 @@
       "uniqueConstraints": {
         "plugins_name_unique": {
           "name": "plugins_name_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "name"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {},
   "schemas": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "id": "3ae4b5c7-f355-4b56-83be-d1670ab9bcfd",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "sequences": {},
+  "roles": {},
   "policies": {},
   "views": {},
-  "roles": {}
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
 }

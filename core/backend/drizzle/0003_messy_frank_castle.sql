@@ -1,1 +1,0 @@
-ALTER TABLE "plugins" ADD COLUMN "type" text DEFAULT 'backend' NOT NULL;
