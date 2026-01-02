@@ -103,7 +103,7 @@ export interface QueuePlugin {
 
 // plugins/queue-bullmq-backend/src/index.ts
 export default createBackendPlugin({
-  pluginId: "queue-bullmq-backend",
+  metadata: pluginMetadata,
   register(env) {
     env.registerService(queuePluginRef, {
       type: "queue",

@@ -142,7 +142,7 @@ import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import type { AuthClient } from "@checkmate/auth-common";
 
 export default createBackendPlugin({
-  pluginId: "auth-ldap-backend",
+  metadata: pluginMetadata,
   register: (env) => {
     env.registerInit({
       deps: {
@@ -152,7 +152,7 @@ export default createBackendPlugin({
       },
       init: async ({ rpcClient, logger }) => {
         // Get typed client
-        const authClient = rpcClient.forPlugin<AuthClient>("auth-backend");
+        const authClient = rpcClient.forPlugin<AuthClient>("auth");
         
         // Somewhere in your logic...
         try {

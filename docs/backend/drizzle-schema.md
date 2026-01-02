@@ -2,73 +2,102 @@
 ---
 # Drizzle Schema Isolation
 
-## The Problem
+## Overview
 
-When using Drizzle with per-plugin database schemas (e.g., `plugin_catalog-backend`, `plugin_auth-backend`), Drizzle-kit generates migrations with hardcoded `"public".` schema references in foreign key constraints. This causes migrations to fail when run in isolated schemas.
+Each plugin in Checkmate has its own isolated database schema (e.g., `plugin_catalog`, `plugin_auth`). This ensures plugins don't conflict with each other and allows for clean separation of concerns.
 
-Example problematic migration:
-```sql
-ALTER TABLE "systems_groups" 
-  ADD CONSTRAINT "systems_groups_system_id_systems_id_fk" 
-  FOREIGN KEY ("system_id") 
-  REFERENCES "public"."systems"("id") 
-  ON DELETE cascade;
-```
+## How It Works
 
-## The Solution
-
-The **backend core automatically fixes migrations at runtime** before executing them. When the `PluginManager` discovers migrations for any plugin, it:
-
-1. Scans all `.sql` files in the plugin's `drizzle/` folder
-2. Removes any hardcoded `"public".` schema references
-3. Runs the fixed migrations in the plugin's isolated schema
-
-This happens automatically for **all plugins** (local and remote) with zero configuration required.
-
-### Implementation
-
-The fix is implemented in `/core/backend/src/utils/fix-migrations.ts` and is called automatically by the `PluginManager` before running any plugin migrations.
+Plugins use Drizzle's `pgSchema()` function combined with the `getPluginSchemaName()` helper to define schema-qualified tables:
 
 ```typescript
-// In PluginManager.loadPlugins()
-if (fs.existsSync(migrationsFolder)) {
-  // Automatic fix before migration
-  fixMigrationsSchemaReferences(migrationsFolder);
-  
-  await migrate(pluginDb, { migrationsFolder });
+// plugins/my-feature-backend/src/schema.ts
+import { text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgSchema } from "drizzle-orm/pg-core";
+import { getPluginSchemaName } from "@checkmate/drizzle-helper";
+import { pluginMetadata } from "./plugin-metadata";
+
+// Create plugin-scoped schema
+const myFeatureSchema = pgSchema(getPluginSchemaName(pluginMetadata.pluginId));
+
+// Define tables using the schema
+export const items = myFeatureSchema.table("items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+```
+
+## Generated Migrations
+
+When you run `bun run generate`, Drizzle produces migrations with **explicit schema prefixes**:
+
+```sql
+CREATE TABLE "plugin_my_feature"."items" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name" text NOT NULL,
+  "description" text,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "updated_at" timestamp DEFAULT now() NOT NULL
+);
+```
+
+This ensures tables are always created in the correct schema, regardless of the database connection's `search_path`.
+
+## Plugin Metadata Pattern
+
+Every backend plugin must define its metadata in a separate file:
+
+```typescript
+// plugins/my-feature-backend/src/plugin-metadata.ts
+import { definePluginMetadata } from "@checkmate/common";
+
+export const pluginMetadata = definePluginMetadata({
+  pluginId: "my-feature",
+});
+```
+
+This metadata is used by:
+- `createBackendPlugin()` for plugin registration
+- `getPluginSchemaName()` for database schema naming
+- Permission prefixing
+- RPC router mounting
+
+## Dependencies
+
+Backend plugins with database schemas need:
+
+```json
+{
+  "dependencies": {
+    "@checkmate/common": "workspace:*",
+    "drizzle-orm": "^0.36.4"
+  },
+  "devDependencies": {
+    "@checkmate/drizzle-helper": "workspace:*",
+    "drizzle-kit": "^0.28.1"
+  }
 }
 ```
 
-### For Plugin Developers
+## Schema Naming Convention
 
-**You don't need to do anything special!** Just:
+The `getPluginSchemaName()` helper generates schema names using the pattern:
 
-1. Generate migrations normally: `bun run generate`
-2. The backend will automatically fix them at runtime
-3. No scripts to copy, no extra configuration needed
+```
+plugin_{pluginId}
+```
 
-### Why This Approach?
+For example:
+- `pluginId: "catalog"` → schema `plugin_catalog`
+- `pluginId: "auth"` → schema `plugin_auth`
+- `pluginId: "my-feature"` → schema `plugin_my_feature`
 
-✅ **Centralized**: Logic lives in one place (backend core)  
-✅ **Automatic**: Works for all plugins without configuration  
-✅ **Future-proof**: Works for remotely loaded plugins  
-✅ **No duplication**: No need to copy scripts across plugins  
-✅ **Safe**: Migrations are fixed before execution, preventing errors
+> **Note**: Hyphens in plugin IDs are converted to underscores for valid PostgreSQL schema names.
 
-### Alternative Approaches (Not Used)
+## See Also
 
-1. **Use `pgSchema()` in table definitions**: Doesn't work because we need dynamic schemas per plugin
-2. **Per-plugin fix scripts**: Requires duplication and maintenance
-3. **Manual migration editing**: Error-prone and doesn't scale
-4. **Custom migration runner**: Overly complex for this use case
-
-## Technical Details
-
-- Migration files are modified in-place before execution
-- Only files with `"public".` references are modified
-- The fix is idempotent (safe to run multiple times)
-- Debug logs show which files were fixed
-
-## Future Considerations
-
-If Drizzle adds a configuration option like `schemaAgnostic: true` in the future, we can remove this runtime fix. Track Drizzle ORM issues for updates.
+- [Backend Plugins](./plugins.md)
+- [Plugin Templates](../examples/plugin-templates.md)

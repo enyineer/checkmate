@@ -6,34 +6,66 @@ Minimal examples for creating Checkmate plugins. See full guides: [Backend](../b
 
 ## Minimal Backend Plugin
 
+### Plugin Metadata
+
+```typescript
+// plugins/my-feature-backend/src/plugin-metadata.ts
+import { definePluginMetadata } from "@checkmate/common";
+
+export const pluginMetadata = definePluginMetadata({
+  pluginId: "my-feature",
+});
+```
+
+### Main Plugin Entry
+
 ```typescript
 // plugins/my-feature-backend/src/index.ts
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
-import { permissions, myFeatureContract } from "@checkmate/my-feature-common";
+import { permissionList } from "@checkmate/my-feature-common";
 import { createMyFeatureRouter } from "./router";
+import { pluginMetadata } from "./plugin-metadata";
 import * as schema from "./schema";
 
 export default createBackendPlugin({
-  pluginId: "my-feature-backend",
+  metadata: pluginMetadata,
   register(env) {
+    env.registerPermissions(permissionList);
+
     env.registerInit({
+      schema,
       deps: {
-        database: coreServices.database,
+        rpc: coreServices.rpc,
         logger: coreServices.logger,
-        permissionRegistry: coreServices.permissionRegistry,
       },
-      init: async ({ database, logger, permissionRegistry }) => {
-        // Register permissions
-        Object.values(permissions).forEach((p) => permissionRegistry.register(p));
-        
-        // Register router
-        env.registerRouter(createMyFeatureRouter({ database }));
-        
-        logger.debug("my-feature-backend initialized");
+      init: async ({ database, rpc, logger }) => {
+        logger.debug("my-feature initialized");
+        const router = createMyFeatureRouter({ database });
+        rpc.registerRouter(router);
       },
     });
   },
 });
+```
+
+### Database Schema
+
+```typescript
+// plugins/my-feature-backend/src/schema.ts
+import { text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgSchema } from "drizzle-orm/pg-core";
+import { getPluginSchemaName } from "@checkmate/drizzle-helper";
+import { pluginMetadata } from "./plugin-metadata";
+
+const myFeatureSchema = pgSchema(getPluginSchemaName(pluginMetadata.pluginId));
+
+export const items = myFeatureSchema.table("items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Item = typeof items.$inferSelect;
 ```
 
 ---
@@ -99,18 +131,33 @@ import { createPermission } from "@checkmate/common";
 
 export const permissions = {
   read: createPermission({
-    id: "my-feature-backend.items.read",
+    id: "read",
     displayName: "Read Items",
     description: "View items",
-    isDefault: true, // Granted to users role
+    isAuthenticatedDefault: true,
   }),
   
   manage: createPermission({
-    id: "my-feature-backend.items.manage",
+    id: "manage",
     displayName: "Manage Items",
     description: "Create, update, delete items",
   }),
 };
+
+export const permissionList = Object.values(permissions);
+```
+
+---
+
+## Minimal Routes
+
+```typescript
+// plugins/my-feature-common/src/routes.ts
+import { createRoutes } from "@checkmate/common";
+
+export const myFeatureRoutes = createRoutes("my-feature", {
+  home: "/",
+});
 ```
 
 ---
@@ -119,34 +166,41 @@ export const permissions = {
 
 ```typescript
 // plugins/my-feature-frontend/src/index.tsx
-import { createFrontendPlugin, pageApiRef, navApiRef } from "@checkmate/frontend-api";
-import { myFeatureApiRef, createMyFeatureApi } from "./api";
+import { createFrontendPlugin, rpcApiRef, type ApiRef } from "@checkmate/frontend-api";
+import { myFeatureApiRef, type MyFeatureApi } from "./api";
 import { ItemsPage } from "./components/ItemsPage";
+import { myFeatureRoutes } from "@checkmate/my-feature-common";
+import { ListIcon } from "lucide-react";
 
 export default createFrontendPlugin({
-  pluginId: "my-feature-frontend",
-  register(env) {
-    // Register API
-    env.registerApi(myFeatureApiRef, ({ authClient }) => createMyFeatureApi(authClient));
-    
-    // Register pages
-    env.registerApi(pageApiRef, () => ({
-      pages: [{
-        path: "/items",
-        element: <ItemsPage />,
-        title: "Items",
-      }],
-    }));
-    
-    // Register navigation
-    env.registerApi(navApiRef, () => ({
-      items: [{
-        path: "/items",
-        label: "Items",
-        icon: "📦",
-      }],
-    }));
-  },
+  name: "my-feature",
+
+  routes: [
+    {
+      route: myFeatureRoutes.routes.home,
+      element: <ItemsPage />,
+      title: "Items",
+      permission: "my-feature.read",
+    },
+  ],
+
+  apis: [
+    {
+      ref: myFeatureApiRef,
+      factory: (deps: { get: <T>(ref: ApiRef<T>) => T }): MyFeatureApi => {
+        const rpcApi = deps.get(rpcApiRef);
+        return rpcApi.forPlugin<MyFeatureApi>("my-feature");
+      },
+    },
+  ],
+
+  navItems: [
+    {
+      title: "Items",
+      route: myFeatureRoutes.routes.home,
+      icon: <ListIcon />,
+    },
+  ],
 });
 ```
 
@@ -158,3 +212,4 @@ export default createFrontendPlugin({
 - [Frontend Plugin Guide](../frontend/plugins.md)
 - [Common Plugin Guide](../common/plugins.md)
 - [CLI Scaffolding](../tooling/cli.md)
+- [Drizzle Schema Isolation](../backend/drizzle-schema.md)

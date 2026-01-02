@@ -599,7 +599,7 @@ import { autoAuthMiddleware, type RpcContext, type RealUser } from "@checkmate/b
 import { catalogContract, permissionList } from "@checkmate/catalog-common";
 
 export default createBackendPlugin({
-  pluginId: "catalog-backend",
+  metadata: pluginMetadata,
   register(env) {
     // Register all permissions with the core
     env.registerPermissions(permissionList);
@@ -620,7 +620,7 @@ export default createBackendPlugin({
           }),
         });
         
-        rpc.registerRouter("catalog-backend", router);
+        rpc.registerRouter(router);
       },
     });
   },

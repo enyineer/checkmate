@@ -136,7 +136,7 @@ export const httpHealthCheckStrategy: HealthCheckStrategy<HttpCheckConfig> = {
 import { healthCheckExtensionPoint } from "@checkmate/backend-api";
 
 export default createBackendPlugin({
-  pluginId: "healthcheck-http-backend",
+  metadata: pluginMetadata,
   register(env) {
     // Get the health check registry
     const registry = env.getExtensionPoint(healthCheckExtensionPoint);

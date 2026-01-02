@@ -497,9 +497,10 @@ In your backend plugin's `register` lifecycle:
 ```typescript
 import { createBackendPlugin, coreServices } from '@checkmate/backend-api';
 import { RedisQueuePlugin } from './redis-queue-plugin';
+import { pluginMetadata } from './plugin-metadata';
 
 export default createBackendPlugin({
-  pluginId: 'queue-redis-backend',
+  metadata: pluginMetadata,
   register(env) {
     env.registerInit({
       deps: {
@@ -507,7 +508,7 @@ export default createBackendPlugin({
         queueRegistry: coreServices.queuePluginRegistry,
       },
       init: async ({ logger, queueRegistry }) => {
-        logger.info('🔌 Registering Redis Queue Plugin...');
+        logger.debug('🔌 Registering Redis Queue Plugin...');
         queueRegistry.register(new RedisQueuePlugin());
       },
     });

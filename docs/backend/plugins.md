@@ -65,13 +65,17 @@ The generated plugin is a fully functional example. Customize it for your domain
 **src/schema.ts:**
 
 ```typescript
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgSchema } from "drizzle-orm/pg-core";
+import { getPluginSchemaName } from "@checkmate/drizzle-helper";
+import { pluginMetadata } from "./plugin-metadata";
 
-export const myItems = pgTable("myfeature_items", {
+const myFeatureSchema = pgSchema(getPluginSchemaName(pluginMetadata.pluginId));
+
+export const myItems = myFeatureSchema.table("items", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
-  // Add your custom fields here
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -180,7 +184,7 @@ That's it! Your backend plugin is ready to use.
 Creates a backend plugin with the specified configuration.
 
 **Parameters:**
-- `pluginId` (string): Unique identifier for the plugin
+- `metadata` (PluginMetadata): Plugin metadata object containing `pluginId`
 - `register` (function): Registration function called by the core
 
 ### Registration Environment (`env`)
@@ -270,7 +274,7 @@ env.registerInit({
   // DO NOT make RPC calls to other plugins here
   init: async ({ database, rpc, logger }) => {
     const router = createMyRouter(database);
-    rpc.registerRouter("myplugin-backend", router);
+    rpc.registerRouter(router);  // No plugin ID needed - auto-detected from metadata
   },
   // Phase 3: Called after ALL plugins are initialized
   // Safe to make RPC calls and subscribe to hooks
@@ -473,8 +477,8 @@ The RPC service for registering oRPC routers.
 
 ```typescript
 const router = createMyPluginRouter(database);
-rpc.registerRouter("myplugin-backend", router);
-// Procedures accessible at: /api/myplugin-backend/<procedureName>
+rpc.registerRouter(router);  // Plugin ID auto-detected from metadata
+// Procedures accessible at: /api/myplugin/<procedureName>
 ```
 
 > **Critical**: The registration name must match the plugin ID exactly for frontend clients to work correctly.
@@ -608,9 +612,14 @@ oRPC automatically infers types from the procedure chain. **Do not** add explici
 **src/schema.ts:**
 
 ```typescript
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { text, timestamp } from "drizzle-orm/pg-core";
+import { pgSchema } from "drizzle-orm/pg-core";
+import { getPluginSchemaName } from "@checkmate/drizzle-helper";
+import { pluginMetadata } from "./plugin-metadata";
 
-export const items = pgTable("items", {
+const mySchema = pgSchema(getPluginSchemaName(pluginMetadata.pluginId));
+
+export const items = mySchema.table("items", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
