@@ -137,7 +137,7 @@ function App() {
 
   return (
     <ApiProvider registry={apiRegistry}>
-      <SignalProvider backendUrl={import.meta.env.VITE_BACKEND_URL}>
+      <SignalProvider>
         <ToastProvider>
           <AppContent />
         </ToastProvider>

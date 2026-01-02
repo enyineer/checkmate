@@ -61,8 +61,8 @@ export const SignalProvider: React.FC<SignalProviderProps> = ({
   const reconnectAttemptsRef = useRef(0);
 
   useEffect(() => {
-    // Determine WebSocket URL - use provided backendUrl or VITE_BACKEND_URL
-    const baseUrl = backendUrl ?? import.meta.env.VITE_BACKEND_URL ?? "";
+    // Determine WebSocket URL - use provided backendUrl or VITE_API_BASE_URL
+    const baseUrl = backendUrl ?? import.meta.env.VITE_API_BASE_URL;
 
     if (!baseUrl) {
       console.warn(

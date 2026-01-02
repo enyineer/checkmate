@@ -139,7 +139,7 @@ import { SignalProvider } from "@checkmate/signal-frontend";
 
 function App() {
   return (
-    <SignalProvider backendUrl={import.meta.env.VITE_BACKEND_URL}>
+    <SignalProvider backendUrl={import.meta.env.VITE_API_BASE_URL}>
       <YourApp />
     </SignalProvider>
   );
@@ -348,10 +348,10 @@ No additional configuration required. The WebSocket server runs on the same port
 
 ### Frontend
 
-Set `VITE_BACKEND_URL` environment variable:
+Set `VITE_API_BASE_URL` environment variable:
 
 ```env
-VITE_BACKEND_URL=http://localhost:3000
+VITE_API_BASE_URL=http://localhost:3000
 ```
 
 ---
