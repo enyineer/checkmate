@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useApi, type SlotContext } from "@checkmate/frontend-api";
+import {
+  useApi,
+  type SlotContext,
+  permissionApiRef,
+} from "@checkmate/frontend-api";
 import { healthCheckApiRef, HealthCheckConfiguration } from "../api";
 import {
   Button,
@@ -20,10 +24,15 @@ import {
   Input,
   Tooltip,
 } from "@checkmate/ui";
-import { Activity, Settings2 } from "lucide-react";
+import { Activity, Settings2, History } from "lucide-react";
+import { Link } from "react-router-dom";
 import { CatalogSystemActionsSlot } from "@checkmate/catalog-common";
 import type { StateThresholds } from "@checkmate/healthcheck-common";
-import { DEFAULT_STATE_THRESHOLDS } from "@checkmate/healthcheck-common";
+import {
+  DEFAULT_STATE_THRESHOLDS,
+  healthcheckRoutes,
+} from "@checkmate/healthcheck-common";
+import { resolveRoute } from "@checkmate/common";
 
 type Props = SlotContext<typeof CatalogSystemActionsSlot>;
 
@@ -39,6 +48,11 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
   systemName: _systemName,
 }) => {
   const api = useApi(healthCheckApiRef);
+  const permissionApi = useApi(permissionApiRef);
+  const { allowed: canManage } = permissionApi.useResourcePermission(
+    "healthcheck",
+    "manage"
+  );
   const [configs, setConfigs] = useState<HealthCheckConfiguration[]>([]);
   const [associations, setAssociations] = useState<AssociationState[]>([]);
   const [loading, setLoading] = useState(true);
@@ -489,19 +503,41 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
                         </div>
                       </div>
                       {isAssigned && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setSelectedConfig(
-                              isExpanded ? undefined : config.id
-                            )
-                          }
-                          className="h-7 px-2"
-                        >
-                          <Settings2 className="h-4 w-4" />
-                          <span className="ml-1 text-xs">Thresholds</span>
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {canManage && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              className="h-7 px-2"
+                            >
+                              <Link
+                                to={resolveRoute(
+                                  healthcheckRoutes.routes.historyDetail,
+                                  {
+                                    systemId,
+                                    configurationId: config.id,
+                                  }
+                                )}
+                              >
+                                <History className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setSelectedConfig(
+                                isExpanded ? undefined : config.id
+                              )
+                            }
+                            className="h-7 px-2"
+                          >
+                            <Settings2 className="h-4 w-4" />
+                            <span className="ml-1 text-xs">Thresholds</span>
+                          </Button>
+                        </div>
                       )}
                     </div>
                     {isAssigned &&

@@ -105,6 +105,10 @@ export const createHealthCheckRouter = (
       return service.getHistory(input);
     }),
 
+    getDetailedHistory: os.getDetailedHistory.handler(async ({ input }) => {
+      return service.getDetailedHistory(input);
+    }),
+
     getSystemHealthStatus: os.getSystemHealthStatus.handler(
       async ({ input }) => {
         return service.getSystemHealthStatus(input.systemId);

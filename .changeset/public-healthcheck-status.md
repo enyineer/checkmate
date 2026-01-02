@@ -1,10 +1,16 @@
 ---
 "@checkmate/healthcheck-common": minor
+"@checkmate/healthcheck-backend": minor
+"@checkmate/healthcheck-frontend": minor
 ---
 
-Add `healthcheck.status.read` permission for public access to health status
+Add public health status access and detailed history for admins
 
-- Added new `healthCheckStatusRead` permission with `isPublicDefault: true` and `isAuthenticatedDefault: true`
-- Updated `getSystemHealthStatus`, `getSystemHealthOverview`, and `getHistory` endpoints to use `userType: "public"` with the new permission
-- Anonymous and authenticated users can now view health check status and history
-- Configuration endpoints remain restricted to users with `healthcheck.read` permission
+**Permission changes:**
+- Added `healthcheck.status.read` permission with `isPublicDefault: true` for anonymous access
+- `getSystemHealthStatus`, `getSystemHealthOverview`, and `getHistory` now public
+- `getHistory` no longer returns `result` field (security)
+
+**New features:**
+- Added `getDetailedHistory` endpoint with `healthcheck.manage` permission
+- New `/healthcheck/history` page showing paginated run history with expandable result JSON

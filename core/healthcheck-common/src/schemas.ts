@@ -136,3 +136,17 @@ export const HealthCheckRunSchema = z.object({
 });
 
 export type HealthCheckRun = z.infer<typeof HealthCheckRunSchema>;
+
+/**
+ * Public schema for health check runs without sensitive result data.
+ * Used by public endpoints accessible to anonymous/authenticated users.
+ */
+export const HealthCheckRunPublicSchema = z.object({
+  id: z.string(),
+  configurationId: z.string(),
+  systemId: z.string(),
+  status: HealthCheckStatusSchema,
+  timestamp: z.date(),
+});
+
+export type HealthCheckRunPublic = z.infer<typeof HealthCheckRunPublicSchema>;

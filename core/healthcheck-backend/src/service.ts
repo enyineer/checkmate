@@ -375,6 +375,9 @@ export class HealthCheckService {
     return { systemId, checks };
   }
 
+  /**
+   * Get paginated health check run history (public - no result data).
+   */
   async getHistory(props: {
     systemId?: string;
     configurationId?: string;
@@ -405,6 +408,50 @@ export class HealthCheckService {
       .limit(limit)
       .offset(offset);
 
+    // Return without result field for public access
+    return {
+      runs: runs.map((run) => ({
+        id: run.id,
+        configurationId: run.configurationId,
+        systemId: run.systemId,
+        status: run.status,
+        timestamp: run.timestamp,
+      })),
+      total,
+    };
+  }
+
+  /**
+   * Get detailed health check run history with full result data.
+   * Restricted to users with manage permission.
+   */
+  async getDetailedHistory(props: {
+    systemId?: string;
+    configurationId?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const { systemId, configurationId, limit = 10, offset = 0 } = props;
+
+    const conditions = [];
+    if (systemId) conditions.push(eq(healthCheckRuns.systemId, systemId));
+    if (configurationId)
+      conditions.push(eq(healthCheckRuns.configurationId, configurationId));
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const total = await this.db.$count(healthCheckRuns, whereClause);
+
+    let query = this.db.select().from(healthCheckRuns);
+    if (whereClause) {
+      // @ts-expect-error drizzle-orm type mismatch
+      query = query.where(whereClause);
+    }
+    const runs = await query
+      .orderBy(desc(healthCheckRuns.timestamp))
+      .limit(limit)
+      .offset(offset);
+
+    // Return with full result data for manage permission
     return {
       runs: runs.map((run) => ({
         id: run.id,

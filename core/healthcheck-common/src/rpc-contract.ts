@@ -10,6 +10,7 @@ import {
   UpdateHealthCheckConfigurationSchema,
   AssociateHealthCheckSchema,
   HealthCheckRunSchema,
+  HealthCheckRunPublicSchema,
   HealthCheckStatusSchema,
   StateThresholdsSchema,
 } from "./schemas";
@@ -126,6 +127,30 @@ export const healthCheckContract = {
     .meta({
       userType: "public",
       permissions: [permissions.healthCheckStatusRead.id],
+    })
+    .input(
+      z.object({
+        systemId: z.string().optional(),
+        configurationId: z.string().optional(),
+        limit: z.number().optional().default(10),
+        offset: z.number().optional().default(0),
+      })
+    )
+    .output(
+      z.object({
+        runs: z.array(HealthCheckRunPublicSchema),
+        total: z.number(),
+      })
+    ),
+
+  /**
+   * Get detailed health check run history with full result data.
+   * Restricted to users with manage permission.
+   */
+  getDetailedHistory: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.healthCheckManage.id],
     })
     .input(
       z.object({

@@ -7,6 +7,8 @@ import {
 } from "@checkmate/frontend-api";
 import { healthCheckApiRef, type HealthCheckApi } from "./api";
 import { HealthCheckConfigPage } from "./pages/HealthCheckConfigPage";
+import { HealthCheckHistoryPage } from "./pages/HealthCheckHistoryPage";
+import { HealthCheckHistoryDetailPage } from "./pages/HealthCheckHistoryDetailPage";
 import { HealthCheckMenuItems } from "./components/HealthCheckMenuItems";
 import { HealthCheckSystemOverview } from "./components/HealthCheckSystemOverview";
 import { SystemHealthCheckAssignment } from "./components/SystemHealthCheckAssignment";
@@ -27,6 +29,18 @@ export default createFrontendPlugin({
       element: <HealthCheckConfigPage />,
       title: "Health Checks",
       permission: "healthcheck.read",
+    },
+    {
+      route: healthcheckRoutes.routes.history,
+      element: <HealthCheckHistoryPage />,
+      title: "Health Check History",
+      permission: "healthcheck.manage",
+    },
+    {
+      route: healthcheckRoutes.routes.historyDetail,
+      element: <HealthCheckHistoryDetailPage />,
+      title: "Health Check Detail",
+      permission: "healthcheck.manage",
     },
   ],
   apis: [

@@ -9,17 +9,24 @@ import {
   HealthCheckConfiguration,
   HealthCheckStrategyDto,
   CreateHealthCheckConfiguration,
+  healthcheckRoutes,
 } from "@checkmate/healthcheck-common";
 import { HealthCheckList } from "../components/HealthCheckList";
 import { HealthCheckEditor } from "../components/HealthCheckEditor";
 import { Button, ConfirmationModal, PageLayout } from "@checkmate/ui";
-import { Plus } from "lucide-react";
+import { Plus, History } from "lucide-react";
+import { Link } from "react-router-dom";
+import { resolveRoute } from "@checkmate/common";
 
 const HealthCheckConfigPageContent = () => {
   const api = useApi(healthCheckApiRef);
   const permissionApi = useApi(permissionApiRef);
   const { allowed: canRead, loading: permissionLoading } =
     permissionApi.useResourcePermission("healthcheck", "read");
+  const { allowed: canManage } = permissionApi.useResourcePermission(
+    "healthcheck",
+    "manage"
+  );
 
   const [configurations, setConfigurations] = useState<
     HealthCheckConfiguration[]
@@ -96,9 +103,18 @@ const HealthCheckConfigPageContent = () => {
       loading={permissionLoading}
       allowed={canRead}
       actions={
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" /> Create Check
-        </Button>
+        <div className="flex gap-2">
+          {canManage && (
+            <Button variant="outline" asChild>
+              <Link to={resolveRoute(healthcheckRoutes.routes.history)}>
+                <History className="mr-2 h-4 w-4" /> View History
+              </Link>
+            </Button>
+          )}
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" /> Create Check
+          </Button>
+        </div>
       }
     >
       <HealthCheckList

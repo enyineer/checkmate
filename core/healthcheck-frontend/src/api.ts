@@ -6,6 +6,7 @@ export type {
   HealthCheckConfiguration,
   HealthCheckStrategyDto,
   HealthCheckRun,
+  HealthCheckRunPublic,
 } from "@checkmate/healthcheck-common";
 
 // HealthCheckApi is the client type from the common package

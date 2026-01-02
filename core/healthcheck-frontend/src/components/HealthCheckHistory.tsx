@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useApi, type SlotContext } from "@checkmate/frontend-api";
-import { healthCheckApiRef, HealthCheckRun } from "../api";
+import { healthCheckApiRef, HealthCheckRunPublic } from "../api";
 import { SystemDetailsSlot } from "@checkmate/catalog-common";
 import {
   Table,
@@ -26,7 +26,7 @@ export const HealthCheckHistory: React.FC<SlotProps> = (props) => {
   const systemId = system?.id;
 
   const healthCheckApi = useApi(healthCheckApiRef);
-  const [history, setHistory] = useState<HealthCheckRun[]>([]);
+  const [history, setHistory] = useState<HealthCheckRunPublic[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,12 +55,11 @@ export const HealthCheckHistory: React.FC<SlotProps> = (props) => {
           <TableRow>
             <TableHead>Status</TableHead>
             <TableHead>Time</TableHead>
-            <TableHead>Details</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {history.map((run) => (
-            <TableRow key={run.id || Math.random()}>
+            <TableRow key={run.id}>
               <TableCell>
                 <HealthBadge status={run.status} />
               </TableCell>
@@ -70,17 +69,6 @@ export const HealthCheckHistory: React.FC<SlotProps> = (props) => {
                       addSuffix: true,
                     })
                   : "Unknown"}
-              </TableCell>
-              <TableCell className="text-sm">
-                {run.status === "unhealthy" && run.result?.error ? (
-                  <span className="text-destructive font-medium">
-                    {String(run.result.error)}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">
-                    {String(run.result?.message || "No additional info")}
-                  </span>
-                )}
               </TableCell>
             </TableRow>
           ))}
