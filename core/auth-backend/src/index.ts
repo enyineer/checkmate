@@ -9,7 +9,6 @@ import {
   type AuthStrategy,
 } from "@checkmate/backend-api";
 import { pluginMetadata } from "./plugin-metadata";
-import { userInfoRef } from "./services/user-info";
 import * as schema from "./schema";
 import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -319,21 +318,6 @@ export default createBackendPlugin({
       if (!db) return user;
       return enrichUser(user, db);
     };
-
-    // 1. Register User Info Service
-    env.registerService(userInfoRef, {
-      getUser: async (headers: Headers) => {
-        if (!auth) {
-          throw new Error("Auth backend not initialized");
-        }
-
-        const session = await auth.api.getSession({
-          headers,
-        });
-        if (!session?.user) return;
-        return enrichUserLocal(session.user);
-      },
-    });
 
     // 2. Register Authentication Strategy (used by Core AuthService)
     env.registerService(authenticationStrategyServiceRef, {
