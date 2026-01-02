@@ -388,6 +388,17 @@ export async function subscribeToGroup(
   userId: string,
   groupId: string
 ): Promise<void> {
+  // First verify the group exists
+  const group = await db
+    .select({ id: schema.notificationGroups.id })
+    .from(schema.notificationGroups)
+    .where(eq(schema.notificationGroups.id, groupId))
+    .limit(1);
+
+  if (group.length === 0) {
+    throw new Error(`Notification group '${groupId}' does not exist`);
+  }
+
   await db
     .insert(schema.notificationSubscriptions)
     .values({

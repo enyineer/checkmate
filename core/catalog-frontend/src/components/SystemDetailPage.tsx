@@ -28,7 +28,7 @@ import {
   Calendar,
 } from "lucide-react";
 
-const CATALOG_PLUGIN_ID = "catalog-backend";
+const CATALOG_PLUGIN_ID = "catalog";
 
 export const SystemDetailPage: React.FC = () => {
   const { systemId } = useParams<{ systemId: string }>();

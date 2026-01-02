@@ -27,7 +27,7 @@ import {
 } from "@checkmate/ui";
 import { LayoutGrid, Info, Server, Activity, ChevronRight } from "lucide-react";
 
-const CATALOG_PLUGIN_ID = "catalog-backend";
+const CATALOG_PLUGIN_ID = "catalog";
 
 const getGroupId = (groupId: string) => `${CATALOG_PLUGIN_ID}.group.${groupId}`;
 

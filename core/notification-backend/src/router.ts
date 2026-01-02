@@ -1,4 +1,4 @@
-import { implement } from "@orpc/server";
+import { implement, ORPCError } from "@orpc/server";
 import {
   autoAuthMiddleware,
   type RpcContext,
@@ -119,7 +119,20 @@ export const createNotificationRouter = (
 
     subscribe: os.subscribe.handler(async ({ input, context }) => {
       const userId = (context.user as RealUser).id;
-      await subscribeToGroup(database, userId, input.groupId);
+      try {
+        await subscribeToGroup(database, userId, input.groupId);
+      } catch (error) {
+        // Convert group-not-found errors to proper ORPC errors
+        if (
+          error instanceof Error &&
+          error.message.includes("does not exist")
+        ) {
+          throw new ORPCError("NOT_FOUND", {
+            message: `Notification group '${input.groupId}' does not exist. It may not have been created yet.`,
+          });
+        }
+        throw error;
+      }
     }),
 
     unsubscribe: os.unsubscribe.handler(async ({ input, context }) => {
