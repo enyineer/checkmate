@@ -1,7 +1,16 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgSchema } from "drizzle-orm/pg-core";
+import { getPluginSchemaName } from "@checkmate/drizzle-helper";
+import { pluginMetadata } from "./plugin-metadata";
+
+/**
+ * Plugin-scoped schema using the standardized naming convention.
+ * This ensures all tables are created in the plugin's isolated schema.
+ */
+const {{pluginNameCamel}}Schema = pgSchema(getPluginSchemaName(pluginMetadata.pluginId));
 
 // Example schema - customize for your domain
-export const {{pluginNameCamel}}Items = pgTable("{{pluginBaseName}}_items", {
+export const {{pluginNameCamel}}Items = {{pluginNameCamel}}Schema.table("items", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
