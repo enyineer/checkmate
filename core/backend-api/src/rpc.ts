@@ -87,9 +87,30 @@ export const autoAuthMiddleware = os.middleware(
       (p: string) => `${context.pluginId}.${p}`
     );
 
+    // Helper to wrap next() with error logging
+    const nextWithErrorLogging = async () => {
+      try {
+        return await next({});
+      } catch (error) {
+        // Log the full error before oRPC sanitizes it to a generic 500
+        if (error instanceof ORPCError) {
+          // ORPCError is intentional - log at debug level
+          context.logger.debug("RPC error response:", {
+            code: error.code,
+            message: error.message,
+            data: error.data,
+          });
+        } else {
+          // Unexpected error - log at error level with full stack trace
+          context.logger.error("Unexpected RPC error:", error);
+        }
+        throw error;
+      }
+    };
+
     // 1. Handle anonymous endpoints - no auth required, no permission checks
     if (requiredUserType === "anonymous") {
-      return next({});
+      return nextWithErrorLogging();
     }
 
     // 2. Handle public endpoints - anyone can attempt, but permissions are checked
@@ -128,7 +149,7 @@ export const autoAuthMiddleware = os.middleware(
           }
         }
       }
-      return next({});
+      return nextWithErrorLogging();
     }
 
     // 3. Enforce authentication for user/service/authenticated types
@@ -168,7 +189,7 @@ export const autoAuthMiddleware = os.middleware(
     }
 
     // Pass through - services are trusted with all permissions
-    return next({});
+    return nextWithErrorLogging();
   }
 );
 
