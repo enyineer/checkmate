@@ -6,7 +6,11 @@ import {
   type ConfigService,
   toJsonSchema,
 } from "@checkmate/backend-api";
-import { notificationContract } from "@checkmate/notification-common";
+import {
+  notificationContract,
+  NOTIFICATION_RECEIVED,
+} from "@checkmate/notification-common";
+import type { SignalService } from "@checkmate/signal-common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import {
@@ -33,7 +37,8 @@ import {
  */
 export const createNotificationRouter = (
   database: NodePgDatabase<typeof schema>,
-  configService: ConfigService
+  configService: ConfigService,
+  signalService: SignalService
 ) => {
   // Create contract implementer with context type AND auto auth middleware
   const os = implement(notificationContract)
@@ -236,7 +241,27 @@ export const createNotificationRouter = (
         importance: importance ?? "info",
       }));
 
-      await database.insert(schema.notifications).values(notificationValues);
+      const inserted = await database
+        .insert(schema.notifications)
+        .values(notificationValues)
+        .returning({
+          id: schema.notifications.id,
+          userId: schema.notifications.userId,
+        });
+
+      // Send realtime signals to each user
+      for (const notification of inserted) {
+        void signalService.sendToUser(
+          NOTIFICATION_RECEIVED,
+          notification.userId,
+          {
+            id: notification.id,
+            title,
+            description,
+            importance: importance ?? "info",
+          }
+        );
+      }
 
       return { notifiedCount: userIds.length };
     }),
@@ -268,7 +293,27 @@ export const createNotificationRouter = (
         importance: importance ?? "info",
       }));
 
-      await database.insert(schema.notifications).values(notificationValues);
+      const inserted = await database
+        .insert(schema.notifications)
+        .values(notificationValues)
+        .returning({
+          id: schema.notifications.id,
+          userId: schema.notifications.userId,
+        });
+
+      // Send realtime signals to each subscriber
+      for (const notification of inserted) {
+        void signalService.sendToUser(
+          NOTIFICATION_RECEIVED,
+          notification.userId,
+          {
+            id: notification.id,
+            title,
+            description,
+            importance: importance ?? "info",
+          }
+        );
+      }
 
       return { notifiedCount: subscribers.length };
     }),
