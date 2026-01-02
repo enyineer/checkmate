@@ -1,7 +1,6 @@
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
-import { permissionList } from "@checkmate/queue-common";
+import { permissionList, pluginMetadata } from "@checkmate/queue-common";
 import { createQueueRouter } from "./router";
-import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,

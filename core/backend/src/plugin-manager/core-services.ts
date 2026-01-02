@@ -11,7 +11,7 @@ import {
   EventBus as IEventBus,
   AuthenticationStrategy,
 } from "@checkmate/backend-api";
-import type { AuthClient } from "@checkmate/auth-common";
+import { AuthApi } from "@checkmate/auth-common";
 import type { ServiceRegistry } from "../services/service-registry";
 import { rootLogger } from "../logger";
 import { db } from "../db";
@@ -151,7 +151,7 @@ export function registerCoreServices({
           const rpcClient = await registry.get(coreServices.rpcClient, {
             pluginId: "core",
           });
-          const authClient = rpcClient.forPlugin<AuthClient>("auth");
+          const authClient = rpcClient.forPlugin(AuthApi);
           const permissions = await authClient.getAnonymousPermissions();
 
           // Update cache
@@ -246,8 +246,10 @@ export function registerCoreServices({
     const client = createORPCClient(link);
 
     const rpcClient: RpcClient = {
-      forPlugin<T>(targetPluginId: string): T {
-        return (client as Record<string, T>)[targetPluginId];
+      forPlugin(def) {
+        // Type safety is provided by the RpcClient interface - InferClient<T>
+        // extracts the typed client from the ClientDefinition passed in
+        return (client as Record<string, unknown>)[def.pluginId] as never;
       },
     };
 

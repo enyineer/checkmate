@@ -8,7 +8,7 @@ import {
   authenticationStrategyServiceRef,
   type AuthStrategy,
 } from "@checkmate/backend-api";
-import { pluginMetadata } from "./plugin-metadata";
+import { pluginMetadata, permissionList } from "@checkmate/auth-common";
 import * as schema from "./schema";
 import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -16,7 +16,6 @@ import { User } from "better-auth/types";
 import { hashPassword } from "better-auth/crypto";
 import { createExtensionPoint } from "@checkmate/backend-api";
 import { enrichUser } from "./utils/user";
-import { permissionList } from "@checkmate/auth-common";
 import { createAuthRouter } from "./router";
 import { validateStrategySchema } from "./utils/validate-schema";
 import {

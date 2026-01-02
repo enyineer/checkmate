@@ -1,7 +1,8 @@
 import { oc } from "@orpc/contract";
-import type { ContractRouterClient } from "@orpc/contract";
+import { createClientDefinition } from "@checkmate/common";
 import { z } from "zod";
 import { permissions } from "./permissions";
+import { pluginMetadata } from "./plugin-metadata";
 import {
   QueuePluginDtoSchema,
   QueueConfigurationDtoSchema,
@@ -34,8 +35,11 @@ export const queueContract = {
     .output(QueueConfigurationDtoSchema),
 };
 
-// Export contract type for frontend
+// Export contract type
 export type QueueContract = typeof queueContract;
 
-// Export typed client for backend-to-backend communication
-export type QueueClient = ContractRouterClient<typeof queueContract>;
+// Export client definition for type-safe forPlugin usage
+// Use: const client = rpcApi.forPlugin(QueueApi);
+export const QueueApi = createClientDefinition(queueContract, {
+  pluginId: pluginMetadata.pluginId,
+});

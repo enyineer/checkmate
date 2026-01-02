@@ -1,6 +1,7 @@
 import { RpcApi } from "@checkmate/frontend-api";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import type { ClientDefinition, InferClient } from "@checkmate/common";
 
 export class CoreRpcApi implements RpcApi {
   public client: unknown;
@@ -19,13 +20,14 @@ export class CoreRpcApi implements RpcApi {
     this.client = createORPCClient(link);
   }
 
-  forPlugin<T>(pluginId: string): T {
+  forPlugin<T extends ClientDefinition>(def: T): InferClient<T> {
+    const { pluginId } = def;
     if (!this.pluginClientCache.has(pluginId)) {
       this.pluginClientCache.set(
         pluginId,
         (this.client as Record<string, unknown>)[pluginId]
       );
     }
-    return this.pluginClientCache.get(pluginId) as T;
+    return this.pluginClientCache.get(pluginId) as InferClient<T>;
   }
 }

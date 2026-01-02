@@ -1,6 +1,9 @@
 import { oc } from "@orpc/contract";
-import type { ContractRouterClient } from "@orpc/contract";
-import type { ProcedureMetadata } from "@checkmate/common";
+import {
+  createClientDefinition,
+  type ProcedureMetadata,
+} from "@checkmate/common";
+import { pluginMetadata } from "./plugin-metadata";
 import { z } from "zod";
 import { permissions } from "./permissions";
 import {
@@ -214,10 +217,11 @@ export const healthCheckContract = {
     ),
 };
 
-// Export contract type for frontend
+// Export contract type
 export type HealthCheckContract = typeof healthCheckContract;
 
-// Export typed client for backend-to-backend communication
-export type HealthCheckClient = ContractRouterClient<
-  typeof healthCheckContract
->;
+// Export client definition for type-safe forPlugin usage
+// Use: const client = rpcApi.forPlugin(HealthCheckApi);
+export const HealthCheckApi = createClientDefinition(healthCheckContract, {
+  pluginId: pluginMetadata.pluginId,
+});

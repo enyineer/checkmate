@@ -1,8 +1,11 @@
 import { oc } from "@orpc/contract";
-import type { ContractRouterClient } from "@orpc/contract";
-import type { ProcedureMetadata } from "@checkmate/common";
+import {
+  createClientDefinition,
+  type ProcedureMetadata,
+} from "@checkmate/common";
 import { z } from "zod";
-import { permissions } from "./index";
+import { permissions } from "./permissions";
+import { pluginMetadata } from "./plugin-metadata";
 
 // Base builder with full metadata support
 const _base = oc.$meta<ProcedureMetadata>({});
@@ -255,8 +258,11 @@ export const authContract = {
     .output(z.object({ sessionId: z.string() })),
 };
 
-// Export contract type for frontend
+// Export contract type
 export type AuthContract = typeof authContract;
 
-// Export typed client for backend-to-backend communication
-export type AuthClient = ContractRouterClient<typeof authContract>;
+// Export client definition for type-safe forPlugin usage
+// Use: const client = rpcApi.forPlugin(AuthApi);
+export const AuthApi = createClientDefinition(authContract, {
+  pluginId: pluginMetadata.pluginId,
+});

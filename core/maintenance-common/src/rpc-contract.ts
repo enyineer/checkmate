@@ -1,8 +1,11 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
-import type { ProcedureMetadata } from "@checkmate/common";
-import type { ContractRouterClient } from "@orpc/contract";
+import {
+  createClientDefinition,
+  type ProcedureMetadata,
+} from "@checkmate/common";
 import { permissions } from "./permissions";
+import { pluginMetadata } from "./plugin-metadata";
 import {
   MaintenanceWithSystemsSchema,
   MaintenanceDetailSchema,
@@ -96,7 +99,11 @@ export const maintenanceContract = {
     .output(z.object({ success: z.boolean() })),
 };
 
+// Export contract type
 export type MaintenanceContract = typeof maintenanceContract;
-export type MaintenanceClient = ContractRouterClient<
-  typeof maintenanceContract
->;
+
+// Export client definition for type-safe forPlugin usage
+// Use: const client = rpcApi.forPlugin(MaintenanceApi);
+export const MaintenanceApi = createClientDefinition(maintenanceContract, {
+  pluginId: pluginMetadata.pluginId,
+});

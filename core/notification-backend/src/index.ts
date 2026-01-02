@@ -1,10 +1,9 @@
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
-import { permissionList } from "@checkmate/notification-common";
+import { permissionList, pluginMetadata } from "@checkmate/notification-common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import * as schema from "./schema";
 import { createNotificationRouter } from "./router";
-import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,

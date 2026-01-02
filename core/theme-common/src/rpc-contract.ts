@@ -1,6 +1,9 @@
 import { oc } from "@orpc/contract";
-import type { ContractRouterClient } from "@orpc/contract";
-import type { ProcedureMetadata } from "@checkmate/common";
+import {
+  createClientDefinition,
+  type ProcedureMetadata,
+} from "@checkmate/common";
+import { pluginMetadata } from "./plugin-metadata";
 import { z } from "zod";
 
 // Theme type - matches ThemeProvider's Theme type
@@ -32,8 +35,11 @@ export const themeContract = {
     .output(z.void()),
 };
 
-// Export contract type for frontend
+// Export contract type
 export type ThemeContract = typeof themeContract;
 
-// Export typed client for backend-to-backend communication
-export type ThemeClient = ContractRouterClient<typeof themeContract>;
+// Export client definition for type-safe forPlugin usage
+// Use: const client = rpcApi.forPlugin(ThemeApi);
+export const ThemeApi = createClientDefinition(themeContract, {
+  pluginId: pluginMetadata.pluginId,
+});

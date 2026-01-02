@@ -1,7 +1,7 @@
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
+import { pluginMetadata } from "@checkmate/theme-common";
 import * as schema from "./schema";
 import { createThemeRouter } from "./router";
-import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,

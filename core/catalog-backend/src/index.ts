@@ -1,10 +1,10 @@
 import { createBackendPlugin } from "@checkmate/backend-api";
 import { type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { coreServices } from "@checkmate/backend-api";
-import { permissionList } from "@checkmate/catalog-common";
+import { permissionList, pluginMetadata } from "@checkmate/catalog-common";
 import { createCatalogRouter } from "./router";
-import type { NotificationClient } from "@checkmate/notification-common";
-import { pluginMetadata } from "./plugin-metadata";
+import { NotificationApi } from "@checkmate/notification-common";
+import type { InferClient } from "@checkmate/common";
 
 // Database schema is still needed for types in creating the router
 import * as schema from "./schema";
@@ -33,8 +33,7 @@ export default createBackendPlugin({
         const typedDb = database as NodePgDatabase<typeof schema>;
 
         // Get notification client for group management and sending notifications
-        const notificationClient =
-          rpcClient.forPlugin<NotificationClient>("notification");
+        const notificationClient = rpcClient.forPlugin(NotificationApi);
 
         // Register oRPC router with notification client
         const catalogRouter = createCatalogRouter({
@@ -49,8 +48,7 @@ export default createBackendPlugin({
       // Phase 3: Safe to make RPC calls after all plugins are ready
       afterPluginsReady: async ({ database, rpcClient, logger }) => {
         const typedDb = database as NodePgDatabase<typeof schema>;
-        const notificationClient =
-          rpcClient.forPlugin<NotificationClient>("notification");
+        const notificationClient = rpcClient.forPlugin(NotificationApi);
 
         // Bootstrap: Create notification groups for existing systems and groups
         await bootstrapNotificationGroups(typedDb, notificationClient, logger);
@@ -64,7 +62,7 @@ export default createBackendPlugin({
  */
 async function bootstrapNotificationGroups(
   database: NodePgDatabase<typeof schema>,
-  notificationClient: NotificationClient,
+  notificationClient: InferClient<typeof NotificationApi>,
   logger: { debug: (msg: string) => void }
 ) {
   try {

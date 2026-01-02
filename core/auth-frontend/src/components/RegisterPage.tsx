@@ -3,8 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import { authApiRef } from "../api";
-import type { AuthClient } from "@checkmate/auth-common";
-import { authRoutes } from "@checkmate/auth-common";
+import { AuthApi, authRoutes } from "@checkmate/auth-common";
 import { resolveRoute } from "@checkmate/common";
 import {
   Button,
@@ -35,7 +34,7 @@ export const RegisterPage = () => {
   const navigate = useNavigate();
   const authApi = useApi(authApiRef);
   const rpcApi = useApi(rpcApiRef);
-  const authRpcClient = rpcApi.forPlugin<AuthClient>("auth");
+  const authRpcClient = rpcApi.forPlugin(AuthApi);
   const { strategies, loading: strategiesLoading } = useEnabledStrategies();
   const [registrationAllowed, setRegistrationAllowed] = useState<boolean>(true);
   const [checkingRegistration, setCheckingRegistration] = useState(true);

@@ -2,16 +2,12 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Toggle, useTheme, useToast } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
-import { themeContract } from "@checkmate/theme-common";
-import type { ContractRouterClient } from "@orpc/contract";
-
-// Client type derived from the contract
-type ThemeClient = ContractRouterClient<typeof themeContract>;
+import { ThemeApi } from "@checkmate/theme-common";
 
 export const ThemeToggleMenuItem = () => {
   const { theme, setTheme } = useTheme();
   const rpcApi = useApi(rpcApiRef);
-  const themeClient = rpcApi.forPlugin<ThemeClient>("theme");
+  const themeClient = rpcApi.forPlugin(ThemeApi);
 
   const [loading, setLoading] = useState(true);
   const [isDark, setIsDark] = useState(false);

@@ -5,7 +5,7 @@ import {
   type ApiRef,
   UserMenuItemsSlot,
 } from "@checkmate/frontend-api";
-import { healthCheckApiRef, type HealthCheckApi } from "./api";
+import { healthCheckApiRef, type HealthCheckApiClient } from "./api";
 import { HealthCheckConfigPage } from "./pages/HealthCheckConfigPage";
 import { HealthCheckHistoryPage } from "./pages/HealthCheckHistoryPage";
 import { HealthCheckHistoryDetailPage } from "./pages/HealthCheckHistoryDetailPage";
@@ -19,7 +19,10 @@ import {
   CatalogSystemActionsSlot,
   SystemStateBadgesSlot,
 } from "@checkmate/catalog-common";
-import { healthcheckRoutes } from "@checkmate/healthcheck-common";
+import {
+  healthcheckRoutes,
+  HealthCheckApi,
+} from "@checkmate/healthcheck-common";
 
 export default createFrontendPlugin({
   name: "healthcheck-frontend",
@@ -46,10 +49,12 @@ export default createFrontendPlugin({
   apis: [
     {
       ref: healthCheckApiRef,
-      factory: (deps: { get: <T>(ref: ApiRef<T>) => T }): HealthCheckApi => {
+      factory: (deps: {
+        get: <T>(ref: ApiRef<T>) => T;
+      }): HealthCheckApiClient => {
         const rpcApi = deps.get(rpcApiRef);
-        // HealthCheckApi is just the RPC contract - return it directly
-        return rpcApi.forPlugin<HealthCheckApi>("healthcheck");
+        // HealthCheckApiClient is just the RPC contract - return it directly
+        return rpcApi.forPlugin(HealthCheckApi);
       },
     },
   ],

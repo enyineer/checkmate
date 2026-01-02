@@ -13,11 +13,9 @@ import {
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import { useSignal } from "@checkmate/signal-frontend";
 import { resolveRoute } from "@checkmate/common";
-import type {
-  Notification,
-  NotificationClient,
-} from "@checkmate/notification-common";
+import type { Notification } from "@checkmate/notification-common";
 import {
+  NotificationApi,
   NOTIFICATION_RECEIVED,
   NOTIFICATION_COUNT_CHANGED,
   NOTIFICATION_READ,
@@ -29,8 +27,7 @@ export const NotificationBell = () => {
   const authApi = useApi(authApiRef);
   const { data: session, isPending: isAuthLoading } = authApi.useSession();
   const rpcApi = useApi(rpcApiRef);
-  const notificationClient =
-    rpcApi.forPlugin<NotificationClient>("notification");
+  const notificationClient = rpcApi.forPlugin(NotificationApi);
 
   const [unreadCount, setUnreadCount] = useState(0);
   const [recentNotifications, setRecentNotifications] = useState<

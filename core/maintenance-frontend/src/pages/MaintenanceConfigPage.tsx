@@ -10,7 +10,7 @@ import type {
   MaintenanceWithSystems,
   MaintenanceStatus,
 } from "@checkmate/maintenance-common";
-import type { CatalogClient, System } from "@checkmate/catalog-common";
+import { CatalogApi, type System } from "@checkmate/catalog-common";
 import {
   Card,
   CardHeader,
@@ -44,10 +44,7 @@ const MaintenanceConfigPageContent: React.FC = () => {
   const rpcApi = useApi(rpcApiRef);
   const permissionApi = useApi(permissionApiRef);
 
-  const catalogApi = useMemo(
-    () => rpcApi.forPlugin<CatalogClient>("catalog"),
-    [rpcApi]
-  );
+  const catalogApi = useMemo(() => rpcApi.forPlugin(CatalogApi), [rpcApi]);
   const toast = useToast();
 
   const { allowed: canManage, loading: permissionLoading } =

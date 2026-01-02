@@ -1,5 +1,6 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import { HealthCheckClient } from "@checkmate/healthcheck-common";
+import { HealthCheckApi } from "@checkmate/healthcheck-common";
+import type { InferClient } from "@checkmate/common";
 
 // Re-export types for convenience
 export type {
@@ -9,8 +10,8 @@ export type {
   HealthCheckRunPublic,
 } from "@checkmate/healthcheck-common";
 
-// HealthCheckApi is the client type from the common package
-export type HealthCheckApi = HealthCheckClient;
+// HealthCheckApiClient type inferred from the client definition
+export type HealthCheckApiClient = InferClient<typeof HealthCheckApi>;
 
 export const healthCheckApiRef =
-  createApiRef<HealthCheckApi>("healthcheck-api");
+  createApiRef<HealthCheckApiClient>("healthcheck-api");

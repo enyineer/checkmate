@@ -1,5 +1,6 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import { QueueClient } from "@checkmate/queue-common";
+import { QueueApi } from "@checkmate/queue-common";
+import type { InferClient } from "@checkmate/common";
 
 // Re-export types for convenience
 export type {
@@ -8,7 +9,7 @@ export type {
   UpdateQueueConfiguration,
 } from "@checkmate/queue-common";
 
-// QueueApi is the client type from the common package
-export type QueueApi = QueueClient;
+// QueueApiClient type inferred from the client definition
+export type QueueApiClient = InferClient<typeof QueueApi>;
 
-export const queueApiRef = createApiRef<QueueApi>("queue-api");
+export const queueApiRef = createApiRef<QueueApiClient>("queue-api");

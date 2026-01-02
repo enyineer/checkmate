@@ -4,7 +4,8 @@ import { catalogContract } from "@checkmate/catalog-common";
 import { EntityService } from "./services/entity-service";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
-import type { NotificationClient } from "@checkmate/notification-common";
+import { NotificationApi } from "@checkmate/notification-common";
+import type { InferClient } from "@checkmate/common";
 import { catalogHooks } from "./hooks";
 import { eq } from "drizzle-orm";
 
@@ -20,7 +21,7 @@ const os = implement(catalogContract)
 
 export interface CatalogRouterDeps {
   database: NodePgDatabase<typeof schema>;
-  notificationClient: NotificationClient;
+  notificationClient: InferClient<typeof NotificationApi>;
   pluginId: string;
 }
 

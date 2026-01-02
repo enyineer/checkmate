@@ -1,8 +1,8 @@
 import { definePluginMetadata } from "@checkmate/common";
 
 /**
- * Plugin metadata for the Notification backend.
- * This is the single source of truth for the plugin ID.
+ * Plugin metadata for the notification plugin.
+ * Exported from the common package so both backend and frontend can reference it.
  */
 export const pluginMetadata = definePluginMetadata({
   pluginId: "notification",

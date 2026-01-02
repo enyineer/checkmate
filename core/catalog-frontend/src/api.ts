@@ -1,10 +1,12 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import { CatalogClient } from "@checkmate/catalog-common";
+import { CatalogApi } from "@checkmate/catalog-common";
+import type { InferClient } from "@checkmate/common";
 
 // Re-export types for convenience
 export type { System, Group, View } from "@checkmate/catalog-common";
 
-// CatalogApi is the client type from the common package
-export type CatalogApi = CatalogClient;
+// CatalogApi client type inferred from the client definition
+export type CatalogApiClient = InferClient<typeof CatalogApi>;
 
-export const catalogApiRef = createApiRef<CatalogApi>("plugin.catalog.api");
+export const catalogApiRef =
+  createApiRef<CatalogApiClient>("plugin.catalog.api");

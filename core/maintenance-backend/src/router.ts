@@ -11,13 +11,14 @@ import {
 } from "@checkmate/backend-api";
 import type { SignalService } from "@checkmate/signal-common";
 import type { MaintenanceService } from "./service";
-import type { CatalogClient } from "@checkmate/catalog-common";
+import { CatalogApi } from "@checkmate/catalog-common";
+import type { InferClient } from "@checkmate/common";
 import { resolveRoute } from "@checkmate/common";
 
 export function createRouter(
   service: MaintenanceService,
   signalService: SignalService,
-  catalogClient: CatalogClient,
+  catalogClient: InferClient<typeof CatalogApi>,
   logger: Logger
 ) {
   const os = implement(maintenanceContract)

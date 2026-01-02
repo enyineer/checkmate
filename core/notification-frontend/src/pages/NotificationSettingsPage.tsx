@@ -9,17 +9,13 @@ import {
   DynamicForm,
 } from "@checkmate/ui";
 import { useApi, rpcApiRef, permissionApiRef } from "@checkmate/frontend-api";
-import type {
-  EnrichedSubscription,
-  NotificationClient,
-} from "@checkmate/notification-common";
-import { permissions } from "@checkmate/notification-common";
+import type { EnrichedSubscription } from "@checkmate/notification-common";
+import { NotificationApi, permissions } from "@checkmate/notification-common";
 
 export const NotificationSettingsPage = () => {
   const rpcApi = useApi(rpcApiRef);
   const permissionApi = useApi(permissionApiRef);
-  const notificationClient =
-    rpcApi.forPlugin<NotificationClient>("notification");
+  const notificationClient = rpcApi.forPlugin(NotificationApi);
   const toast = useToast();
 
   // Check if user has admin permission

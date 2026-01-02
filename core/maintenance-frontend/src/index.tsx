@@ -5,8 +5,11 @@ import {
   type ApiRef,
   UserMenuItemsSlot,
 } from "@checkmate/frontend-api";
-import { maintenanceApiRef, type MaintenanceApi } from "./api";
-import { maintenanceRoutes } from "@checkmate/maintenance-common";
+import { maintenanceApiRef, type MaintenanceApiClient } from "./api";
+import {
+  maintenanceRoutes,
+  MaintenanceApi,
+} from "@checkmate/maintenance-common";
 import {
   SystemDetailsTopSlot,
   SystemStateBadgesSlot,
@@ -41,9 +44,11 @@ export default createFrontendPlugin({
   apis: [
     {
       ref: maintenanceApiRef,
-      factory: (deps: { get: <T>(ref: ApiRef<T>) => T }): MaintenanceApi => {
+      factory: (deps: {
+        get: <T>(ref: ApiRef<T>) => T;
+      }): MaintenanceApiClient => {
         const rpcApi = deps.get(rpcApiRef);
-        return rpcApi.forPlugin<MaintenanceApi>("maintenance");
+        return rpcApi.forPlugin(MaintenanceApi);
       },
     },
   ],

@@ -1,7 +1,7 @@
 import { rpcApiRef, ApiRef, UserMenuItemsSlot } from "@checkmate/frontend-api";
-import { catalogApiRef, type CatalogApi } from "./api";
+import { catalogApiRef, type CatalogApiClient } from "./api";
 import { createFrontendPlugin } from "@checkmate/frontend-api";
-import { catalogRoutes } from "@checkmate/catalog-common";
+import { catalogRoutes, CatalogApi } from "@checkmate/catalog-common";
 
 import { CatalogPage } from "./components/CatalogPage";
 import { CatalogConfigPage } from "./components/CatalogConfigPage";
@@ -13,10 +13,10 @@ export const catalogPlugin = createFrontendPlugin({
   apis: [
     {
       ref: catalogApiRef,
-      factory: (deps: { get: <T>(ref: ApiRef<T>) => T }): CatalogApi => {
+      factory: (deps: { get: <T>(ref: ApiRef<T>) => T }): CatalogApiClient => {
         const rpcApi = deps.get(rpcApiRef);
-        // CatalogApi is derived from the contract type
-        return rpcApi.forPlugin<CatalogApi>("catalog");
+        // CatalogApiClient is derived from the contract type
+        return rpcApi.forPlugin(CatalogApi);
       },
     },
   ],

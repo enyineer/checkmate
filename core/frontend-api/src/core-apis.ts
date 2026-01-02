@@ -1,4 +1,8 @@
-import { PermissionAction } from "@checkmate/common";
+import {
+  PermissionAction,
+  ClientDefinition,
+  InferClient,
+} from "@checkmate/common";
 import { createApiRef } from "./api-ref";
 
 export interface LoggerApi {
@@ -31,7 +35,7 @@ export const permissionApiRef = createApiRef<PermissionApi>("core.permission");
 
 export interface RpcApi {
   client: unknown;
-  forPlugin<T>(pluginId: string): T;
+  forPlugin<T extends ClientDefinition>(def: T): InferClient<T>;
 }
 
 export const rpcApiRef = createApiRef<RpcApi>("core.rpc");

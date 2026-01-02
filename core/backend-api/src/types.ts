@@ -1,4 +1,5 @@
 import { ZodSchema } from "zod";
+import { ClientDefinition, InferClient } from "@checkmate/common";
 
 export interface Logger {
   info(message: string, ...args: unknown[]): void;
@@ -86,12 +87,13 @@ export interface RouteOptions {
 export interface RpcClient {
   /**
    * Get a typed RPC client for a specific plugin.
-   * @param pluginId - The ID of the target plugin
+   * @param def - The client definition from the target plugin's common package
    * @returns Typed client for the plugin's RPC endpoints
    *
    * @example
-   * const authClient = rpcClient.forPlugin<AuthClient>("auth");
+   * import { AuthApi } from "@checkmate/auth-common";
+   * const authClient = rpcClient.forPlugin(AuthApi);
    * const result = await authClient.getRegistrationStatus();
    */
-  forPlugin<T>(pluginId: string): T;
+  forPlugin<T extends ClientDefinition>(def: T): InferClient<T>;
 }

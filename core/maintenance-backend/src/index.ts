@@ -1,11 +1,10 @@
 import * as schema from "./schema";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { permissionList } from "@checkmate/maintenance-common";
+import { permissionList, pluginMetadata } from "@checkmate/maintenance-common";
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { MaintenanceService } from "./service";
 import { createRouter } from "./router";
-import { pluginMetadata } from "./plugin-metadata";
-import type { CatalogClient } from "@checkmate/catalog-common";
+import { CatalogApi } from "@checkmate/catalog-common";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,
@@ -23,7 +22,7 @@ export default createBackendPlugin({
       init: async ({ logger, database, rpc, rpcClient, signalService }) => {
         logger.debug("🔧 Initializing Maintenance Backend...");
 
-        const catalogClient = rpcClient.forPlugin<CatalogClient>("catalog");
+        const catalogClient = rpcClient.forPlugin(CatalogApi);
 
         const service = new MaintenanceService(
           database as NodePgDatabase<typeof schema>

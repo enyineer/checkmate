@@ -1,8 +1,11 @@
 import { oc } from "@orpc/contract";
-import type { ContractRouterClient } from "@orpc/contract";
 import { z } from "zod";
 import { permissions } from "./permissions";
-import type { ProcedureMetadata } from "@checkmate/common";
+import { pluginMetadata } from "./plugin-metadata";
+import {
+  createClientDefinition,
+  type ProcedureMetadata,
+} from "@checkmate/common";
 import {
   NotificationSchema,
   NotificationGroupSchema,
@@ -224,10 +227,11 @@ export const notificationContract = {
     .output(z.object({ notifiedCount: z.number() })),
 };
 
-// Export contract type for frontend
+// Export contract type
 export type NotificationContract = typeof notificationContract;
 
-// Export typed client for frontend/backend communication
-export type NotificationClient = ContractRouterClient<
-  typeof notificationContract
->;
+// Export client definition for type-safe forPlugin usage
+// Use: const client = rpcApi.forPlugin(NotificationApi);
+export const NotificationApi = createClientDefinition(notificationContract, {
+  pluginId: pluginMetadata.pluginId,
+});

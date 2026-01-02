@@ -1,6 +1,9 @@
 import { oc } from "@orpc/contract";
-import type { ContractRouterClient } from "@orpc/contract";
-import type { ProcedureMetadata } from "@checkmate/common";
+import {
+  createClientDefinition,
+  type ProcedureMetadata,
+} from "@checkmate/common";
+import { pluginMetadata } from "./plugin-metadata";
 import { z } from "zod";
 import { SystemSchema, GroupSchema, ViewSchema } from "./types";
 import { permissions } from "./permissions";
@@ -188,8 +191,11 @@ export const catalogContract = {
     .output(z.object({ notifiedCount: z.number() })),
 };
 
-// Export contract type for frontend
+// Export contract type
 export type CatalogContract = typeof catalogContract;
 
-// Export typed client for backend-to-backend communication
-export type CatalogClient = ContractRouterClient<typeof catalogContract>;
+// Export client definition for type-safe forPlugin usage
+// Use: const client = rpcApi.forPlugin(CatalogApi);
+export const CatalogApi = createClientDefinition(catalogContract, {
+  pluginId: pluginMetadata.pluginId,
+});

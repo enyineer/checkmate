@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { authClient } from "../lib/auth-client";
 import { rpcApiRef, useApi } from "@checkmate/frontend-api";
-import { AuthClient } from "../api";
+import { AuthApi } from "@checkmate/auth-common";
 
 export const usePermissions = () => {
   const { data: session } = authClient.useSession();
@@ -18,7 +18,7 @@ export const usePermissions = () => {
 
     const fetchPermissions = async () => {
       try {
-        const authRpc = rpcApi.forPlugin<AuthClient>("auth");
+        const authRpc = rpcApi.forPlugin(AuthApi);
         const data = await authRpc.permissions();
         if (Array.isArray(data.permissions)) {
           setPermissions(data.permissions);

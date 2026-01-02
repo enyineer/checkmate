@@ -8,7 +8,7 @@ import type {
   MaintenanceWithSystems,
   MaintenanceStatus,
 } from "@checkmate/maintenance-common";
-import { catalogRoutes, type CatalogClient } from "@checkmate/catalog-common";
+import { catalogRoutes, CatalogApi } from "@checkmate/catalog-common";
 import {
   Card,
   CardHeader,
@@ -35,10 +35,7 @@ const SystemMaintenanceHistoryPageContent: React.FC = () => {
   const api = useApi(maintenanceApiRef);
   const rpcApi = useApi(rpcApiRef);
 
-  const catalogApi = useMemo(
-    () => rpcApi.forPlugin<CatalogClient>("catalog"),
-    [rpcApi]
-  );
+  const catalogApi = useMemo(() => rpcApi.forPlugin(CatalogApi), [rpcApi]);
 
   const [maintenances, setMaintenances] = useState<MaintenanceWithSystems[]>(
     []

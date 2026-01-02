@@ -9,9 +9,9 @@ import {
   Group,
 } from "@checkmate/catalog-common";
 import { resolveRoute } from "@checkmate/common";
-import type {
-  NotificationClient,
-  EnrichedSubscription,
+import {
+  NotificationApi,
+  type EnrichedSubscription,
 } from "@checkmate/notification-common";
 import {
   Card,
@@ -39,7 +39,7 @@ interface GroupWithSystems extends Group {
 export const Dashboard: React.FC = () => {
   const catalogApi = useApi(catalogApiRef);
   const rpcApi = useApi(rpcApiRef);
-  const notificationApi = rpcApi.forPlugin<NotificationClient>("notification");
+  const notificationApi = rpcApi.forPlugin(NotificationApi);
   const navigate = useNavigate();
   const toast = useToast();
   const authApi = useApi(authApiRef);

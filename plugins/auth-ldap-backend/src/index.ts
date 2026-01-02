@@ -9,7 +9,7 @@ import {
   betterAuthExtensionPoint,
   redirectToAuthError,
 } from "@checkmate/auth-backend";
-import type { AuthClient } from "@checkmate/auth-common";
+import { AuthApi } from "@checkmate/auth-common";
 import { z } from "zod";
 import { Client as LdapClient } from "ldapts";
 import { hashPassword } from "better-auth/crypto";
@@ -211,7 +211,7 @@ export default createBackendPlugin({
         logger.debug("[auth-ldap-backend] Initializing LDAP authentication...");
 
         // Create auth client once for reuse
-        const authClient = rpcClient.forPlugin<AuthClient>("auth-backend");
+        const authClient = rpcClient.forPlugin(AuthApi);
 
         // Helper function to authenticate against LDAP
         const authenticateLdap = async (

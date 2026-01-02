@@ -1,8 +1,5 @@
 import { createApiRef } from "@checkmate/frontend-api";
 
-// Re-export AuthClient type from common package for RPC usage
-export type { AuthClient } from "@checkmate/auth-common";
-
 // Types for better-auth entities
 export interface AuthUser {
   id: string;

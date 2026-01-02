@@ -1,8 +1,10 @@
 import { createApiRef } from "@checkmate/frontend-api";
-import type { MaintenanceClient } from "@checkmate/maintenance-common";
+import { MaintenanceApi } from "@checkmate/maintenance-common";
+import type { InferClient } from "@checkmate/common";
 
-export type MaintenanceApi = MaintenanceClient;
+// MaintenanceApiClient type inferred from the client definition
+export type MaintenanceApiClient = InferClient<typeof MaintenanceApi>;
 
-export const maintenanceApiRef = createApiRef<MaintenanceApi>(
+export const maintenanceApiRef = createApiRef<MaintenanceApiClient>(
   "plugin.maintenance.api"
 );

@@ -4,12 +4,11 @@ import {
 } from "./queue-executor";
 import * as schema from "./schema";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { permissionList } from "@checkmate/healthcheck-common";
+import { permissionList, pluginMetadata } from "@checkmate/healthcheck-common";
 import { createBackendPlugin, coreServices } from "@checkmate/backend-api";
 import { createHealthCheckRouter } from "./router";
 import { HealthCheckService } from "./service";
 import { catalogHooks } from "@checkmate/catalog-backend";
-import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,

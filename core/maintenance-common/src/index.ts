@@ -1,8 +1,8 @@
 export { permissions, permissionList } from "./permissions";
 export {
   maintenanceContract,
+  MaintenanceApi,
   type MaintenanceContract,
-  type MaintenanceClient,
 } from "./rpc-contract";
 export {
   MaintenanceStatusEnum,
@@ -23,6 +23,7 @@ export {
   type AddMaintenanceUpdateInput,
 } from "./schemas";
 export { MaintenanceDetailsSlot, MaintenanceStatusSlot } from "./slots";
+export * from "./plugin-metadata";
 export { maintenanceRoutes } from "./routes";
 
 // =============================================================================

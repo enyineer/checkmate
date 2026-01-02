@@ -10,7 +10,7 @@ import type {
 } from "@checkmate/maintenance-common";
 import {
   catalogRoutes,
-  type CatalogClient,
+  CatalogApi,
   type System,
 } from "@checkmate/catalog-common";
 import {
@@ -33,10 +33,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
   const api = useApi(maintenanceApiRef);
   const rpcApi = useApi(rpcApiRef);
 
-  const catalogApi = useMemo(
-    () => rpcApi.forPlugin<CatalogClient>("catalog"),
-    [rpcApi]
-  );
+  const catalogApi = useMemo(() => rpcApi.forPlugin(CatalogApi), [rpcApi]);
 
   const [maintenance, setMaintenance] = useState<MaintenanceDetail>();
   const [systems, setSystems] = useState<System[]>([]);

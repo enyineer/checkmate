@@ -32,7 +32,7 @@ import {
 import { authApiRef, AuthUser, Role, AuthStrategy, Permission } from "../api";
 import {
   permissions as authPermissions,
-  AuthClient,
+  AuthApi,
 } from "@checkmate/auth-common";
 import {
   Trash2,
@@ -51,7 +51,7 @@ import { rpcApiRef } from "@checkmate/frontend-api";
 export const AuthSettingsPage: React.FC = () => {
   const authApi = useApi(authApiRef);
   const rpcApi = useApi(rpcApiRef);
-  const authClient = rpcApi.forPlugin<AuthClient>("auth");
+  const authClient = rpcApi.forPlugin(AuthApi);
   const permissionApi = useApi(permissionApiRef);
   const toast = useToast();
 

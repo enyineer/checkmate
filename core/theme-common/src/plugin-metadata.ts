@@ -1,8 +1,8 @@
 import { definePluginMetadata } from "@checkmate/common";
 
 /**
- * Plugin metadata for the Theme backend.
- * This is the single source of truth for the plugin ID.
+ * Plugin metadata for the theme plugin.
+ * Exported from the common package so both backend and frontend can reference it.
  */
 export const pluginMetadata = definePluginMetadata({
   pluginId: "theme",

@@ -13,15 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
-import type {
-  Notification,
-  NotificationClient,
-} from "@checkmate/notification-common";
+import type { Notification } from "@checkmate/notification-common";
+import { NotificationApi } from "@checkmate/notification-common";
 
 export const NotificationsPage = () => {
   const rpcApi = useApi(rpcApiRef);
-  const notificationClient =
-    rpcApi.forPlugin<NotificationClient>("notification");
+  const notificationClient = rpcApi.forPlugin(NotificationApi);
   const toast = useToast();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);

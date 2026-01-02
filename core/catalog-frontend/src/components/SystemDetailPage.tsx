@@ -8,7 +8,7 @@ import {
   SystemDetailsTopSlot,
   SystemStateBadgesSlot,
 } from "@checkmate/catalog-common";
-import type { NotificationClient } from "@checkmate/notification-common";
+import { NotificationApi } from "@checkmate/notification-common";
 import {
   Card,
   CardHeader,
@@ -36,7 +36,7 @@ export const SystemDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const catalogApi = useApi(catalogApiRef);
   const rpcApi = useApi(rpcApiRef);
-  const notificationApi = rpcApi.forPlugin<NotificationClient>("notification");
+  const notificationApi = rpcApi.forPlugin(NotificationApi);
   const toast = useToast();
   const authApi = useApi(authApiRef);
   const { data: session } = authApi.useSession();

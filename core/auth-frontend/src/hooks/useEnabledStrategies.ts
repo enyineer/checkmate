@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
-import type { AuthClient } from "@checkmate/auth-common";
+import { AuthApi } from "@checkmate/auth-common";
 import type { EnabledAuthStrategy } from "../api";
 
 export interface UseEnabledStrategiesResult {
@@ -11,7 +11,7 @@ export interface UseEnabledStrategiesResult {
 
 export const useEnabledStrategies = (): UseEnabledStrategiesResult => {
   const rpcApi = useApi(rpcApiRef);
-  const authClient = rpcApi.forPlugin<AuthClient>("auth");
+  const authClient = rpcApi.forPlugin(AuthApi);
 
   const [strategies, setStrategies] = useState<EnabledAuthStrategy[]>([]);
   const [loading, setLoading] = useState(true);
