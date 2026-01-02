@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "core/*",
-    "plugins/*"
+    "plugins/*",
+    "plugins/_test-scaffolds/*"
   ],
   "scripts": {
     "dev": "docker compose up -d && bun run --filter '@checkmate/backend' --filter '@checkmate/frontend' dev",

@@ -6,3 +6,4 @@ tsconfig.tsbuildinfo
 packages/frontend/public/vendor/
 runtime_plugins/
 .dev/
+plugins/_test-scaffolds/

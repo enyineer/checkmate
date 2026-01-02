@@ -203,6 +203,7 @@
       "name": "@checkmate/common",
       "version": "0.0.1",
       "dependencies": {
+        "@orpc/contract": "^1.5.0",
         "zod": "^4.0.0",
       },
       "devDependencies": {

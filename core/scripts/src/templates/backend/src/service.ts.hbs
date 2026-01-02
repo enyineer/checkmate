@@ -1,5 +1,6 @@
-import type { Database } from "@checkmate/backend-api";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
+import * as schema from "./schema";
 import { {{pluginNameCamel}}Items } from "./schema";
 import type {
   Create{{pluginNamePascal}}Item,
@@ -7,7 +8,7 @@ import type {
 } from "@checkmate/{{pluginBaseName}}-common";
 
 export class {{pluginNamePascal}}Service {
-  constructor(private readonly database: Database) {}
+  constructor(private readonly database: NodePgDatabase<typeof schema>) {}
 
   async getItems() {
     return await this.database.select().from({{pluginNameCamel}}Items);
@@ -31,7 +32,7 @@ export class {{pluginNamePascal}}Service {
       .insert({{pluginNameCamel}}Items)
       .values({
         name: data.name,
-        description: data.description ?? null,
+        description: data.description,
       })
       .returning();
 
@@ -47,7 +48,7 @@ export class {{pluginNamePascal}}Service {
       .update({{pluginNameCamel}}Items)
       .set({
         name: data.name,
-        description: data.description ?? null,
+        description: data.description,
         updatedAt: new Date(),
       })
       .where(eq({{pluginNameCamel}}Items.id, id))

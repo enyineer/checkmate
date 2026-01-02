@@ -9,7 +9,7 @@ export const {{pluginNamePascal}}ListPage = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<{{pluginNamePascal}}Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error>();
 
   useEffect(() => {
     api

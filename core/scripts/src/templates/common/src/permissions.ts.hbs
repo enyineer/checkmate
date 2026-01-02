@@ -1,15 +1,17 @@
 import { createPermission } from "@checkmate/common";
 
 export const permissions = {
-  {{pluginNameCamel}}Read: createPermission({
-    id: "{{pluginBaseName}}.read",
-    description: "Read {{pluginBaseName}} data",
-    isDefault: true, // Auto-assigned to "users" role
-  }),
-  {{pluginNameCamel}}Manage: createPermission({
-    id: "{{pluginBaseName}}.manage",
-    description: "Manage {{pluginBaseName}} data",
-  }),
+  {{pluginNameCamel}}Read: createPermission(
+    "{{pluginBaseName}}",
+    "read",
+    "Read {{pluginBaseName}} data",
+    { isAuthenticatedDefault: true } // Auto-assigned to "users" role
+  ),
+  {{pluginNameCamel}}Manage: createPermission(
+    "{{pluginBaseName}}",
+    "manage",
+    "Manage {{pluginBaseName}} data"
+  ),
 };
 
 export const permissionList = Object.values(permissions);

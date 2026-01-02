@@ -93,7 +93,13 @@ export function copyTemplate({
     } else if (stat.isFile()) {
       // Process files
       const isTemplate = item.endsWith(".hbs");
-      const targetFileName = isTemplate ? item.slice(0, -4) : item; // Remove .hbs extension
+      let targetFileName = isTemplate ? item.slice(0, -4) : item; // Remove .hbs extension
+
+      // Process Handlebars patterns in filename
+      if (targetFileName.includes("{{")) {
+        targetFileName = processTemplate(targetFileName, data);
+      }
+
       const targetPath = path.join(targetDir, targetFileName);
 
       if (isTemplate) {
