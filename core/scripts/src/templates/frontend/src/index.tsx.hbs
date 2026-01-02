@@ -1,11 +1,10 @@
 import { createFrontendPlugin, rpcApiRef, type ApiRef } from "@checkmate/frontend-api";
 import { {{pluginNameCamel}}ApiRef, type {{pluginNamePascal}}ApiClient } from "./api";
 import { {{pluginNamePascal}}ListPage } from "./components/{{pluginNamePascal}}ListPage";
-import { {{pluginNameCamel}}Routes, {{pluginNamePascal}}Api } from "@checkmate/{{pluginBaseName}}-common";
-import { ListIcon } from "lucide-react";
+import { {{pluginNameCamel}}Routes, {{pluginNamePascal}}Api, pluginMetadata } from "@checkmate/{{pluginBaseName}}-common";
 
 export default createFrontendPlugin({
-  name: "{{pluginId}}",
+  metadata: pluginMetadata,
 
   // Register routes using typed route definitions
   routes: [
@@ -26,15 +25,6 @@ export default createFrontendPlugin({
         // Create type-safe client using the plugin's Api definition
         return rpcApi.forPlugin({{pluginNamePascal}}Api);
       },
-    },
-  ],
-
-  // Register navigation items
-  navItems: [
-    {
-      title: "{{pluginNamePascal}}",
-      route: {{pluginNameCamel}}Routes.routes.home,
-      icon: <ListIcon />,
     },
   ],
 });

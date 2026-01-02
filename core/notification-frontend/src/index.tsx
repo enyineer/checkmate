@@ -3,14 +3,17 @@ import {
   NavbarSlot,
   UserMenuItemsSlot,
 } from "@checkmate/frontend-api";
-import { notificationRoutes } from "@checkmate/notification-common";
+import {
+  notificationRoutes,
+  pluginMetadata,
+} from "@checkmate/notification-common";
 import { NotificationBell } from "./components/NotificationBell";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { NotificationSettingsPage } from "./pages/NotificationSettingsPage";
 import { NotificationUserMenuItems } from "./components/UserMenuItems";
 
 export const notificationPlugin = createFrontendPlugin({
-  name: "notification-frontend",
+  metadata: pluginMetadata,
   routes: [
     {
       route: notificationRoutes.routes.home,

@@ -28,6 +28,7 @@ import { AuthSettingsPage } from "./components/AuthSettingsPage";
 import {
   permissions as authPermissions,
   authRoutes,
+  pluginMetadata,
 } from "@checkmate/auth-common";
 import { resolveRoute } from "@checkmate/common";
 
@@ -163,7 +164,7 @@ class BetterAuthApi implements AuthApi {
 }
 
 export const authPlugin = createFrontendPlugin({
-  name: "auth-frontend",
+  metadata: pluginMetadata,
   apis: [
     {
       ref: authApiRef as ApiRef<unknown>,

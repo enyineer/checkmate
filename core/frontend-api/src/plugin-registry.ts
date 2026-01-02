@@ -30,30 +30,22 @@ class PluginRegistry {
   private listeners: Set<RegistryListener> = new Set();
 
   /**
-   * Get the URL-friendly base name for a plugin.
-   * Strips common suffixes like "-frontend" for cleaner URLs.
-   */
-  private getPluginBaseName(pluginName: string): string {
-    return pluginName.replace(/-frontend$/, "");
-  }
-
-  /**
    * Validate and register routes from a plugin.
    */
   private registerRoutes(plugin: FrontendPlugin) {
     if (!plugin.routes) return;
 
-    const pluginBaseName = this.getPluginBaseName(plugin.name);
+    const pluginId = plugin.metadata.pluginId;
 
     for (const route of plugin.routes) {
       // Validate that route's pluginId matches the frontend plugin
-      if (route.route.pluginId !== pluginBaseName) {
+      if (route.route.pluginId !== pluginId) {
         console.error(
           `❌ Route pluginId mismatch: route "${route.route.id}" has pluginId "${route.route.pluginId}" ` +
-            `but plugin is "${plugin.name}" (base: "${pluginBaseName}")`
+            `but plugin is "${pluginId}"`
         );
         throw new Error(
-          `Route pluginId "${route.route.pluginId}" doesn't match plugin "${pluginBaseName}"`
+          `Route pluginId "${route.route.pluginId}" doesn't match plugin "${pluginId}"`
         );
       }
 
@@ -89,13 +81,15 @@ class PluginRegistry {
   }
 
   register(plugin: FrontendPlugin) {
+    const pluginId = plugin.metadata.pluginId;
+
     // Avoid duplicate registration
-    if (this.plugins.some((p) => p.name === plugin.name)) {
-      console.warn(`⚠️ Plugin ${plugin.name} already registered`);
+    if (this.plugins.some((p) => p.metadata.pluginId === pluginId)) {
+      console.warn(`⚠️ Plugin ${pluginId} already registered`);
       return;
     }
 
-    console.log(`🔌 Registering frontend plugin: ${plugin.name}`);
+    console.log(`🔌 Registering frontend plugin: ${pluginId}`);
     this.plugins.push(plugin);
 
     if (plugin.extensions) {
@@ -112,18 +106,20 @@ class PluginRegistry {
   }
 
   /**
-   * Unregister a plugin by name.
+   * Unregister a plugin by ID.
    * Removes the plugin and all its extensions from the registry.
    */
-  unregister(pluginName: string): boolean {
-    const pluginIndex = this.plugins.findIndex((p) => p.name === pluginName);
+  unregister(pluginId: string): boolean {
+    const pluginIndex = this.plugins.findIndex(
+      (p) => p.metadata.pluginId === pluginId
+    );
     if (pluginIndex === -1) {
-      console.warn(`⚠️ Plugin ${pluginName} not found for unregistration`);
+      console.warn(`⚠️ Plugin ${pluginId} not found for unregistration`);
       return false;
     }
 
     const plugin = this.plugins[pluginIndex];
-    console.log(`🔌 Unregistering frontend plugin: ${pluginName}`);
+    console.log(`🔌 Unregistering frontend plugin: ${pluginId}`);
 
     // Remove plugin from list
     this.plugins.splice(pluginIndex, 1);
@@ -151,8 +147,8 @@ class PluginRegistry {
   /**
    * Check if a plugin is registered.
    */
-  hasPlugin(pluginName: string): boolean {
-    return this.plugins.some((p) => p.name === pluginName);
+  hasPlugin(pluginId: string): boolean {
+    return this.plugins.some((p) => p.metadata.pluginId === pluginId);
   }
 
   getPlugins() {

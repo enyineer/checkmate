@@ -44,20 +44,20 @@ describe("frontend loadPlugins", () => {
 
     const mockModules = {
       "../../../plugins/local-frontend/src/index.tsx": async () => ({
-        default: { name: "local-frontend", extensions: [] },
+        default: { metadata: { pluginId: "local" }, extensions: [] },
       }),
     };
 
     // We also need to mock dynamic import() for remote plugins
     mock.module("/assets/plugins/remote-plugin/index.js", () => ({
-      default: { name: "remote-plugin", extensions: [] },
+      default: { metadata: { pluginId: "remote-plugin" }, extensions: [] },
     }));
 
     await loadPlugins(mockModules);
 
     // Verify plugins are registered
     const registeredPlugins = pluginRegistry.getPlugins();
-    expect(registeredPlugins.some((p) => p.name === "local-frontend")).toBe(
+    expect(registeredPlugins.some((p) => p.metadata.pluginId === "local")).toBe(
       true
     );
 

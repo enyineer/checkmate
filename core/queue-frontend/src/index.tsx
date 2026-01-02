@@ -3,10 +3,10 @@ import { queueApiRef, type QueueApiClient } from "./api";
 import { createFrontendPlugin } from "@checkmate/frontend-api";
 import { QueueConfigPage } from "./pages/QueueConfigPage";
 import { QueueUserMenuItems } from "./components/UserMenuItems";
-import { queueRoutes, QueueApi } from "@checkmate/queue-common";
+import { queueRoutes, QueueApi, pluginMetadata } from "@checkmate/queue-common";
 
 export const queuePlugin = createFrontendPlugin({
-  name: "queue-frontend",
+  metadata: pluginMetadata,
   apis: [
     {
       ref: queueApiRef,

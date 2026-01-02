@@ -2,10 +2,11 @@ import {
   createFrontendPlugin,
   UserMenuItemsBottomSlot,
 } from "@checkmate/frontend-api";
+import { pluginMetadata } from "@checkmate/theme-common";
 import { ThemeToggleMenuItem } from "./components/ThemeToggleMenuItem";
 
 export const themePlugin = createFrontendPlugin({
-  name: "theme-frontend",
+  metadata: pluginMetadata,
   routes: [],
   extensions: [
     {

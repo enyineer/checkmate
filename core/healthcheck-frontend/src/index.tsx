@@ -22,10 +22,11 @@ import {
 import {
   healthcheckRoutes,
   HealthCheckApi,
+  pluginMetadata,
 } from "@checkmate/healthcheck-common";
 
 export default createFrontendPlugin({
-  name: "healthcheck-frontend",
+  metadata: pluginMetadata,
   routes: [
     {
       route: healthcheckRoutes.routes.config,

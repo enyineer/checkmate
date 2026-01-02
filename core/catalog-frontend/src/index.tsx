@@ -1,7 +1,11 @@
 import { rpcApiRef, ApiRef, UserMenuItemsSlot } from "@checkmate/frontend-api";
 import { catalogApiRef, type CatalogApiClient } from "./api";
 import { createFrontendPlugin } from "@checkmate/frontend-api";
-import { catalogRoutes, CatalogApi } from "@checkmate/catalog-common";
+import {
+  catalogRoutes,
+  CatalogApi,
+  pluginMetadata,
+} from "@checkmate/catalog-common";
 
 import { CatalogPage } from "./components/CatalogPage";
 import { CatalogConfigPage } from "./components/CatalogConfigPage";
@@ -9,7 +13,7 @@ import { CatalogUserMenuItems } from "./components/UserMenuItems";
 import { SystemDetailPage } from "./components/SystemDetailPage";
 
 export const catalogPlugin = createFrontendPlugin({
-  name: "catalog-frontend",
+  metadata: pluginMetadata,
   apis: [
     {
       ref: catalogApiRef,

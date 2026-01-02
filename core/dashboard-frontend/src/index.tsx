@@ -1,8 +1,13 @@
 import { FrontendPlugin, DashboardSlot } from "@checkmate/frontend-api";
+import { definePluginMetadata } from "@checkmate/common";
 import { Dashboard } from "./Dashboard";
 
+const pluginMetadata = definePluginMetadata({
+  pluginId: "dashboard",
+});
+
 export const dashboardPlugin: FrontendPlugin = {
-  name: "dashboard-frontend",
+  metadata: pluginMetadata,
   extensions: [
     {
       id: "dashboard-main",

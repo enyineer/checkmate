@@ -29,7 +29,7 @@ describe("PluginRegistry", () => {
   });
 
   const mockPlugin: FrontendPlugin = {
-    name: "test-frontend",
+    metadata: { pluginId: "test" },
     extensions: [
       {
         id: "extension-1",
@@ -61,7 +61,7 @@ describe("PluginRegistry", () => {
 
   it("should aggregate all routes from registered plugins", () => {
     const pluginB: FrontendPlugin = {
-      name: "plugin-b-frontend",
+      metadata: { pluginId: "plugin-b" },
       routes: [{ route: pluginBRoutes.routes.home }],
     };
 
@@ -76,7 +76,7 @@ describe("PluginRegistry", () => {
 
   it("should allow multiple plugins to register extensions for the same slot", () => {
     const pluginA: FrontendPlugin = {
-      name: "plugin-a-frontend",
+      metadata: { pluginId: "plugin-a" },
       extensions: [
         {
           id: "ext-a",
@@ -87,7 +87,7 @@ describe("PluginRegistry", () => {
     };
 
     const pluginB: FrontendPlugin = {
-      name: "plugin-b-frontend",
+      metadata: { pluginId: "plugin-b" },
       extensions: [
         {
           id: "ext-b",

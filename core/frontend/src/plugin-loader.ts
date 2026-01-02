@@ -56,9 +56,10 @@ export async function loadPlugins(
         );
 
         if (pluginExport) {
-          console.log(`🔌 Registering local plugin: ${pluginExport.name}`);
+          const pluginId = pluginExport.metadata.pluginId;
+          console.log(`🔌 Registering local plugin: ${pluginId}`);
           pluginRegistry.register(pluginExport);
-          registeredNames.add(pluginExport.name);
+          registeredNames.add(pluginId);
         } else {
           console.warn(`⚠️  No valid FrontendPlugin export found in ${path}`);
         }
@@ -96,11 +97,10 @@ export async function loadPlugins(
           ).find((exp): exp is FrontendPlugin => isFrontendPlugin(exp));
 
           if (pluginExport) {
-            console.log(
-              `🔌 Registering enabled remote plugin: ${pluginExport.name}`
-            );
+            const pluginId = pluginExport.metadata.pluginId;
+            console.log(`🔌 Registering enabled remote plugin: ${pluginId}`);
             pluginRegistry.register(pluginExport);
-            registeredNames.add(pluginExport.name);
+            registeredNames.add(pluginId);
           } else {
             console.warn(
               `⚠️  No valid FrontendPlugin export found for remote plugin ${plugin.name}`
@@ -123,15 +123,14 @@ function isFrontendPlugin(candidate: unknown): candidate is FrontendPlugin {
   if (typeof candidate !== "object" || candidate === null) return false;
 
   const p = candidate as Record<string, unknown>;
-  if (typeof p.name !== "string") return false;
 
-  // Basic check for frontend-specific properties
-  return (
-    p.name.endsWith("-frontend") ||
-    "extensions" in p ||
-    "routes" in p ||
-    "navItems" in p
-  );
+  // Check for metadata with pluginId
+  if (typeof p.metadata !== "object" || p.metadata === null) return false;
+  const metadata = p.metadata as Record<string, unknown>;
+  if (typeof metadata.pluginId !== "string") return false;
+
+  // Must have at least one frontend-specific property
+  return "extensions" in p || "routes" in p || "apis" in p;
 }
 
 /**
@@ -175,7 +174,8 @@ export async function loadSinglePlugin(pluginId: string): Promise<void> {
     );
 
     if (pluginExport) {
-      console.log(`🔌 Registering plugin: ${pluginExport.name}`);
+      const pluginId = pluginExport.metadata.pluginId;
+      console.log(`🔌 Registering plugin: ${pluginId}`);
       pluginRegistry.register(pluginExport);
     } else {
       console.warn(`⚠️ No valid FrontendPlugin export found for ${pluginId}`);

@@ -9,6 +9,7 @@ import { maintenanceApiRef, type MaintenanceApiClient } from "./api";
 import {
   maintenanceRoutes,
   MaintenanceApi,
+  pluginMetadata,
 } from "@checkmate/maintenance-common";
 import {
   SystemDetailsTopSlot,
@@ -22,7 +23,7 @@ import { SystemMaintenanceBadge } from "./components/SystemMaintenanceBadge";
 import { MaintenanceMenuItems } from "./components/MaintenanceMenuItems";
 
 export default createFrontendPlugin({
-  name: "maintenance-frontend",
+  metadata: pluginMetadata,
   routes: [
     {
       route: maintenanceRoutes.routes.config,

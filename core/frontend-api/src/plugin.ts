@@ -1,7 +1,7 @@
 import React from "react";
 import { ApiRef } from "./api-ref";
 import type { SlotDefinition } from "./slots";
-import type { RouteDefinition } from "@checkmate/common";
+import type { RouteDefinition, PluginMetadata } from "@checkmate/common";
 
 /**
  * Extract the context type from a SlotDefinition
@@ -51,19 +51,19 @@ export interface PluginRoute {
   permission?: string;
 }
 
+/**
+ * Frontend plugin configuration.
+ * Uses PluginMetadata from the common package for consistent plugin identification.
+ */
 export interface FrontendPlugin {
-  name: string;
+  /** Plugin metadata from the common package (contains pluginId) */
+  metadata: PluginMetadata;
   extensions?: Extension[];
   apis?: {
     ref: ApiRef<unknown>;
     factory: (deps: { get: <T>(ref: ApiRef<T>) => T }) => unknown;
   }[];
   routes?: PluginRoute[];
-  navItems?: {
-    title: string;
-    path: string;
-    icon?: React.ComponentType | React.ReactNode;
-  }[];
 }
 
 export function createFrontendPlugin(plugin: FrontendPlugin): FrontendPlugin {

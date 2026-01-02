@@ -52,7 +52,7 @@ describe("Cross-Plugin Slot Usage", () => {
 
     // PluginB imports and uses the slot:
     const pluginB = createFrontendPlugin({
-      name: "plugin-b-frontend",
+      metadata: { pluginId: "plugin-b" },
       extensions: [
         {
           id: "plugin-b.extension-for-plugin-a",
@@ -76,7 +76,7 @@ describe("Cross-Plugin Slot Usage", () => {
     const MockComponentC = () => null;
 
     const pluginB = createFrontendPlugin({
-      name: "plugin-b-frontend",
+      metadata: { pluginId: "plugin-b" },
       extensions: [
         {
           id: "plugin-b.extension",
@@ -87,7 +87,7 @@ describe("Cross-Plugin Slot Usage", () => {
     });
 
     const pluginC = createFrontendPlugin({
-      name: "plugin-c-frontend",
+      metadata: { pluginId: "plugin-c" },
       extensions: [
         {
           id: "plugin-c.extension",
@@ -108,7 +108,7 @@ describe("Cross-Plugin Slot Usage", () => {
 
   test("extensions are removed when plugin is unregistered", () => {
     const pluginB = createFrontendPlugin({
-      name: "plugin-b-frontend",
+      metadata: { pluginId: "plugin-b" },
       extensions: [
         {
           id: "plugin-b.extension",
@@ -121,7 +121,7 @@ describe("Cross-Plugin Slot Usage", () => {
     pluginRegistry.register(pluginB);
     expect(pluginRegistry.getExtensions(PluginASlot.id)).toHaveLength(1);
 
-    pluginRegistry.unregister("plugin-b-frontend");
+    pluginRegistry.unregister("plugin-b");
     expect(pluginRegistry.getExtensions(PluginASlot.id)).toHaveLength(0);
   });
 
@@ -134,7 +134,7 @@ describe("Cross-Plugin Slot Usage", () => {
 
     // Extensions registered to either slot.id will be in the same collection
     const pluginB = createFrontendPlugin({
-      name: "plugin-b-frontend",
+      metadata: { pluginId: "plugin-b" },
       extensions: [
         {
           id: "plugin-b.ext1",
@@ -145,7 +145,7 @@ describe("Cross-Plugin Slot Usage", () => {
     });
 
     const pluginC = createFrontendPlugin({
-      name: "plugin-c-frontend",
+      metadata: { pluginId: "plugin-c" },
       extensions: [
         {
           id: "plugin-c.ext2",
