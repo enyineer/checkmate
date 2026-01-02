@@ -15,15 +15,6 @@ describe("Notification Backend Module", () => {
     expect(typeof createNotificationRouter).toBe("function");
   });
 
-  it("exports NotificationService", async () => {
-    const { NotificationService, createNotificationService } = await import(
-      "./service"
-    );
-    expect(NotificationService).toBeDefined();
-    expect(createNotificationService).toBeDefined();
-    expect(typeof createNotificationService).toBe("function");
-  });
-
   it("exports schema tables", async () => {
     const schema = await import("./schema");
     expect(schema.notifications).toBeDefined();
@@ -35,20 +26,13 @@ describe("Notification Backend Module", () => {
     const plugin = await import("./index");
     expect(plugin.default).toBeDefined();
   });
-});
 
-describe("NotificationService", () => {
-  it("has correct method signatures", () => {
-    // Type check - confirms the class structure
-    type ServiceMethods = keyof import("./service").NotificationService;
-    const expectedMethods: ServiceMethods[] = [
-      "notifyUser",
-      "notifyGroup",
-      "broadcast",
-      "createGroup",
-      "deleteGroup",
-      "getGroupSubscribers",
-    ];
-    expect(expectedMethods.length).toBe(6);
+  it("exports service functions", async () => {
+    const service = await import("./service");
+    expect(service.getUserNotifications).toBeDefined();
+    expect(service.getUnreadCount).toBeDefined();
+    expect(service.markAsRead).toBeDefined();
+    expect(service.subscribeToGroup).toBeDefined();
+    expect(service.unsubscribeFromGroup).toBeDefined();
   });
 });
