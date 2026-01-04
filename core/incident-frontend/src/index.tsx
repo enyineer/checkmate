@@ -10,6 +10,7 @@ import {
   incidentRoutes,
   IncidentApi,
   pluginMetadata,
+  permissions,
 } from "@checkmate/incident-common";
 import {
   SystemDetailsTopSlot,
@@ -29,7 +30,7 @@ export default createFrontendPlugin({
       route: incidentRoutes.routes.config,
       element: <IncidentConfigPage />,
       title: "Incidents",
-      permission: "incident-backend.incident.manage",
+      permission: permissions.incidentManage,
     },
     {
       route: incidentRoutes.routes.detail,

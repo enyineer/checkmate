@@ -40,19 +40,19 @@ export default createFrontendPlugin({
       route: healthcheckRoutes.routes.config,
       element: <HealthCheckConfigPage />,
       title: "Health Checks",
-      permission: permissions.healthCheckManage.id,
+      permission: permissions.healthCheckManage,
     },
     {
       route: healthcheckRoutes.routes.history,
       element: <HealthCheckHistoryPage />,
       title: "Health Check History",
-      permission: permissions.healthCheckRead.id,
+      permission: permissions.healthCheckRead,
     },
     {
       route: healthcheckRoutes.routes.historyDetail,
       element: <HealthCheckHistoryDetailPage />,
       title: "Health Check Detail",
-      permission: permissions.healthCheckDetailsRead.id,
+      permission: permissions.healthCheckDetailsRead,
     },
   ],
   apis: [

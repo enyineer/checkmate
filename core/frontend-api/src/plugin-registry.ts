@@ -61,7 +61,7 @@ class PluginRegistry {
         pluginId: route.route.pluginId,
         element: route.element,
         title: route.title,
-        permission: route.permission,
+        permission: route.permission?.id,
       };
 
       // Add to route map for resolution
@@ -175,7 +175,7 @@ class PluginRegistry {
           path: fullPath,
           element: route.element,
           title: route.title,
-          permission: route.permission,
+          permission: route.permission?.id,
         };
       });
     });

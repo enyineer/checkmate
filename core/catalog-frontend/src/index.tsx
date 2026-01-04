@@ -5,6 +5,7 @@ import {
   catalogRoutes,
   CatalogApi,
   pluginMetadata,
+  permissions,
 } from "@checkmate/catalog-common";
 
 import { CatalogPage } from "./components/CatalogPage";
@@ -32,7 +33,7 @@ export const catalogPlugin = createFrontendPlugin({
     {
       route: catalogRoutes.routes.config,
       element: <CatalogConfigPage />,
-      permission: "catalog.manage",
+      permission: permissions.catalogManage,
     },
     {
       route: catalogRoutes.routes.systemDetail,

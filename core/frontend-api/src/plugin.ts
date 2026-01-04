@@ -1,7 +1,11 @@
 import React from "react";
 import { ApiRef } from "./api-ref";
 import type { SlotDefinition } from "./slots";
-import type { RouteDefinition, PluginMetadata } from "@checkmate/common";
+import type {
+  RouteDefinition,
+  PluginMetadata,
+  Permission,
+} from "@checkmate/common";
 
 /**
  * Extract the context type from a SlotDefinition
@@ -47,8 +51,8 @@ export interface PluginRoute {
   /** Page title */
   title?: string;
 
-  /** Permission required to access this route */
-  permission?: string;
+  /** Permission required to access this route (use permission object from common package) */
+  permission?: Permission;
 }
 
 /**
