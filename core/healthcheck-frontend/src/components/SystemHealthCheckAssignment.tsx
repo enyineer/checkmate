@@ -33,7 +33,9 @@ import {
   healthcheckRoutes,
 } from "@checkmate/healthcheck-common";
 import { resolveRoute } from "@checkmate/common";
-import { RetentionConfigDialog } from "./RetentionConfigDialog";
+import { DEFAULT_RETENTION_CONFIG } from "@checkmate/healthcheck-common";
+
+type SelectedPanel = { configId: string; panel: "thresholds" | "retention" };
 
 type Props = SlotContext<typeof CatalogSystemActionsSlot>;
 
@@ -59,8 +61,19 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedConfig, setSelectedConfig] = useState<string>();
-  const [retentionConfigId, setRetentionConfigId] = useState<string>();
+  const [selectedPanel, setSelectedPanel] = useState<SelectedPanel>();
+  const [retentionData, setRetentionData] = useState<
+    Record<
+      string,
+      {
+        rawRetentionDays: number;
+        hourlyRetentionDays: number;
+        dailyRetentionDays: number;
+        isCustom: boolean;
+        loading: boolean;
+      }
+    >
+  >({});
   const toast = useToast();
 
   const loadData = async () => {
@@ -163,7 +176,7 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
         },
       });
       toast.success("Thresholds saved");
-      setSelectedConfig(undefined);
+      setSelectedPanel(undefined);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to save";
       toast.error(message);
@@ -424,7 +437,7 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSelectedConfig(undefined)}
+            onClick={() => setSelectedPanel(undefined)}
           >
             Cancel
           </Button>
@@ -435,6 +448,273 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
           >
             {saving ? "Saving..." : "Save Thresholds"}
           </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Load retention data when retention panel is expanded
+  const loadRetentionConfig = async (configId: string) => {
+    if (retentionData[configId]) return; // Already loaded
+
+    setRetentionData((prev) => ({
+      ...prev,
+      [configId]: {
+        rawRetentionDays: DEFAULT_RETENTION_CONFIG.rawRetentionDays,
+        hourlyRetentionDays: DEFAULT_RETENTION_CONFIG.hourlyRetentionDays,
+        dailyRetentionDays: DEFAULT_RETENTION_CONFIG.dailyRetentionDays,
+        isCustom: false,
+        loading: true,
+      },
+    }));
+
+    try {
+      const response = await api.getRetentionConfig({
+        systemId,
+        configurationId: configId,
+      });
+      setRetentionData((prev) => ({
+        ...prev,
+        [configId]: {
+          rawRetentionDays:
+            response.retentionConfig?.rawRetentionDays ??
+            DEFAULT_RETENTION_CONFIG.rawRetentionDays,
+          hourlyRetentionDays:
+            response.retentionConfig?.hourlyRetentionDays ??
+            DEFAULT_RETENTION_CONFIG.hourlyRetentionDays,
+          dailyRetentionDays:
+            response.retentionConfig?.dailyRetentionDays ??
+            DEFAULT_RETENTION_CONFIG.dailyRetentionDays,
+          isCustom: !!response.retentionConfig,
+          loading: false,
+        },
+      }));
+    } catch {
+      setRetentionData((prev) => ({
+        ...prev,
+        [configId]: { ...prev[configId], loading: false },
+      }));
+    }
+  };
+
+  const handleSaveRetention = async (configId: string) => {
+    const data = retentionData[configId];
+    if (!data) return;
+
+    setSaving(true);
+    try {
+      await api.updateRetentionConfig({
+        systemId,
+        configurationId: configId,
+        retentionConfig: {
+          rawRetentionDays: data.rawRetentionDays,
+          hourlyRetentionDays: data.hourlyRetentionDays,
+          dailyRetentionDays: data.dailyRetentionDays,
+        },
+      });
+      toast.success("Retention settings saved");
+      setSelectedPanel(undefined);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to save";
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetRetention = async (configId: string) => {
+    setSaving(true);
+    try {
+      await api.updateRetentionConfig({
+        systemId,
+        configurationId: configId,
+        // eslint-disable-next-line unicorn/no-null -- RPC contract uses nullable()
+        retentionConfig: null,
+      });
+      setRetentionData((prev) => ({
+        ...prev,
+        [configId]: {
+          rawRetentionDays: DEFAULT_RETENTION_CONFIG.rawRetentionDays,
+          hourlyRetentionDays: DEFAULT_RETENTION_CONFIG.hourlyRetentionDays,
+          dailyRetentionDays: DEFAULT_RETENTION_CONFIG.dailyRetentionDays,
+          isCustom: false,
+          loading: false,
+        },
+      }));
+      toast.success("Reset to defaults");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to reset";
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateRetentionField = (
+    configId: string,
+    field: string,
+    value: number
+  ) => {
+    setRetentionData((prev) => ({
+      ...prev,
+      [configId]: { ...prev[configId], [field]: value, isCustom: true },
+    }));
+  };
+
+  const renderRetentionEditor = (configId: string) => {
+    const data = retentionData[configId];
+
+    // Trigger load if not loaded
+    if (!data) {
+      loadRetentionConfig(configId);
+      return (
+        <div className="mt-4 flex justify-center py-4">
+          <LoadingSpinner />
+        </div>
+      );
+    }
+
+    if (data.loading) {
+      return (
+        <div className="mt-4 flex justify-center py-4">
+          <LoadingSpinner />
+        </div>
+      );
+    }
+
+    // Validation
+    const isValidHierarchy =
+      data.rawRetentionDays < data.hourlyRetentionDays &&
+      data.hourlyRetentionDays < data.dailyRetentionDays;
+
+    return (
+      <div className="mt-4 space-y-3">
+        {!data.isCustom && (
+          <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+            Using default retention settings. Customize below to override.
+          </div>
+        )}
+
+        {!isValidHierarchy && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive">
+            Retention periods must increase: Raw &lt; Hourly &lt; Daily
+          </div>
+        )}
+
+        {/* Raw Data */}
+        <div className="p-3 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium">Raw Data Retention</span>
+              <p className="text-xs text-muted-foreground">
+                Individual run data before hourly aggregation
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={data.rawRetentionDays}
+                onChange={(e) =>
+                  updateRetentionField(
+                    configId,
+                    "rawRetentionDays",
+                    Number(e.target.value)
+                  )
+                }
+                className="h-8 w-20 text-center"
+              />
+              <span className="text-sm text-muted-foreground w-10">days</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Hourly Aggregates */}
+        <div className="p-3 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium">Hourly Aggregates</span>
+              <p className="text-xs text-muted-foreground">
+                Hourly stats before daily rollup
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={7}
+                max={365}
+                value={data.hourlyRetentionDays}
+                onChange={(e) =>
+                  updateRetentionField(
+                    configId,
+                    "hourlyRetentionDays",
+                    Number(e.target.value)
+                  )
+                }
+                className="h-8 w-20 text-center"
+              />
+              <span className="text-sm text-muted-foreground w-10">days</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Daily Aggregates */}
+        <div className="p-3 rounded-lg border bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium">Daily Aggregates</span>
+              <p className="text-xs text-muted-foreground">
+                Long-term storage before deletion
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={30}
+                max={1095}
+                value={data.dailyRetentionDays}
+                onChange={(e) =>
+                  updateRetentionField(
+                    configId,
+                    "dailyRetentionDays",
+                    Number(e.target.value)
+                  )
+                }
+                className="h-8 w-20 text-center"
+              />
+              <span className="text-sm text-muted-foreground w-10">days</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between pt-2 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleResetRetention(configId)}
+            disabled={saving || !data.isCustom}
+          >
+            Reset to Defaults
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedPanel(undefined)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleSaveRetention(configId)}
+              disabled={saving || !isValidHierarchy}
+            >
+              {saving ? "Saving..." : "Save Retention"}
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -478,7 +758,12 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
                   (a) => a.configurationId === config.id
                 );
                 const isAssigned = !!assoc;
-                const isExpanded = selectedConfig === config.id;
+                const isExpanded =
+                  selectedPanel?.configId === config.id &&
+                  selectedPanel?.panel === "thresholds";
+                const isRetentionExpanded =
+                  selectedPanel?.configId === config.id &&
+                  selectedPanel?.panel === "retention";
 
                 return (
                   <div
@@ -530,8 +815,10 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              setSelectedConfig(
-                                isExpanded ? undefined : config.id
+                              setSelectedPanel(
+                                isExpanded
+                                  ? undefined
+                                  : { configId: config.id, panel: "thresholds" }
                               )
                             }
                             className="h-7 px-2"
@@ -542,7 +829,13 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setRetentionConfigId(config.id)}
+                            onClick={() =>
+                              setSelectedPanel(
+                                isRetentionExpanded
+                                  ? undefined
+                                  : { configId: config.id, panel: "retention" }
+                              )
+                            }
                             className="h-7 px-2"
                           >
                             <Database className="h-4 w-4" />
@@ -555,6 +848,9 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
                       isExpanded &&
                       assoc &&
                       renderThresholdEditor(assoc)}
+                    {isAssigned &&
+                      isRetentionExpanded &&
+                      renderRetentionEditor(config.id)}
                   </div>
                 );
               })}
@@ -568,19 +864,6 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Retention Config Dialog - rendered when retentionConfigId is set */}
-      {retentionConfigId && (
-        <RetentionConfigDialog
-          systemId={systemId}
-          configurationId={retentionConfigId}
-          configurationName={
-            configs.find((c) => c.id === retentionConfigId)?.name ?? ""
-          }
-          open={true}
-          onOpenChange={(open) => !open && setRetentionConfigId(undefined)}
-        />
-      )}
     </>
   );
 };

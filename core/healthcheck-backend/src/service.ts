@@ -15,6 +15,7 @@ import {
 import * as schema from "./schema";
 import { eq, and, InferSelectModel, desc, gte, lte } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { ORPCError } from "@orpc/server";
 import { evaluateHealthStatus } from "./state-evaluator";
 import {
   STATE_THRESHOLDS_VERSION,
@@ -175,6 +176,25 @@ export class HealthCheckService {
     configurationId: string,
     retentionConfig: RetentionConfig | null
   ): Promise<void> {
+    // Validate retention hierarchy: raw < hourly < daily
+    if (retentionConfig) {
+      if (
+        retentionConfig.rawRetentionDays >= retentionConfig.hourlyRetentionDays
+      ) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Raw retention must be less than hourly retention",
+        });
+      }
+      if (
+        retentionConfig.hourlyRetentionDays >=
+        retentionConfig.dailyRetentionDays
+      ) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Hourly retention must be less than daily retention",
+        });
+      }
+    }
+
     await this.db
       .update(systemHealthChecks)
       .set({ retentionConfig, updatedAt: new Date() })
