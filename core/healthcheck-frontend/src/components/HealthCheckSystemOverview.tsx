@@ -65,7 +65,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
 
   // Check if user has permission to view detailed run data (with metadata)
   const { allowed: canViewDetails, loading: permissionLoading } =
-    permissionApi.usePermission(permissions.healthCheckManage.id);
+    permissionApi.usePermission(permissions.healthCheckDetailsRead.id);
 
   // State for detailed runs with metadata (only fetched if user has permission)
   const [detailedRuns, setDetailedRuns] = useState<

@@ -148,12 +148,12 @@ export const healthCheckContract = {
 
   /**
    * Get detailed health check run history with full result data.
-   * Restricted to users with manage permission.
+   * Requires permission to view detailed run data including metadata.
    */
   getDetailedHistory: _base
     .meta({
       userType: "user",
-      permissions: [permissions.healthCheckManage.id],
+      permissions: [permissions.healthCheckDetailsRead.id],
     })
     .input(
       z.object({

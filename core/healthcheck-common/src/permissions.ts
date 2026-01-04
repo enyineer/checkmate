@@ -20,6 +20,15 @@ export const permissions = {
     "read",
     "Read Health Check Configurations"
   ),
+  /**
+   * Permission for viewing detailed health check run data including metadata.
+   * Allows access to extended visualizations without full management access.
+   */
+  healthCheckDetailsRead: createPermission(
+    "healthcheck.details",
+    "read",
+    "View Detailed Health Check Run Data"
+  ),
   healthCheckManage: createPermission(
     "healthcheck",
     "manage",
