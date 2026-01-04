@@ -14,3 +14,4 @@ export * from "./test-utils";
 export * from "./hooks";
 export * from "./event-bus-types";
 export * from "./plugin-admin-contract";
+export * from "./notification-strategy";

@@ -5,6 +5,7 @@ import {
   type RealUser,
   type ConfigService,
   toJsonSchema,
+  type NotificationStrategyRegistry,
 } from "@checkmate/backend-api";
 import {
   notificationContract,
@@ -38,7 +39,8 @@ import {
 export const createNotificationRouter = (
   database: NodePgDatabase<typeof schema>,
   configService: ConfigService,
-  signalService: SignalService
+  signalService: SignalService,
+  _strategyRegistry?: NotificationStrategyRegistry
 ) => {
   // Create contract implementer with context type AND auto auth middleware
   const os = implement(notificationContract)

@@ -46,3 +46,27 @@ export const notificationSubscriptions = pgTable(
     pk: primaryKey({ columns: [t.userId, t.groupId] }),
   })
 );
+
+// User notification preferences per strategy
+// Stores user-specific config, enabled status, and OAuth linking info
+export const userNotificationPreferences = pgTable(
+  "user_notification_preferences",
+  {
+    userId: text("user_id").notNull(),
+    /** Qualified strategy ID: {pluginId}.{strategyId} */
+    strategyId: text("strategy_id").notNull(),
+    /** User's strategy-specific config (validated via strategy.userConfig) */
+    config: jsonb("config"),
+    /** Whether user has enabled this channel (default true) */
+    enabled: boolean("enabled").default(true).notNull(),
+    /** External user ID from OAuth linking (e.g., Slack user ID) */
+    externalId: text("external_id"),
+    /** When the external account was linked */
+    linkedAt: timestamp("linked_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.strategyId] }),
+  })
+);

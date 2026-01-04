@@ -8,6 +8,13 @@
       "when": 1767319106023,
       "tag": "0000_tan_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767547905748,
+      "tag": "0001_futuristic_apocalypse",
+      "breakpoints": true
     }
   ]
 }

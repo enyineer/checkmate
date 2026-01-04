@@ -92,3 +92,86 @@ export const PaginationInputSchema = z.object({
   unreadOnly: z.boolean().default(false),
 });
 export type PaginationInput = z.infer<typeof PaginationInputSchema>;
+
+// --- Notification Strategy Schemas ---
+
+// Contact resolution type
+export const ContactResolutionSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("auth-email") }),
+  z.object({ type: z.literal("auth-provider"), provider: z.string() }),
+  z.object({ type: z.literal("user-config"), field: z.string() }),
+  z.object({ type: z.literal("oauth-link") }),
+  z.object({ type: z.literal("custom") }),
+]);
+export type ContactResolution = z.infer<typeof ContactResolutionSchema>;
+
+// Strategy info for API responses
+export const NotificationStrategyInfoSchema = z.object({
+  /** Qualified ID: {pluginId}.{strategyId} */
+  qualifiedId: z.string(),
+  /** Display name */
+  displayName: z.string(),
+  /** Description */
+  description: z.string().optional(),
+  /** Lucide icon name */
+  icon: z.string().optional(),
+  /** Owner plugin ID */
+  ownerPluginId: z.string(),
+  /** How contact info is resolved */
+  contactResolution: ContactResolutionSchema,
+  /** Whether strategy requires user config */
+  requiresUserConfig: z.boolean(),
+  /** Whether strategy requires OAuth linking */
+  requiresOAuthLink: z.boolean(),
+  /** JSON Schema for admin config (for DynamicForm) */
+  configSchema: z.record(z.string(), z.unknown()),
+  /** JSON Schema for user config (if applicable) */
+  userConfigSchema: z.record(z.string(), z.unknown()).optional(),
+});
+export type NotificationStrategyInfo = z.infer<
+  typeof NotificationStrategyInfoSchema
+>;
+
+// User's preference for a specific strategy
+export const UserNotificationPreferenceSchema = z.object({
+  strategyId: z.string(),
+  enabled: z.boolean(),
+  /** Whether this channel is ready (has contact info / is linked) */
+  isConfigured: z.boolean(),
+  /** When external account was linked (for OAuth strategies) */
+  linkedAt: z.coerce.date().optional(),
+});
+export type UserNotificationPreference = z.infer<
+  typeof UserNotificationPreferenceSchema
+>;
+
+// External notification payload
+export const ExternalNotificationPayloadSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  importance: ImportanceSchema.default("info"),
+  actionUrl: z.string().optional(),
+  /** Source type for filtering (e.g., "healthcheck.alert", "password-reset") */
+  type: z.string(),
+});
+export type ExternalNotificationPayload = z.infer<
+  typeof ExternalNotificationPayloadSchema
+>;
+
+// External delivery result
+export const ExternalDeliveryResultSchema = z.object({
+  sent: z.number(),
+  failed: z.number(),
+  skipped: z.number(),
+});
+export type ExternalDeliveryResult = z.infer<
+  typeof ExternalDeliveryResultSchema
+>;
+
+// Transactional message result
+export const TransactionalResultSchema = z.object({
+  success: z.boolean(),
+  externalId: z.string().optional(),
+  error: z.string().optional(),
+});
+export type TransactionalResult = z.infer<typeof TransactionalResultSchema>;
