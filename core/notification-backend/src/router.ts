@@ -10,6 +10,7 @@ import {
 import {
   notificationContract,
   NOTIFICATION_RECEIVED,
+  NOTIFICATION_READ,
 } from "@checkmate/notification-common";
 import type { SignalService } from "@checkmate/signal-common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -101,6 +102,11 @@ export const createNotificationRouter = (
     markAsRead: os.markAsRead.handler(async ({ input, context }) => {
       const userId = (context.user as RealUser).id;
       await markAsRead(database, userId, input.notificationId);
+
+      // Send signal to update NotificationBell in realtime
+      void signalService.sendToUser(NOTIFICATION_READ, userId, {
+        notificationId: input.notificationId,
+      });
     }),
 
     deleteNotification: os.deleteNotification.handler(
