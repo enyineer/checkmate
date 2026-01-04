@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  stripMarkdown,
 } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import type { Notification } from "@checkmate/notification-common";
@@ -222,7 +223,7 @@ export const NotificationsPage = () => {
                       {notification.title}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {notification.body}
+                      {stripMarkdown(notification.body)}
                     </p>
                     {notification.action && (
                       <div className="flex gap-2 mt-2">

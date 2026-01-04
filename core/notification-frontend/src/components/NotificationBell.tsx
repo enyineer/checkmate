@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   Button,
+  stripMarkdown,
 } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import { useSignal } from "@checkmate/signal-frontend";
@@ -240,7 +241,7 @@ export const NotificationBell = () => {
                     {notification.title}
                   </div>
                   <div className="text-xs text-muted-foreground line-clamp-2">
-                    {notification.body}
+                    {stripMarkdown(notification.body)}
                   </div>
                   {notification.action && (
                     <div className="flex gap-2 mt-1">
