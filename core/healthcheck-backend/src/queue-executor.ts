@@ -220,6 +220,7 @@ async function executeHealthCheckJob(props: {
       configurationId: configId,
       systemId,
       status: result.status,
+      latencyMs: result.latencyMs,
       result: { ...result } as Record<string, unknown>,
     });
 
@@ -253,7 +254,7 @@ async function executeHealthCheckJob(props: {
       error
     );
 
-    // Store failure
+    // Store failure (no latencyMs for failures)
     await db.insert(healthCheckRuns).values({
       configurationId: configId,
       systemId,

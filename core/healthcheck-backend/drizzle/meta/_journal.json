@@ -8,6 +8,13 @@
       "when": 1767319092901,
       "tag": "0000_stormy_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767530046443,
+      "tag": "0001_thin_shotgun",
+      "breakpoints": true
     }
   ]
 }

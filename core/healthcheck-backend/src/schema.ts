@@ -73,6 +73,8 @@ export const healthCheckRuns = pgTable("health_check_runs", {
     .references(() => healthCheckConfigurations.id, { onDelete: "cascade" }),
   systemId: text("system_id").notNull(),
   status: healthCheckStatusEnum("status").notNull(),
+  /** Execution duration in milliseconds */
+  latencyMs: integer("latency_ms"),
   result: jsonb("result").$type<Record<string, unknown>>(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });

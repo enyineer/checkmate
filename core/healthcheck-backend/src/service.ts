@@ -408,7 +408,7 @@ export class HealthCheckService {
       .limit(limit)
       .offset(offset);
 
-    // Return without result field for public access
+    // Return without result field for public access (latencyMs is public data)
     return {
       runs: runs.map((run) => ({
         id: run.id,
@@ -416,6 +416,7 @@ export class HealthCheckService {
         systemId: run.systemId,
         status: run.status,
         timestamp: run.timestamp,
+        latencyMs: run.latencyMs ?? undefined,
       })),
       total,
     };
@@ -460,6 +461,7 @@ export class HealthCheckService {
         status: run.status,
         result: run.result ?? {},
         timestamp: run.timestamp,
+        latencyMs: run.latencyMs ?? undefined,
       })),
       total,
     };
