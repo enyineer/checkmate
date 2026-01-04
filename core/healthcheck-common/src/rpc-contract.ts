@@ -16,6 +16,7 @@ import {
   HealthCheckRunPublicSchema,
   HealthCheckStatusSchema,
   StateThresholdsSchema,
+  RetentionConfigSchema,
 } from "./schemas";
 
 // Base builder with full metadata support
@@ -118,6 +119,35 @@ export const healthCheckContract = {
       z.object({
         systemId: z.string(),
         configId: z.string(),
+      })
+    )
+    .output(z.void()),
+
+  // ==========================================================================
+  // RETENTION CONFIGURATION (userType: "user" with manage permission)
+  // ==========================================================================
+
+  getRetentionConfig: _base
+    .meta({ userType: "user", permissions: [permissions.healthCheckRead.id] })
+    .input(
+      z.object({
+        systemId: z.string(),
+        configurationId: z.string(),
+      })
+    )
+    .output(
+      z.object({
+        retentionConfig: RetentionConfigSchema.nullable(),
+      })
+    ),
+
+  updateRetentionConfig: _base
+    .meta({ userType: "user", permissions: [permissions.healthCheckManage.id] })
+    .input(
+      z.object({
+        systemId: z.string(),
+        configurationId: z.string(),
+        retentionConfig: RetentionConfigSchema.nullable(),
       })
     )
     .output(z.void()),

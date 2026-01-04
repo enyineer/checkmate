@@ -103,6 +103,20 @@ export const createHealthCheckRouter = (
       await service.disassociateSystem(input.systemId, input.configId);
     }),
 
+    getRetentionConfig: os.getRetentionConfig.handler(async ({ input }) => {
+      return service.getRetentionConfig(input.systemId, input.configurationId);
+    }),
+
+    updateRetentionConfig: os.updateRetentionConfig.handler(
+      async ({ input }) => {
+        await service.updateRetentionConfig(
+          input.systemId,
+          input.configurationId,
+          input.retentionConfig
+        );
+      }
+    ),
+
     getHistory: os.getHistory.handler(async ({ input }) => {
       return service.getHistory(input);
     }),

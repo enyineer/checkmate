@@ -27,10 +27,13 @@ import {
   HealthCheckLatencyChart,
   HealthCheckStatusTimeline,
   InfoBanner,
+  DateRangeFilter,
+  Button,
 } from "@checkmate/ui";
 import { formatDistanceToNow } from "date-fns";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Settings } from "lucide-react";
 import { HealthCheckSparkline } from "./HealthCheckSparkline";
+import { RetentionConfigDialog } from "./RetentionConfigDialog";
 import type {
   StateThresholds,
   HealthCheckStatus,
@@ -67,6 +70,26 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
   const { allowed: canViewDetails, loading: permissionLoading } =
     permissionApi.usePermission(permissions.healthCheckDetailsRead.id);
 
+  // Check if user has permission to manage health checks (for retention config)
+  const { allowed: canManage } = permissionApi.usePermission(
+    permissions.healthCheckManage.id
+  );
+
+  // Retention config dialog state
+  const [retentionDialogOpen, setRetentionDialogOpen] = useState(false);
+
+  // Date range state for filtering
+  const [dateRange, setDateRange] = useState<{
+    startDate: Date;
+    endDate: Date;
+  }>(() => {
+    // Default to last 24 hours
+    const end = new Date();
+    const start = new Date();
+    start.setHours(start.getHours() - 24);
+    return { startDate: start, endDate: end };
+  });
+
   // State for detailed runs with metadata (only fetched if user has permission)
   const [detailedRuns, setDetailedRuns] = useState<
     Array<{
@@ -90,16 +113,25 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
       offset: number;
       systemId: string;
       configurationId: string;
+      startDate?: Date;
+      endDate?: Date;
     }) =>
       api.getHistory({
         systemId: params.systemId,
         configurationId: params.configurationId,
         limit: params.limit,
         offset: params.offset,
+        startDate: params.startDate,
+        endDate: params.endDate,
       }),
     getItems: (response) => response.runs,
     getTotal: (response) => response.total,
-    extraParams: { systemId, configurationId: item.configurationId },
+    extraParams: {
+      systemId,
+      configurationId: item.configurationId,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+    },
     defaultLimit: 10,
   });
 
@@ -114,6 +146,8 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
         configurationId: item.configurationId,
         limit: pagination.limit,
         offset: pagination.page * pagination.limit - pagination.limit,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
       })
       .then((response) => {
         setDetailedRuns(
@@ -135,6 +169,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     permissionLoading,
     pagination.limit,
     pagination.page,
+    dateRange,
   ]);
 
   const thresholdDescription = item.stateThresholds
@@ -159,6 +194,33 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
           <Tooltip content={thresholdDescription} />
         </div>
       </div>
+
+      {/* Date Range Filter and Actions */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Time Range:</span>
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+        </div>
+        {canManage && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRetentionDialogOpen(true)}
+          >
+            <Settings className="h-4 w-4 mr-1" />
+            Retention
+          </Button>
+        )}
+      </div>
+
+      {/* Retention Config Dialog */}
+      <RetentionConfigDialog
+        systemId={systemId}
+        configurationId={item.configurationId}
+        configurationName={item.configurationName}
+        open={retentionDialogOpen}
+        onOpenChange={setRetentionDialogOpen}
+      />
 
       {/* Charts Section - always render if we have run data */}
       {runs.length > 0 && (

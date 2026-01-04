@@ -152,3 +152,26 @@ export const HealthCheckRunPublicSchema = z.object({
 });
 
 export type HealthCheckRunPublic = z.infer<typeof HealthCheckRunPublicSchema>;
+
+// --- Retention Configuration ---
+
+/**
+ * Retention configuration for health check data.
+ * Defines how long raw runs and aggregates are kept.
+ */
+export const RetentionConfigSchema = z.object({
+  /** Days to keep raw run data before aggregating (default: 7) */
+  rawRetentionDays: z.number().int().min(1).max(30).default(7),
+  /** Days to keep hourly aggregates before rolling to daily (default: 30) */
+  hourlyRetentionDays: z.number().int().min(7).max(90).default(30),
+  /** Days to keep daily aggregates before deleting (default: 365) */
+  dailyRetentionDays: z.number().int().min(30).max(1095).default(365),
+});
+
+export type RetentionConfig = z.infer<typeof RetentionConfigSchema>;
+
+export const DEFAULT_RETENTION_CONFIG: RetentionConfig = {
+  rawRetentionDays: 7,
+  hourlyRetentionDays: 30,
+  dailyRetentionDays: 365,
+};

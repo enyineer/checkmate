@@ -4,6 +4,7 @@ import {
   UpdateHealthCheckConfiguration,
   StateThresholds,
   HealthCheckStatus,
+  RetentionConfig,
 } from "@checkmate/healthcheck-common";
 import {
   healthCheckConfigurations,
@@ -136,6 +137,47 @@ export class HealthCheckService {
   async disassociateSystem(systemId: string, configurationId: string) {
     await this.db
       .delete(systemHealthChecks)
+      .where(
+        and(
+          eq(systemHealthChecks.systemId, systemId),
+          eq(systemHealthChecks.configurationId, configurationId)
+        )
+      );
+  }
+
+  /**
+   * Get retention configuration for a health check assignment.
+   */
+  async getRetentionConfig(
+    systemId: string,
+    configurationId: string
+  ): Promise<{ retentionConfig: RetentionConfig | null }> {
+    const row = await this.db
+      .select({ retentionConfig: systemHealthChecks.retentionConfig })
+      .from(systemHealthChecks)
+      .where(
+        and(
+          eq(systemHealthChecks.systemId, systemId),
+          eq(systemHealthChecks.configurationId, configurationId)
+        )
+      )
+      .then((rows) => rows[0]);
+
+    // eslint-disable-next-line unicorn/no-null -- RPC contract uses nullable()
+    return { retentionConfig: row?.retentionConfig ?? null };
+  }
+
+  /**
+   * Update retention configuration for a health check assignment.
+   */
+  async updateRetentionConfig(
+    systemId: string,
+    configurationId: string,
+    retentionConfig: RetentionConfig | null
+  ): Promise<void> {
+    await this.db
+      .update(systemHealthChecks)
+      .set({ retentionConfig, updatedAt: new Date() })
       .where(
         and(
           eq(systemHealthChecks.systemId, systemId),
