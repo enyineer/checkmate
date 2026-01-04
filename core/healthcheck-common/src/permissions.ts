@@ -27,7 +27,7 @@ export const permissions = {
   healthCheckDetailsRead: createPermission(
     "healthcheck.details",
     "read",
-    "View Detailed Health Check Run Data"
+    "View Detailed Health Check Run Data (Warning: This may expose sensitive data, depending on the health check strategy)"
   ),
   healthCheckManage: createPermission(
     "healthcheck",

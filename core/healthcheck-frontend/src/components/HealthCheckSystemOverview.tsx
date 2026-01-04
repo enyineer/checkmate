@@ -220,7 +220,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
           ) : (
             <InfoBanner variant="info">
               Additional strategy-specific visualizations are available with the
-              &quot;Health Check Manage&quot; permission.
+              &quot;Read Health Check Details&quot; permission.
             </InfoBanner>
           )}
         </div>

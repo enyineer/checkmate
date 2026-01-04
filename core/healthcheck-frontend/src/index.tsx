@@ -13,6 +13,7 @@ import { HealthCheckMenuItems } from "./components/HealthCheckMenuItems";
 import { HealthCheckSystemOverview } from "./components/HealthCheckSystemOverview";
 import { SystemHealthCheckAssignment } from "./components/SystemHealthCheckAssignment";
 import { SystemHealthBadge } from "./components/SystemHealthBadge";
+import { permissions } from "@checkmate/healthcheck-common";
 
 import {
   SystemDetailsSlot,
@@ -39,19 +40,19 @@ export default createFrontendPlugin({
       route: healthcheckRoutes.routes.config,
       element: <HealthCheckConfigPage />,
       title: "Health Checks",
-      permission: "healthcheck.read",
+      permission: permissions.healthCheckManage.id,
     },
     {
       route: healthcheckRoutes.routes.history,
       element: <HealthCheckHistoryPage />,
       title: "Health Check History",
-      permission: "healthcheck.manage",
+      permission: permissions.healthCheckRead.id,
     },
     {
       route: healthcheckRoutes.routes.historyDetail,
       element: <HealthCheckHistoryDetailPage />,
       title: "Health Check Detail",
-      permission: "healthcheck.manage",
+      permission: permissions.healthCheckDetailsRead.id,
     },
   ],
   apis: [
