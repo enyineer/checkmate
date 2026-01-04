@@ -41,3 +41,5 @@ export * from "./hooks/usePagination";
 export * from "./components/DateTimePicker";
 export * from "./components/BackLink";
 export * from "./components/StatusUpdateTimeline";
+export * from "./components/HealthCheckLatencyChart";
+export * from "./components/HealthCheckStatusTimeline";

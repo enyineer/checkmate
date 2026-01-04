@@ -25,6 +25,13 @@ import {
   pluginMetadata,
 } from "@checkmate/healthcheck-common";
 
+// Export slot definitions for other plugins to use
+export {
+  HealthCheckDiagramSlot,
+  createStrategyDiagramExtension,
+  type HealthCheckDiagramSlotContext,
+} from "./slots";
+
 export default createFrontendPlugin({
   metadata: pluginMetadata,
   routes: [

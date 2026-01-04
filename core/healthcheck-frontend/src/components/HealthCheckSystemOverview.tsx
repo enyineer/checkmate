@@ -1,9 +1,17 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useApi, type SlotContext } from "@checkmate/frontend-api";
+import {
+  useApi,
+  type SlotContext,
+  ExtensionSlot,
+  permissionApiRef,
+} from "@checkmate/frontend-api";
 import { useSignal } from "@checkmate/signal-frontend";
 import { healthCheckApiRef } from "../api";
 import { SystemDetailsSlot } from "@checkmate/catalog-common";
-import { HEALTH_CHECK_STATE_CHANGED } from "@checkmate/healthcheck-common";
+import {
+  HEALTH_CHECK_STATE_CHANGED,
+  permissions,
+} from "@checkmate/healthcheck-common";
 import {
   HealthBadge,
   LoadingSpinner,
@@ -16,6 +24,9 @@ import {
   Tooltip,
   Pagination,
   usePagination,
+  HealthCheckLatencyChart,
+  HealthCheckStatusTimeline,
+  InfoBanner,
 } from "@checkmate/ui";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -24,6 +35,7 @@ import type {
   StateThresholds,
   HealthCheckStatus,
 } from "@checkmate/healthcheck-common";
+import { HealthCheckDiagramSlot } from "../slots";
 
 type SlotProps = SlotContext<typeof SystemDetailsSlot>;
 
@@ -49,6 +61,23 @@ interface ExpandedRowProps {
 
 const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
   const api = useApi(healthCheckApiRef);
+  const permissionApi = useApi(permissionApiRef);
+
+  // Check if user has permission to view detailed run data (with metadata)
+  const { allowed: canViewDetails, loading: permissionLoading } =
+    permissionApi.usePermission(permissions.healthCheckManage.id);
+
+  // State for detailed runs with metadata (only fetched if user has permission)
+  const [detailedRuns, setDetailedRuns] = useState<
+    Array<{
+      id: string;
+      status: HealthCheckStatus;
+      timestamp: Date;
+      latencyMs?: number;
+      result: Record<string, unknown>;
+    }>
+  >([]);
+  const [detailedLoading, setDetailedLoading] = useState(false);
 
   // usePagination now uses refs internally - no memoization needed
   const {
@@ -74,6 +103,40 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     defaultLimit: 10,
   });
 
+  // Fetch detailed runs with metadata when user has permission
+  useEffect(() => {
+    if (!canViewDetails || permissionLoading) return;
+
+    setDetailedLoading(true);
+    api
+      .getDetailedHistory({
+        systemId,
+        configurationId: item.configurationId,
+        limit: pagination.limit,
+        offset: pagination.page * pagination.limit - pagination.limit,
+      })
+      .then((response) => {
+        setDetailedRuns(
+          response.runs.map((r) => ({
+            id: r.id,
+            status: r.status,
+            timestamp: r.timestamp,
+            latencyMs: r.latencyMs,
+            result: r.result,
+          }))
+        );
+      })
+      .finally(() => setDetailedLoading(false));
+  }, [
+    api,
+    systemId,
+    item.configurationId,
+    canViewDetails,
+    permissionLoading,
+    pagination.limit,
+    pagination.page,
+  ]);
+
   const thresholdDescription = item.stateThresholds
     ? item.stateThresholds.mode === "consecutive"
       ? `Consecutive mode: Healthy after ${item.stateThresholds.healthy.minSuccessCount} success(es), Degraded after ${item.stateThresholds.degraded.minFailureCount} failure(s), Unhealthy after ${item.stateThresholds.unhealthy.minFailureCount} failure(s)`
@@ -96,6 +159,72 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
           <Tooltip content={thresholdDescription} />
         </div>
       </div>
+
+      {/* Charts Section - always render if we have run data */}
+      {runs.length > 0 && (
+        <div className="space-y-4">
+          {/* Status Timeline */}
+          <div>
+            <h4 className="text-sm font-medium mb-2">Status Timeline</h4>
+            <HealthCheckStatusTimeline
+              data={runs.map((r) => ({
+                timestamp: new Date(r.timestamp),
+                status: r.status,
+              }))}
+              height={50}
+            />
+          </div>
+
+          {/* Latency Chart - only if any run has latency data */}
+          {runs.some((r) => r.latencyMs !== undefined) && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">Response Latency</h4>
+              <HealthCheckLatencyChart
+                data={runs
+                  .filter((r) => r.latencyMs !== undefined)
+                  .map((r) => ({
+                    timestamp: new Date(r.timestamp),
+                    latencyMs: r.latencyMs!,
+                    status: r.status,
+                  }))}
+                height={150}
+                showAverage
+              />
+            </div>
+          )}
+
+          {/* Extension Slot for custom strategy-specific diagrams */}
+          {/* Only show when user has permission to view detailed metadata */}
+          {permissionLoading ? (
+            <LoadingSpinner />
+          ) : canViewDetails ? (
+            detailedLoading ? (
+              <LoadingSpinner />
+            ) : (
+              <ExtensionSlot
+                slot={HealthCheckDiagramSlot}
+                context={{
+                  systemId,
+                  configurationId: item.configurationId,
+                  strategyId: item.strategyId,
+                  runs: detailedRuns.map((r) => ({
+                    id: r.id,
+                    status: r.status,
+                    timestamp: new Date(r.timestamp),
+                    latencyMs: r.latencyMs,
+                    metadata: r.result,
+                  })),
+                }}
+              />
+            )
+          ) : (
+            <InfoBanner variant="info">
+              Additional strategy-specific visualizations are available with the
+              &quot;Health Check Manage&quot; permission.
+            </InfoBanner>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <LoadingSpinner />

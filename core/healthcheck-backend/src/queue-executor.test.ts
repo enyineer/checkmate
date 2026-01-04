@@ -20,9 +20,11 @@ const createMockRegistry = (): HealthCheckRegistry => ({
     id,
     displayName: "Mock Strategy",
     description: "Mock",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Mock registry doesn't need real Zod schema
-    configSchema: {} as any,
-    configVersion: 1,
+    config: {
+      version: 1,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Mock registry doesn't need real Zod schema
+      schema: {} as any,
+    },
     execute: mock(async () => ({
       status: "healthy" as const,
       message: "Mock check passed",

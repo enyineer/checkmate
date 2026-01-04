@@ -51,12 +51,25 @@ export class HttpHealthCheckStrategy
   id = "http";
   displayName = "HTTP Health Check";
   description = "Performs HTTP requests to check endpoint health";
-  configVersion = 1; // Initial version
-  configSchema = httpHealthCheckConfigSchema;
+
+  config = {
+    version: 1,
+    schema: httpHealthCheckConfigSchema,
+  };
+
+  resultMetadata = {
+    version: 1,
+    schema: z.object({
+      statusCode: z.number().optional(),
+      contentType: z.string().optional(),
+      assertion: httpHealthCheckAssertionSchema.optional(),
+      error: z.string().optional(),
+    }),
+  };
 
   async execute(config: HttpHealthCheckConfig): Promise<HealthCheckResult> {
     // Validate and apply defaults from schema
-    const validatedConfig = this.configSchema.parse(config);
+    const validatedConfig = this.config.schema.parse(config);
 
     const start = performance.now();
     try {
@@ -72,7 +85,7 @@ export class HttpHealthCheckStrategy
       if (response.status !== validatedConfig.expectedStatus) {
         return {
           status: "unhealthy",
-          latency,
+          latencyMs: latency,
           message: `Unexpected status code: ${response.status}. Expected: ${validatedConfig.expectedStatus}`,
           metadata: { statusCode: response.status },
         };
@@ -92,7 +105,7 @@ export class HttpHealthCheckStrategy
             } catch {
               return {
                 status: "unhealthy",
-                latency,
+                latencyMs: latency,
                 message:
                   "Response is not valid JSON, but assertions are configured",
                 metadata: { statusCode: response.status, contentType },
@@ -102,7 +115,7 @@ export class HttpHealthCheckStrategy
         } catch (error_: unknown) {
           return {
             status: "unhealthy",
-            latency,
+            latencyMs: latency,
             message: `Failed to parse response body: ${
               (error_ as Error).message
             }`,
@@ -148,7 +161,7 @@ export class HttpHealthCheckStrategy
           if (!passed) {
             return {
               status: "unhealthy",
-              latency,
+              latencyMs: latency,
               message: `Assertion failed: [${assertion.path}] ${
                 assertion.operator
               } ${expectedValue || ""}. Actual: ${actualValue}`,
@@ -160,7 +173,7 @@ export class HttpHealthCheckStrategy
 
       return {
         status: "healthy",
-        latency,
+        latencyMs: latency,
         message: `Respond with ${response.status}${
           validatedConfig.assertions?.length
             ? ` and passed ${validatedConfig.assertions.length} assertions`
@@ -173,7 +186,7 @@ export class HttpHealthCheckStrategy
       const isError = error instanceof Error;
       return {
         status: "unhealthy",
-        latency: Math.round(end - start),
+        latencyMs: Math.round(end - start),
         message: isError ? error.message : "Request failed",
         metadata: { error: isError ? error.name : "UnknownError" },
       };

@@ -34,12 +34,14 @@ describe("HealthCheck Plugin Integration", () => {
     const mockExecute = mock(async () => ({ status: "healthy" as const }));
 
     // 1. Define a mock strategy
-    const mockStrategy: HealthCheckStrategy<unknown> = {
+    const mockStrategy: HealthCheckStrategy = {
       id: "test-strategy",
       displayName: "Test Strategy",
       description: "A test strategy for integration testing",
-      configVersion: 1,
-      configSchema: z.any(),
+      config: {
+        version: 1,
+        schema: z.any(),
+      },
       execute: mockExecute,
     };
 

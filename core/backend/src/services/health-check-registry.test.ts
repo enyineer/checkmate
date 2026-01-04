@@ -13,24 +13,28 @@ mock.module("../logger", () => ({
 describe("CoreHealthCheckRegistry", () => {
   let registry: CoreHealthCheckRegistry;
 
-  const mockStrategy1: HealthCheckStrategy<unknown> = {
+  const mockStrategy1: HealthCheckStrategy = {
     id: "test-strategy-1",
     displayName: "Test Strategy 1",
     description: "A test strategy",
-    configVersion: 1, // Added configVersion
-    configSchema: z.any(), // Changed configSchema
-    execute: mock(() => Promise.resolve({ status: "healthy" as const })), // Modified execute
+    config: {
+      version: 1,
+      schema: z.any(),
+    },
+    execute: mock(() => Promise.resolve({ status: "healthy" as const })),
   };
 
-  const mockStrategy2: HealthCheckStrategy<unknown> = {
+  const mockStrategy2: HealthCheckStrategy = {
     id: "test-strategy-2",
     displayName: "Test Strategy 2",
     description: "Another test strategy",
-    configVersion: 1, // Added configVersion
-    configSchema: z.any(), // Changed configSchema
+    config: {
+      version: 1,
+      schema: z.any(),
+    },
     execute: mock(() =>
       Promise.resolve({ status: "unhealthy" as const, message: "Failed" })
-    ), // Modified execute
+    ),
   };
 
   beforeEach(() => {

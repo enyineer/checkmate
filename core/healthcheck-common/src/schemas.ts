@@ -133,6 +133,7 @@ export const HealthCheckRunSchema = z.object({
   status: HealthCheckStatusSchema,
   result: z.record(z.string(), z.unknown()),
   timestamp: z.date(),
+  latencyMs: z.number().optional(),
 });
 
 export type HealthCheckRun = z.infer<typeof HealthCheckRunSchema>;
@@ -147,6 +148,7 @@ export const HealthCheckRunPublicSchema = z.object({
   systemId: z.string(),
   status: HealthCheckStatusSchema,
   timestamp: z.date(),
+  latencyMs: z.number().optional(),
 });
 
 export type HealthCheckRunPublic = z.infer<typeof HealthCheckRunPublicSchema>;

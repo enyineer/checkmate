@@ -32,7 +32,7 @@ export const createHealthCheckRouter = (
         id: s.id,
         displayName: s.displayName,
         description: s.description,
-        configSchema: zod.toJSONSchema(s.configSchema),
+        configSchema: zod.toJSONSchema(s.config.schema),
       }));
     }),
 

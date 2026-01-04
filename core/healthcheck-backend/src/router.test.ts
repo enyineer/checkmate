@@ -42,7 +42,10 @@ describe("HealthCheck Router", () => {
             id: "http",
             displayName: "HTTP",
             description: "Check HTTP",
-            configSchema: z.object({}),
+            config: {
+              version: 1,
+              schema: z.object({}),
+            },
           },
         ]),
       } as any,

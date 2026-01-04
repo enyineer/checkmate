@@ -1,3 +1,6 @@
+import { z } from "zod";
+import type { MigrationChain, ConfigMigration } from "./config-migration";
+
 /**
  * Generic versioned data wrapper enabling backward-compatible schema evolution.
  * Base interface for any versioned data structure that needs migrations.
@@ -25,9 +28,25 @@ export interface VersionedConfig<T = unknown> extends VersionedData<T> {
   pluginId: string;
 }
 
+/**
+ * Schema definition for versioned data types.
+ * Used to define how to validate and migrate versioned data.
+ *
+ * Distinction from VersionedData:
+ * - VersionedData = runtime wrapper for stored data ({ version, data, migratedAt })
+ * - VersionedSchema = type definition with schema and migrations ({ version, schema, migrations })
+ */
+export interface VersionedSchema<T> {
+  /** Current schema version */
+  version: number;
+  /** Zod schema for validation */
+  schema: z.ZodType<T>;
+  /** Optional migrations for backward compatibility */
+  migrations?: MigrationChain<T>;
+}
+
 // Re-export migration types for convenience
 export type { ConfigMigration, MigrationChain } from "./config-migration";
-import type { ConfigMigration } from "./config-migration";
 
 /**
  * Builder for creating type-safe migration chains
