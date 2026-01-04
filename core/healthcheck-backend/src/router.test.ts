@@ -29,9 +29,20 @@ describe("HealthCheck Router", () => {
         returning: mock(() => Promise.resolve([])),
       })),
     })),
-  } as any;
+    query: {
+      healthCheckConfigurations: {
+        findFirst: mock(() => Promise.resolve(null)),
+      },
+    },
+  } as unknown;
 
-  const router = createHealthCheckRouter(mockDb);
+  const mockRegistry = {
+    register: mock(),
+    getStrategy: mock(),
+    getStrategies: mock(() => []),
+  };
+
+  const router = createHealthCheckRouter(mockDb as never, mockRegistry);
 
   it("getStrategies returns strategies from registry", async () => {
     const context = createMockRpcContext({

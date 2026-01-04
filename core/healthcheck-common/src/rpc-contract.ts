@@ -135,6 +135,8 @@ export const healthCheckContract = {
       z.object({
         systemId: z.string().optional(),
         configurationId: z.string().optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
         limit: z.number().optional().default(10),
         offset: z.number().optional().default(0),
       })
@@ -159,6 +161,8 @@ export const healthCheckContract = {
       z.object({
         systemId: z.string().optional(),
         configurationId: z.string().optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
         limit: z.number().optional().default(10),
         offset: z.number().optional().default(0),
       })
@@ -167,6 +171,46 @@ export const healthCheckContract = {
       z.object({
         runs: z.array(HealthCheckRunSchema),
         total: z.number(),
+      })
+    ),
+
+  /**
+   * Get aggregated health check history for long-term analysis.
+   * Returns pre-computed buckets with metrics and aggregated metadata.
+   * For timespans with raw data available, aggregates on-the-fly.
+   */
+  getAggregatedHistory: _base
+    .meta({
+      userType: "public",
+      permissions: [permissions.healthCheckStatusRead.id],
+    })
+    .input(
+      z.object({
+        systemId: z.string(),
+        configurationId: z.string(),
+        startDate: z.date(),
+        endDate: z.date(),
+        bucketSize: z.enum(["hourly", "daily", "auto"]),
+      })
+    )
+    .output(
+      z.object({
+        buckets: z.array(
+          z.object({
+            bucketStart: z.date(),
+            bucketSize: z.enum(["hourly", "daily"]),
+            runCount: z.number(),
+            healthyCount: z.number(),
+            degradedCount: z.number(),
+            unhealthyCount: z.number(),
+            successRate: z.number(),
+            avgLatencyMs: z.number().optional(),
+            minLatencyMs: z.number().optional(),
+            maxLatencyMs: z.number().optional(),
+            p95LatencyMs: z.number().optional(),
+            aggregatedMetadata: z.record(z.string(), z.unknown()).optional(),
+          })
+        ),
       })
     ),
 

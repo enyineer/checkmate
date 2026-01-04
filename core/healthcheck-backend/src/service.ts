@@ -12,13 +12,14 @@ import {
   VersionedStateThresholds,
 } from "./schema";
 import * as schema from "./schema";
-import { eq, and, InferSelectModel, desc } from "drizzle-orm";
+import { eq, and, InferSelectModel, desc, gte, lte } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { evaluateHealthStatus } from "./state-evaluator";
 import {
   STATE_THRESHOLDS_VERSION,
   migrateStateThresholds,
 } from "./state-thresholds-migrations";
+import type { HealthCheckRegistry } from "@checkmate/backend-api";
 
 // Drizzle type helper
 type Db = NodePgDatabase<typeof schema>;
@@ -38,7 +39,7 @@ interface SystemHealthStatusResponse {
 }
 
 export class HealthCheckService {
-  constructor(private db: Db) {}
+  constructor(private db: Db, private registry?: HealthCheckRegistry) {}
 
   async createConfiguration(
     data: CreateHealthCheckConfiguration
@@ -381,15 +382,26 @@ export class HealthCheckService {
   async getHistory(props: {
     systemId?: string;
     configurationId?: string;
+    startDate?: Date;
+    endDate?: Date;
     limit?: number;
     offset?: number;
   }) {
-    const { systemId, configurationId, limit = 10, offset = 0 } = props;
+    const {
+      systemId,
+      configurationId,
+      startDate,
+      endDate,
+      limit = 10,
+      offset = 0,
+    } = props;
 
     const conditions = [];
     if (systemId) conditions.push(eq(healthCheckRuns.systemId, systemId));
     if (configurationId)
       conditions.push(eq(healthCheckRuns.configurationId, configurationId));
+    if (startDate) conditions.push(gte(healthCheckRuns.timestamp, startDate));
+    if (endDate) conditions.push(lte(healthCheckRuns.timestamp, endDate));
 
     // Build where clause
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -429,15 +441,26 @@ export class HealthCheckService {
   async getDetailedHistory(props: {
     systemId?: string;
     configurationId?: string;
+    startDate?: Date;
+    endDate?: Date;
     limit?: number;
     offset?: number;
   }) {
-    const { systemId, configurationId, limit = 10, offset = 0 } = props;
+    const {
+      systemId,
+      configurationId,
+      startDate,
+      endDate,
+      limit = 10,
+      offset = 0,
+    } = props;
 
     const conditions = [];
     if (systemId) conditions.push(eq(healthCheckRuns.systemId, systemId));
     if (configurationId)
       conditions.push(eq(healthCheckRuns.configurationId, configurationId));
+    if (startDate) conditions.push(gte(healthCheckRuns.timestamp, startDate));
+    if (endDate) conditions.push(lte(healthCheckRuns.timestamp, endDate));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     const total = await this.db.$count(healthCheckRuns, whereClause);
@@ -465,6 +488,157 @@ export class HealthCheckService {
       })),
       total,
     };
+  }
+
+  /**
+   * Get aggregated health check history with bucketed metrics.
+   * Currently aggregates raw data on-the-fly. Will merge with stored aggregates
+   * once the retention job populates historical data.
+   */
+  async getAggregatedHistory(props: {
+    systemId: string;
+    configurationId: string;
+    startDate: Date;
+    endDate: Date;
+    bucketSize: "hourly" | "daily" | "auto";
+  }) {
+    const { systemId, configurationId, startDate, endDate } = props;
+    let bucketSize = props.bucketSize;
+
+    // Auto-select bucket size based on range
+    if (bucketSize === "auto") {
+      const diffDays =
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+      bucketSize = diffDays > 7 ? "daily" : "hourly";
+    }
+
+    // Get the configuration to find the strategy
+    const config = await this.db.query.healthCheckConfigurations.findFirst({
+      where: eq(healthCheckConfigurations.id, configurationId),
+    });
+
+    // Look up strategy for aggregateMetadata function
+    const strategy =
+      config && this.registry
+        ? this.registry.getStrategy(config.strategyId)
+        : undefined;
+
+    // Query raw runs within the date range (including result for metadata)
+    const runs = await this.db
+      .select()
+      .from(healthCheckRuns)
+      .where(
+        and(
+          eq(healthCheckRuns.systemId, systemId),
+          eq(healthCheckRuns.configurationId, configurationId),
+          gte(healthCheckRuns.timestamp, startDate),
+          lte(healthCheckRuns.timestamp, endDate)
+        )
+      )
+      .orderBy(healthCheckRuns.timestamp);
+
+    // Group runs into buckets (with full result for metadata aggregation)
+    const bucketMap = new Map<
+      string,
+      {
+        bucketStart: Date;
+        runs: Array<{
+          status: "healthy" | "unhealthy" | "degraded";
+          latencyMs: number | undefined;
+          metadata?: Record<string, unknown>;
+        }>;
+      }
+    >();
+
+    for (const run of runs) {
+      const bucketStart = this.getBucketStart(run.timestamp, bucketSize);
+      const key = bucketStart.toISOString();
+
+      if (!bucketMap.has(key)) {
+        bucketMap.set(key, { bucketStart, runs: [] });
+      }
+      bucketMap.get(key)!.runs.push({
+        status: run.status,
+        latencyMs: run.latencyMs ?? undefined,
+        metadata: run.result ?? undefined,
+      });
+    }
+
+    // Calculate metrics for each bucket
+    const buckets = [...bucketMap.values()].map((bucket) => {
+      const runCount = bucket.runs.length;
+      const healthyCount = bucket.runs.filter(
+        (r) => r.status === "healthy"
+      ).length;
+      const degradedCount = bucket.runs.filter(
+        (r) => r.status === "degraded"
+      ).length;
+      const unhealthyCount = bucket.runs.filter(
+        (r) => r.status === "unhealthy"
+      ).length;
+      const successRate = runCount > 0 ? healthyCount / runCount : 0;
+
+      const latencies = bucket.runs
+        .map((r) => r.latencyMs)
+        .filter((l): l is number => l !== null);
+      const avgLatencyMs =
+        latencies.length > 0
+          ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)
+          : undefined;
+      const minLatencyMs =
+        latencies.length > 0 ? Math.min(...latencies) : undefined;
+      const maxLatencyMs =
+        latencies.length > 0 ? Math.max(...latencies) : undefined;
+      const p95LatencyMs =
+        latencies.length > 0
+          ? this.calculatePercentile(latencies, 95)
+          : undefined;
+
+      // Aggregate strategy-specific metadata if strategy is available
+      let aggregatedMetadata: Record<string, unknown> | undefined;
+      if (strategy) {
+        aggregatedMetadata = strategy.aggregateMetadata(bucket.runs) as Record<
+          string,
+          unknown
+        >;
+      }
+
+      return {
+        bucketStart: bucket.bucketStart,
+        bucketSize: bucketSize as "hourly" | "daily",
+        runCount,
+        healthyCount,
+        degradedCount,
+        unhealthyCount,
+        successRate,
+        avgLatencyMs,
+        minLatencyMs,
+        maxLatencyMs,
+        p95LatencyMs,
+        aggregatedMetadata,
+      };
+    });
+
+    return { buckets };
+  }
+
+  private getBucketStart(
+    timestamp: Date,
+    bucketSize: "hourly" | "daily"
+  ): Date {
+    const date = new Date(timestamp);
+    if (bucketSize === "daily") {
+      date.setHours(0, 0, 0, 0);
+    } else {
+      date.setMinutes(0, 0, 0);
+    }
+    return date;
+  }
+
+  private calculatePercentile(values: number[], percentile: number): number {
+    const sorted = values.toSorted((a, b) => a - b);
+    const index = Math.ceil((percentile / 100) * sorted.length) - 1;
+    return sorted[Math.max(0, index)];
   }
 
   private mapConfig(

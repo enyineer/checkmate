@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   useApi,
   wrapInSuspense,
@@ -14,6 +15,9 @@ import {
   CardTitle,
   CardContent,
   BackLink,
+  DateRangeFilter,
+  getDefaultDateRange,
+  type DateRange,
 } from "@checkmate/ui";
 import { useParams } from "react-router-dom";
 import {
@@ -32,21 +36,26 @@ const HealthCheckHistoryDetailPageContent = () => {
   const { allowed: canManage, loading: permissionLoading } =
     permissionApi.useResourcePermission("healthcheck", "manage");
 
+  const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
+
   const {
     items: runs,
     loading,
     pagination,
   } = usePagination({
-    fetchFn: (params: { limit: number; offset: number }) =>
+    fetchFn: (params) =>
       api.getDetailedHistory({
         systemId,
         configurationId,
+        startDate: params.startDate,
+        endDate: params.endDate,
         limit: params.limit,
         offset: params.offset,
       }),
     getItems: (response) => response.runs as HealthCheckRunDetailed[],
     getTotal: (response) => response.total,
     defaultLimit: 20,
+    extraParams: { startDate: dateRange.startDate, endDate: dateRange.endDate },
   });
 
   return (
@@ -68,6 +77,11 @@ const HealthCheckHistoryDetailPageContent = () => {
           <CardTitle>Run History</CardTitle>
         </CardHeader>
         <CardContent>
+          <DateRangeFilter
+            value={dateRange}
+            onChange={setDateRange}
+            className="mb-4"
+          />
           <HealthCheckRunsTable
             runs={runs}
             loading={loading}

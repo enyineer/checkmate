@@ -42,7 +42,12 @@ describe("HealthCheck Plugin Integration", () => {
         version: 1,
         schema: z.any(),
       },
+      aggregatedMetadata: {
+        version: 1,
+        schema: z.any(),
+      },
       execute: mockExecute,
+      aggregateMetadata: mock(() => ({})),
     };
 
     // 2. Define a mock plugin that registers this strategy

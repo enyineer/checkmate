@@ -2,6 +2,7 @@ import { JSONPath } from "jsonpath-plus";
 import {
   HealthCheckStrategy,
   HealthCheckResult,
+  HealthCheckRunForAggregation,
   z,
 } from "@checkmate/backend-api";
 
@@ -45,8 +46,33 @@ export const httpHealthCheckConfigSchema = z.object({
 
 export type HttpHealthCheckConfig = z.infer<typeof httpHealthCheckConfigSchema>;
 
+/** Per-run result metadata */
+const httpResultMetadataSchema = z.object({
+  statusCode: z.number().optional(),
+  contentType: z.string().optional(),
+  assertion: httpHealthCheckAssertionSchema.optional(),
+  error: z.string().optional(),
+});
+
+export type HttpResultMetadata = z.infer<typeof httpResultMetadataSchema>;
+
+/** Aggregated metadata for buckets */
+const httpAggregatedMetadataSchema = z.object({
+  statusCodeCounts: z.record(z.string(), z.number()),
+  errorCount: z.number(),
+});
+
+export type HttpAggregatedMetadata = z.infer<
+  typeof httpAggregatedMetadataSchema
+>;
+
 export class HttpHealthCheckStrategy
-  implements HealthCheckStrategy<HttpHealthCheckConfig>
+  implements
+    HealthCheckStrategy<
+      HttpHealthCheckConfig,
+      HttpResultMetadata,
+      HttpAggregatedMetadata
+    >
 {
   id = "http";
   displayName = "HTTP Health Check";
@@ -59,15 +85,36 @@ export class HttpHealthCheckStrategy
 
   resultMetadata = {
     version: 1,
-    schema: z.object({
-      statusCode: z.number().optional(),
-      contentType: z.string().optional(),
-      assertion: httpHealthCheckAssertionSchema.optional(),
-      error: z.string().optional(),
-    }),
+    schema: httpResultMetadataSchema,
   };
 
-  async execute(config: HttpHealthCheckConfig): Promise<HealthCheckResult> {
+  aggregatedMetadata = {
+    version: 1,
+    schema: httpAggregatedMetadataSchema,
+  };
+
+  aggregateMetadata(
+    runs: HealthCheckRunForAggregation<HttpResultMetadata>[]
+  ): HttpAggregatedMetadata {
+    const statusCodeCounts: Record<string, number> = {};
+    let errorCount = 0;
+
+    for (const run of runs) {
+      if (run.metadata?.statusCode) {
+        const code = String(run.metadata.statusCode);
+        statusCodeCounts[code] = (statusCodeCounts[code] || 0) + 1;
+      }
+      if (run.metadata?.error) {
+        errorCount++;
+      }
+    }
+
+    return { statusCodeCounts, errorCount };
+  }
+
+  async execute(
+    config: HttpHealthCheckConfig
+  ): Promise<HealthCheckResult<HttpResultMetadata>> {
     // Validate and apply defaults from schema
     const validatedConfig = this.config.schema.parse(config);
 

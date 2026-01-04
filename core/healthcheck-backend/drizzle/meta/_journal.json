@@ -15,6 +15,27 @@
       "when": 1767530046443,
       "tag": "0001_thin_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767533607325,
+      "tag": "0002_closed_lucky_pierre",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1767534811256,
+      "tag": "0003_powerful_rage",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1767535021581,
+      "tag": "0004_short_ezekiel",
+      "breakpoints": true
     }
   ]
 }

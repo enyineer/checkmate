@@ -52,14 +52,21 @@ export default createBackendPlugin({
         });
 
         const healthCheckRouter = createHealthCheckRouter(
-          database as NodePgDatabase<typeof schema>
+          database as NodePgDatabase<typeof schema>,
+          healthCheckRegistry
         );
         rpc.registerRouter(healthCheckRouter);
 
         logger.debug("✅ Health Check Backend initialized.");
       },
       // Phase 3: Bootstrap health checks and subscribe to catalog events
-      afterPluginsReady: async ({ database, queueManager, logger, onHook }) => {
+      afterPluginsReady: async ({
+        database,
+        queueManager,
+        logger,
+        onHook,
+        healthCheckRegistry,
+      }) => {
         // Bootstrap all enabled health checks
         await bootstrapHealthChecks({
           db: database,
@@ -68,7 +75,7 @@ export default createBackendPlugin({
         });
 
         // Subscribe to catalog system deletion to clean up associations
-        const service = new HealthCheckService(database);
+        const service = new HealthCheckService(database, healthCheckRegistry);
         onHook(
           catalogHooks.systemDeleted,
           async (payload) => {

@@ -3,6 +3,7 @@ import {
   autoAuthMiddleware,
   zod,
   type RpcContext,
+  type HealthCheckRegistry,
 } from "@checkmate/backend-api";
 import { healthCheckContract } from "@checkmate/healthcheck-common";
 import { HealthCheckService } from "./service";
@@ -16,10 +17,11 @@ import * as schema from "./schema";
  * based on the contract's meta.userType and meta.permissions.
  */
 export const createHealthCheckRouter = (
-  database: NodePgDatabase<typeof schema>
+  database: NodePgDatabase<typeof schema>,
+  registry: HealthCheckRegistry
 ) => {
   // Create service instance once - shared across all handlers
-  const service = new HealthCheckService(database);
+  const service = new HealthCheckService(database, registry);
 
   // Create contract implementer with context type AND auto auth middleware
   const os = implement(healthCheckContract)
@@ -109,6 +111,9 @@ export const createHealthCheckRouter = (
       return service.getDetailedHistory(input);
     }),
 
+    getAggregatedHistory: os.getAggregatedHistory.handler(async ({ input }) => {
+      return service.getAggregatedHistory(input);
+    }),
     getSystemHealthStatus: os.getSystemHealthStatus.handler(
       async ({ input }) => {
         return service.getSystemHealthStatus(input.systemId);

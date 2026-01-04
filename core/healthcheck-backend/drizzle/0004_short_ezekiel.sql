@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "health_check_aggregates_bucket_unique" ON "health_check_aggregates" USING btree ("configuration_id","system_id","bucket_start","bucket_size");
