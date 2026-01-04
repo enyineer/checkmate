@@ -174,6 +174,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
           <div>
             <h4 className="text-sm font-medium mb-2">Status Timeline</h4>
             <HealthCheckStatusTimeline
+              type="raw"
               data={runs.map((r) => ({
                 timestamp: new Date(r.timestamp),
                 status: r.status,
@@ -187,6 +188,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
             <div>
               <h4 className="text-sm font-medium mb-2">Response Latency</h4>
               <HealthCheckLatencyChart
+                type="raw"
                 data={runs
                   .filter((r) => r.latencyMs !== undefined)
                   .map((r) => ({

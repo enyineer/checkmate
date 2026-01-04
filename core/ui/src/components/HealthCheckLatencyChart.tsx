@@ -15,20 +15,43 @@ export interface LatencyDataPoint {
   status: "healthy" | "degraded" | "unhealthy";
 }
 
-interface HealthCheckLatencyChartProps {
+export interface AggregatedLatencyDataPoint {
+  bucketStart: Date;
+  avgLatencyMs: number;
+  minLatencyMs?: number;
+  maxLatencyMs?: number;
+  bucketSize: "hourly" | "daily";
+}
+
+type RawLatencyChartProps = {
+  type: "raw";
   data: LatencyDataPoint[];
   height?: number;
   showAverage?: boolean;
-}
+};
+
+type AggregatedLatencyChartProps = {
+  type: "aggregated";
+  data: AggregatedLatencyDataPoint[];
+  height?: number;
+  showAverage?: boolean;
+};
+
+type HealthCheckLatencyChartProps =
+  | RawLatencyChartProps
+  | AggregatedLatencyChartProps;
 
 /**
  * Area chart showing health check latency over time.
+ * Supports both raw per-run data and aggregated bucket data.
  * Uses HSL CSS variables for theming consistency.
  */
-export const HealthCheckLatencyChart: React.FC<
-  HealthCheckLatencyChartProps
-> = ({ data, height = 200, showAverage = true }) => {
-  if (data.length === 0) {
+export const HealthCheckLatencyChart: React.FC<HealthCheckLatencyChartProps> = (
+  props
+) => {
+  const { height = 200, showAverage = true } = props;
+
+  if (props.data.length === 0) {
     return (
       <div
         className="flex items-center justify-center text-muted-foreground"
@@ -39,18 +62,33 @@ export const HealthCheckLatencyChart: React.FC<
     );
   }
 
+  // Transform data based on type
+  const isAggregated = props.type === "aggregated";
+
+  const chartData = isAggregated
+    ? (props.data as AggregatedLatencyDataPoint[]).map((d) => ({
+        timestamp: d.bucketStart.getTime(),
+        latencyMs: d.avgLatencyMs,
+        minLatencyMs: d.minLatencyMs,
+        maxLatencyMs: d.maxLatencyMs,
+      }))
+    : (props.data as LatencyDataPoint[]).toReversed().map((d) => ({
+        timestamp: d.timestamp.getTime(),
+        latencyMs: d.latencyMs,
+      }));
+
   // Calculate average latency
   const avgLatency =
-    data.length > 0
-      ? data.reduce((sum, d) => sum + d.latencyMs, 0) / data.length
+    chartData.length > 0
+      ? chartData.reduce((sum, d) => sum + d.latencyMs, 0) / chartData.length
       : 0;
 
-  // Transform data for chart (oldest first for timeline)
-  const chartData = data.toReversed().map((d) => ({
-    timestamp: d.timestamp.getTime(),
-    latencyMs: d.latencyMs,
-    status: d.status,
-  }));
+  // Format based on bucket size for aggregated data
+  const timeFormat = isAggregated
+    ? (props.data as AggregatedLatencyDataPoint[])[0]?.bucketSize === "daily"
+      ? "MMM d"
+      : "MMM d HH:mm"
+    : "HH:mm";
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -73,7 +111,7 @@ export const HealthCheckLatencyChart: React.FC<
           dataKey="timestamp"
           type="number"
           domain={["auto", "auto"]}
-          tickFormatter={(ts: number) => format(new Date(ts), "HH:mm")}
+          tickFormatter={(ts: number) => format(new Date(ts), timeFormat)}
           stroke="hsl(var(--muted-foreground))"
           fontSize={12}
         />

@@ -2,6 +2,7 @@ import { ExtensionSlot } from "@checkmate/frontend-api";
 import { LoadingSpinner, InfoBanner } from "@checkmate/ui";
 import { useHealthCheckData } from "../hooks/useHealthCheckData";
 import { HealthCheckDiagramSlot } from "../slots";
+import { AggregatedDataBanner } from "./AggregatedDataBanner";
 
 interface HealthCheckDiagramProps {
   systemId: string;
@@ -30,15 +31,21 @@ export function HealthCheckDiagram({
   limit,
   offset,
 }: HealthCheckDiagramProps) {
-  const { context, loading, hasPermission, permissionLoading } =
-    useHealthCheckData({
-      systemId,
-      configurationId,
-      strategyId,
-      dateRange,
-      limit,
-      offset,
-    });
+  const {
+    context,
+    loading,
+    hasPermission,
+    permissionLoading,
+    isAggregated,
+    retentionConfig,
+  } = useHealthCheckData({
+    systemId,
+    configurationId,
+    strategyId,
+    dateRange,
+    limit,
+    offset,
+  });
 
   if (permissionLoading) {
     return <LoadingSpinner />;
@@ -61,8 +68,21 @@ export function HealthCheckDiagram({
     return;
   }
 
-  // Note: We pass the slot and context without explicit type parameter.
-  // The types are compatible because context is produced by useHealthCheckData
-  // which returns HealthCheckDiagramSlotContext | undefined, matching the slot.
-  return <ExtensionSlot slot={HealthCheckDiagramSlot} context={context} />;
+  // Determine bucket size from context for aggregated data
+  const bucketSize =
+    context.type === "aggregated" && context.buckets.length > 0
+      ? context.buckets[0].bucketSize
+      : "hourly";
+
+  return (
+    <>
+      {isAggregated && (
+        <AggregatedDataBanner
+          bucketSize={bucketSize}
+          rawRetentionDays={retentionConfig.rawRetentionDays}
+        />
+      )}
+      <ExtensionSlot slot={HealthCheckDiagramSlot} context={context} />
+    </>
+  );
 }
