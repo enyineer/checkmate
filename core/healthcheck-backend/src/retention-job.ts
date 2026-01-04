@@ -206,10 +206,10 @@ async function aggregateRawRuns(params: AggregateRawRunsParams) {
       p95LatencyMs = calculatePercentile(latencies, 95);
     }
 
-    // Aggregate metadata if strategy is available
-    let aggregatedMetadata: Record<string, unknown> | undefined;
+    // Aggregate result if strategy is available
+    let aggregatedResult: Record<string, unknown> | undefined;
     if (strategy) {
-      aggregatedMetadata = strategy.aggregateMetadata(bucket.runs) as Record<
+      aggregatedResult = strategy.aggregateResult(bucket.runs) as Record<
         string,
         unknown
       >;
@@ -231,7 +231,7 @@ async function aggregateRawRuns(params: AggregateRawRunsParams) {
         minLatencyMs,
         maxLatencyMs,
         p95LatencyMs,
-        aggregatedMetadata,
+        aggregatedResult,
       })
       .onConflictDoUpdate({
         target: [
@@ -354,7 +354,7 @@ async function rollupHourlyAggregates(params: RollupParams) {
       minLatencyMs,
       maxLatencyMs,
       p95LatencyMs: undefined, // Cannot accurately combine p95s
-      aggregatedMetadata: undefined, // Cannot combine metadata across hours
+      aggregatedResult: undefined, // Cannot combine result across hours
     });
 
     // Delete processed hourly aggregates

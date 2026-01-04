@@ -238,7 +238,7 @@ export const healthCheckContract = {
             minLatencyMs: z.number().optional(),
             maxLatencyMs: z.number().optional(),
             p95LatencyMs: z.number().optional(),
-            aggregatedMetadata: z.record(z.string(), z.unknown()).optional(),
+            aggregatedResult: z.record(z.string(), z.unknown()).optional(),
           })
         ),
       })

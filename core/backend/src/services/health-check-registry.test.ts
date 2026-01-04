@@ -21,12 +21,12 @@ describe("CoreHealthCheckRegistry", () => {
       version: 1,
       schema: z.any(),
     },
-    aggregatedMetadata: {
+    aggregatedResult: {
       version: 1,
       schema: z.any(),
     },
     execute: mock(() => Promise.resolve({ status: "healthy" as const })),
-    aggregateMetadata: mock(() => ({})),
+    aggregateResult: mock(() => ({})),
   };
 
   const mockStrategy2: HealthCheckStrategy = {
@@ -37,14 +37,14 @@ describe("CoreHealthCheckRegistry", () => {
       version: 1,
       schema: z.any(),
     },
-    aggregatedMetadata: {
+    aggregatedResult: {
       version: 1,
       schema: z.any(),
     },
     execute: mock(() =>
       Promise.resolve({ status: "unhealthy" as const, message: "Failed" })
     ),
-    aggregateMetadata: mock(() => ({})),
+    aggregateResult: mock(() => ({})),
   };
 
   beforeEach(() => {

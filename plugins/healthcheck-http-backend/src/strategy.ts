@@ -83,17 +83,17 @@ export class HttpHealthCheckStrategy
     schema: httpHealthCheckConfigSchema,
   };
 
-  resultMetadata = {
+  result = {
     version: 1,
     schema: httpResultMetadataSchema,
   };
 
-  aggregatedMetadata = {
+  aggregatedResult = {
     version: 1,
     schema: httpAggregatedMetadataSchema,
   };
 
-  aggregateMetadata(
+  aggregateResult(
     runs: HealthCheckRunForAggregation<HttpResultMetadata>[]
   ): HttpAggregatedMetadata {
     const statusCodeCounts: Record<string, number> = {};

@@ -36,9 +36,9 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         id: "http",
         displayName: "HTTP",
         config: { version: 1, schema: {} },
-        aggregatedMetadata: { version: 1, schema: {} },
+        aggregatedResult: { version: 1, schema: {} },
         execute: mock(),
-        aggregateMetadata: mock((runs: unknown[]) => ({
+        aggregateResult: mock((runs: unknown[]) => ({
           totalRuns: runs.length,
           customMetric: "aggregated",
         })),
@@ -199,7 +199,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
   });
 
   describe("strategy metadata aggregation", () => {
-    it("calls strategy.aggregateMetadata for each bucket", async () => {
+    it("calls strategy.aggregateResult for each bucket", async () => {
       const runs = [
         {
           id: "run-1",
@@ -232,7 +232,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         bucketSize: "hourly",
       });
 
-      expect(result.buckets[0].aggregatedMetadata).toEqual({
+      expect(result.buckets[0].aggregatedResult).toEqual({
         totalRuns: 1,
         customMetric: "aggregated",
       });
@@ -241,7 +241,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
       expect(mockRegistry.getStrategy).toHaveBeenCalled();
     });
 
-    it("returns undefined aggregatedMetadata when no strategy found", async () => {
+    it("returns undefined aggregatedResult when no strategy found", async () => {
       const runs = [
         {
           id: "run-1",
@@ -275,7 +275,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         bucketSize: "hourly",
       });
 
-      expect(result.buckets[0].aggregatedMetadata).toBeUndefined();
+      expect(result.buckets[0].aggregatedResult).toBeUndefined();
     });
   });
 

@@ -23,15 +23,15 @@ export interface HealthCheckRunForAggregation<
 }
 
 /**
- * Health check strategy definition with typed config and result metadata.
+ * Health check strategy definition with typed config and result.
  * @template TConfig - Configuration type for this strategy
- * @template TResultMetadata - Per-run result metadata type
- * @template TAggregatedMetadata - Aggregated metadata type for buckets
+ * @template TResult - Per-run result type
+ * @template TAggregatedResult - Aggregated result type for buckets
  */
 export interface HealthCheckStrategy<
   TConfig = unknown,
-  TResultMetadata = Record<string, unknown>,
-  TAggregatedMetadata = Record<string, unknown>
+  TResult = Record<string, unknown>,
+  TAggregatedResult = Record<string, unknown>
 > {
   id: string;
   displayName: string;
@@ -40,23 +40,23 @@ export interface HealthCheckStrategy<
   /** Configuration schema with versioning and migrations */
   config: VersionedSchema<TConfig>;
 
-  /** Optional result metadata schema with versioning and migrations */
-  resultMetadata?: VersionedSchema<TResultMetadata>;
+  /** Optional result schema with versioning and migrations */
+  result?: VersionedSchema<TResult>;
 
-  /** Aggregated metadata schema for long-term bucket storage */
-  aggregatedMetadata: VersionedSchema<TAggregatedMetadata>;
+  /** Aggregated result schema for long-term bucket storage */
+  aggregatedResult: VersionedSchema<TAggregatedResult>;
 
-  execute(config: TConfig): Promise<HealthCheckResult<TResultMetadata>>;
+  execute(config: TConfig): Promise<HealthCheckResult<TResult>>;
 
   /**
-   * Aggregate metadata from multiple runs into a summary for bucket storage.
+   * Aggregate results from multiple runs into a summary for bucket storage.
    * Called during retention processing when raw data is aggregated.
    * Core metrics (counts, latency) are auto-calculated by platform.
-   * This function only handles strategy-specific metadata.
+   * This function only handles strategy-specific result aggregation.
    */
-  aggregateMetadata(
-    runs: HealthCheckRunForAggregation<TResultMetadata>[]
-  ): TAggregatedMetadata;
+  aggregateResult(
+    runs: HealthCheckRunForAggregation<TResult>[]
+  ): TAggregatedResult;
 }
 
 export interface HealthCheckRegistry {

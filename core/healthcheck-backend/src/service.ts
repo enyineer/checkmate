@@ -636,10 +636,10 @@ export class HealthCheckService {
           ? this.calculatePercentile(latencies, 95)
           : undefined;
 
-      // Aggregate strategy-specific metadata if strategy is available
-      let aggregatedMetadata: Record<string, unknown> | undefined;
+      // Aggregate strategy-specific result if strategy is available
+      let aggregatedResult: Record<string, unknown> | undefined;
       if (strategy) {
-        aggregatedMetadata = strategy.aggregateMetadata(bucket.runs) as Record<
+        aggregatedResult = strategy.aggregateResult(bucket.runs) as Record<
           string,
           unknown
         >;
@@ -657,7 +657,7 @@ export class HealthCheckService {
         minLatencyMs,
         maxLatencyMs,
         p95LatencyMs,
-        aggregatedMetadata,
+        aggregatedResult,
       };
     });
 

@@ -114,7 +114,7 @@ export type BucketSize = (typeof bucketSizeEnum.enumValues)[number];
 /**
  * Aggregated health check data for long-term storage.
  * Core metrics (counts, latency) are auto-calculated by platform.
- * Strategy-specific metadata is aggregated via strategy.aggregateMetadata().
+ * Strategy-specific result is aggregated via strategy.aggregateResult().
  */
 export const healthCheckAggregates = pgTable(
   "health_check_aggregates",
@@ -137,10 +137,9 @@ export const healthCheckAggregates = pgTable(
     maxLatencyMs: integer("max_latency_ms"),
     p95LatencyMs: integer("p95_latency_ms"),
 
-    // Strategy-specific aggregated metadata (versioned)
-    aggregatedMetadata: jsonb("aggregated_metadata").$type<
-      Record<string, unknown>
-    >(),
+    // Strategy-specific aggregated result (versioned)
+    aggregatedResult:
+      jsonb("aggregated_result").$type<Record<string, unknown>>(),
   },
   (t) => ({
     // Unique constraint for upsert operations

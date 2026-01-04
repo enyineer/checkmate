@@ -1,0 +1,1 @@
+ALTER TABLE "health_check_aggregates" RENAME COLUMN "aggregated_metadata" TO "aggregated_result";

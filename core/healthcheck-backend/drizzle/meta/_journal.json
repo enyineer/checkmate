@@ -36,6 +36,13 @@
       "when": 1767535021581,
       "tag": "0004_short_ezekiel",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1767538124052,
+      "tag": "0005_glossy_longshot",
+      "breakpoints": true
     }
   ]
 }
