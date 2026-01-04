@@ -124,12 +124,20 @@ export interface VersionedOptions<T> {
 export class Versioned<T> {
   readonly version: number;
   readonly schema: z.ZodType<T>;
-  private readonly migrations: Migration<unknown, unknown>[];
+  private readonly _migrations: Migration<unknown, unknown>[];
 
   constructor(options: VersionedOptions<T>) {
     this.version = options.version;
     this.schema = options.schema;
-    this.migrations = options.migrations ?? [];
+    this._migrations = options.migrations ?? [];
+  }
+
+  /**
+   * Get the migrations chain for this versioned schema.
+   * Useful for ConfigService integration.
+   */
+  get migrations(): Migration<unknown, unknown>[] {
+    return this._migrations;
   }
 
   // ─────────────────────────────────────────────────────────────────────────

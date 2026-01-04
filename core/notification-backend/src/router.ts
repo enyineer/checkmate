@@ -29,6 +29,10 @@ import {
   RETENTION_CONFIG_VERSION,
   RETENTION_CONFIG_ID,
 } from "./retention-config";
+import {
+  createStrategyService,
+  type StrategyService,
+} from "./strategy-service";
 
 /**
  * Creates the notification router using contract-based implementation.
@@ -40,8 +44,15 @@ export const createNotificationRouter = (
   database: NodePgDatabase<typeof schema>,
   configService: ConfigService,
   signalService: SignalService,
-  _strategyRegistry?: NotificationStrategyRegistry
+  strategyRegistry: NotificationStrategyRegistry
 ) => {
+  // Create strategy service for config management
+  const strategyService: StrategyService = createStrategyService({
+    db: database,
+    configService,
+    strategyRegistry,
+  });
+
   // Create contract implementer with context type AND auto auth middleware
   const os = implement(notificationContract)
     .$context<RpcContext>()
@@ -319,6 +330,248 @@ export const createNotificationRouter = (
 
       return { notifiedCount: subscribers.length };
     }),
+
+    // ==========================================================================
+    // DELIVERY STRATEGY ADMIN ENDPOINTS
+    // ==========================================================================
+
+    getDeliveryStrategies: os.getDeliveryStrategies.handler(async () => {
+      const strategies = strategyRegistry.getStrategies();
+
+      const result = await Promise.all(
+        strategies.map(async (strategy) => {
+          // Get meta-config (enabled state)
+          const meta = await strategyService.getStrategyMeta(
+            strategy.qualifiedId
+          );
+
+          // Get redacted config (secrets stripped for frontend)
+          const config = await strategyService.getStrategyConfigRedacted(
+            strategy.qualifiedId
+          );
+
+          // Determine if strategy requires user config or OAuth
+          const requiresUserConfig = !!strategy.userConfig;
+          const requiresOAuthLink =
+            strategy.contactResolution.type === "oauth-link";
+
+          // Build JSON schema for DynamicForm
+          const configSchema = toJsonSchema(strategy.config.schema);
+          const userConfigSchema = strategy.userConfig
+            ? toJsonSchema(strategy.userConfig.schema)
+            : undefined;
+
+          return {
+            qualifiedId: strategy.qualifiedId,
+            displayName: strategy.displayName,
+            description: strategy.description,
+            icon: strategy.icon,
+            ownerPluginId: strategy.ownerPluginId,
+            contactResolution: strategy.contactResolution as {
+              type:
+                | "auth-email"
+                | "auth-provider"
+                | "user-config"
+                | "oauth-link"
+                | "custom";
+              provider?: string;
+              field?: string;
+            },
+            requiresUserConfig,
+            requiresOAuthLink,
+            configSchema,
+            userConfigSchema,
+            enabled: meta.enabled,
+            config: config as Record<string, unknown> | undefined,
+          };
+        })
+      );
+
+      return result;
+    }),
+
+    updateDeliveryStrategy: os.updateDeliveryStrategy.handler(
+      async ({ input }) => {
+        const { strategyId, enabled, config } = input;
+
+        const strategy = strategyRegistry.getStrategy(strategyId);
+        if (!strategy) {
+          throw new ORPCError("NOT_FOUND", {
+            message: `Strategy not found: ${strategyId}`,
+          });
+        }
+
+        // Update meta-config (enabled state)
+        await strategyService.setStrategyMeta(strategyId, { enabled });
+
+        // Update config if provided
+        if (config !== undefined) {
+          await strategyService.setStrategyConfig(strategyId, config);
+        }
+      }
+    ),
+
+    // ==========================================================================
+    // USER DELIVERY PREFERENCE ENDPOINTS
+    // ==========================================================================
+
+    getUserDeliveryChannels: os.getUserDeliveryChannels.handler(
+      async ({ context }) => {
+        const userId = (context.user as RealUser).id;
+        const strategies = strategyRegistry.getStrategies();
+
+        // Get user's preferences (redacted - no secrets)
+        const userPrefs = await strategyService.getAllUserPreferencesRedacted(
+          userId
+        );
+        const prefsMap = new Map(
+          userPrefs.map((p) => [p.strategyId, p.preference])
+        );
+
+        // Get enabled strategies only
+        const enabledStrategies = await Promise.all(
+          strategies.map(async (strategy) => {
+            const meta = await strategyService.getStrategyMeta(
+              strategy.qualifiedId
+            );
+            return { strategy, enabled: meta.enabled };
+          })
+        );
+
+        const result = enabledStrategies
+          .filter((s) => s.enabled)
+          .map(({ strategy }) => {
+            const pref = prefsMap.get(strategy.qualifiedId);
+
+            // Determine if channel is configured (ready to send)
+            let isConfigured = false;
+            const resType = strategy.contactResolution.type;
+
+            switch (resType) {
+              case "auth-email":
+              case "auth-provider": {
+                // These just need user's email - always configured
+                isConfigured = true;
+                break;
+              }
+              case "oauth-link": {
+                // Need to be linked
+                isConfigured = !!pref?.linkedAt;
+                break;
+              }
+              case "user-config": {
+                // Need user to provide config
+                isConfigured = !!pref?.userConfig;
+                break;
+              }
+              default: {
+                // Custom - assume configured
+                isConfigured = true;
+                break;
+              }
+            }
+
+            return {
+              strategyId: strategy.qualifiedId,
+              displayName: strategy.displayName,
+              description: strategy.description,
+              icon: strategy.icon,
+              contactResolution: {
+                type: resType,
+              },
+              enabled: pref?.enabled ?? true,
+              isConfigured,
+              linkedAt: pref?.linkedAt ? new Date(pref.linkedAt) : undefined,
+            };
+          });
+
+        return result;
+      }
+    ),
+
+    setUserDeliveryPreference: os.setUserDeliveryPreference.handler(
+      async ({ input, context }) => {
+        const userId = (context.user as RealUser).id;
+        const { strategyId, enabled, userConfig } = input;
+
+        const strategy = strategyRegistry.getStrategy(strategyId);
+        if (!strategy) {
+          throw new ORPCError("NOT_FOUND", {
+            message: `Strategy not found: ${strategyId}`,
+          });
+        }
+
+        await strategyService.setUserPreference(userId, strategyId, {
+          enabled,
+          userConfig: userConfig as Record<string, unknown> | undefined,
+        });
+      }
+    ),
+
+    getDeliveryOAuthUrl: os.getDeliveryOAuthUrl.handler(
+      async ({ input, context }) => {
+        const userId = (context.user as RealUser).id;
+        const { strategyId, returnUrl } = input;
+
+        const strategy = strategyRegistry.getStrategy(strategyId);
+        if (!strategy) {
+          throw new ORPCError("NOT_FOUND", {
+            message: `Strategy not found: ${strategyId}`,
+          });
+        }
+
+        if (!strategy.oauth) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: `Strategy ${strategyId} does not support OAuth`,
+          });
+        }
+
+        // Build the OAuth authorization URL
+        const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
+        const callbackUrl = `${baseUrl}/api/notification/oauth/${strategyId}/callback`;
+        const defaultReturnUrl = "/notification/settings";
+
+        // Encode state for CSRF protection
+        const stateData = JSON.stringify({
+          userId,
+          returnUrl: returnUrl ?? defaultReturnUrl,
+          ts: Date.now(),
+        });
+        const state = btoa(stateData);
+
+        // Resolve client ID (may be a function)
+        const clientIdVal = strategy.oauth.clientId;
+        const clientId =
+          typeof clientIdVal === "function" ? await clientIdVal() : clientIdVal;
+
+        // Build authorization URL
+        const url = new URL(strategy.oauth.authorizationUrl);
+        url.searchParams.set("client_id", clientId);
+        url.searchParams.set("redirect_uri", callbackUrl);
+        url.searchParams.set("scope", strategy.oauth.scopes.join(" "));
+        url.searchParams.set("state", state);
+        url.searchParams.set("response_type", "code");
+
+        return { authUrl: url.toString() };
+      }
+    ),
+
+    unlinkDeliveryChannel: os.unlinkDeliveryChannel.handler(
+      async ({ input, context }) => {
+        const userId = (context.user as RealUser).id;
+        const { strategyId } = input;
+
+        const strategy = strategyRegistry.getStrategy(strategyId);
+        if (!strategy) {
+          throw new ORPCError("NOT_FOUND", {
+            message: `Strategy not found: ${strategyId}`,
+          });
+        }
+
+        // Clear OAuth tokens
+        await strategyService.clearOAuthTokens(userId, strategyId);
+      }
+    ),
   });
 };
 

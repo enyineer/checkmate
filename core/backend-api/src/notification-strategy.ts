@@ -77,6 +77,112 @@ export interface NotificationSendContext<TConfig, TUserConfig = undefined> {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// OAuth Configuration for Strategies
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * OAuth 2.0 configuration for notification strategies.
+ *
+ * When a strategy provides this configuration, the notification-backend
+ * registry automatically registers HTTP endpoints for the OAuth flow:
+ * - GET /api/notification/oauth/{qualifiedId}/auth
+ * - GET /api/notification/oauth/{qualifiedId}/callback
+ * - POST /api/notification/oauth/{qualifiedId}/refresh
+ * - DELETE /api/notification/oauth/{qualifiedId}/unlink
+ */
+export interface StrategyOAuthConfig {
+  /**
+   * OAuth 2.0 client ID.
+   * Can be a function for lazy loading from ConfigService.
+   */
+  clientId: string | (() => string | Promise<string>);
+
+  /**
+   * OAuth 2.0 client secret.
+   * Can be a function for lazy loading from ConfigService.
+   */
+  clientSecret: string | (() => string | Promise<string>);
+
+  /**
+   * Scopes to request from the OAuth provider.
+   */
+  scopes: string[];
+
+  /**
+   * Provider's authorization URL (where users are redirected to consent).
+   * @example "https://slack.com/oauth/v2/authorize"
+   */
+  authorizationUrl: string;
+
+  /**
+   * Provider's token exchange URL.
+   * @example "https://slack.com/api/oauth.v2.access"
+   */
+  tokenUrl: string;
+
+  /**
+   * Extract the user's external ID from the token response.
+   * This ID is used to identify the user on the external platform.
+   *
+   * @example (response) => (response.authed_user as { id: string }).id // Slack
+   */
+  extractExternalId: (tokenResponse: Record<string, unknown>) => string;
+
+  /**
+   * Optional: Extract access token from response.
+   * Default: response.access_token
+   */
+  extractAccessToken?: (response: Record<string, unknown>) => string;
+
+  /**
+   * Optional: Extract refresh token from response.
+   * Default: response.refresh_token
+   */
+  extractRefreshToken?: (
+    response: Record<string, unknown>
+  ) => string | undefined;
+
+  /**
+   * Optional: Extract token expiration (seconds from now).
+   * Default: response.expires_in
+   */
+  extractExpiresIn?: (response: Record<string, unknown>) => number | undefined;
+
+  /**
+   * Optional: Custom state encoder for CSRF protection.
+   * Default implementation encodes userId and returnUrl as base64 JSON.
+   */
+  encodeState?: (userId: string, returnUrl: string) => string;
+
+  /**
+   * Optional: Custom state decoder.
+   * Must match the encoder implementation.
+   */
+  decodeState?: (state: string) => { userId: string; returnUrl: string };
+
+  /**
+   * Optional: Custom authorization URL builder.
+   * Use when provider has non-standard OAuth parameters.
+   */
+  buildAuthUrl?: (params: {
+    clientId: string;
+    redirectUri: string;
+    scopes: string[];
+    state: string;
+  }) => string;
+
+  /**
+   * Optional: Custom token refresh logic.
+   * Only needed if the provider uses refresh tokens.
+   */
+  refreshToken?: (refreshToken: string) => Promise<{
+    accessToken: string;
+    refreshToken?: string;
+    expiresIn?: number;
+  }>;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Notification Strategy Interface
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -153,36 +259,26 @@ export interface NotificationStrategy<
   ): Promise<NotificationDeliveryResult>;
 
   /**
-   * Optional: Custom OAuth or redirect-based linking flow.
-   * Return a URL to redirect the user to for linking their account.
+   * OAuth configuration for strategies that use OAuth linking.
    *
-   * Used for strategies like Slack or Discord where users need to
-   * authorize the platform to send them messages.
+   * When provided, the notification-backend registry automatically registers
+   * HTTP handlers for the OAuth flow. No manual endpoint registration needed.
    *
-   * @param userId - The platform user ID
-   * @param returnUrl - URL to redirect back to after OAuth completes
-   * @returns URL to redirect user to, or undefined if not applicable
+   * Required when contactResolution is { type: 'oauth-link' }.
+   *
+   * @example
+   * ```typescript
+   * oauth: {
+   *   clientId: () => configService.get('slack.clientId'),
+   *   clientSecret: () => configService.get('slack.clientSecret'),
+   *   scopes: ['users:read', 'chat:write'],
+   *   authorizationUrl: 'https://slack.com/oauth/v2/authorize',
+   *   tokenUrl: 'https://slack.com/api/oauth.v2.access',
+   *   extractExternalId: (res) => (res.authed_user as { id: string }).id,
+   * }
+   * ```
    */
-  getOAuthLinkUrl?(
-    userId: string,
-    returnUrl: string
-  ): Promise<string | undefined>;
-
-  /**
-   * Optional: Handle OAuth callback to complete linking.
-   *
-   * Called when the user returns from the OAuth provider. The strategy
-   * should validate the callback, exchange tokens, and store the
-   * external user ID for future notifications.
-   *
-   * @param userId - The platform user ID
-   * @param params - Query parameters from the OAuth callback
-   * @returns Result indicating success/failure
-   */
-  handleOAuthCallback?(
-    userId: string,
-    params: Record<string, string>
-  ): Promise<{ success: boolean; error?: string }>;
+  oauth?: StrategyOAuthConfig;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

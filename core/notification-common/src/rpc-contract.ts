@@ -225,6 +225,117 @@ export const notificationContract = {
       })
     )
     .output(z.object({ notifiedCount: z.number() })),
+
+  // ==========================================================================
+  // DELIVERY STRATEGY ADMIN ENDPOINTS (userType: "user" with admin permissions)
+  // ==========================================================================
+
+  // Get all registered delivery strategies with current config
+  getDeliveryStrategies: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationAdmin.id],
+    })
+    .output(
+      z.array(
+        z.object({
+          qualifiedId: z.string(),
+          displayName: z.string(),
+          description: z.string().optional(),
+          icon: z.string().optional(),
+          ownerPluginId: z.string(),
+          contactResolution: z.object({
+            type: z.enum([
+              "auth-email",
+              "auth-provider",
+              "user-config",
+              "oauth-link",
+              "custom",
+            ]),
+            provider: z.string().optional(),
+            field: z.string().optional(),
+          }),
+          requiresUserConfig: z.boolean(),
+          requiresOAuthLink: z.boolean(),
+          configSchema: z.record(z.string(), z.unknown()),
+          userConfigSchema: z.record(z.string(), z.unknown()).optional(),
+          enabled: z.boolean(),
+          config: z.record(z.string(), z.unknown()).optional(),
+        })
+      )
+    ),
+
+  // Update strategy enabled state and config
+  updateDeliveryStrategy: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.notificationAdmin.id],
+    })
+    .input(
+      z.object({
+        strategyId: z.string().describe("Qualified strategy ID"),
+        enabled: z.boolean(),
+        config: z.record(z.string(), z.unknown()).optional(),
+      })
+    )
+    .output(z.void()),
+
+  // ==========================================================================
+  // USER DELIVERY PREFERENCE ENDPOINTS (userType: "user")
+  // ==========================================================================
+
+  // Get available delivery channels for current user
+  getUserDeliveryChannels: _base.meta({ userType: "user" }).output(
+    z.array(
+      z.object({
+        strategyId: z.string(),
+        displayName: z.string(),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        contactResolution: z.object({
+          type: z.enum([
+            "auth-email",
+            "auth-provider",
+            "user-config",
+            "oauth-link",
+            "custom",
+          ]),
+        }),
+        enabled: z.boolean(),
+        isConfigured: z.boolean(),
+        linkedAt: z.coerce.date().optional(),
+      })
+    )
+  ),
+
+  // Update user's preference for a delivery channel
+  setUserDeliveryPreference: _base
+    .meta({ userType: "user" })
+    .input(
+      z.object({
+        strategyId: z.string(),
+        enabled: z.boolean(),
+        userConfig: z.record(z.string(), z.unknown()).optional(),
+      })
+    )
+    .output(z.void()),
+
+  // Get OAuth link URL for a strategy (starts OAuth flow)
+  getDeliveryOAuthUrl: _base
+    .meta({ userType: "user" })
+    .input(
+      z.object({
+        strategyId: z.string(),
+        returnUrl: z.string().optional(),
+      })
+    )
+    .output(z.object({ authUrl: z.string() })),
+
+  // Unlink OAuth-connected delivery channel
+  unlinkDeliveryChannel: _base
+    .meta({ userType: "user" })
+    .input(z.object({ strategyId: z.string() }))
+    .output(z.void()),
 };
 
 // Export contract type

@@ -14,6 +14,8 @@ import { eq } from "drizzle-orm";
 import * as schema from "./schema";
 import { createNotificationRouter } from "./router";
 import { authHooks } from "@checkmate/auth-backend";
+import { createOAuthCallbackHandler } from "./oauth-callback-handler";
+import { createStrategyService } from "./strategy-service";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Extension Point
@@ -141,6 +143,20 @@ export default createBackendPlugin({
         logger.debug("🔔 Initializing Notification Backend...");
 
         const db = database;
+        const baseUrl =
+          process.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+
+        // Create strategy service for config management (shared with afterPluginsReady)
+        const strategyService = createStrategyService({
+          db,
+          configService: config,
+          strategyRegistry,
+        });
+
+        // Store for afterPluginsReady access
+        (
+          env as unknown as { strategyService: typeof strategyService }
+        ).strategyService = strategyService;
 
         // Create and register the notification router with strategy registry
         const router = createNotificationRouter(
@@ -150,6 +166,15 @@ export default createBackendPlugin({
           strategyRegistry
         );
         rpc.registerRouter(router);
+
+        // Register OAuth callback handler for strategy OAuth flows
+        const oauthHandler = createOAuthCallbackHandler({
+          db,
+          configService: config,
+          strategyRegistry,
+          baseUrl,
+        });
+        rpc.registerHttpHandler(oauthHandler, "/oauth");
 
         logger.debug("✅ Notification Backend initialized.");
       },
@@ -203,10 +228,15 @@ export default createBackendPlugin({
             logger.debug(
               `Cleaning up notifications for deleted user: ${userId}`
             );
-            // Delete user notification preferences
-            await db
-              .delete(schema.userNotificationPreferences)
-              .where(eq(schema.userNotificationPreferences.userId, userId));
+            // Delete user notification preferences via ConfigService
+            const strategyService = (
+              env as unknown as {
+                strategyService: ReturnType<typeof createStrategyService>;
+              }
+            ).strategyService;
+            if (strategyService) {
+              await strategyService.deleteUserPreferences(userId);
+            }
             // Delete subscriptions (has userId reference)
             await db
               .delete(schema.notificationSubscriptions)
