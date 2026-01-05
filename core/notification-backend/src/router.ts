@@ -1025,9 +1025,20 @@ export const createNotificationRouter = (
         // Get base URL for action
         const baseUrl = process.env.VITE_FRONTEND_URL;
         if (baseUrl && testNotification.action) {
-          testNotification.action.url = `${baseUrl.replace(/\/$/, "")}${
-            testNotification.action.url
-          }`;
+          // For localhost, use a demo URL to show action buttons work
+          // (Telegram rejects localhost URLs in action buttons)
+          const isLocalhost =
+            baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
+          if (isLocalhost) {
+            testNotification.action.url =
+              "https://example.com/notification/settings";
+            testNotification.body +=
+              "\n\n_Note: Action button links to example\\.com in development since Telegram blocks localhost URLs\\._";
+          } else {
+            testNotification.action.url = `${baseUrl.replace(/\/$/, "")}${
+              testNotification.action.url
+            }`;
+          }
         }
 
         // Build send context

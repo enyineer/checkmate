@@ -17,6 +17,7 @@
     "@checkmate/common": "workspace:*",
     "@checkmate/notification-backend": "workspace:*",
     "grammy": "^1.35.0",
+    "telegramify-markdown": "^1.3.2",
     "zod": "^4.2.1"
   },
   "devDependencies": {

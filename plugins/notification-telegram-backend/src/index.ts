@@ -63,50 +63,11 @@ const userInstructions = `
 // Telegram Strategy Implementation
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-/**
- * Escape special characters for Telegram MarkdownV2.
- */
-function escapeMarkdownV2(text: string): string {
-  // Using RegExp instead of inline regex to avoid String.raw lint warning
-  const pattern = /[_*[\]()~`>#+=|{}.!-]/g;
-  return text.replaceAll(pattern, String.raw`\$&`);
-}
-
-/**
- * Convert simple markdown to Telegram MarkdownV2.
- * Handles: **bold** -> *bold*, *italic* -> _italic_
- * Must escape special characters for MarkdownV2.
- */
-function markdownToTelegram(markdown: string): string {
-  let result = markdown;
-
-  // First, extract bold and italic patterns to preserve them
-  // Use unicode placeholders that won't be affected by escaping
-  const BOLD_START = "\u0000BOLD_START\u0000";
-  const BOLD_END = "\u0000BOLD_END\u0000";
-  const ITALIC_START = "\u0000ITALIC_START\u0000";
-  const ITALIC_END = "\u0000ITALIC_END\u0000";
-
-  // Replace markdown bold **text** with placeholders
-  result = result.replaceAll(/\*\*(.+?)\*\*/g, `${BOLD_START}$1${BOLD_END}`);
-
-  // Replace markdown italic *text* with placeholders (not preceded/followed by *)
-  result = result.replaceAll(
-    /(?<!\*)(\*)([^*]+)\1(?!\*)/g,
-    `${ITALIC_START}$2${ITALIC_END}`
-  );
-
-  // Escape all special characters
-  result = escapeMarkdownV2(result);
-
-  // Restore bold/italic with Telegram formatting
-  result = result.replaceAll(BOLD_START, "*");
-  result = result.replaceAll(BOLD_END, "*");
-  result = result.replaceAll(ITALIC_START, "_");
-  result = result.replaceAll(ITALIC_END, "_");
-
-  return result;
-}
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const telegramifyMarkdown = require("telegramify-markdown") as (
+  markdown: string,
+  unsupportedTagsStrategy?: "escape" | "remove" | "keep"
+) => string;
 
 /**
  * Telegram notification strategy using grammY.
@@ -159,12 +120,17 @@ const telegramStrategy: NotificationStrategy<
       // Create bot instance
       const bot = new Bot(strategyConfig.botToken);
 
-      // Build message text
-      let messageText = `*${escapeMarkdownV2(notification.title)}*`;
-
+      // Build message body using telegramify-markdown for proper escaping and conversion
+      let messageBody = "";
       if (notification.body) {
-        messageText += `\n\n${markdownToTelegram(notification.body)}`;
+        messageBody = telegramifyMarkdown(notification.body, "escape");
       }
+
+      // Build title (bold) with proper escaping
+      const messageTitle = telegramifyMarkdown(
+        `**${notification.title}**`,
+        "escape"
+      );
 
       // Add importance indicator
       const importanceEmoji = {
@@ -172,9 +138,12 @@ const telegramStrategy: NotificationStrategy<
         warning: "⚠️",
         critical: "🚨",
       };
-      messageText = `${
+      let messageText = `${
         importanceEmoji[notification.importance]
-      } ${messageText}`;
+      } ${messageTitle}`;
+      if (messageBody) {
+        messageText += `\n\n${messageBody}`;
+      }
 
       // Build inline keyboard for action button
       const actionUrl = notification.action?.url;
@@ -185,10 +154,9 @@ const telegramStrategy: NotificationStrategy<
         actionUrl?.includes("localhost") || actionUrl?.includes("127.0.0.1");
 
       if (notification.action && actionUrl && isLocalhost) {
-        // Add action as inline link in message (Telegram MarkdownV2 link format)
-        const escapedLabel = escapeMarkdownV2(notification.action.label);
-        const escapedUrl = actionUrl.replaceAll(/[()]/g, String.raw`\$&`);
-        messageText += `\n\n[${escapedLabel}](${escapedUrl})`;
+        // Add action as inline link in message using telegramify-markdown
+        const linkMarkdown = `[${notification.action.label}](${actionUrl})`;
+        messageText += `\n\n${telegramifyMarkdown(linkMarkdown, "escape")}`;
       }
 
       const inlineKeyboard =
