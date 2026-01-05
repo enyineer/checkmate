@@ -335,12 +335,15 @@ export const notificationContract = {
             "auth-provider",
             "user-config",
             "oauth-link",
-            "custom",
           ]),
         }),
         enabled: z.boolean(),
         isConfigured: z.boolean(),
         linkedAt: z.coerce.date().optional(),
+        /** JSON Schema for user config (for DynamicForm) */
+        userConfigSchema: z.record(z.string(), z.unknown()).optional(),
+        /** Current user config values */
+        userConfig: z.record(z.string(), z.unknown()).optional(),
         /** Markdown instructions for users (connection guides, etc.) */
         userInstructions: z.string().optional(),
       })

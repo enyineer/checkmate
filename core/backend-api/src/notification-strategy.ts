@@ -12,8 +12,7 @@ export type NotificationContactResolution =
   | { type: "auth-email" } // Uses user.email from auth system
   | { type: "auth-provider"; provider: string } // Uses email from specific OAuth provider
   | { type: "user-config"; field: string } // User provides via settings form (e.g., phone number)
-  | { type: "oauth-link" } // Requires OAuth flow (Slack, Discord)
-  | { type: "custom" }; // Strategy handles resolution entirely
+  | { type: "oauth-link" }; // Requires OAuth flow (Slack, Discord)
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Payload and Result Types

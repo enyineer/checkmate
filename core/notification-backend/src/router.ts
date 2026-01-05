@@ -425,10 +425,6 @@ export const createNotificationRouter = (
             }
             break;
           }
-          case "custom": {
-            // Custom strategies handle their own resolution - skip for transactional
-            continue;
-          }
         }
 
         if (!contact) {
@@ -560,8 +556,7 @@ export const createNotificationRouter = (
                 | "auth-email"
                 | "auth-provider"
                 | "user-config"
-                | "oauth-link"
-                | "custom";
+                | "oauth-link";
               provider?: string;
               field?: string;
             },
@@ -660,12 +655,12 @@ export const createNotificationRouter = (
                 isConfigured = !!pref?.userConfig;
                 break;
               }
-              default: {
-                // Custom - assume configured
-                isConfigured = true;
-                break;
-              }
             }
+
+            // Build JSON schema for user config (if applicable)
+            const userConfigSchema = strategy.userConfig
+              ? toJsonSchema(strategy.userConfig.schema)
+              : undefined;
 
             return {
               strategyId: strategy.qualifiedId,
@@ -678,6 +673,8 @@ export const createNotificationRouter = (
               enabled: pref?.enabled ?? true,
               isConfigured,
               linkedAt: pref?.linkedAt ? new Date(pref.linkedAt) : undefined,
+              userConfigSchema,
+              userConfig: pref?.userConfig,
               userInstructions: strategy.userInstructions,
             };
           });
