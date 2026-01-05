@@ -41,6 +41,48 @@ import {
 } from "./strategy-service";
 
 /**
+ * Helper: Resolve user contact information based on strategy's contactResolution type.
+ * Returns undefined if contact cannot be resolved.
+ */
+function resolveContact({
+  strategy,
+  userEmail,
+  userPreference,
+}: {
+  strategy: { contactResolution: { type: string; field?: string } };
+  userEmail?: string;
+  userPreference?: {
+    externalId?: string | null;
+    userConfig?: Record<string, unknown> | null;
+  } | null;
+}): string | undefined {
+  const resType = strategy.contactResolution.type;
+
+  switch (resType) {
+    case "auth-email":
+    case "auth-provider": {
+      return userEmail;
+    }
+    case "oauth-link": {
+      return userPreference?.externalId ?? undefined;
+    }
+    case "user-config": {
+      const fieldName =
+        "field" in strategy.contactResolution
+          ? strategy.contactResolution.field
+          : undefined;
+      if (userPreference?.userConfig && fieldName) {
+        return String(userPreference.userConfig[fieldName]);
+      }
+      return undefined;
+    }
+    default: {
+      throw new Error(`Unknown contact resolution type: ${resType}`);
+    }
+  }
+}
+
+/**
  * Creates the notification router using contract-based implementation.
  *
  * Auth and permissions are automatically enforced via autoAuthMiddleware
@@ -116,32 +158,11 @@ export const createNotificationRouter = (
         }
 
         // Resolve contact based on contactResolution type
-        let contact: string | undefined;
-        const resType = strategy.contactResolution.type;
-
-        switch (resType) {
-          case "auth-email":
-          case "auth-provider": {
-            contact = user.email;
-            break;
-          }
-          case "oauth-link": {
-            if (pref?.externalId) contact = pref.externalId;
-            break;
-          }
-          case "user-config": {
-            const fieldName =
-              "field" in strategy.contactResolution
-                ? strategy.contactResolution.field
-                : undefined;
-            if (pref?.userConfig && fieldName) {
-              contact = String(
-                (pref.userConfig as Record<string, unknown>)[fieldName]
-              );
-            }
-            break;
-          }
-        }
+        const contact = resolveContact({
+          strategy,
+          userEmail: user.email,
+          userPreference: pref,
+        });
 
         logger.debug(
           `[external-delivery] Resolved contact for ${strategy.qualifiedId}: ${contact}`
@@ -574,49 +595,18 @@ export const createNotificationRouter = (
           continue; // Skip disabled strategies
         }
 
-        // Resolve contact based on contactResolution type
-        let contact: string | undefined;
-        const resType = strategy.contactResolution.type;
+        // Get user preference for contact resolution
+        const pref = await strategyService.getUserPreference(
+          userId,
+          strategy.qualifiedId
+        );
 
-        switch (resType) {
-          case "auth-email": {
-            contact = user.email;
-            break;
-          }
-          case "auth-provider": {
-            // Use email - would need provider lookup for more specific handling
-            contact = user.email;
-            break;
-          }
-          case "oauth-link": {
-            // Get user preference to find their linked external ID
-            const pref = await strategyService.getUserPreference(
-              userId,
-              strategy.qualifiedId
-            );
-            if (pref?.externalId) {
-              contact = pref.externalId;
-            }
-            break;
-          }
-          case "user-config": {
-            // Get user config field
-            const pref = await strategyService.getUserPreference(
-              userId,
-              strategy.qualifiedId
-            );
-            const fieldName =
-              "field" in strategy.contactResolution
-                ? strategy.contactResolution.field
-                : undefined;
-            if (pref?.userConfig && fieldName) {
-              contact = String(
-                (pref.userConfig as Record<string, unknown>)[fieldName]
-              );
-            }
-            break;
-          }
-        }
+        // Resolve contact based on contactResolution type
+        const contact = resolveContact({
+          strategy,
+          userEmail: user.email,
+          userPreference: pref,
+        });
 
         if (!contact) {
           // Cannot resolve contact for this strategy, skip
@@ -846,6 +836,9 @@ export const createNotificationRouter = (
                 isConfigured = !!pref?.userConfig;
                 break;
               }
+              default: {
+                throw new Error(`Unknown contact resolution type: ${resType}`);
+              }
             }
 
             // Build JSON schema for user config (if applicable)
@@ -990,32 +983,11 @@ export const createNotificationRouter = (
           userId,
           strategyId
         );
-        let contact: string | undefined;
-
-        const resType = strategy.contactResolution.type;
-        switch (resType) {
-          case "auth-email":
-          case "auth-provider": {
-            contact = user.email;
-            break;
-          }
-          case "oauth-link": {
-            if (pref?.externalId) contact = pref.externalId;
-            break;
-          }
-          case "user-config": {
-            const fieldName =
-              "field" in strategy.contactResolution
-                ? strategy.contactResolution.field
-                : undefined;
-            if (pref?.userConfig && fieldName) {
-              contact = String(
-                (pref.userConfig as Record<string, unknown>)[fieldName]
-              );
-            }
-            break;
-          }
-        }
+        const contact = resolveContact({
+          strategy,
+          userEmail: user.email,
+          userPreference: pref,
+        });
 
         if (!contact) {
           return {
