@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { RoleDialog } from "./RoleDialog";
 import { AuthStrategyCard } from "./AuthStrategyCard";
+import { CreateUserDialog } from "./CreateUserDialog";
 import { rpcApiRef } from "@checkmate/frontend-api";
 
 export const AuthSettingsPage: React.FC = () => {
@@ -70,6 +71,7 @@ export const AuthSettingsPage: React.FC = () => {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | undefined>();
   const [expandedStrategy, setExpandedStrategy] = useState<string>();
+  const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
   const [strategyConfigs, setStrategyConfigs] = useState<
     Record<string, Record<string, unknown>>
   >({});
@@ -79,6 +81,9 @@ export const AuthSettingsPage: React.FC = () => {
   );
   const canManageUsers = permissionApi.usePermission(
     authPermissions.usersManage.id
+  );
+  const canCreateUsers = permissionApi.usePermission(
+    authPermissions.usersCreate.id
   );
   const canReadRoles = permissionApi.usePermission(
     authPermissions.rolesRead.id
@@ -341,6 +346,23 @@ export const AuthSettingsPage: React.FC = () => {
     }
   };
 
+  const handleCreateUser = async (data: {
+    name: string;
+    email: string;
+    password: string;
+  }) => {
+    try {
+      await authClient.createCredentialUser(data);
+      toast.success("User created successfully");
+      await fetchData();
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create user"
+      );
+      throw error;
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   // Check if user is authenticated and has any permission to view this page
@@ -387,8 +409,15 @@ export const AuthSettingsPage: React.FC = () => {
 
       <TabPanel id="users" activeTab={activeTab}>
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>User Management</CardTitle>
+            {canCreateUsers.allowed &&
+              strategies.some((s) => s.id === "credential" && s.enabled) && (
+                <Button onClick={() => setCreateUserDialogOpen(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create User
+                </Button>
+              )}
           </CardHeader>
           <CardContent>
             <Alert variant="info" className="mb-4">
@@ -733,6 +762,12 @@ export const AuthSettingsPage: React.FC = () => {
         onConfirm={handleDeleteRole}
         title="Delete Role"
         message="Are you sure you want to delete this role? This action cannot be undone."
+      />
+
+      <CreateUserDialog
+        open={createUserDialogOpen}
+        onOpenChange={setCreateUserDialogOpen}
+        onSubmit={handleCreateUser}
       />
     </PageLayout>
   );

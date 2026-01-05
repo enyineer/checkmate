@@ -5,6 +5,10 @@ export const permissions = {
     id: "users.read",
     description: "List all users",
   },
+  usersCreate: {
+    id: "users.create",
+    description: "Create new users (credential strategy)",
+  },
   usersManage: {
     id: "users.manage",
     description: "Delete users",

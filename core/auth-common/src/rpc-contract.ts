@@ -90,6 +90,16 @@ const CreateSessionInputSchema = z.object({
   expiresAt: z.coerce.date(),
 });
 
+const CreateCredentialUserInputSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1),
+  password: z.string(), // Validated against passwordSchema on backend
+});
+
+const CreateCredentialUserOutputSchema = z.object({
+  userId: z.string(),
+});
+
 // Auth RPC Contract with full metadata
 export const authContract = {
   // ==========================================================================
@@ -125,6 +135,11 @@ export const authContract = {
     .meta({ userType: "user", permissions: [permissions.usersManage.id] })
     .input(z.string())
     .output(z.void()),
+
+  createCredentialUser: _base
+    .meta({ userType: "user", permissions: [permissions.usersCreate.id] })
+    .input(CreateCredentialUserInputSchema)
+    .output(CreateCredentialUserOutputSchema),
 
   updateUserRoles: _base
     .meta({ userType: "user", permissions: [permissions.usersManage.id] })

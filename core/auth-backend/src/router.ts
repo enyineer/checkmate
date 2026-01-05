@@ -8,7 +8,8 @@ import {
   type ConfigService,
   toJsonSchema,
 } from "@checkmate/backend-api";
-import { authContract } from "@checkmate/auth-common";
+import { authContract, passwordSchema } from "@checkmate/auth-common";
+import { hashPassword } from "better-auth/crypto";
 import * as schema from "./schema";
 import { eq, inArray, and } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -719,6 +720,92 @@ export const createAuthRouter = (
     return { sessionId };
   });
 
+  // ==========================================================================
+  // ADMIN USER CREATION (bypasses registration check)
+  // ==========================================================================
+
+  const createCredentialUser = os.createCredentialUser.handler(
+    async ({ input, context }) => {
+      const { email, name, password } = input;
+
+      // Validate password against platform's password schema
+      const passwordValidation = passwordSchema.safeParse(password);
+      if (!passwordValidation.success) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: passwordValidation.error.issues
+            .map((issue) => issue.message)
+            .join(", "),
+        });
+      }
+
+      // Check if credential strategy is enabled
+      const credentialEnabled = await getStrategyEnabled(
+        "credential",
+        configService
+      );
+      if (!credentialEnabled) {
+        throw new ORPCError("BAD_REQUEST", {
+          message:
+            "Credential strategy is not enabled. Enable it in Authentication Settings first.",
+        });
+      }
+
+      // Check if user already exists
+      const existingUsers = await internalDb
+        .select({ id: schema.user.id })
+        .from(schema.user)
+        .where(eq(schema.user.email, email))
+        .limit(1);
+
+      if (existingUsers.length > 0) {
+        throw new ORPCError("CONFLICT", {
+          message: "A user with this email already exists.",
+        });
+      }
+
+      // Create user directly in database (bypasses registration check)
+      const userId = crypto.randomUUID();
+      const accountId = crypto.randomUUID();
+      const hashedPassword = await hashPassword(password);
+      const now = new Date();
+
+      await internalDb.transaction(async (tx) => {
+        // Create user
+        await tx.insert(schema.user).values({
+          id: userId,
+          email,
+          name,
+          emailVerified: true, // Admin-created users are pre-verified
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        // Create credential account
+        await tx.insert(schema.account).values({
+          id: accountId,
+          accountId: email,
+          providerId: "credential",
+          userId,
+          password: hashedPassword,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        // Assign "users" role to new user
+        await tx.insert(schema.userRole).values({
+          userId,
+          roleId: "users",
+        });
+      });
+
+      context.logger.info(
+        `[auth-backend] Admin created credential user: ${email}`
+      );
+
+      return { userId };
+    }
+  );
+
   return os.router({
     getEnabledStrategies,
     permissions,
@@ -742,6 +829,7 @@ export const createAuthRouter = (
     findUserByEmail,
     upsertExternalUser,
     createSession,
+    createCredentialUser,
   });
 };
 

@@ -348,4 +348,93 @@ describe("Auth Router", () => {
     expect(result.sessionId).toBeDefined();
     expect(mockDb.insert).toHaveBeenCalled();
   });
+
+  // ==========================================================================
+  // ADMIN USER CREATION TESTS
+  // ==========================================================================
+
+  it("createCredentialUser creates user with valid data", async () => {
+    const context = createMockRpcContext({ user: mockUser });
+
+    // Mock credential strategy enabled
+    mockConfigService.get.mockResolvedValueOnce({ enabled: true });
+
+    // Mock user not found (empty result for email check)
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])),
+    }));
+
+    const result = await call(
+      router.createCredentialUser,
+      {
+        email: "newuser@example.com",
+        name: "New User",
+        password: "ValidPass123",
+      },
+      { context }
+    );
+
+    expect(result.userId).toBeDefined();
+    expect(mockDb.transaction).toHaveBeenCalled();
+  });
+
+  it("createCredentialUser rejects weak password", async () => {
+    const context = createMockRpcContext({ user: mockUser });
+
+    // Weak password - no uppercase
+    expect(
+      call(
+        router.createCredentialUser,
+        {
+          email: "test@example.com",
+          name: "Test User",
+          password: "weakpass1",
+        },
+        { context }
+      )
+    ).rejects.toThrow("uppercase");
+  });
+
+  it("createCredentialUser rejects duplicate email", async () => {
+    const context = createMockRpcContext({ user: mockUser });
+
+    // Mock credential strategy enabled
+    mockConfigService.get.mockResolvedValueOnce({ enabled: true });
+
+    // Mock user already exists
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "existing-user" }])),
+    }));
+
+    expect(
+      call(
+        router.createCredentialUser,
+        {
+          email: "existing@example.com",
+          name: "Existing User",
+          password: "ValidPass123",
+        },
+        { context }
+      )
+    ).rejects.toThrow("already exists");
+  });
+
+  it("createCredentialUser rejects when credential strategy disabled", async () => {
+    const context = createMockRpcContext({ user: mockUser });
+
+    // Mock credential strategy disabled
+    mockConfigService.get.mockResolvedValueOnce({ enabled: false });
+
+    expect(
+      call(
+        router.createCredentialUser,
+        {
+          email: "test@example.com",
+          name: "Test User",
+          password: "ValidPass123",
+        },
+        { context }
+      )
+    ).rejects.toThrow("not enabled");
+  });
 });
