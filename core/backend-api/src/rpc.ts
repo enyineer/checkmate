@@ -228,116 +228,11 @@ export const autoAuthMiddleware = os.middleware(
  *
  *   // Public authenticated endpoint (both users and services)
  *   getPublicInfo: baseContractBuilder
- *     .meta({ userType: "both" })
+ *     .meta({ userType: "authenticated" })
  *     .output(z.object({ info: z.string() })),
  * };
  */
 export const baseContractBuilder = os.use(autoAuthMiddleware).meta({});
-
-// =============================================================================
-// LEGACY MIDDLEWARE (for non-contract-based routers)
-// =============================================================================
-
-/**
- * Simple auth middleware - just checks user is authenticated.
- * @deprecated Use contract-based approach with autoAuthMiddleware instead.
- */
-export const authMiddleware = os.middleware(async ({ next, context }) => {
-  if (!context.user) {
-    throw new Error("Unauthorized");
-  }
-  return next({
-    context: {
-      user: context.user,
-    },
-  });
-});
-
-/** @deprecated Use contract-based approach with meta.userType: "both" */
-export const authedProcedure = os.use(authMiddleware);
-
-/** @deprecated Alias for authedProcedure */
-export const authenticated = authedProcedure;
-
-/**
- * Middleware for service-only endpoints.
- * @deprecated Use contract-based approach with meta.userType: "service"
- */
-export const serviceOnlyMiddleware = os.middleware(
-  async ({ next, context }) => {
-    if (!context.user) {
-      throw new Error("Unauthorized");
-    }
-    if (context.user.type !== "service") {
-      throw new Error(
-        "Forbidden: This endpoint is for service-to-service calls only"
-      );
-    }
-    return next({ context: { user: context.user } });
-  }
-);
-
-/** @deprecated Use contract-based approach with meta.userType: "service" */
-export const serviceProcedure = os.use(serviceOnlyMiddleware);
-
-/**
- * Middleware for user-only endpoints.
- * @deprecated Use contract-based approach with meta.userType: "user"
- */
-export const userOnlyMiddleware = os.middleware(async ({ next, context }) => {
-  if (!context.user) {
-    throw new Error("Unauthorized");
-  }
-  if (context.user.type !== "user") {
-    throw new Error("Forbidden: This endpoint is for user access only");
-  }
-  return next({ context: { user: context.user } });
-});
-
-/** @deprecated Use contract-based approach with meta.userType: "user" */
-export const userProcedure = os.use(userOnlyMiddleware);
-
-/**
- * Permission middleware factory.
- * @deprecated Use contract-based approach with meta.permissions
- */
-export const permissionMiddleware = (permission: string | string[]) =>
-  os.middleware(async ({ next, context }) => {
-    if (!context.user) {
-      throw new Error("Unauthorized");
-    }
-
-    if (context.user.type === "service") {
-      return next({});
-    }
-
-    const userPermissions = context.user.permissions || [];
-    const perms = Array.isArray(permission) ? permission : [permission];
-
-    const hasPermission = perms.some((p) => {
-      return userPermissions.includes("*") || userPermissions.includes(p);
-    });
-
-    if (!hasPermission) {
-      throw new Error(`Forbidden: Missing ${perms.join(" or ")}`);
-    }
-
-    return next({});
-  });
-
-/**
- * @deprecated Use contract-based approach
- */
-export const withPermissions = (permissions: string | string[]) =>
-  authenticated.use(permissionMiddleware(permissions));
-
-/**
- * @deprecated Use autoAuthMiddleware
- */
-export const autoPermissionMiddleware = autoAuthMiddleware;
-
-// Backward compatibility alias
-export type PermissionMetadata = ProcedureMetadata;
 
 // =============================================================================
 // RPC SERVICE INTERFACE

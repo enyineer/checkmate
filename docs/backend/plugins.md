@@ -569,7 +569,7 @@ export const myPluginContract = {
 | `"anonymous"` | No authentication required (public endpoints) |
 | `"user"` | Only real users (frontend authenticated) |
 | `"service"` | Only services (backend-to-backend) |
-| `"both"` | Either users or services, but must be authenticated (default) |
+| `"authenticated"` | Either users or services, but must be authenticated (default) |
 
 ### 5. Handler Type Inference
 

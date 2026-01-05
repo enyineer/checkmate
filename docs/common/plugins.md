@@ -573,7 +573,7 @@ import type { ProcedureMetadata } from "@checkmate/common";
 
 // ProcedureMetadata interface:
 interface ProcedureMetadata {
-  userType?: "anonymous" | "user" | "service" | "both";
+  userType?: "anonymous" | "user" | "service" | "authenticated";
   permissions?: string[];
 }
 ```
@@ -585,7 +585,7 @@ interface ProcedureMetadata {
 | `"anonymous"` | No authentication required (public endpoints) |
 | `"user"` | Only real users (frontend authenticated) |
 | `"service"` | Only services (backend-to-backend) |
-| `"both"` | Either users or services, but must be authenticated (default) |
+| `"authenticated"` | Either users or services, but must be authenticated (default) |
 
 ### Backend Enforcement
 
