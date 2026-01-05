@@ -130,3 +130,44 @@ export const disabledPublicDefaultPermission = pgTable(
     disabledAt: timestamp("disabled_at").notNull(),
   }
 );
+
+// --- External Applications Schema ---
+
+/**
+ * External applications (API keys) for programmatic API access.
+ * Applications have roles assigned like users and authenticate via Bearer tokens.
+ */
+export const application = pgTable("application", {
+  id: text("id").primaryKey(), // UUID
+  name: text("name").notNull(),
+  description: text("description"),
+  // Hashed secret (bcrypt) - never stored in plain text
+  secretHash: text("secret_hash").notNull(),
+  // User who created this application
+  createdById: text("created_by_id")
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  // Track when the application was last used for API calls
+  lastUsedAt: timestamp("last_used_at"),
+});
+
+/**
+ * Application-to-Role mapping for RBAC.
+ * Similar to userRole but for external applications.
+ */
+export const applicationRole = pgTable(
+  "application_role",
+  {
+    applicationId: text("application_id")
+      .notNull()
+      .references(() => application.id, { onDelete: "cascade" }),
+    roleId: text("role_id")
+      .notNull()
+      .references(() => role.id),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.applicationId, t.roleId] }),
+  })
+);

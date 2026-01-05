@@ -304,6 +304,87 @@ export const authContract = {
       })
     )
     .output(z.array(z.string())), // Returns filtered user IDs
+
+  // ==========================================================================
+  // APPLICATION MANAGEMENT (userType: "user" with permissions)
+  // External API applications (API keys) with RBAC integration
+  // ==========================================================================
+
+  getApplications: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.applicationsManage.id],
+    })
+    .output(
+      z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          description: z.string().optional().nullable(),
+          roles: z.array(z.string()),
+          createdById: z.string(),
+          createdAt: z.coerce.date(),
+          lastUsedAt: z.coerce.date().optional().nullable(),
+        })
+      )
+    ),
+
+  createApplication: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.applicationsManage.id],
+    })
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().max(500).optional(),
+        roles: z.array(z.string()),
+      })
+    )
+    .output(
+      z.object({
+        application: z.object({
+          id: z.string(),
+          name: z.string(),
+          description: z.string().optional().nullable(),
+          roles: z.array(z.string()),
+          createdById: z.string(),
+          createdAt: z.coerce.date(),
+        }),
+        secret: z.string(), // Full secret - ONLY shown once!
+      })
+    ),
+
+  updateApplication: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.applicationsManage.id],
+    })
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        description: z.string().optional().nullable(),
+        roles: z.array(z.string()).optional(),
+      })
+    )
+    .output(z.void()),
+
+  deleteApplication: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.applicationsManage.id],
+    })
+    .input(z.string())
+    .output(z.void()),
+
+  regenerateApplicationSecret: _base
+    .meta({
+      userType: "user",
+      permissions: [permissions.applicationsManage.id],
+    })
+    .input(z.string())
+    .output(z.object({ secret: z.string() })), // New secret - shown once
 };
 
 // Export contract type

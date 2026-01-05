@@ -576,6 +576,21 @@ export default createBackendPlugin({
           logger.info("   -> Created 'anonymous' role.");
         }
 
+        // Seed "applications" role for external API applications
+        const applicationsRole = await database
+          .select()
+          .from(schema.role)
+          .where(eq(schema.role.id, "applications"));
+        if (applicationsRole.length === 0) {
+          await database.insert(schema.role).values({
+            id: "applications",
+            name: "Applications",
+            description: "Default role for external API applications",
+            isSystem: true,
+          });
+          logger.info("   -> Created 'applications' role.");
+        }
+
         // Note: Permission sync happens in afterPluginsReady (when all plugins have registered)
 
         // 4. Register oRPC router

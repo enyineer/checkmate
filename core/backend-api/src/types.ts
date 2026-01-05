@@ -44,10 +44,22 @@ export interface ServiceUser {
 }
 
 /**
- * Discriminated union of user types.
- * Use `user.type` to discriminate between real users and service users.
+ * External application authenticated via API key.
+ * Has permissions and roles from the RBAC system like RealUser.
  */
-export type AuthUser = RealUser | ServiceUser;
+export interface ApplicationUser {
+  type: "application";
+  id: string;
+  name: string;
+  permissions?: string[];
+  roles?: string[];
+}
+
+/**
+ * Discriminated union of user types.
+ * Use `user.type` to discriminate between real users, services, and applications.
+ */
+export type AuthUser = RealUser | ServiceUser | ApplicationUser;
 
 export interface AuthService {
   authenticate(request: Request): Promise<AuthUser | undefined>;
@@ -62,10 +74,10 @@ export interface AuthService {
 
 /**
  * Authentication strategy for validating user credentials.
- * Only returns RealUser since strategies authenticate human users, not services.
+ * Returns RealUser for human users or ApplicationUser for API keys.
  */
 export interface AuthenticationStrategy {
-  validate(request: Request): Promise<RealUser | undefined>;
+  validate(request: Request): Promise<RealUser | ApplicationUser | undefined>;
 }
 
 export interface PluginInstaller {

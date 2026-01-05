@@ -41,6 +41,10 @@ export const permissions = {
     id: "registration.manage",
     description: "Manage user registration settings",
   },
+  applicationsManage: {
+    id: "applications.manage",
+    description: "Create, update, delete, and view external applications",
+  },
 } satisfies Record<string, Permission>;
 
 export const permissionList = Object.values(permissions);

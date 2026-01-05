@@ -121,8 +121,12 @@ export const autoAuthMiddleware = os.middleware(
     // 2. Handle public endpoints - anyone can attempt, but permissions are checked
     if (requiredUserType === "public") {
       if (context.user) {
-        // Authenticated user - check their permissions
-        if (context.user.type === "user" && requiredPermissions.length > 0) {
+        // Authenticated user or application - check their permissions
+        if (
+          (context.user.type === "user" ||
+            context.user.type === "application") &&
+          requiredPermissions.length > 0
+        ) {
           const userPermissions = context.user.permissions || [];
           const hasPermission = requiredPermissions.some(
             (p: string) =>
@@ -178,8 +182,11 @@ export const autoAuthMiddleware = os.middleware(
       });
     }
 
-    // 5. Enforce permissions (only for real users)
-    if (user.type === "user" && requiredPermissions.length > 0) {
+    // 5. Enforce permissions (for real users and applications)
+    if (
+      (user.type === "user" || user.type === "application") &&
+      requiredPermissions.length > 0
+    ) {
       const userPermissions = user.permissions || [];
       const hasPermission = requiredPermissions.some(
         (p: string) =>

@@ -101,6 +101,17 @@ export interface AuthStrategyInfo {
   id: string;
 }
 
+/**
+ * Generate a cryptographically secure 32-character secret for API applications.
+ */
+function generateSecret(): string {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => chars[byte % chars.length]).join("");
+}
+
 export const createAuthRouter = (
   internalDb: NodePgDatabase<typeof schema>,
   strategyRegistry: { getStrategies: () => AuthStrategy<unknown>[] },
@@ -807,6 +818,205 @@ export const createAuthRouter = (
     }
   );
 
+  // ==========================================================================
+  // APPLICATION MANAGEMENT
+  // External applications (API keys) with RBAC integration
+  // ==========================================================================
+
+  const getApplications = os.getApplications.handler(async () => {
+    const apps = await internalDb.select().from(schema.application);
+    if (apps.length === 0) return [];
+
+    const appRoles = await internalDb
+      .select()
+      .from(schema.applicationRole)
+      .where(
+        inArray(
+          schema.applicationRole.applicationId,
+          apps.map((a) => a.id)
+        )
+      );
+
+    return apps.map((app) => ({
+      id: app.id,
+      name: app.name,
+      description: app.description,
+      roles: appRoles
+        .filter((ar) => ar.applicationId === app.id)
+        .map((ar) => ar.roleId),
+      createdById: app.createdById,
+      createdAt: app.createdAt,
+      lastUsedAt: app.lastUsedAt,
+    }));
+  });
+
+  const createApplication = os.createApplication.handler(
+    async ({ input, context }) => {
+      const { name, description, roles } = input;
+
+      const userId = isRealUser(context.user) ? context.user.id : undefined;
+      if (!userId) {
+        throw new ORPCError("UNAUTHORIZED", {
+          message: "User ID required to create application",
+        });
+      }
+
+      const id = crypto.randomUUID();
+      const secret = generateSecret();
+      // Hash with bcrypt via better-auth's hashPassword
+      const secretHash = await hashPassword(secret);
+      const now = new Date();
+
+      await internalDb.transaction(async (tx) => {
+        // Create application
+        await tx.insert(schema.application).values({
+          id,
+          name,
+          description: description ?? undefined,
+          secretHash,
+          createdById: userId,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        // Assign roles
+        if (roles.length > 0) {
+          await tx.insert(schema.applicationRole).values(
+            roles.map((roleId) => ({
+              applicationId: id,
+              roleId,
+            }))
+          );
+        }
+      });
+
+      context.logger.info(
+        `[auth-backend] Created application: ${name} (${id})`
+      );
+
+      return {
+        application: {
+          id,
+          name,
+          description: description ?? undefined,
+          roles,
+          createdById: userId,
+          createdAt: now,
+        },
+        secret: `ck_${id}_${secret}`, // Full secret - only shown once!
+      };
+    }
+  );
+
+  const updateApplication = os.updateApplication.handler(async ({ input }) => {
+    const { id, name, description, roles } = input;
+
+    // Check if application exists
+    const existing = await internalDb
+      .select()
+      .from(schema.application)
+      .where(eq(schema.application.id, id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new ORPCError("NOT_FOUND", {
+        message: `Application ${id} not found`,
+      });
+    }
+
+    await internalDb.transaction(async (tx) => {
+      // Update application fields
+      const updates: {
+        name?: string;
+        description?: string | null;
+        updatedAt: Date;
+      } = {
+        updatedAt: new Date(),
+      };
+      if (name !== undefined) updates.name = name;
+      if (description !== undefined) updates.description = description;
+
+      await tx
+        .update(schema.application)
+        .set(updates)
+        .where(eq(schema.application.id, id));
+
+      // Update roles if provided
+      if (roles !== undefined) {
+        // Delete existing role mappings
+        await tx
+          .delete(schema.applicationRole)
+          .where(eq(schema.applicationRole.applicationId, id));
+
+        // Insert new role mappings
+        if (roles.length > 0) {
+          await tx.insert(schema.applicationRole).values(
+            roles.map((roleId) => ({
+              applicationId: id,
+              roleId,
+            }))
+          );
+        }
+      }
+    });
+  });
+
+  const deleteApplication = os.deleteApplication.handler(
+    async ({ input: id, context }) => {
+      // Check if application exists
+      const existing = await internalDb
+        .select()
+        .from(schema.application)
+        .where(eq(schema.application.id, id))
+        .limit(1);
+
+      if (existing.length === 0) {
+        throw new ORPCError("NOT_FOUND", {
+          message: `Application ${id} not found`,
+        });
+      }
+
+      // Cascade delete is handled by FK constraint on applicationRole
+      // Just delete the application
+      await internalDb
+        .delete(schema.application)
+        .where(eq(schema.application.id, id));
+
+      context.logger.info(`[auth-backend] Deleted application: ${id}`);
+    }
+  );
+
+  const regenerateApplicationSecret = os.regenerateApplicationSecret.handler(
+    async ({ input: id, context }) => {
+      // Check if application exists
+      const existing = await internalDb
+        .select()
+        .from(schema.application)
+        .where(eq(schema.application.id, id))
+        .limit(1);
+
+      if (existing.length === 0) {
+        throw new ORPCError("NOT_FOUND", {
+          message: `Application ${id} not found`,
+        });
+      }
+
+      const secret = generateSecret();
+      const secretHash = await hashPassword(secret);
+
+      await internalDb
+        .update(schema.application)
+        .set({ secretHash, updatedAt: new Date() })
+        .where(eq(schema.application.id, id));
+
+      context.logger.info(
+        `[auth-backend] Regenerated secret for application: ${id}`
+      );
+
+      return { secret: `ck_${id}_${secret}` };
+    }
+  );
+
   return os.router({
     getEnabledStrategies,
     permissions,
@@ -831,6 +1041,11 @@ export const createAuthRouter = (
     upsertExternalUser,
     createSession,
     createCredentialUser,
+    getApplications,
+    createApplication,
+    updateApplication,
+    deleteApplication,
+    regenerateApplicationSecret,
   });
 };
 
