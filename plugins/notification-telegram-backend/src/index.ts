@@ -154,9 +154,10 @@ const telegramStrategy: NotificationStrategy<
         actionUrl?.includes("localhost") || actionUrl?.includes("127.0.0.1");
 
       if (notification.action && actionUrl && isLocalhost) {
-        // Add action as inline link in message using telegramify-markdown
-        const linkMarkdown = `[${notification.action.label}](${actionUrl})`;
-        messageText += `\n\n${telegramifyMarkdown(linkMarkdown, "escape")}`;
+        // Add action as plain text (Telegram won't make localhost links clickable anyway)
+        // This makes it easier to copy the URL for debugging
+        const plainTextAction = `📎 ${notification.action.label}:\n${actionUrl}\n\n_Note: Telegram blocks localhost URLs, so no inline button is shown._`;
+        messageText += `\n\n${telegramifyMarkdown(plainTextAction, "escape")}`;
       }
 
       const inlineKeyboard =
