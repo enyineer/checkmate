@@ -67,6 +67,7 @@ export function AuthStrategyCard({
       configMissing={configMissing}
       expanded={expanded}
       onExpandedChange={onExpandedChange}
+      instructions={strategy.adminInstructions}
     />
   );
 }

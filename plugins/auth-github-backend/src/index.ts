@@ -30,6 +30,15 @@ const githubStrategy: AuthStrategy<z.infer<typeof githubConfigV2>> = {
   configVersion: 2,
   configSchema: githubConfigV2,
   requiresManualRegistration: false,
+  adminInstructions: `
+## GitHub OAuth App Setup
+
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click **New OAuth App**
+3. Set **Homepage URL** to your Checkmate instance URL
+4. Set **Authorization callback URL** to \`https://yourdomain.com/api/auth/callback/github\`
+5. Copy the **Client ID** and generate a **Client Secret**
+`.trim(),
   migrations: [
     {
       fromVersion: 1,

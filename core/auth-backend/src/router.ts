@@ -507,6 +507,7 @@ export const createAuthRouter = (
           configVersion: strategy.configVersion,
           configSchema: jsonSchema,
           config,
+          adminInstructions: strategy.adminInstructions,
         };
       })
     );

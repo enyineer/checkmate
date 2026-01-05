@@ -38,6 +38,12 @@ export interface AuthStrategy<Config = unknown> {
    * - `false` for strategies like social providers or LDAP where users are auto-registered on first login
    */
   requiresManualRegistration: boolean;
+
+  /**
+   * Markdown instructions shown when admins configure the strategy settings.
+   * Displayed in the StrategyConfigCard before the configuration form.
+   */
+  adminInstructions?: string;
 }
 
 /**

@@ -79,6 +79,19 @@ const smtpStrategy: NotificationStrategy<
 
   contactResolution: { type: "auth-email" },
 
+  adminInstructions: `
+## SMTP Configuration
+
+Configure your SMTP server to enable email notifications:
+
+1. Enter your SMTP server **hostname** and **port** (587 for TLS, 465 for SSL)
+2. If authentication is required, provide **username** and **password**
+3. Set the **sender email address** (must be valid for your mail server)
+4. Optionally configure a **display name** for the sender
+
+> **Tip**: For Gmail, use \`smtp.gmail.com\` port 587 with an App Password.
+`.trim(),
+
   async send({ contact, notification, strategyConfig, layoutConfig }) {
     // Validate required config
     if (!strategyConfig.host || !strategyConfig.fromAddress) {

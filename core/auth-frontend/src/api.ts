@@ -41,6 +41,7 @@ export interface AuthStrategy {
   configVersion: number;
   configSchema: Record<string, unknown>; // JSON Schema
   config?: Record<string, unknown>;
+  adminInstructions?: string; // Markdown instructions for admins
 }
 
 export interface EnabledAuthStrategy {

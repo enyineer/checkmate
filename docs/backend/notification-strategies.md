@@ -332,8 +332,52 @@ interface NotificationStrategy<TConfig = unknown, TUserConfig = undefined> {
     userId: string,
     params: Record<string, string>
   ): Promise<{ success: boolean; error?: string }>;
+
+  /** Markdown instructions for admins (displayed in config UI) */
+  adminInstructions?: string;
+
+  /** Markdown instructions for users (displayed when linking) */
+  userInstructions?: string;
 }
 ```
+
+## Strategy Instructions
+
+Strategies can provide markdown-formatted setup guides that display in the configuration UI:
+
+### Admin Instructions
+
+Shown when administrators configure the strategy in the global settings:
+
+```typescript
+const smtpStrategy: NotificationStrategy = {
+  // ...
+  adminInstructions: `
+## SMTP Configuration
+
+1. Enter your SMTP server **hostname** and **port**
+2. Provide authentication credentials
+3. Set the sender email address
+
+> **Tip**: For Gmail, use \`smtp.gmail.com\` port 587.
+`.trim(),
+};
+```
+
+### User Instructions
+
+Shown when users configure their personal settings (for `oauth-link` or `custom` contact resolution):
+
+```typescript
+const telegramStrategy: NotificationStrategy = {
+  // ...
+  contactResolution: { type: "custom" },
+  userInstructions: `
+## Connect Your Telegram Account
+
+Click **Connect** to link your Telegram account.
+`.trim(),
+};
 
 ## User Preferences
 

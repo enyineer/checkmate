@@ -3,8 +3,14 @@
 "@checkmate/notification-common": minor
 "@checkmate/notification-backend": minor
 "@checkmate/notification-frontend": minor
+"@checkmate/auth-common": minor
+"@checkmate/auth-backend": minor
+"@checkmate/auth-frontend": minor
 "@checkmate/ui": minor
 "@checkmate/notification-telegram-backend": minor
+"@checkmate/notification-smtp-backend": patch
+"@checkmate/auth-github-backend": patch
+"@checkmate/auth-ldap-backend": patch
 ---
 
 # Strategy Instructions Support & Telegram Notification Plugin

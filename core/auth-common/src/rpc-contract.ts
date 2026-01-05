@@ -41,6 +41,7 @@ const StrategyDtoSchema = z.object({
   configVersion: z.number(),
   configSchema: z.record(z.string(), z.unknown()), // JSON Schema representation
   config: z.record(z.string(), z.unknown()).optional(), // VersionedConfig.data (secrets redacted)
+  adminInstructions: z.string().optional(), // Markdown instructions for admins
 });
 
 const EnabledStrategyDtoSchema = z.object({

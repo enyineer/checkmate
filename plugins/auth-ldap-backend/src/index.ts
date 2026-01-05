@@ -178,6 +178,19 @@ const ldapStrategy: AuthStrategy<LdapConfig> = {
   configVersion: 2,
   configSchema: ldapConfigV2,
   requiresManualRegistration: false,
+  adminInstructions: `
+## LDAP Configuration
+
+Configure LDAP authentication to allow users from your directory to sign in:
+
+1. Enter your LDAP server **URL** (e.g., \`ldaps://ldap.example.com:636\`)
+2. If your server requires bind authentication, provide **Bind DN** and **password**
+3. Set the **Base DN** where user accounts are located
+4. Configure the **search filter** to match usernames (e.g., \`(uid={0})\` or \`(sAMAccountName={0})\`)
+5. Map **LDAP attributes** to user fields (email, name)
+
+> **Active Directory**: Use \`ldaps://\` with port 636, \`sAMAccountName\` for username, and \`userPrincipalName\` for email.
+`.trim(),
   migrations: [
     {
       description: "Migrate LDAP configuration to version 2",
