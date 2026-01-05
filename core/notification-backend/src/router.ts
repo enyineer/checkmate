@@ -9,6 +9,7 @@ import {
   type RpcClient,
   type NotificationPayload,
   type NotificationSendContext,
+  Logger,
 } from "@checkmate/backend-api";
 import {
   notificationContract,
@@ -50,7 +51,8 @@ export const createNotificationRouter = (
   configService: ConfigService,
   signalService: SignalService,
   strategyRegistry: NotificationStrategyRegistry,
-  rpcApi: RpcClient
+  rpcApi: RpcClient,
+  logger: Logger
 ) => {
   // Create strategy service for config management
   const strategyService: StrategyService = createStrategyService({
@@ -58,6 +60,175 @@ export const createNotificationRouter = (
     configService,
     strategyRegistry,
   });
+
+  /**
+   * Helper: Send notification to all enabled external channels for a user.
+   * Silently skips channels that aren't configured or fail.
+   */
+  const sendToExternalChannels = async (
+    userId: string,
+    notification: {
+      title: string;
+      body?: string;
+      importance: string;
+      action?: { label: string; url: string };
+    }
+  ): Promise<void> => {
+    const authClient = rpcApi.forPlugin(AuthApi);
+
+    // Get user info
+    const user = await authClient.getUserById({ userId });
+    if (!user) return;
+
+    // Get all enabled strategies
+    const strategies = strategyRegistry.getStrategies();
+
+    for (const strategy of strategies) {
+      try {
+        logger.debug(
+          `[external-delivery] Checking strategy ${strategy.qualifiedId}...`
+        );
+
+        const meta = await strategyService.getStrategyMeta(
+          strategy.qualifiedId
+        );
+        if (!meta.enabled) {
+          logger.debug(
+            `[external-delivery] Strategy ${strategy.qualifiedId} is disabled, skipping`
+          );
+          continue;
+        }
+
+        // Check user preference - skip if user disabled this channel
+        const pref = await strategyService.getUserPreference(
+          userId,
+          strategy.qualifiedId
+        );
+        logger.debug(
+          `[external-delivery] User pref for ${strategy.qualifiedId}:`,
+          pref
+        );
+        if (pref && pref.enabled === false) {
+          logger.debug(
+            `[external-delivery] User disabled ${strategy.qualifiedId}, skipping`
+          );
+          continue;
+        }
+
+        // Resolve contact based on contactResolution type
+        let contact: string | undefined;
+        const resType = strategy.contactResolution.type;
+
+        switch (resType) {
+          case "auth-email":
+          case "auth-provider": {
+            contact = user.email;
+            break;
+          }
+          case "oauth-link": {
+            if (pref?.externalId) contact = pref.externalId;
+            break;
+          }
+          case "user-config": {
+            const fieldName =
+              "field" in strategy.contactResolution
+                ? strategy.contactResolution.field
+                : undefined;
+            if (pref?.userConfig && fieldName) {
+              contact = String(
+                (pref.userConfig as Record<string, unknown>)[fieldName]
+              );
+            }
+            break;
+          }
+        }
+
+        logger.debug(
+          `[external-delivery] Resolved contact for ${strategy.qualifiedId}: ${contact}`
+        );
+        if (!contact) {
+          logger.debug(
+            `[external-delivery] No contact for ${strategy.qualifiedId}, skipping`
+          );
+          continue;
+        }
+
+        // Get strategy config
+        const strategyConfig = await strategyService.getStrategyConfig(
+          strategy.qualifiedId
+        );
+        if (!strategyConfig) {
+          logger.debug(
+            `[external-delivery] No strategyConfig for ${strategy.qualifiedId}, skipping`
+          );
+          continue;
+        }
+
+        // Get optional configs
+        const layoutConfig = await strategyService.getLayoutConfig(
+          strategy.qualifiedId
+        );
+
+        const baseUrl = process.env.VITE_FRONTEND_URL;
+        if (!baseUrl) {
+          logger.error(
+            "[notification-backend] No frontend URL configured, but action included only a path"
+          );
+          continue;
+        }
+
+        const actionUrl = notification.action?.url;
+        if (actionUrl && !actionUrl.startsWith("http")) {
+          notification.action!.url = `${baseUrl.replace(/\/$/, "")}${
+            actionUrl.startsWith("/") ? "" : "/"
+          }${actionUrl}`;
+        }
+
+        // Build payload
+        const payload: NotificationPayload = {
+          title: notification.title,
+          body: notification.body,
+          importance: notification.importance as
+            | "info"
+            | "warning"
+            | "critical",
+          action: notification.action,
+          type: "notification",
+        };
+
+        // Build send context
+        const sendContext: NotificationSendContext<unknown, unknown, unknown> =
+          {
+            user: {
+              userId: user.id,
+              email: user.email,
+              displayName: user.name ?? undefined,
+            },
+            contact,
+            notification: payload,
+            strategyConfig,
+            userConfig: pref?.userConfig,
+            layoutConfig,
+          };
+
+        // Send (fire-and-forget, don't block on errors)
+        logger.debug(
+          `[external-delivery] Sending to ${strategy.qualifiedId} with contact ${contact}`
+        );
+        const result = await strategy.send(sendContext);
+        logger.debug(
+          `[external-delivery] Send result for ${strategy.qualifiedId}:`,
+          result
+        );
+      } catch (error) {
+        // Log error but continue - external delivery shouldn't block in-app
+        logger.error(
+          `[external-delivery] Error sending via ${strategy.qualifiedId}:`,
+          error
+        );
+      }
+    }
+  };
 
   // Create contract implementer with context type AND auto auth middleware
   const os = implement(notificationContract)
@@ -287,6 +458,16 @@ export const createNotificationRouter = (
         );
       }
 
+      // Also send to external channels (Telegram, SMTP, etc.) - fire and forget
+      for (const userId of userIds) {
+        void sendToExternalChannels(userId, {
+          title,
+          body,
+          importance: importance ?? "info",
+          action,
+        });
+      }
+
       return { notifiedCount: userIds.length };
     }),
 
@@ -337,6 +518,16 @@ export const createNotificationRouter = (
             importance: importance ?? "info",
           }
         );
+      }
+
+      // Also send to external channels (Telegram, SMTP, etc.) - fire and forget
+      for (const sub of subscribers) {
+        void sendToExternalChannels(sub.userId, {
+          title,
+          body,
+          importance: importance ?? "info",
+          action,
+        });
       }
 
       return { notifiedCount: subscribers.length };

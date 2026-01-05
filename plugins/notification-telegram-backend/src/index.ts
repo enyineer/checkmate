@@ -75,15 +75,35 @@ function escapeMarkdownV2(text: string): string {
 /**
  * Convert simple markdown to Telegram MarkdownV2.
  * Handles: **bold** -> *bold*, *italic* -> _italic_
+ * Must escape special characters for MarkdownV2.
  */
 function markdownToTelegram(markdown: string): string {
   let result = markdown;
 
-  // Convert **bold** to *bold* (Telegram uses single asterisks)
-  result = result.replaceAll(/\*\*(.+?)\*\*/g, "*$1*");
+  // First, extract bold and italic patterns to preserve them
+  // Use unicode placeholders that won't be affected by escaping
+  const BOLD_START = "\u0000BOLD_START\u0000";
+  const BOLD_END = "\u0000BOLD_END\u0000";
+  const ITALIC_START = "\u0000ITALIC_START\u0000";
+  const ITALIC_END = "\u0000ITALIC_END\u0000";
 
-  // Convert *italic* to _italic_ (Telegram uses underscores)
-  result = result.replaceAll(/(?<!\*)(\*)([^*]+)\1(?!\*)/g, "_$2_");
+  // Replace markdown bold **text** with placeholders
+  result = result.replaceAll(/\*\*(.+?)\*\*/g, `${BOLD_START}$1${BOLD_END}`);
+
+  // Replace markdown italic *text* with placeholders (not preceded/followed by *)
+  result = result.replaceAll(
+    /(?<!\*)(\*)([^*]+)\1(?!\*)/g,
+    `${ITALIC_START}$2${ITALIC_END}`
+  );
+
+  // Escape all special characters
+  result = escapeMarkdownV2(result);
+
+  // Restore bold/italic with Telegram formatting
+  result = result.replaceAll(BOLD_START, "*");
+  result = result.replaceAll(BOLD_END, "*");
+  result = result.replaceAll(ITALIC_START, "_");
+  result = result.replaceAll(ITALIC_END, "_");
 
   return result;
 }
@@ -157,18 +177,33 @@ const telegramStrategy: NotificationStrategy<
       } ${messageText}`;
 
       // Build inline keyboard for action button
-      const inlineKeyboard = notification.action
-        ? {
-            inline_keyboard: [
-              [
-                {
-                  text: notification.action.label,
-                  url: notification.action.url,
-                },
+      const actionUrl = notification.action?.url;
+
+      // Don't show action button for localhost URLs (Telegram rejects them)
+      // Instead, add as inline link in the message
+      const isLocalhost =
+        actionUrl?.includes("localhost") || actionUrl?.includes("127.0.0.1");
+
+      if (notification.action && actionUrl && isLocalhost) {
+        // Add action as inline link in message (Telegram MarkdownV2 link format)
+        const escapedLabel = escapeMarkdownV2(notification.action.label);
+        const escapedUrl = actionUrl.replaceAll(/[()]/g, String.raw`\$&`);
+        messageText += `\n\n[${escapedLabel}](${escapedUrl})`;
+      }
+
+      const inlineKeyboard =
+        notification.action && actionUrl && !isLocalhost
+          ? {
+              inline_keyboard: [
+                [
+                  {
+                    text: notification.action.label,
+                    url: actionUrl,
+                  },
+                ],
               ],
-            ],
-          }
-        : undefined;
+            }
+          : undefined;
 
       // Send the message
       const result = await bot.api.sendMessage(userConfig.chatId, messageText, {

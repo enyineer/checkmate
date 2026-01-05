@@ -180,7 +180,8 @@ export default createBackendPlugin({
           config,
           signalService,
           strategyRegistry,
-          rpcClient
+          rpcClient,
+          logger
         );
         rpc.registerRouter(router);
 
