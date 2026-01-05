@@ -305,42 +305,6 @@ export const NotificationSettingsPage = () => {
   return (
     <PageLayout title="Notification Settings" loading={subsLoading}>
       <div className="space-y-8">
-        {/* Delivery Channels - Admin only */}
-        {isAdmin && (
-          <section>
-            <SectionHeader
-              title="Delivery Channels"
-              description="Configure how notifications are delivered to users (admin only)"
-              icon={<Zap className="h-5 w-5" />}
-            />
-            {strategiesLoading ? (
-              <Card className="p-4">
-                <div className="text-center py-4 text-muted-foreground">
-                  Loading delivery channels...
-                </div>
-              </Card>
-            ) : strategies.length === 0 ? (
-              <Card className="p-4">
-                <div className="text-center py-4 text-muted-foreground">
-                  No delivery channels registered. Plugins can register delivery
-                  strategies to enable additional notification methods.
-                </div>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {strategies.map((strategy) => (
-                  <StrategyCard
-                    key={strategy.qualifiedId}
-                    strategy={strategy}
-                    onUpdate={handleStrategyUpdate}
-                    saving={strategySaving === strategy.qualifiedId}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
         {/* Your Notification Channels - All users */}
         <section>
           <SectionHeader
@@ -420,6 +384,57 @@ export const NotificationSettingsPage = () => {
             )}
           </Card>
         </section>
+
+        {/* Admin Section Divider */}
+        {isAdmin && (
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-background px-4 text-sm text-muted-foreground flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Admin Settings
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Delivery Channels - Admin only */}
+        {isAdmin && (
+          <section>
+            <SectionHeader
+              title="Delivery Channels"
+              description="Configure how notifications are delivered to users (admin only)"
+              icon={<Zap className="h-5 w-5" />}
+            />
+            {strategiesLoading ? (
+              <Card className="p-4">
+                <div className="text-center py-4 text-muted-foreground">
+                  Loading delivery channels...
+                </div>
+              </Card>
+            ) : strategies.length === 0 ? (
+              <Card className="p-4">
+                <div className="text-center py-4 text-muted-foreground">
+                  No delivery channels registered. Plugins can register delivery
+                  strategies to enable additional notification methods.
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {strategies.map((strategy) => (
+                  <StrategyCard
+                    key={strategy.qualifiedId}
+                    strategy={strategy}
+                    onUpdate={handleStrategyUpdate}
+                    saving={strategySaving === strategy.qualifiedId}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Retention Policy - Admin only */}
         {isAdmin && retentionSchema && (
