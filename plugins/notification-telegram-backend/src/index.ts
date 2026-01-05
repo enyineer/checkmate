@@ -24,6 +24,15 @@ const telegramConfigSchemaV1 = z.object({
 
 type TelegramConfig = z.infer<typeof telegramConfigSchemaV1>;
 
+/**
+ * User configuration for Telegram - users provide their own chat ID.
+ */
+const telegramUserConfigSchema = z.object({
+  chatId: z.string().describe("Your Telegram Chat ID"),
+});
+
+type TelegramUserConfig = z.infer<typeof telegramUserConfigSchema>;
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Instructions
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -40,14 +49,14 @@ const adminInstructions = `
 `.trim();
 
 const userInstructions = `
-## Connect Your Telegram Account
+## Get Your Telegram Chat ID
 
-1. Click the **Connect** button above
-2. A Telegram login dialog will appear
-3. Confirm the login in Telegram to link your account
-4. Once connected, you'll receive notifications directly in Telegram from the bot
+1. Start a chat with your organization's notification bot
+2. Send any message to the bot
+3. Open [@userinfobot](https://t.me/userinfobot) and send \`/start\` to get your Chat ID
+4. Enter your Chat ID in the field above and save
 
-> **Tip**: For personal notifications, use a private chat with the bot, not a group chat.
+> **Note**: Make sure you've messaged the notification bot before sending a notification, or the bot won't be able to reach you.
 `.trim();
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -82,7 +91,10 @@ function markdownToTelegram(markdown: string): string {
 /**
  * Telegram notification strategy using grammY.
  */
-const telegramStrategy: NotificationStrategy<TelegramConfig> = {
+const telegramStrategy: NotificationStrategy<
+  TelegramConfig,
+  TelegramUserConfig
+> = {
   id: "telegram",
   displayName: "Telegram",
   description: "Send notifications via Telegram bot messages",
@@ -93,16 +105,21 @@ const telegramStrategy: NotificationStrategy<TelegramConfig> = {
     schema: telegramConfigSchemaV1,
   }),
 
-  // Custom resolution - handled via Telegram Login Widget callback
-  contactResolution: { type: "custom" },
+  // User-config resolution - users enter their chat ID manually
+  contactResolution: { type: "user-config", field: "chatId" },
+
+  userConfig: new Versioned({
+    version: 1,
+    schema: telegramUserConfigSchema,
+  }),
 
   adminInstructions,
   userInstructions,
 
   async send(
-    context: NotificationSendContext<TelegramConfig>
+    context: NotificationSendContext<TelegramConfig, TelegramUserConfig>
   ): Promise<NotificationDeliveryResult> {
-    const { contact, notification, strategyConfig } = context;
+    const { userConfig, notification, strategyConfig } = context;
 
     if (!strategyConfig.botToken) {
       return {
@@ -111,10 +128,10 @@ const telegramStrategy: NotificationStrategy<TelegramConfig> = {
       };
     }
 
-    if (!contact) {
+    if (!userConfig?.chatId) {
       return {
         success: false,
-        error: "User has not linked their Telegram account",
+        error: "User has not configured their Telegram chat ID",
       };
     }
 
@@ -154,7 +171,7 @@ const telegramStrategy: NotificationStrategy<TelegramConfig> = {
         : undefined;
 
       // Send the message
-      const result = await bot.api.sendMessage(contact, messageText, {
+      const result = await bot.api.sendMessage(userConfig.chatId, messageText, {
         parse_mode: "MarkdownV2",
         reply_markup: inlineKeyboard,
       });

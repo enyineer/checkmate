@@ -104,7 +104,6 @@ export const ContactResolutionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("auth-provider"), provider: z.string() }),
   z.object({ type: z.literal("user-config"), field: z.string() }),
   z.object({ type: z.literal("oauth-link") }),
-  z.object({ type: z.literal("custom") }),
 ]);
 export type ContactResolution = z.infer<typeof ContactResolutionSchema>;
 

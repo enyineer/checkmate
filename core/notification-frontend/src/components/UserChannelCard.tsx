@@ -27,12 +27,7 @@ export interface UserDeliveryChannel {
   description?: string;
   icon?: string;
   contactResolution: {
-    type:
-      | "auth-email"
-      | "auth-provider"
-      | "user-config"
-      | "oauth-link"
-      | "custom";
+    type: "auth-email" | "auth-provider" | "user-config" | "oauth-link";
   };
   enabled: boolean;
   isConfigured: boolean;
@@ -280,14 +275,12 @@ export function UserChannelCard({
         </div>
       )}
 
-      {/* User instructions when not connected (for custom/oauth-link channels) */}
-      {!isLinked &&
-        channel.userInstructions &&
-        (requiresOAuth || channel.contactResolution.type === "custom") && (
-          <div className="border-t p-4 bg-muted/30">
-            <MarkdownBlock size="sm">{channel.userInstructions}</MarkdownBlock>
-          </div>
-        )}
+      {/* User instructions when not connected (for oauth-link channels) */}
+      {!isLinked && channel.userInstructions && requiresOAuth && (
+        <div className="border-t p-4 bg-muted/30">
+          <MarkdownBlock size="sm">{channel.userInstructions}</MarkdownBlock>
+        </div>
+      )}
     </Card>
   );
 }
