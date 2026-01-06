@@ -336,6 +336,7 @@ export function ApiDocsPage() {
   const [spec, setSpec] = useState<OpenApiSpec>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [userTypeFilter, setUserTypeFilter] = useState<string | undefined>();
 
   useEffect(() => {
     if (!canView.allowed) return;
@@ -410,8 +411,16 @@ export function ApiDocsPage() {
 
   for (const [path, methods] of Object.entries(spec.paths)) {
     for (const [method, operation] of Object.entries(methods)) {
-      // Extract plugin name from path (e.g., /api/auth/... -> auth)
-      const pluginMatch = path.match(/^\/api\/([^/]+)/);
+      // Apply userType filter if set
+      const meta = operation["x-orpc-meta"];
+      const opUserType = meta?.userType;
+      if (userTypeFilter && opUserType !== userTypeFilter) {
+        continue;
+      }
+
+      // Extract plugin name from path (e.g., /catalog/getEntities -> catalog)
+      // Path can be /api/plugin/... or /plugin/... depending on OpenAPI prefix setting
+      const pluginMatch = path.match(/^\/?(?:api\/)?([^/]+)/);
       const pluginName = pluginMatch?.[1] ?? "other";
 
       if (!endpointsByPlugin[pluginName]) {
@@ -429,6 +438,45 @@ export function ApiDocsPage() {
         <Badge variant="secondary" className="mt-2">
           v{spec.info.version}
         </Badge>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Filter by access:</span>
+        <Button
+          variant={userTypeFilter === undefined ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setUserTypeFilter(undefined)}
+        >
+          All
+        </Button>
+        <Button
+          variant={userTypeFilter === "authenticated" ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setUserTypeFilter("authenticated")}
+        >
+          Authenticated
+        </Button>
+        <Button
+          variant={userTypeFilter === "public" ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setUserTypeFilter("public")}
+        >
+          Public
+        </Button>
+        <Button
+          variant={userTypeFilter === "user" ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setUserTypeFilter("user")}
+        >
+          User Only
+        </Button>
+        <Button
+          variant={userTypeFilter === "service" ? "primary" : "outline"}
+          size="sm"
+          onClick={() => setUserTypeFilter("service")}
+        >
+          Service Only
+        </Button>
       </div>
 
       <Card>

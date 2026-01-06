@@ -8,12 +8,8 @@
 import { OpenAPIGenerator } from "@orpc/openapi";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { AnyContractRouter } from "@orpc/contract";
-import type { ProcedureMetadata } from "@checkmate/common";
 import type { PluginManager } from "./plugin-manager";
 import type { AuthService } from "@checkmate/backend-api";
-
-// Application-accessible user types for OpenAPI filtering
-const APPLICATION_ACCESSIBLE_USER_TYPES = ["authenticated", "public"] as const;
 
 /**
  * Check if a user has a specific permission.
@@ -30,8 +26,48 @@ function hasPermission(
 }
 
 /**
+ * Extract procedure metadata from a contract using oRPC internal structure.
+ */
+function extractProcedureMetadata(
+  contract: unknown
+): { userType?: string; permissions?: string[] } | undefined {
+  const orpcData = (contract as Record<string, unknown>)?.["~orpc"] as
+    | { meta?: { userType?: string; permissions?: string[] } }
+    | undefined;
+  return orpcData?.meta;
+}
+
+/**
+ * Build a lookup map of operationId -> metadata from all contracts.
+ * operationId format: "pluginId.procedureName"
+ */
+function buildMetadataLookup(
+  contracts: Map<string, AnyContractRouter>
+): Map<string, { userType?: string; permissions?: string[] }> {
+  const lookup = new Map<
+    string,
+    { userType?: string; permissions?: string[] }
+  >();
+
+  for (const [pluginId, contract] of contracts) {
+    // Contract is an object with procedure names as keys
+    for (const [procedureName, procedure] of Object.entries(
+      contract as Record<string, unknown>
+    )) {
+      const meta = extractProcedureMetadata(procedure);
+      if (meta) {
+        const operationId = `${pluginId}.${procedureName}`;
+        lookup.set(operationId, meta);
+      }
+    }
+  }
+
+  return lookup;
+}
+
+/**
  * Generate OpenAPI specification from registered plugin contracts.
- * Filters to only include endpoints accessible by external applications.
+ * Returns all endpoints with their userType metadata visible as x-orpc-meta.
  */
 export async function generateOpenApiSpec({
   pluginManager,
@@ -48,38 +84,42 @@ export async function generateOpenApiSpec({
     aggregatedContract[pluginId] = contract;
   }
 
+  // Build metadata lookup from contracts
+  const metadataLookup = buildMetadataLookup(contracts);
+
   // Create OpenAPI generator with Zod v4 converter
   const generator = new OpenAPIGenerator({
     schemaConverters: [new ZodToJsonSchemaConverter()],
   });
 
-  // Generate spec with filtering for application-accessible endpoints
-  const spec = await generator.generate(aggregatedContract, {
+  // Generate spec for all endpoints
+  const spec = (await generator.generate(aggregatedContract, {
     info: {
       title: "Checkmate API",
       version: "1.0.0",
-      description:
-        "API documentation for Checkmate platform endpoints accessible by external applications.",
+      description: "API documentation for Checkmate platform endpoints.",
     },
     servers: [{ url: baseUrl }],
-    // Filter to only include application-accessible endpoints
-    filter: ({ contract }) => {
-      // Access the internal oRPC structure to get metadata
-      const orpcData = (contract as unknown as Record<string, unknown>)[
-        "~orpc"
-      ] as { meta?: ProcedureMetadata } | undefined;
+  })) as {
+    paths?: Record<
+      string,
+      Record<string, { operationId?: string; "x-orpc-meta"?: unknown }>
+    >;
+  };
 
-      const userType = orpcData?.meta?.userType;
-
-      // Include only authenticated or public endpoints
-      return (
-        userType !== undefined &&
-        APPLICATION_ACCESSIBLE_USER_TYPES.includes(
-          userType as (typeof APPLICATION_ACCESSIBLE_USER_TYPES)[number]
-        )
-      );
-    },
-  });
+  // Post-process: Add x-orpc-meta to each operation
+  if (spec.paths) {
+    for (const methods of Object.values(spec.paths)) {
+      for (const operation of Object.values(methods)) {
+        if (operation.operationId) {
+          const meta = metadataLookup.get(operation.operationId);
+          if (meta) {
+            operation["x-orpc-meta"] = meta;
+          }
+        }
+      }
+    }
+  }
 
   return spec as Record<string, unknown>;
 }
