@@ -5,7 +5,7 @@ import Editor from "react-simple-code-editor";
 // @ts-expect-error - prismjs doesn't have types for deep imports in some environments
 import { highlight, languages } from "prismjs/components/prism-core";
 import "prismjs/components/prism-json";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 
 import {
   Input,
@@ -37,7 +37,20 @@ export interface JsonSchemaProperty {
   default?: unknown;
   "x-secret"?: boolean; // Custom metadata for secret fields
   "x-color"?: boolean; // Custom metadata for color fields
+  "x-options-resolver"?: string; // Name of a resolver function for dynamic options
+  "x-depends-on"?: string[]; // Field names this field depends on (triggers refetch when they change)
 }
+
+/** Option returned by an options resolver */
+export interface ResolverOption {
+  value: string;
+  label: string;
+}
+
+/** Function that resolves dynamic options, receives form values as context */
+export type OptionsResolver = (
+  formValues: Record<string, unknown>
+) => Promise<ResolverOption[]>;
 
 export interface JsonSchema {
   properties?: Record<string, JsonSchemaProperty>;
@@ -48,6 +61,11 @@ interface DynamicFormProps {
   schema: JsonSchema;
   value: Record<string, unknown>;
   onChange: (value: Record<string, unknown>) => void;
+  /**
+   * Optional map of resolver names to functions that fetch dynamic options.
+   * Referenced by x-options-resolver in schema properties.
+   */
+  optionsResolvers?: Record<string, OptionsResolver>;
 }
 
 const JsonField: React.FC<{
@@ -133,6 +151,137 @@ const JsonField: React.FC<{
   );
 };
 
+/**
+ * Field component for dynamically resolved options.
+ * Fetches options using the specified resolver and renders a Select.
+ */
+const DynamicOptionsField: React.FC<{
+  id: string;
+  label: string;
+  description?: string;
+  value: unknown;
+  isRequired?: boolean;
+  resolverName: string;
+  dependsOn?: string[];
+  formValues: Record<string, unknown>;
+  optionsResolvers: Record<string, OptionsResolver>;
+  onChange: (val: unknown) => void;
+}> = ({
+  id,
+  label,
+  description,
+  value,
+  isRequired,
+  resolverName,
+  dependsOn,
+  formValues,
+  optionsResolvers,
+  onChange,
+}) => {
+  const [options, setOptions] = React.useState<ResolverOption[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | undefined>();
+
+  // Build dependency values string for useEffect dependency tracking
+  const dependencyValues = React.useMemo(() => {
+    if (!dependsOn || dependsOn.length === 0) return "";
+    return dependsOn.map((key) => JSON.stringify(formValues[key])).join("|");
+  }, [dependsOn, formValues]);
+
+  React.useEffect(() => {
+    const resolver = optionsResolvers[resolverName];
+    if (!resolver) {
+      setError(`Resolver "${resolverName}" not found`);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(undefined);
+
+    resolver(formValues)
+      .then((result) => {
+        if (!cancelled) {
+          setOptions(result);
+          setLoading(false);
+        }
+      })
+      .catch((error_) => {
+        if (!cancelled) {
+          setError(
+            error_ instanceof Error ? error_.message : "Failed to load options"
+          );
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolverName, optionsResolvers, dependencyValues, formValues]);
+
+  const cleanDesc = getCleanDescription(description);
+
+  return (
+    <div className="space-y-2">
+      <div>
+        <Label htmlFor={id}>
+          {label} {isRequired && "*"}
+        </Label>
+        {cleanDesc && (
+          <p className="text-sm text-muted-foreground mt-0.5">{cleanDesc}</p>
+        )}
+      </div>
+      <div className="relative">
+        {loading ? (
+          <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted/50">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Loading options...
+            </span>
+          </div>
+        ) : error ? (
+          <div className="flex items-center h-10 px-3 border border-destructive rounded-md bg-destructive/10">
+            <span className="text-sm text-destructive">{error}</span>
+          </div>
+        ) : (
+          <Select
+            value={(value as string) || ""}
+            onValueChange={(val) => onChange(val)}
+            disabled={options.length === 0}
+          >
+            <SelectTrigger id={id}>
+              <SelectValue
+                placeholder={
+                  options.length === 0
+                    ? "No options available"
+                    : `Select ${label}`
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Helper for clean descriptions (moved before use)
+const getCleanDescription = (description?: string) => {
+  if (!description || description === "textarea") return;
+  const cleaned = description.replace("[textarea]", "").trim();
+  if (!cleaned) return;
+  return cleaned;
+};
+
 // Recursive Field Renderer
 const FormField: React.FC<{
   id: string;
@@ -140,9 +289,39 @@ const FormField: React.FC<{
   propSchema: JsonSchemaProperty;
   value: unknown;
   isRequired?: boolean;
+  formValues: Record<string, unknown>;
+  optionsResolvers?: Record<string, OptionsResolver>;
   onChange: (val: unknown) => void;
-}> = ({ id, label, propSchema, value, isRequired, onChange }) => {
+}> = ({
+  id,
+  label,
+  propSchema,
+  value,
+  isRequired,
+  formValues,
+  optionsResolvers,
+  onChange,
+}) => {
   const description = propSchema.description || "";
+
+  // Dynamic options via resolver
+  const resolverName = propSchema["x-options-resolver"];
+  if (resolverName && optionsResolvers) {
+    return (
+      <DynamicOptionsField
+        id={id}
+        label={label}
+        description={description}
+        value={value}
+        isRequired={isRequired}
+        resolverName={resolverName}
+        dependsOn={propSchema["x-depends-on"]}
+        formValues={formValues}
+        optionsResolvers={optionsResolvers}
+        onChange={onChange}
+      />
+    );
+  }
 
   // Enum handling
   if (propSchema.enum) {
@@ -438,6 +617,8 @@ const FormField: React.FC<{
             propSchema={subSchema}
             value={(value as Record<string, unknown>)?.[key]}
             isRequired={propSchema.required?.includes(key)}
+            formValues={formValues}
+            optionsResolvers={optionsResolvers}
             onChange={(val) =>
               onChange({ ...(value as Record<string, unknown>), [key]: val })
             }
@@ -508,6 +689,8 @@ const FormField: React.FC<{
                   label={`${label} #${index + 1}`}
                   propSchema={itemSchema}
                   value={item}
+                  formValues={formValues}
+                  optionsResolvers={optionsResolvers}
                   onChange={(val) => {
                     const next = [...(items as unknown[])];
                     next[index] = val;
@@ -523,13 +706,6 @@ const FormField: React.FC<{
   }
 
   return <></>;
-};
-
-const getCleanDescription = (description?: string) => {
-  if (!description || description === "textarea") return;
-  const cleaned = description.replace("[textarea]", "").trim();
-  if (!cleaned) return;
-  return cleaned;
 };
 
 /**
@@ -559,6 +735,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   schema,
   value,
   onChange,
+  optionsResolvers,
 }) => {
   // Initialize form with default values from schema
   React.useEffect(() => {
@@ -600,6 +777,8 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
             propSchema={propSchema}
             value={value[key]}
             isRequired={isRequired}
+            formValues={value}
+            optionsResolvers={optionsResolvers}
             onChange={(val) => onChange({ ...value, [key]: val })}
           />
         );

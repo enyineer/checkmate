@@ -41,3 +41,15 @@ export const integrationPlugin = createFrontendPlugin({
 });
 
 export default integrationPlugin;
+
+// Re-export registry and types for providers to register custom config components
+export {
+  registerProviderConfigExtension,
+  getProviderConfigExtension,
+  hasProviderConfigExtension,
+} from "./provider-config-registry";
+
+export type {
+  ProviderConfigProps,
+  ProviderConfigExtension,
+} from "./provider-config-registry";

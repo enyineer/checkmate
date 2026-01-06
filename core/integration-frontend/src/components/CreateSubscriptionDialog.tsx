@@ -20,6 +20,7 @@ import {
   type IntegrationEventInfo,
 } from "@checkmate-monitor/integration-common";
 import { ProviderDocumentation } from "./ProviderDocumentation";
+import { getProviderConfigExtension } from "../provider-config-registry";
 
 interface CreateSubscriptionDialogProps {
   open: boolean;
@@ -181,20 +182,52 @@ export const CreateSubscriptionDialog = ({
             </div>
 
             {/* Provider Config */}
-            {selectedProvider?.configSchema && (
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Provider Configuration
-                </label>
-                <div className="border rounded-md p-4">
-                  <DynamicForm
-                    schema={selectedProvider.configSchema}
-                    value={providerConfig}
-                    onChange={setProviderConfig}
-                  />
-                </div>
-              </div>
-            )}
+            {selectedProvider &&
+              (() => {
+                // Check if provider has a custom config component
+                const extension = getProviderConfigExtension(
+                  selectedProvider.qualifiedId
+                );
+
+                if (extension) {
+                  // Render custom component
+                  const CustomConfig = extension.ConfigComponent;
+                  return (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Provider Configuration
+                      </label>
+                      <div className="border rounded-md p-4">
+                        <CustomConfig
+                          value={providerConfig}
+                          onChange={setProviderConfig}
+                          isSubmitting={saving}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Fall back to DynamicForm for providers without custom component
+                if (selectedProvider.configSchema) {
+                  return (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Provider Configuration
+                      </label>
+                      <div className="border rounded-md p-4">
+                        <DynamicForm
+                          schema={selectedProvider.configSchema}
+                          value={providerConfig}
+                          onChange={setProviderConfig}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                return <></>;
+              })()}
 
             {/* Provider Documentation */}
             {selectedProvider && (
