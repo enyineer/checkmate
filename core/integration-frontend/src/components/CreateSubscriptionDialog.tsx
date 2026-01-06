@@ -6,6 +6,8 @@ import {
   DialogTitle,
   DialogFooter,
   Button,
+  Input,
+  Textarea,
   DynamicForm,
   DynamicIcon,
   useToast,
@@ -158,23 +160,21 @@ export const CreateSubscriptionDialog = ({
                 <label className="block text-sm font-medium mb-1">
                   Name <span className="text-destructive">*</span>
                 </label>
-                <input
+                <Input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="My Webhook"
-                  className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Description
                 </label>
-                <textarea
+                <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional description"
-                  className="w-full px-3 py-2 border rounded-md"
                   rows={2}
                 />
               </div>
