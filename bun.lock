@@ -789,6 +789,7 @@
       "name": "@checkmate/theme-frontend",
       "version": "0.0.1",
       "dependencies": {
+        "@checkmate/auth-frontend": "workspace:*",
         "@checkmate/common": "workspace:*",
         "@checkmate/frontend-api": "workspace:*",
         "@checkmate/theme-common": "workspace:*",

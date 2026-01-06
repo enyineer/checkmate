@@ -4,33 +4,24 @@ import { Toggle, useTheme, useToast } from "@checkmate/ui";
 import { useApi, rpcApiRef } from "@checkmate/frontend-api";
 import { ThemeApi } from "@checkmate/theme-common";
 
+/**
+ * Theme toggle menu item for logged-in users (displayed in UserMenu).
+ *
+ * Saves theme to both backend (for persistence across devices) and
+ * local storage (for continuity when logging out).
+ *
+ * Theme initialization is handled by ThemeSynchronizer component.
+ */
 export const ThemeToggleMenuItem = () => {
   const { theme, setTheme } = useTheme();
   const rpcApi = useApi(rpcApiRef);
   const themeClient = rpcApi.forPlugin(ThemeApi);
 
-  const [loading, setLoading] = useState(true);
-  const [isDark, setIsDark] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [isDark, setIsDark] = useState(theme === "dark");
   const toast = useToast();
 
-  // Load theme preference from backend on mount
-  useEffect(() => {
-    const loadThemePreference = async () => {
-      try {
-        const { theme: serverTheme } = await themeClient.getTheme();
-        setTheme(serverTheme);
-        setIsDark(serverTheme === "dark");
-      } catch (error) {
-        console.error("Failed to load theme preference:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadThemePreference();
-  }, []);
-
-  // Update local state when theme changes
+  // Update local state when theme changes (e.g., from ThemeSynchronizer)
   useEffect(() => {
     setIsDark(theme === "dark");
   }, [theme]);
@@ -40,9 +31,10 @@ export const ThemeToggleMenuItem = () => {
 
     // Update UI immediately
     setIsDark(checked);
-    setTheme(newTheme);
+    setTheme(newTheme); // Also updates local storage via ThemeProvider
 
     // Save to backend
+    setSaving(true);
     try {
       await themeClient.setTheme({ theme: newTheme });
     } catch (error) {
@@ -55,12 +47,10 @@ export const ThemeToggleMenuItem = () => {
       // Revert on error
       setIsDark(!checked);
       setTheme(checked ? "light" : "dark");
+    } finally {
+      setSaving(false);
     }
   };
-
-  if (loading) {
-    return; // Don't show toggle while loading
-  }
 
   return (
     <div className="flex items-center justify-between w-full px-4 py-2 text-sm text-popover-foreground">
@@ -71,6 +61,7 @@ export const ThemeToggleMenuItem = () => {
       <Toggle
         checked={isDark}
         onCheckedChange={handleToggle}
+        disabled={saving}
         aria-label="Toggle dark mode"
       />
     </div>
