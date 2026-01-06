@@ -12,7 +12,7 @@ const pluginMetadata = definePluginMetadata({
 });
 
 export const apiDocsRoutes = createRoutes(pluginMetadata.pluginId, {
-  docs: "/api-docs",
+  docs: "/",
 });
 
 export const apiDocsPlugin = createFrontendPlugin({

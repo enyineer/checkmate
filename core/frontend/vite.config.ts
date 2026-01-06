@@ -17,7 +17,8 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         // Proxy API requests and WebSocket connections to backend
-        "/api": {
+        // Use regex to ensure /api-docs doesn't match (it starts with /api but isn't an API call)
+        "^/api/": {
           target,
           ws: true, // Enable WebSocket proxy
         },

@@ -160,6 +160,29 @@ const init = async () => {
   );
   pluginManager.registerService(coreServices.signalService, signalService);
 
+  // 2.5. Register OpenAPI endpoint BEFORE plugins load
+  // Must be registered before /api/:pluginId/* catch-all route
+  const authService = await pluginManager.getService(coreServices.auth);
+  if (authService) {
+    const { createOpenApiHandler } = await import("./openapi-router");
+    const baseUrl = process.env.VITE_BACKEND_URL || "http://localhost:3000";
+    const openApiHandler = createOpenApiHandler({
+      pluginManager,
+      authService,
+      baseUrl,
+      requiredPermission: "auth:applications.manage",
+    });
+    app.get("/api/openapi.json", async (c) => {
+      const response = await openApiHandler(c.req.raw);
+      return c.newResponse(response.body, response);
+    });
+    rootLogger.debug("OpenAPI endpoint registered at /api/openapi.json");
+  } else {
+    rootLogger.warn(
+      "AuthService not available, OpenAPI endpoint will not be registered"
+    );
+  }
+
   // 3. Load Plugins
   await pluginManager.loadPlugins(app);
 
@@ -186,28 +209,6 @@ const init = async () => {
   });
   // Register as core router - available at /api/core/
   pluginManager.registerCoreRouter("core", pluginAdminRouter);
-
-  // 5.5. Register OpenAPI endpoint for API documentation
-  const authService = await pluginManager.getService(coreServices.auth);
-  if (authService) {
-    const { createOpenApiHandler } = await import("./openapi-router");
-    const baseUrl = process.env.VITE_BACKEND_URL || "http://localhost:3000";
-    const openApiHandler = createOpenApiHandler({
-      pluginManager,
-      authService,
-      baseUrl,
-      requiredPermission: "auth:applications.manage",
-    });
-    app.get("/api/openapi.json", async (c) => {
-      const response = await openApiHandler(c.req.raw);
-      return c.newResponse(response.body, response);
-    });
-    rootLogger.debug("OpenAPI endpoint registered at /api/openapi.json");
-  } else {
-    rootLogger.warn(
-      "AuthService not available, OpenAPI endpoint will not be registered"
-    );
-  }
 
   // 5. Setup lifecycle listeners for multi-instance coordination
   await pluginManager.setupLifecycleListeners();
