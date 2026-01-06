@@ -14,8 +14,8 @@ export interface IntegrationEventRegistry {
    * Register a hook as an integration event.
    * Called via the extension point during plugin registration.
    */
-  register(
-    definition: IntegrationEventDefinition<unknown>,
+  register<T>(
+    definition: IntegrationEventDefinition<T>,
     pluginMetadata: PluginMetadata
   ): void;
 
@@ -39,8 +39,8 @@ export function createIntegrationEventRegistry(): IntegrationEventRegistry {
   const events = new Map<string, RegisteredIntegrationEvent>();
 
   return {
-    register(
-      definition: IntegrationEventDefinition<unknown>,
+    register<T>(
+      definition: IntegrationEventDefinition<T>,
       pluginMetadata: PluginMetadata
     ): void {
       // Extract hook ID from the hook reference
@@ -53,7 +53,7 @@ export function createIntegrationEventRegistry(): IntegrationEventRegistry {
       // Uses the platform's toJsonSchema which handles secrets/colors
       const payloadJsonSchema = toJsonSchema(definition.payloadSchema);
 
-      const registered: RegisteredIntegrationEvent = {
+      const registered: RegisteredIntegrationEvent<T> = {
         eventId,
         hook: definition.hook,
         ownerPluginId: pluginMetadata.pluginId,
@@ -65,7 +65,10 @@ export function createIntegrationEventRegistry(): IntegrationEventRegistry {
         transformPayload: definition.transformPayload,
       };
 
-      events.set(eventId, registered);
+      // We cast to RegisteredIntegrationEvent (with unknown) when storing because
+      // the Map erases the specific type T anyway. This is type-safe because
+      // the transformPayload function will only be called with the correct type.
+      events.set(eventId, registered as RegisteredIntegrationEvent);
     },
 
     getEvents(): RegisteredIntegrationEvent[] {

@@ -172,12 +172,12 @@ export interface RegisteredIntegrationProvider<TConfig = unknown>
 /**
  * Registered integration event with full namespace information.
  */
-export interface RegisteredIntegrationEvent {
+export interface RegisteredIntegrationEvent<T = unknown> {
   /** Fully qualified event ID: {pluginId}.{hookId} */
   eventId: string;
 
   /** Original hook reference */
-  hook: HookReference<unknown>;
+  hook: HookReference<T>;
 
   /** Plugin that registered this event */
   ownerPluginId: string;
@@ -191,8 +191,8 @@ export interface RegisteredIntegrationEvent {
   payloadJsonSchema: Record<string, unknown>;
 
   /** Original Zod schema */
-  payloadSchema: z.ZodType<unknown>;
+  payloadSchema: z.ZodType<T>;
 
   /** Optional payload transformer */
-  transformPayload?: (payload: unknown) => Record<string, unknown>;
+  transformPayload?: (payload: T) => Record<string, unknown>;
 }

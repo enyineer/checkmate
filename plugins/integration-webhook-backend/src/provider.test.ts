@@ -5,6 +5,7 @@ import {
   type WebhookConfig,
 } from "./provider";
 import type { IntegrationDeliveryContext } from "@checkmate-monitor/integration-common";
+import type { Secret } from "@checkmate-monitor/backend-api";
 
 /**
  * Unit tests for the Webhook Integration Provider.
@@ -121,7 +122,7 @@ describe("WebhookProvider", () => {
     });
 
     it("allows valid methods", () => {
-      for (const method of ["POST", "PUT", "PATCH"]) {
+      for (const method of ["POST", "PUT", "PATCH"] as const) {
         const result = webhookConfigSchemaV1.parse({
           url: "https://example.com",
           method,
@@ -156,13 +157,14 @@ describe("WebhookProvider", () => {
       let capturedBody: string | undefined;
       let capturedHeaders: Record<string, string> | undefined;
 
-      const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async (url, options) => {
-          capturedBody = options?.body as string;
-          capturedHeaders = options?.headers as Record<string, string>;
-          return new Response(JSON.stringify({ ok: true }), { status: 200 });
-        }
-      );
+      const mockFetch = spyOn(globalThis, "fetch").mockImplementation((async (
+        _url: RequestInfo | URL,
+        options?: RequestInit
+      ) => {
+        capturedBody = options?.body as string;
+        capturedHeaders = options?.headers as Record<string, string>;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }) as unknown as typeof fetch);
 
       try {
         const context = createTestContext();
@@ -192,11 +194,11 @@ describe("WebhookProvider", () => {
 
     it("returns external ID from response if present", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           return new Response(JSON.stringify({ id: "external-id-123" }), {
             status: 200,
           });
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -212,9 +214,9 @@ describe("WebhookProvider", () => {
 
     it("handles non-JSON response gracefully", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           return new Response("OK", { status: 200 });
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -237,17 +239,18 @@ describe("WebhookProvider", () => {
     it("adds Bearer token header", async () => {
       let capturedHeaders: Record<string, string> | undefined;
 
-      const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async (url, options) => {
-          capturedHeaders = options?.headers as Record<string, string>;
-          return new Response("OK", { status: 200 });
-        }
-      );
+      const mockFetch = spyOn(globalThis, "fetch").mockImplementation((async (
+        _url: RequestInfo | URL,
+        options?: RequestInit
+      ) => {
+        capturedHeaders = options?.headers as Record<string, string>;
+        return new Response("OK", { status: 200 });
+      }) as unknown as typeof fetch);
 
       try {
         const context = createTestContext({
           authType: "bearer",
-          bearerToken: "my-secret-token" as string,
+          bearerToken: "my-secret-token" as Secret,
         });
         await webhookProvider.deliver(context);
 
@@ -262,18 +265,19 @@ describe("WebhookProvider", () => {
     it("adds Basic auth header", async () => {
       let capturedHeaders: Record<string, string> | undefined;
 
-      const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async (url, options) => {
-          capturedHeaders = options?.headers as Record<string, string>;
-          return new Response("OK", { status: 200 });
-        }
-      );
+      const mockFetch = spyOn(globalThis, "fetch").mockImplementation((async (
+        _url: RequestInfo | URL,
+        options?: RequestInit
+      ) => {
+        capturedHeaders = options?.headers as Record<string, string>;
+        return new Response("OK", { status: 200 });
+      }) as unknown as typeof fetch);
 
       try {
         const context = createTestContext({
           authType: "basic",
           basicUsername: "user",
-          basicPassword: "pass" as string,
+          basicPassword: "pass" as Secret,
         });
         await webhookProvider.deliver(context);
 
@@ -290,18 +294,19 @@ describe("WebhookProvider", () => {
     it("adds custom auth header", async () => {
       let capturedHeaders: Record<string, string> | undefined;
 
-      const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async (url, options) => {
-          capturedHeaders = options?.headers as Record<string, string>;
-          return new Response("OK", { status: 200 });
-        }
-      );
+      const mockFetch = spyOn(globalThis, "fetch").mockImplementation((async (
+        _url: RequestInfo | URL,
+        options?: RequestInit
+      ) => {
+        capturedHeaders = options?.headers as Record<string, string>;
+        return new Response("OK", { status: 200 });
+      }) as unknown as typeof fetch);
 
       try {
         const context = createTestContext({
           authType: "header",
           authHeaderName: "X-API-Key",
-          authHeaderValue: "api-key-123" as string,
+          authHeaderValue: "api-key-123" as Secret,
         });
         await webhookProvider.deliver(context);
 
@@ -314,12 +319,13 @@ describe("WebhookProvider", () => {
     it("adds custom headers", async () => {
       let capturedHeaders: Record<string, string> | undefined;
 
-      const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async (url, options) => {
-          capturedHeaders = options?.headers as Record<string, string>;
-          return new Response("OK", { status: 200 });
-        }
-      );
+      const mockFetch = spyOn(globalThis, "fetch").mockImplementation((async (
+        _url: RequestInfo | URL,
+        options?: RequestInit
+      ) => {
+        capturedHeaders = options?.headers as Record<string, string>;
+        return new Response("OK", { status: 200 });
+      }) as unknown as typeof fetch);
 
       try {
         const context = createTestContext({
@@ -345,9 +351,9 @@ describe("WebhookProvider", () => {
   describe("deliver - error handling", () => {
     it("returns error for non-OK response", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           return new Response("Not Found", { status: 404 });
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -363,9 +369,9 @@ describe("WebhookProvider", () => {
 
     it("returns retryable error for configured status codes", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           return new Response("Too Many Requests", { status: 429 });
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -384,14 +390,14 @@ describe("WebhookProvider", () => {
 
     it("parses Retry-After header", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           const headers = new Headers();
           headers.set("Retry-After", "60");
           return new Response("Too Many Requests", {
             status: 429,
             headers,
           });
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -408,9 +414,9 @@ describe("WebhookProvider", () => {
 
     it("handles network errors with retry", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           throw new Error("ECONNREFUSED");
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -427,9 +433,9 @@ describe("WebhookProvider", () => {
 
     it("handles timeout errors with retry", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           throw new Error("timeout");
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -451,9 +457,9 @@ describe("WebhookProvider", () => {
   describe("testConnection", () => {
     it("returns success for reachable endpoint", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           return new Response("", { status: 200 });
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -476,9 +482,9 @@ describe("WebhookProvider", () => {
 
     it("returns failure for server errors", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           return new Response("Internal Server Error", { status: 500 });
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -501,9 +507,9 @@ describe("WebhookProvider", () => {
 
     it("returns failure for connection errors", async () => {
       const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async () => {
+        (async () => {
           throw new Error("ENOTFOUND");
-        }
+        }) as unknown as typeof fetch
       );
 
       try {
@@ -545,15 +551,16 @@ describe("WebhookProvider", () => {
       let capturedBody: string | undefined;
       let capturedContentType: string | undefined;
 
-      const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async (url, options) => {
-          capturedBody = options?.body as string;
-          capturedContentType = (options?.headers as Record<string, string>)?.[
-            "Content-Type"
-          ];
-          return new Response("OK", { status: 200 });
-        }
-      );
+      const mockFetch = spyOn(globalThis, "fetch").mockImplementation((async (
+        _url: RequestInfo | URL,
+        options?: RequestInit
+      ) => {
+        capturedBody = options?.body as string;
+        capturedContentType = (options?.headers as Record<string, string>)?.[
+          "Content-Type"
+        ];
+        return new Response("OK", { status: 200 });
+      }) as unknown as typeof fetch);
 
       try {
         const context = createTestContext({
@@ -572,15 +579,16 @@ describe("WebhookProvider", () => {
       let capturedBody: string | undefined;
       let capturedContentType: string | undefined;
 
-      const mockFetch = spyOn(globalThis, "fetch").mockImplementation(
-        async (url, options) => {
-          capturedBody = options?.body as string;
-          capturedContentType = (options?.headers as Record<string, string>)?.[
-            "Content-Type"
-          ];
-          return new Response("OK", { status: 200 });
-        }
-      );
+      const mockFetch = spyOn(globalThis, "fetch").mockImplementation((async (
+        _url: RequestInfo | URL,
+        options?: RequestInit
+      ) => {
+        capturedBody = options?.body as string;
+        capturedContentType = (options?.headers as Record<string, string>)?.[
+          "Content-Type"
+        ];
+        return new Response("OK", { status: 200 });
+      }) as unknown as typeof fetch);
 
       try {
         const context = createTestContext({
