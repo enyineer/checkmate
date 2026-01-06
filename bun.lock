@@ -405,6 +405,8 @@
         "@checkmate-monitor/catalog-common": "workspace:*",
         "@checkmate-monitor/common": "workspace:*",
         "@checkmate-monitor/incident-common": "workspace:*",
+        "@checkmate-monitor/integration-backend": "workspace:*",
+        "@checkmate-monitor/integration-common": "workspace:*",
         "@checkmate-monitor/signal-common": "workspace:*",
         "drizzle-orm": "^0.45.1",
         "zod": "^4.2.1",

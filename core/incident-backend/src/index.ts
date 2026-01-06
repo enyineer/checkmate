@@ -1,5 +1,6 @@
 import * as schema from "./schema";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { z } from "zod";
 import {
   permissionList,
   pluginMetadata,
@@ -9,15 +10,82 @@ import {
   createBackendPlugin,
   coreServices,
 } from "@checkmate-monitor/backend-api";
+import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
 import { IncidentService } from "./service";
 import { createRouter } from "./router";
 import { CatalogApi } from "@checkmate-monitor/catalog-common";
 import { catalogHooks } from "@checkmate-monitor/catalog-backend";
+import { incidentHooks } from "./hooks";
+
+// =============================================================================
+// Integration Event Payload Schemas
+// =============================================================================
+
+const incidentCreatedPayloadSchema = z.object({
+  incidentId: z.string(),
+  systemIds: z.array(z.string()),
+  title: z.string(),
+  severity: z.string(),
+});
+
+const incidentUpdatedPayloadSchema = z.object({
+  incidentId: z.string(),
+  systemIds: z.array(z.string()),
+  statusChange: z.string().optional(),
+});
+
+const incidentResolvedPayloadSchema = z.object({
+  incidentId: z.string(),
+  systemIds: z.array(z.string()),
+});
+
+// =============================================================================
+// Plugin Definition
+// =============================================================================
 
 export default createBackendPlugin({
   metadata: pluginMetadata,
   register(env) {
     env.registerPermissions(permissionList);
+
+    // Register hooks as integration events
+    const integrationEvents = env.getExtensionPoint(
+      integrationEventExtensionPoint
+    );
+
+    integrationEvents.registerEvent(
+      {
+        hook: incidentHooks.incidentCreated,
+        displayName: "Incident Created",
+        description: "Fired when a new incident is created",
+        category: "Incidents",
+        payloadSchema: incidentCreatedPayloadSchema,
+      },
+      pluginMetadata
+    );
+
+    integrationEvents.registerEvent(
+      {
+        hook: incidentHooks.incidentUpdated,
+        displayName: "Incident Updated",
+        description:
+          "Fired when an incident is updated (info or status change)",
+        category: "Incidents",
+        payloadSchema: incidentUpdatedPayloadSchema,
+      },
+      pluginMetadata
+    );
+
+    integrationEvents.registerEvent(
+      {
+        hook: incidentHooks.incidentResolved,
+        displayName: "Incident Resolved",
+        description: "Fired when an incident is marked as resolved",
+        category: "Incidents",
+        payloadSchema: incidentResolvedPayloadSchema,
+      },
+      pluginMetadata
+    );
 
     env.registerInit({
       schema,
