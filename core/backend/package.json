@@ -10,6 +10,7 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
+    "@checkmate/api-docs-common": "workspace:*",
     "@checkmate/auth-common": "workspace:*",
     "@checkmate/backend-api": "workspace:*",
     "@checkmate/common": "workspace:*",

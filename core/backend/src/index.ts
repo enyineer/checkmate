@@ -23,6 +23,11 @@ import {
   PLUGIN_DEREGISTERED,
 } from "@checkmate/signal-common";
 import { createPluginAdminRouter } from "./plugin-manager/plugin-admin-router";
+import {
+  pluginMetadata as apiDocsMetadata,
+  permissions as apiDocsPermissions,
+} from "@checkmate/api-docs-common";
+import { qualifyPermissionId } from "@checkmate/common";
 
 import { cors } from "hono/cors";
 
@@ -170,7 +175,10 @@ const init = async () => {
       pluginManager,
       authService,
       baseUrl,
-      requiredPermission: "auth:applications.manage",
+      requiredPermission: qualifyPermissionId(
+        apiDocsMetadata,
+        apiDocsPermissions.apiDocsView
+      ),
     });
     app.get("/api/openapi.json", async (c) => {
       const response = await openApiHandler(c.req.raw);

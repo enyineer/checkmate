@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useApi, permissionApiRef } from "@checkmate/frontend-api";
 import {
   Card,
   CardContent,
@@ -19,7 +18,6 @@ import {
   User,
   Server,
 } from "lucide-react";
-import { REQUIRED_PERMISSION } from "./index";
 
 interface OpenApiSpec {
   info: {
@@ -99,6 +97,13 @@ function getUserTypeBadge(userType?: string) {
     colors[userType ?? ""] ??
     "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
   );
+}
+
+/**
+ * Check if an endpoint is accessible via external application tokens.
+ */
+function isExternallyAccessible(userType?: string): boolean {
+  return userType === "authenticated" || userType === "public";
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -261,8 +266,13 @@ function EndpointCard({
               variant="outline"
               className={getUserTypeBadge(meta?.userType)}
             >
-              {meta?.userType ?? "authenticated"}
+              {meta?.userType ?? "unknown"}
             </Badge>
+            {!isExternallyAccessible(meta?.userType) && (
+              <Badge variant="destructive" className="text-xs">
+                Internal Only
+              </Badge>
+            )}
           </div>
         </div>
         {operation.summary && (
@@ -331,16 +341,31 @@ function EndpointCard({
 }
 
 export function ApiDocsPage() {
-  const permissionApi = useApi(permissionApiRef);
-  const canView = permissionApi.usePermission(REQUIRED_PERMISSION);
   const [spec, setSpec] = useState<OpenApiSpec>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
-  const [userTypeFilter, setUserTypeFilter] = useState<string | undefined>();
+  // Default to showing externally accessible endpoints only
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(
+    new Set(["authenticated", "public"])
+  );
+
+  const toggleType = (type: string) => {
+    setSelectedTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
+
+  const showAll = () => {
+    setSelectedTypes(new Set());
+  };
 
   useEffect(() => {
-    if (!canView.allowed) return;
-
     const fetchSpec = async () => {
       try {
         const response = await fetch("/api/openapi.json");
@@ -357,30 +382,7 @@ export function ApiDocsPage() {
     };
 
     void fetchSpec();
-  }, [canView.allowed]);
-
-  if (canView.loading) {
-    return (
-      <div className="container mx-auto py-8">
-        <div className="animate-pulse">Loading permissions...</div>
-      </div>
-    );
-  }
-
-  if (!canView.allowed) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You don't have permission to view API documentation.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  }, []);
 
   if (loading) {
     return (
@@ -411,10 +413,10 @@ export function ApiDocsPage() {
 
   for (const [path, methods] of Object.entries(spec.paths)) {
     for (const [method, operation] of Object.entries(methods)) {
-      // Apply userType filter if set
+      // Apply userType filter if types are selected
       const meta = operation["x-orpc-meta"];
-      const opUserType = meta?.userType;
-      if (userTypeFilter && opUserType !== userTypeFilter) {
+      const opUserType = meta?.userType ?? "unknown";
+      if (selectedTypes.size > 0 && !selectedTypes.has(opUserType)) {
         continue;
       }
 
@@ -440,40 +442,40 @@ export function ApiDocsPage() {
         </Badge>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted-foreground">Filter by access:</span>
         <Button
-          variant={userTypeFilter === undefined ? "primary" : "outline"}
+          variant={selectedTypes.size === 0 ? "primary" : "outline"}
           size="sm"
-          onClick={() => setUserTypeFilter(undefined)}
+          onClick={showAll}
         >
           All
         </Button>
         <Button
-          variant={userTypeFilter === "authenticated" ? "primary" : "outline"}
+          variant={selectedTypes.has("authenticated") ? "primary" : "outline"}
           size="sm"
-          onClick={() => setUserTypeFilter("authenticated")}
+          onClick={() => toggleType("authenticated")}
         >
           Authenticated
         </Button>
         <Button
-          variant={userTypeFilter === "public" ? "primary" : "outline"}
+          variant={selectedTypes.has("public") ? "primary" : "outline"}
           size="sm"
-          onClick={() => setUserTypeFilter("public")}
+          onClick={() => toggleType("public")}
         >
           Public
         </Button>
         <Button
-          variant={userTypeFilter === "user" ? "primary" : "outline"}
+          variant={selectedTypes.has("user") ? "primary" : "outline"}
           size="sm"
-          onClick={() => setUserTypeFilter("user")}
+          onClick={() => toggleType("user")}
         >
           User Only
         </Button>
         <Button
-          variant={userTypeFilter === "service" ? "primary" : "outline"}
+          variant={selectedTypes.has("service") ? "primary" : "outline"}
           size="sm"
-          onClick={() => setUserTypeFilter("service")}
+          onClick={() => toggleType("service")}
         >
           Service Only
         </Button>
@@ -483,8 +485,9 @@ export function ApiDocsPage() {
         <CardHeader>
           <CardTitle>Authentication</CardTitle>
           <CardDescription>
-            All endpoints require authentication via API key. Include the key in
-            the Authorization header:
+            Endpoints marked as <strong>authenticated</strong> or{" "}
+            <strong>public</strong> can be accessed using an application token.
+            Other endpoints are for internal use only.
           </CardDescription>
         </CardHeader>
         <CardContent>

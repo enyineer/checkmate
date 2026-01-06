@@ -2,8 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { FileCode2 } from "lucide-react";
 import { DropdownMenuItem } from "@checkmate/ui";
 import { useApi, permissionApiRef } from "@checkmate/frontend-api";
-import { resolveRoute } from "@checkmate/common";
-import { apiDocsRoutes, REQUIRED_PERMISSION } from "./index";
+import { resolveRoute, qualifyPermissionId } from "@checkmate/common";
+import { pluginMetadata, permissions } from "@checkmate/api-docs-common";
+import { apiDocsRoutes } from "./index";
+
+const REQUIRED_PERMISSION = qualifyPermissionId(
+  pluginMetadata,
+  permissions.apiDocsView
+);
 
 export function ApiDocsMenuItem() {
   const navigate = useNavigate();
