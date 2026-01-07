@@ -12,16 +12,68 @@ import {
 import {
   createBackendPlugin,
   coreServices,
+  type EmitHookFn,
 } from "@checkmate-monitor/backend-api";
+import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
+import { z } from "zod";
 import { createHealthCheckRouter } from "./router";
 import { HealthCheckService } from "./service";
 import { catalogHooks } from "@checkmate-monitor/catalog-backend";
 import { CatalogApi } from "@checkmate-monitor/catalog-common";
+import { healthCheckHooks } from "./hooks";
+
+// =============================================================================
+// Integration Event Payload Schemas
+// =============================================================================
+
+const systemDegradedPayloadSchema = z.object({
+  systemId: z.string(),
+  systemName: z.string().optional(),
+  previousStatus: z.string(),
+  newStatus: z.string(),
+});
+
+const systemHealthyPayloadSchema = z.object({
+  systemId: z.string(),
+  systemName: z.string().optional(),
+  previousStatus: z.string(),
+});
+
+// Store emitHook reference for use during Phase 2 init
+let storedEmitHook: EmitHookFn | undefined;
 
 export default createBackendPlugin({
   metadata: pluginMetadata,
   register(env) {
     env.registerPermissions(permissionList);
+
+    // Register hooks as integration events
+    const integrationEvents = env.getExtensionPoint(
+      integrationEventExtensionPoint
+    );
+
+    integrationEvents.registerEvent(
+      {
+        hook: healthCheckHooks.systemDegraded,
+        displayName: "System Health Degraded",
+        description:
+          "Fired when a system's health status transitions from healthy to degraded/unhealthy",
+        category: "Health",
+        payloadSchema: systemDegradedPayloadSchema,
+      },
+      pluginMetadata
+    );
+
+    integrationEvents.registerEvent(
+      {
+        hook: healthCheckHooks.systemHealthy,
+        displayName: "System Health Restored",
+        description: "Fired when a system's health status recovers to healthy",
+        category: "Health",
+        payloadSchema: systemHealthyPayloadSchema,
+      },
+      pluginMetadata
+    );
 
     env.registerInit({
       schema,
@@ -56,6 +108,7 @@ export default createBackendPlugin({
           queueManager,
           signalService,
           catalogClient,
+          getEmitHook: () => storedEmitHook,
         });
 
         const healthCheckRouter = createHealthCheckRouter(
@@ -66,14 +119,16 @@ export default createBackendPlugin({
 
         logger.debug("✅ Health Check Backend initialized.");
       },
-      // Phase 3: Bootstrap health checks and subscribe to catalog events
       afterPluginsReady: async ({
         database,
         queueManager,
         logger,
         onHook,
+        emitHook,
         healthCheckRegistry,
       }) => {
+        // Store emitHook for the queue worker (Closure-based Hook Getter pattern)
+        storedEmitHook = emitHook;
         // Bootstrap all enabled health checks
         await bootstrapHealthChecks({
           db: database,
@@ -99,3 +154,6 @@ export default createBackendPlugin({
     });
   },
 });
+
+// Re-export hooks for other plugins to use
+export { healthCheckHooks } from "./hooks";

@@ -335,6 +335,7 @@
         "@checkmate-monitor/catalog-common": "workspace:*",
         "@checkmate-monitor/common": "workspace:*",
         "@checkmate-monitor/healthcheck-common": "workspace:*",
+        "@checkmate-monitor/integration-backend": "workspace:*",
         "@checkmate-monitor/queue-api": "workspace:*",
         "@checkmate-monitor/signal-common": "workspace:*",
         "@hono/zod-validator": "^0.7.6",

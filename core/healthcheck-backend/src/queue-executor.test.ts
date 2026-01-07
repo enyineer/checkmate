@@ -126,6 +126,7 @@ describe("Queue-Based Health Check Executor", () => {
         catalogClient: mockCatalogClient as unknown as Parameters<
           typeof setupHealthCheckWorker
         >[0]["catalogClient"],
+        getEmitHook: () => undefined,
       });
 
       expect(mockLogger.debug).toHaveBeenCalledWith(

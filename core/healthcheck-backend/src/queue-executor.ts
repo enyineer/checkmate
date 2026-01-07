@@ -1,4 +1,8 @@
-import { HealthCheckRegistry, Logger } from "@checkmate-monitor/backend-api";
+import {
+  HealthCheckRegistry,
+  Logger,
+  type EmitHookFn,
+} from "@checkmate-monitor/backend-api";
 import { QueueManager } from "@checkmate-monitor/queue-api";
 import {
   healthCheckConfigurations,
@@ -16,6 +20,7 @@ import {
 import { CatalogApi, catalogRoutes } from "@checkmate-monitor/catalog-common";
 import { resolveRoute, type InferClient } from "@checkmate-monitor/common";
 import { HealthCheckService } from "./service";
+import { healthCheckHooks } from "./hooks";
 
 type Db = NodePgDatabase<typeof schema>;
 type CatalogClient = InferClient<typeof CatalogApi>;
@@ -157,8 +162,17 @@ async function executeHealthCheckJob(props: {
   logger: Logger;
   signalService: SignalService;
   catalogClient: CatalogClient;
+  getEmitHook: () => EmitHookFn | undefined;
 }): Promise<void> {
-  const { payload, db, registry, logger, signalService, catalogClient } = props;
+  const {
+    payload,
+    db,
+    registry,
+    logger,
+    signalService,
+    catalogClient,
+    getEmitHook,
+  } = props;
   const { configId, systemId } = payload;
 
   // Create service for aggregated state evaluation
@@ -242,6 +256,34 @@ async function executeHealthCheckJob(props: {
         catalogClient,
         logger,
       });
+
+      // Emit integration hooks for external integrations
+      const emitHook = getEmitHook();
+      if (emitHook) {
+        if (newState.status === "healthy" && previousStatus !== "healthy") {
+          // Recovery: system became healthy
+          await emitHook(healthCheckHooks.systemHealthy, {
+            systemId,
+            previousStatus,
+          });
+          logger.debug(
+            `Emitted systemHealthy hook: ${previousStatus} → ${newState.status}`
+          );
+        } else if (
+          previousStatus === "healthy" &&
+          newState.status !== "healthy"
+        ) {
+          // Degradation: system went from healthy to unhealthy/degraded
+          await emitHook(healthCheckHooks.systemDegraded, {
+            systemId,
+            previousStatus,
+            newStatus: newState.status,
+          });
+          logger.debug(
+            `Emitted systemDegraded hook: ${previousStatus} → ${newState.status}`
+          );
+        }
+      }
     }
 
     // Note: No manual rescheduling needed - recurring job handles it automatically
@@ -276,15 +318,40 @@ async function executeHealthCheckJob(props: {
         catalogClient,
         logger,
       });
+
+      // Emit integration hooks for external integrations
+      const emitHook = getEmitHook();
+      if (emitHook) {
+        if (newState.status === "healthy" && previousStatus !== "healthy") {
+          // Recovery: system became healthy
+          await emitHook(healthCheckHooks.systemHealthy, {
+            systemId,
+            previousStatus,
+          });
+          logger.debug(
+            `Emitted systemHealthy hook: ${previousStatus} → ${newState.status}`
+          );
+        } else if (
+          previousStatus === "healthy" &&
+          newState.status !== "healthy"
+        ) {
+          // Degradation: system went from healthy to unhealthy/degraded
+          await emitHook(healthCheckHooks.systemDegraded, {
+            systemId,
+            previousStatus,
+            newStatus: newState.status,
+          });
+          logger.debug(
+            `Emitted systemDegraded hook: ${previousStatus} → ${newState.status}`
+          );
+        }
+      }
     }
 
     // Note: No manual rescheduling needed - recurring job handles it automatically
   }
 }
 
-/**
- * Setup the health check worker to consume from the queue
- */
 export async function setupHealthCheckWorker(props: {
   db: Db;
   registry: HealthCheckRegistry;
@@ -292,9 +359,17 @@ export async function setupHealthCheckWorker(props: {
   queueManager: QueueManager;
   signalService: SignalService;
   catalogClient: CatalogClient;
+  getEmitHook: () => EmitHookFn | undefined;
 }): Promise<void> {
-  const { db, registry, logger, queueManager, signalService, catalogClient } =
-    props;
+  const {
+    db,
+    registry,
+    logger,
+    queueManager,
+    signalService,
+    catalogClient,
+    getEmitHook,
+  } = props;
 
   const queue =
     queueManager.getQueue<HealthCheckJobPayload>(HEALTH_CHECK_QUEUE);
@@ -309,6 +384,7 @@ export async function setupHealthCheckWorker(props: {
         logger,
         signalService,
         catalogClient,
+        getEmitHook,
       });
     },
     {
