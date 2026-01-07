@@ -1,8 +1,14 @@
 import { z } from "zod";
-import { isSecretSchema, isColorSchema } from "./branded-types";
+import {
+  isSecretSchema,
+  isColorSchema,
+  getOptionsResolverMetadata,
+  isHiddenSchema,
+} from "./branded-types";
 
 /**
- * Adds x-secret and x-color metadata to JSON Schema for branded Zod fields.
+ * Adds x-secret, x-color, x-options-resolver, x-depends-on, and x-hidden
+ * metadata to JSON Schema for branded Zod fields.
  * This is used internally by toJsonSchema.
  */
 function addSchemaMetadata(
@@ -20,11 +26,30 @@ function addSchemaMetadata(
   if (!properties) return;
 
   for (const [key, fieldSchema] of Object.entries(objectSchema.shape)) {
-    if (isSecretSchema(fieldSchema as z.ZodTypeAny) && properties[key]) {
+    const zodField = fieldSchema as z.ZodTypeAny;
+
+    // Secret field
+    if (isSecretSchema(zodField) && properties[key]) {
       properties[key]["x-secret"] = true;
     }
-    if (isColorSchema(fieldSchema as z.ZodTypeAny) && properties[key]) {
+
+    // Color field
+    if (isColorSchema(zodField) && properties[key]) {
       properties[key]["x-color"] = true;
+    }
+
+    // Hidden field
+    if (isHiddenSchema(zodField) && properties[key]) {
+      properties[key]["x-hidden"] = true;
+    }
+
+    // Options resolver field
+    const resolverMeta = getOptionsResolverMetadata(zodField);
+    if (resolverMeta && properties[key]) {
+      properties[key]["x-options-resolver"] = resolverMeta.resolver;
+      if (resolverMeta.dependsOn) {
+        properties[key]["x-depends-on"] = resolverMeta.dependsOn;
+      }
     }
   }
 }
@@ -34,7 +59,8 @@ function addSchemaMetadata(
  * Uses Zod v4's native toJSONSchema() method.
  *
  * The branded metadata enables DynamicForm to automatically render
- * specialized input fields (password for secrets, color picker for colors).
+ * specialized input fields (password for secrets, color picker for colors,
+ * dropdowns for optionsResolver fields, hidden for auto-populated fields).
  */
 export function toJsonSchema(zodSchema: z.ZodTypeAny): Record<string, unknown> {
   // Use Zod's native JSON Schema conversion

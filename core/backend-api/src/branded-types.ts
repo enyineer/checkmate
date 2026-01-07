@@ -147,3 +147,102 @@ export type Color = z.infer<ReturnType<typeof color>>;
 export function isColorSchema(schema: z.ZodTypeAny): boolean {
   return colorSchemas.has(unwrapSchema(schema));
 }
+
+// =============================================================================
+// Dynamic Form Metadata
+// x-options-resolver, x-depends-on, x-hidden for DynamicForm integration
+// =============================================================================
+
+/**
+ * Map to track which schemas have options resolver metadata.
+ * Key is the schema, value is { resolver: string, dependsOn?: string[] }
+ */
+const optionsResolverMap = new WeakMap<
+  z.ZodTypeAny,
+  { resolver: string; dependsOn?: string[] }
+>();
+
+/**
+ * WeakSet to track which schemas should be hidden in forms.
+ */
+const hiddenSchemas = new WeakSet<z.ZodTypeAny>();
+
+/**
+ * Options for optionsResolver helper.
+ */
+export interface OptionsResolverOptions {
+  /** Description for the field (shown in UI) */
+  description?: string;
+  /** Name of the resolver to call for options */
+  resolver: string;
+  /** Field names this field depends on (triggers refetch when they change) */
+  dependsOn?: string[];
+}
+
+/**
+ * Creates a string field with x-options-resolver metadata.
+ * Used for dropdowns that fetch options dynamically from the backend.
+ *
+ * @example
+ * projectKey: optionsResolver({
+ *   description: "Jira project",
+ *   resolver: "projectOptions",
+ *   dependsOn: ["connectionId"]
+ * }),
+ */
+export function optionsResolver(options: OptionsResolverOptions) {
+  const base = z.string();
+  const schema = options.description
+    ? base.describe(options.description)
+    : base;
+
+  optionsResolverMap.set(schema, {
+    resolver: options.resolver,
+    dependsOn: options.dependsOn,
+  });
+
+  return schema;
+}
+
+/**
+ * Get options resolver metadata for a schema.
+ */
+export function getOptionsResolverMetadata(
+  schema: z.ZodTypeAny
+): { resolver: string; dependsOn?: string[] } | undefined {
+  return optionsResolverMap.get(unwrapSchema(schema));
+}
+
+/**
+ * Options for hidden helper.
+ */
+export interface HiddenFieldOptions {
+  /** Description for the field (not shown in UI but useful for docs) */
+  description?: string;
+}
+
+/**
+ * Creates a string field that is hidden in forms.
+ * Used for fields that are auto-populated (like connectionId).
+ *
+ * @example
+ * connectionId: hidden({ description: "Auto-populated connection ID" }),
+ */
+export function hidden(options?: HiddenFieldOptions) {
+  const base = z.string();
+  const schema = options?.description
+    ? base.describe(options.description)
+    : base;
+
+  hiddenSchemas.add(schema);
+
+  return schema;
+}
+
+/**
+ * Runtime check for hidden fields.
+ * Automatically unwraps ZodOptional, ZodDefault, ZodNullable to check the inner schema.
+ */
+export function isHiddenSchema(schema: z.ZodTypeAny): boolean {
+  return hiddenSchemas.has(unwrapSchema(schema));
+}

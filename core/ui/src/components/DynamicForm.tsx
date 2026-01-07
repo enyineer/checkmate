@@ -39,6 +39,7 @@ export interface JsonSchemaProperty {
   "x-color"?: boolean; // Custom metadata for color fields
   "x-options-resolver"?: string; // Name of a resolver function for dynamic options
   "x-depends-on"?: string[]; // Field names this field depends on (triggers refetch when they change)
+  "x-hidden"?: boolean; // Field should be hidden in form (auto-populated)
 }
 
 /** Option returned by an options resolver */
@@ -765,24 +766,26 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
 
   return (
     <div className="space-y-6">
-      {Object.entries(schema.properties).map(([key, propSchema]) => {
-        const isRequired = schema.required?.includes(key);
-        const label = key.charAt(0).toUpperCase() + key.slice(1);
+      {Object.entries(schema.properties)
+        .filter(([, propSchema]) => !propSchema["x-hidden"])
+        .map(([key, propSchema]) => {
+          const isRequired = schema.required?.includes(key);
+          const label = key.charAt(0).toUpperCase() + key.slice(1);
 
-        return (
-          <FormField
-            key={key}
-            id={key}
-            label={label}
-            propSchema={propSchema}
-            value={value[key]}
-            isRequired={isRequired}
-            formValues={value}
-            optionsResolvers={optionsResolvers}
-            onChange={(val) => onChange({ ...value, [key]: val })}
-          />
-        );
-      })}
+          return (
+            <FormField
+              key={key}
+              id={key}
+              label={label}
+              propSchema={propSchema}
+              value={value[key]}
+              isRequired={isRequired}
+              formValues={value}
+              optionsResolvers={optionsResolvers}
+              onChange={(val) => onChange({ ...value, [key]: val })}
+            />
+          );
+        })}
     </div>
   );
 };

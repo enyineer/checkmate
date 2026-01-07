@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { Versioned, secret } from "@checkmate-monitor/backend-api";
+import {
+  Versioned,
+  secret,
+  optionsResolver,
+  hidden,
+} from "@checkmate-monitor/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -9,7 +14,7 @@ import type {
   ConnectionOption,
   GetConnectionOptionsParams,
 } from "@checkmate-monitor/integration-common";
-import { JiraSubscriptionConfigSchema } from "@checkmate-monitor/integration-jira-common";
+import { JiraFieldMappingSchema } from "@checkmate-monitor/integration-jira-common";
 import { createJiraClient, createJiraClientFromConfig } from "./jira-client";
 import { expandTemplate } from "./template-engine";
 
@@ -20,10 +25,48 @@ import { expandTemplate } from "./template-engine";
 export const JiraConnectionConfigSchema = z.object({
   baseUrl: z.string().url().describe("Jira Cloud base URL"),
   email: z.string().email().describe("Jira user email"),
-  apiToken: secret(z.string().min(1).describe("Jira API token")),
+  apiToken: secret({ description: "Jira API token" }),
 });
 
 export type JiraConnectionConfig = z.infer<typeof JiraConnectionConfigSchema>;
+
+/**
+ * Provider configuration for Jira subscriptions.
+ * Uses optionsResolver() for dynamic dropdowns that fetch from Jira API.
+ * Uses hidden() for connectionId which is auto-populated.
+ */
+export const JiraSubscriptionConfigSchema = z.object({
+  /** ID of the site-wide Jira connection to use (auto-populated) */
+  connectionId: hidden({ description: "Jira connection to use" }),
+  /** Jira project key to create issues in */
+  projectKey: optionsResolver({
+    description: "Project key",
+    resolver: "projectOptions",
+  }),
+  /** Issue type ID for created issues */
+  issueTypeId: optionsResolver({
+    description: "Issue type",
+    resolver: "issueTypeOptions",
+    dependsOn: ["projectKey"],
+  }),
+  /** Summary template (required - uses {{payload.field}} syntax) */
+  summaryTemplate: z.string().min(1).describe("Issue summary template"),
+  /** Description template (optional) */
+  descriptionTemplate: z
+    .string()
+    .optional()
+    .describe("Issue description template"),
+  /** Priority ID (optional) */
+  priorityId: optionsResolver({
+    description: "Priority",
+    resolver: "priorityOptions",
+  }).optional(),
+  /** Additional field mappings */
+  fieldMappings: z
+    .array(JiraFieldMappingSchema)
+    .optional()
+    .describe("Additional field mappings"),
+});
 
 /**
  * Jira subscription config type.
