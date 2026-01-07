@@ -1,8 +1,10 @@
 import {
   createBackendPlugin,
   type AuthStrategy,
-  secret,
+  configString,
   coreServices,
+  configBoolean,
+  configNumber,
 } from "@checkmate-monitor/backend-api";
 import { pluginMetadata } from "./plugin-metadata";
 import {
@@ -16,48 +18,43 @@ import { hashPassword } from "better-auth/crypto";
 
 // LDAP Configuration Schema V1
 const _ldapConfigV1 = z.object({
-  enabled: z.boolean().default(false).describe("Enable LDAP authentication"),
-  url: z
-    .string()
+  enabled: configBoolean({})
+    .default(false)
+    .describe("Enable LDAP authentication"),
+  url: configString({})
     .url()
     .default("ldaps://ldap.example.com:636")
     .describe("LDAP server URL (e.g., ldaps://ldap.example.com:636)"),
-  bindDN: z
-    .string()
+  bindDN: configString({})
     .optional()
     .describe(
       "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)"
     ),
-  bindPassword: secret({ description: "Service account password" }).optional(),
-  baseDN: z
-    .string()
+  bindPassword: configString({ "x-secret": true })
+    .describe("Service account password")
+    .optional(),
+  baseDN: configString({})
     .default("ou=users,dc=example,dc=com")
     .describe("Base DN for user searches (e.g., ou=users,dc=example,dc=com)"),
-  searchFilter: z
-    .string()
+  searchFilter: configString({})
     .default("(uid={0})")
     .describe("LDAP search filter, {0} will be replaced with username"),
-  usernameAttribute: z
-    .string()
+  usernameAttribute: configString({})
     .default("uid")
     .describe("LDAP attribute to match against login username"),
   attributeMapping: z
     .object({
-      email: z
-        .string()
+      email: configString({})
         .default("mail")
         .describe("LDAP attribute for email address"),
-      name: z
-        .string()
+      name: configString({})
         .default("displayName")
         .describe("LDAP attribute for display name"),
-      firstName: z
-        .string()
+      firstName: configString({})
         .default("givenName")
         .describe("LDAP attribute for first name")
         .optional(),
-      lastName: z
-        .string()
+      lastName: configString({})
         .default("sn")
         .describe("LDAP attribute for last name")
         .optional(),
@@ -69,73 +66,62 @@ const _ldapConfigV1 = z.object({
     .describe("Map LDAP attributes to user fields"),
   tlsOptions: z
     .object({
-      rejectUnauthorized: z
-        .boolean()
+      rejectUnauthorized: configBoolean({})
         .default(true)
         .describe("Reject unauthorized SSL certificates"),
-      ca: secret({
-        description: "Custom CA certificate (PEM format)",
-      }).optional(),
+      ca: configString({ "x-secret": true })
+        .describe("Custom CA certificate (PEM format)")
+        .optional(),
     })
     .default({ rejectUnauthorized: true })
     .describe("TLS/SSL configuration"),
-  timeout: z
-    .number()
+  timeout: configNumber({})
     .default(5000)
     .describe("Connection timeout in milliseconds"),
-  autoCreateUsers: z
-    .boolean()
+  autoCreateUsers: configBoolean({})
     .default(true)
     .describe("Automatically create users on first login"),
-  autoUpdateUsers: z
-    .boolean()
+  autoUpdateUsers: configBoolean({})
     .default(true)
     .describe("Update user attributes on each login"),
 });
 
 // LDAP Configuration Schema V1
 const ldapConfigV2 = z.object({
-  url: z
-    .string()
+  url: configString({})
     .url()
     .default("ldaps://ldap.example.com:636")
     .describe("LDAP server URL (e.g., ldaps://ldap.example.com:636)"),
-  bindDN: z
-    .string()
+  bindDN: configString({})
     .optional()
     .describe(
       "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)"
     ),
-  bindPassword: secret({ description: "Service account password" }).optional(),
-  baseDN: z
-    .string()
+  bindPassword: configString({ "x-secret": true })
+    .describe("Service account password")
+    .optional(),
+  baseDN: configString({})
     .default("ou=users,dc=example,dc=com")
     .describe("Base DN for user searches (e.g., ou=users,dc=example,dc=com)"),
-  searchFilter: z
-    .string()
+  searchFilter: configString({})
     .default("(uid={0})")
     .describe("LDAP search filter, {0} will be replaced with username"),
-  usernameAttribute: z
-    .string()
+  usernameAttribute: configString({})
     .default("uid")
     .describe("LDAP attribute to match against login username"),
   attributeMapping: z
     .object({
-      email: z
-        .string()
+      email: configString({})
         .default("mail")
         .describe("LDAP attribute for email address"),
-      name: z
-        .string()
+      name: configString({})
         .default("displayName")
         .describe("LDAP attribute for display name"),
-      firstName: z
-        .string()
+      firstName: configString({})
         .default("givenName")
         .describe("LDAP attribute for first name")
         .optional(),
-      lastName: z
-        .string()
+      lastName: configString({})
         .default("sn")
         .describe("LDAP attribute for last name")
         .optional(),
@@ -147,26 +133,22 @@ const ldapConfigV2 = z.object({
     .describe("Map LDAP attributes to user fields"),
   tlsOptions: z
     .object({
-      rejectUnauthorized: z
-        .boolean()
+      rejectUnauthorized: configBoolean({})
         .default(true)
         .describe("Reject unauthorized SSL certificates"),
-      ca: secret({
-        description: "Custom CA certificate (PEM format)",
-      }).optional(),
+      ca: configString({ "x-secret": true })
+        .describe("Custom CA certificate (PEM format)")
+        .optional(),
     })
     .default({ rejectUnauthorized: true })
     .describe("TLS/SSL configuration"),
-  timeout: z
-    .number()
+  timeout: configNumber({})
     .default(5000)
     .describe("Connection timeout in milliseconds"),
-  autoCreateUsers: z
-    .boolean()
+  autoCreateUsers: configBoolean({})
     .default(true)
     .describe("Automatically create users on first login"),
-  autoUpdateUsers: z
-    .boolean()
+  autoUpdateUsers: configBoolean({})
     .default(true)
     .describe("Update user attributes on each login"),
 });

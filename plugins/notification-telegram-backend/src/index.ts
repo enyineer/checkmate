@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Bot } from "grammy";
 import {
   createBackendPlugin,
-  secret,
+  configString,
   Versioned,
   type NotificationStrategy,
   type NotificationSendContext,
@@ -19,7 +19,9 @@ import { pluginMetadata } from "./plugin-metadata";
  * Admin configuration for Telegram strategy.
  */
 const telegramConfigSchemaV1 = z.object({
-  botToken: secret({ description: "Telegram Bot API Token from @BotFather" }),
+  botToken: configString({ "x-secret": true }).describe(
+    "Telegram Bot API Token from @BotFather"
+  ),
 });
 
 type TelegramConfig = z.infer<typeof telegramConfigSchemaV1>;

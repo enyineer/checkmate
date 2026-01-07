@@ -10,7 +10,8 @@ import {
   booleanField,
   stringField,
   evaluateAssertions,
-  secret,
+  configString,
+  configNumber,
 } from "@checkmate-monitor/backend-api";
 
 // ============================================================================
@@ -37,18 +38,20 @@ export const sshConfigSchema = z.object({
   host: z.string().describe("SSH server hostname"),
   port: z.number().int().min(1).max(65_535).default(22).describe("SSH port"),
   username: z.string().describe("SSH username"),
-  password: secret({ description: "Password for authentication" }).optional(),
-  privateKey: secret({
-    description: "Private key for authentication",
-  }).optional(),
-  passphrase: secret({ description: "Passphrase for private key" }).optional(),
-  timeout: z
-    .number()
+  password: configString({ "x-secret": true })
+    .describe("Password for authentication")
+    .optional(),
+  privateKey: configString({ "x-secret": true })
+    .describe("Private key for authentication")
+    .optional(),
+  passphrase: configString({ "x-secret": true })
+    .describe("Passphrase for private key")
+    .optional(),
+  timeout: configNumber({})
     .min(100)
     .default(10_000)
     .describe("Connection timeout in milliseconds"),
-  command: z
-    .string()
+  command: configString({})
     .optional()
     .describe("Command to execute for health check (optional)"),
   assertions: z

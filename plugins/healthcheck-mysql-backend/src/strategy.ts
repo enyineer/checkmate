@@ -9,7 +9,8 @@ import {
   numericField,
   booleanField,
   evaluateAssertions,
-  secret,
+  configString,
+  configNumber,
 } from "@checkmate-monitor/backend-api";
 
 // ============================================================================
@@ -32,24 +33,23 @@ export type MysqlAssertion = z.infer<typeof mysqlAssertionSchema>;
  * Configuration schema for MySQL health checks.
  */
 export const mysqlConfigSchema = z.object({
-  host: z.string().describe("MySQL server hostname"),
-  port: z
-    .number()
+  host: configString({}).describe("MySQL server hostname"),
+  port: configNumber({})
     .int()
     .min(1)
     .max(65_535)
     .default(3306)
     .describe("MySQL port"),
-  database: z.string().describe("Database name"),
-  user: z.string().describe("Username for authentication"),
-  password: secret({ description: "Password for authentication" }),
-  timeout: z
-    .number()
+  database: configString({}).describe("Database name"),
+  user: configString({}).describe("Username for authentication"),
+  password: configString({ "x-secret": true }).describe(
+    "Password for authentication"
+  ),
+  timeout: configNumber({})
     .min(100)
     .default(10_000)
     .describe("Connection timeout in milliseconds"),
-  query: z
-    .string()
+  query: configString({})
     .default("SELECT 1")
     .describe("Health check query to execute"),
   assertions: z

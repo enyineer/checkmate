@@ -1,7 +1,7 @@
 import {
   createBackendPlugin,
   type AuthStrategy,
-  secret,
+  configString,
 } from "@checkmate-monitor/backend-api";
 import { betterAuthExtensionPoint } from "@checkmate-monitor/auth-backend";
 import { z } from "zod";
@@ -13,17 +13,21 @@ import { pluginMetadata } from "./plugin-metadata";
  */
 const _githubConfigV1 = z.object({
   enabled: z.boolean().default(false),
-  clientId: secret({ description: "GitHub OAuth App Client ID" }).optional(),
-  clientSecret: secret({
-    description: "GitHub OAuth App Client Secret",
-  }).optional(),
+  clientId: configString({ "x-secret": true })
+    .describe("GitHub OAuth App Client ID")
+    .optional(),
+  clientSecret: configString({ "x-secret": true })
+    .describe("GitHub OAuth App Client Secret")
+    .optional(),
 });
 
 const githubConfigV2 = z.object({
-  clientId: secret({ description: "GitHub OAuth App Client ID" }).optional(),
-  clientSecret: secret({
-    description: "GitHub OAuth App Client Secret",
-  }).optional(),
+  clientId: configString({ "x-secret": true })
+    .describe("GitHub OAuth App Client ID")
+    .optional(),
+  clientSecret: configString({ "x-secret": true })
+    .describe("GitHub OAuth App Client Secret")
+    .optional(),
 });
 
 const githubStrategy: AuthStrategy<z.infer<typeof githubConfigV2>> = {

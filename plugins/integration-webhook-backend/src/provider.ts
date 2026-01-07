@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { Versioned, secret } from "@checkmate-monitor/backend-api";
+import {
+  Versioned,
+  configNumber,
+  configString,
+} from "@checkmate-monitor/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -59,7 +63,9 @@ const webhookHeaderSchema = z.object({
  * Supports various authentication methods and customization options.
  */
 export const webhookConfigSchemaV1 = z.object({
-  url: z.string().url().describe("The webhook endpoint URL to send events to"),
+  url: configString({})
+    .url()
+    .describe("The webhook endpoint URL to send events to"),
   method: z
     .enum(["POST", "PUT", "PATCH"])
     .default("POST")
@@ -74,16 +80,21 @@ export const webhookConfigSchemaV1 = z.object({
     .enum(["none", "bearer", "basic", "header"])
     .default("none")
     .describe("Authentication method"),
-  bearerToken: secret({
-    description: "Bearer token for authentication",
-  }).optional(),
-  basicUsername: z.string().optional().describe("Username for Basic auth"),
-  basicPassword: secret({ description: "Password for Basic auth" }).optional(),
-  authHeaderName: z
-    .string()
+  bearerToken: configString({ "x-secret": true })
+    .describe("Bearer token for authentication")
+    .optional(),
+  basicUsername: configString({})
+    .optional()
+    .describe("Username for Basic auth"),
+  basicPassword: configString({ "x-secret": true })
+    .describe("Password for Basic auth")
+    .optional(),
+  authHeaderName: configString({})
     .optional()
     .describe("Custom header name for token auth (e.g., X-API-Key)"),
-  authHeaderValue: secret({ description: "Custom header value" }).optional(),
+  authHeaderValue: configString({ "x-secret": true })
+    .describe("Custom header value")
+    .optional(),
 
   // Additional options
   customHeaders: z
@@ -92,21 +103,19 @@ export const webhookConfigSchemaV1 = z.object({
     .describe("Additional custom headers to include"),
 
   /** Custom body template. Use {{payload.field}} syntax for templating. */
-  bodyTemplate: z
-    .string()
+  bodyTemplate: configString({})
     .optional()
     .describe(
       "Custom request body template. Use {{payload.field}} syntax to include event data. Leave empty for default JSON payload."
     ),
 
-  timeout: z
-    .number()
+  timeout: configNumber({})
     .min(1000)
     .max(60_000)
     .default(10_000)
     .describe("Request timeout in milliseconds"),
   retryOnStatus: z
-    .array(z.number())
+    .array(configNumber({}))
     .optional()
     .describe("HTTP status codes that should trigger a retry (e.g., 429, 503)"),
 });

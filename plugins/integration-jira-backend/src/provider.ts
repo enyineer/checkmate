@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  Versioned,
-  secret,
-  optionsResolver,
-  hidden,
-} from "@checkmate-monitor/backend-api";
+import { Versioned, configString } from "@checkmate-monitor/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -18,12 +13,12 @@ import { expandTemplate } from "./template-engine";
 
 /**
  * Schema for Jira connection configuration.
- * Uses secret() for API token encryption and automatic redaction.
+ * Uses configString with x-secret for API token encryption and automatic redaction.
  */
 export const JiraConnectionConfigSchema = z.object({
-  baseUrl: z.string().url().describe("Jira Cloud base URL"),
-  email: z.string().email().describe("Jira user email"),
-  apiToken: secret({ description: "Jira API token" }),
+  baseUrl: configString({}).url().describe("Jira Cloud base URL"),
+  email: configString({}).email().describe("Jira user email"),
+  apiToken: configString({ "x-secret": true }).describe("Jira API token"),
 });
 
 export type JiraConnectionConfig = z.infer<typeof JiraConnectionConfigSchema>;
@@ -41,51 +36,50 @@ export const JIRA_RESOLVERS = {
 
 /**
  * Dynamic field mapping schema with options resolver for field key.
- * Uses optionsResolver to fetch available fields from Jira based on project and issue type.
+ * Uses configString with x-options-resolver to fetch available fields from Jira.
  */
 export const DynamicJiraFieldMappingSchema = z.object({
   /** Jira field key - fetched dynamically from Jira */
-  fieldKey: optionsResolver({
-    description: "Jira field",
-    resolver: JIRA_RESOLVERS.FIELD_OPTIONS,
-    dependsOn: ["projectKey", "issueTypeId"],
-    searchable: true,
-  }),
+  fieldKey: configString({
+    "x-options-resolver": JIRA_RESOLVERS.FIELD_OPTIONS,
+    "x-depends-on": ["projectKey", "issueTypeId"],
+    "x-searchable": true,
+  }).describe("Jira field"),
   /** Template string with {{payload.property}} placeholders */
-  template: z.string().describe("Template value"),
+  template: configString({}).describe("Template value"),
 });
 
 /**
  * Provider configuration for Jira subscriptions.
- * Uses optionsResolver() for dynamic dropdowns that fetch from Jira API.
- * Uses hidden() for connectionId which is auto-populated.
+ * Uses configString with x-options-resolver for dynamic dropdowns.
+ * Uses configString with x-hidden for connectionId which is auto-populated.
  */
 export const JiraSubscriptionConfigSchema = z.object({
   /** ID of the site-wide Jira connection to use (auto-populated) */
-  connectionId: hidden({ description: "Jira connection to use" }),
+  connectionId: configString({ "x-hidden": true }).describe(
+    "Jira connection to use"
+  ),
   /** Jira project key to create issues in */
-  projectKey: optionsResolver({
-    description: "Project key",
-    resolver: JIRA_RESOLVERS.PROJECT_OPTIONS,
-  }),
+  projectKey: configString({
+    "x-options-resolver": JIRA_RESOLVERS.PROJECT_OPTIONS,
+  }).describe("Project key"),
   /** Issue type ID for created issues */
-  issueTypeId: optionsResolver({
-    description: "Issue type",
-    resolver: JIRA_RESOLVERS.ISSUE_TYPE_OPTIONS,
-    dependsOn: ["projectKey"],
-  }),
+  issueTypeId: configString({
+    "x-options-resolver": JIRA_RESOLVERS.ISSUE_TYPE_OPTIONS,
+    "x-depends-on": ["projectKey"],
+  }).describe("Issue type"),
   /** Summary template (required - uses {{payload.field}} syntax) */
-  summaryTemplate: z.string().min(1).describe("Issue summary template"),
+  summaryTemplate: configString({}).min(1).describe("Issue summary template"),
   /** Description template (optional) */
-  descriptionTemplate: z
-    .string()
+  descriptionTemplate: configString({})
     .optional()
     .describe("Issue description template"),
   /** Priority ID (optional) */
-  priorityId: optionsResolver({
-    description: "Priority",
-    resolver: JIRA_RESOLVERS.PRIORITY_OPTIONS,
-  }).optional(),
+  priorityId: configString({
+    "x-options-resolver": JIRA_RESOLVERS.PRIORITY_OPTIONS,
+  })
+    .describe("Priority")
+    .optional(),
   /** Additional field mappings */
   fieldMappings: z
     .array(DynamicJiraFieldMappingSchema)

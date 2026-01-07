@@ -9,7 +9,9 @@ import {
   numericField,
   booleanField,
   evaluateAssertions,
-  secret,
+  configString,
+  configNumber,
+  configBoolean,
 } from "@checkmate-monitor/backend-api";
 
 // ============================================================================
@@ -32,25 +34,24 @@ export type PostgresAssertion = z.infer<typeof postgresAssertionSchema>;
  * Configuration schema for PostgreSQL health checks.
  */
 export const postgresConfigSchema = z.object({
-  host: z.string().describe("PostgreSQL server hostname"),
-  port: z
-    .number()
+  host: configString({}).describe("PostgreSQL server hostname"),
+  port: configNumber({})
     .int()
     .min(1)
     .max(65_535)
     .default(5432)
     .describe("PostgreSQL port"),
-  database: z.string().describe("Database name"),
-  user: z.string().describe("Username for authentication"),
-  password: secret({ description: "Password for authentication" }),
-  ssl: z.boolean().default(false).describe("Use SSL/TLS connection"),
-  timeout: z
-    .number()
+  database: configString({}).describe("Database name"),
+  user: configString({}).describe("Username for authentication"),
+  password: configString({ "x-secret": true }).describe(
+    "Password for authentication"
+  ),
+  ssl: configBoolean({}).default(false).describe("Use SSL/TLS connection"),
+  timeout: configNumber({})
     .min(100)
     .default(10_000)
     .describe("Connection timeout in milliseconds"),
-  query: z
-    .string()
+  query: configString({})
     .default("SELECT 1")
     .describe("Health check query to execute"),
   assertions: z

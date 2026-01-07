@@ -7,9 +7,9 @@
 
 import { z } from "zod";
 import {
-  secret,
+  configBoolean,
+  configString,
   type ConfigService,
-  type Secret,
 } from "@checkmate-monitor/backend-api";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { NotificationStrategyRegistry } from "@checkmate-monitor/backend-api";
@@ -31,23 +31,27 @@ const userPreferenceId = (userId: string, strategyId: string): string =>
 
 /**
  * Schema for user notification preferences stored via ConfigService.
- * Tokens are branded with secret() for automatic encryption.
+ * Tokens are marked with x-secret for automatic encryption.
  */
 export const UserPreferenceConfigSchema = z.object({
   /** Whether user has enabled this channel */
-  enabled: z.boolean().default(true),
+  enabled: configBoolean({}).default(true),
   /** User's strategy-specific config (validated via strategy.userConfig) */
   userConfig: z.record(z.string(), z.unknown()).optional(),
   /** External user ID from OAuth linking (e.g., Slack user ID) */
-  externalId: z.string().optional(),
+  externalId: configString({}).optional(),
   /** Encrypted access token for OAuth strategies */
-  accessToken: secret({ description: "Access token" }).optional(),
+  accessToken: configString({ "x-secret": true })
+    .describe("Access token")
+    .optional(),
   /** Encrypted refresh token for OAuth strategies */
-  refreshToken: secret({ description: "Refresh token" }).optional(),
+  refreshToken: configString({ "x-secret": true })
+    .describe("Refresh token")
+    .optional(),
   /** Token expiration timestamp (ISO string) */
-  tokenExpiresAt: z.string().optional(),
+  tokenExpiresAt: configString({}).optional(),
   /** When the external account was linked (ISO string) */
-  linkedAt: z.string().optional(),
+  linkedAt: configString({}).optional(),
 });
 
 export type UserPreferenceConfig = z.infer<typeof UserPreferenceConfigSchema>;
@@ -466,9 +470,8 @@ export function createStrategyService(
       await this.setUserPreference(params.userId, params.strategyId, {
         enabled: true,
         externalId: params.externalId,
-        // Cast to Secret type - ConfigService handles encryption/decryption
-        accessToken: params.accessToken as Secret,
-        refreshToken: params.refreshToken as Secret | undefined,
+        accessToken: params.accessToken,
+        refreshToken: params.refreshToken,
         tokenExpiresAt: params.expiresAt?.toISOString(),
         linkedAt: new Date().toISOString(),
       });

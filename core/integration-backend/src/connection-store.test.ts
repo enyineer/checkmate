@@ -5,7 +5,7 @@ import {
   type ConnectionStore,
 } from "./connection-store";
 import type { ConfigService, Logger } from "@checkmate-monitor/backend-api";
-import { Versioned, secret } from "@checkmate-monitor/backend-api";
+import { Versioned, configString } from "@checkmate-monitor/backend-api";
 import type { IntegrationProviderRegistry } from "./provider-registry";
 
 /**
@@ -20,8 +20,8 @@ import type { IntegrationProviderRegistry } from "./provider-registry";
 
 // Test connection config schema with secret field
 const testConnectionSchema = z.object({
-  baseUrl: z.string().url(),
-  apiKey: secret(z.string().min(1)),
+  baseUrl: configString({}).url(),
+  apiKey: configString({ "x-secret": true }),
 });
 
 // Mock logger
@@ -430,8 +430,8 @@ describe("ConnectionStore", () => {
         connectionSchema: new Versioned({
           version: 1,
           schema: z.object({
-            webhookUrl: z.string().url(),
-            token: secret(z.string()),
+            webhookUrl: configString({}).url(),
+            token: configString({ "x-secret": true }),
           }),
         }),
       });

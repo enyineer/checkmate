@@ -9,7 +9,9 @@ import {
   booleanField,
   enumField,
   evaluateAssertions,
-  secret,
+  configString,
+  configNumber,
+  configBoolean,
 } from "@checkmate-monitor/backend-api";
 
 // ============================================================================
@@ -38,19 +40,19 @@ export type RedisAssertion = z.infer<typeof redisAssertionSchema>;
  * Configuration schema for Redis health checks.
  */
 export const redisConfigSchema = z.object({
-  host: z.string().describe("Redis server hostname"),
-  port: z
-    .number()
+  host: configString({}).describe("Redis server hostname"),
+  port: configNumber({})
     .int()
     .min(1)
     .max(65_535)
     .default(6379)
     .describe("Redis port"),
-  password: secret({ description: "Password for authentication" }).optional(),
-  database: z.number().int().min(0).default(0).describe("Database index"),
-  tls: z.boolean().default(false).describe("Use TLS connection"),
-  timeout: z
-    .number()
+  password: configString({ "x-secret": true })
+    .describe("Password for authentication")
+    .optional(),
+  database: configNumber({}).int().min(0).default(0).describe("Database index"),
+  tls: configBoolean({}).default(false).describe("Use TLS connection"),
+  timeout: configNumber({})
     .min(100)
     .default(5000)
     .describe("Connection timeout in milliseconds"),

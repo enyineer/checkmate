@@ -5,7 +5,6 @@ import {
   type WebhookConfig,
 } from "./provider";
 import type { IntegrationDeliveryContext } from "@checkmate-monitor/integration-backend";
-import type { Secret } from "@checkmate-monitor/backend-api";
 
 /**
  * Unit tests for the Webhook Integration Provider.
@@ -250,7 +249,7 @@ describe("WebhookProvider", () => {
       try {
         const context = createTestContext({
           authType: "bearer",
-          bearerToken: "my-secret-token" as Secret,
+          bearerToken: "my-secret-token",
         });
         await webhookProvider.deliver(context);
 
@@ -277,7 +276,7 @@ describe("WebhookProvider", () => {
         const context = createTestContext({
           authType: "basic",
           basicUsername: "user",
-          basicPassword: "pass" as Secret,
+          basicPassword: "pass",
         });
         await webhookProvider.deliver(context);
 
@@ -306,7 +305,7 @@ describe("WebhookProvider", () => {
         const context = createTestContext({
           authType: "header",
           authHeaderName: "X-API-Key",
-          authHeaderValue: "api-key-123" as Secret,
+          authHeaderValue: "api-key-123",
         });
         await webhookProvider.deliver(context);
 

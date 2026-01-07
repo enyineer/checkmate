@@ -2,11 +2,12 @@ import {
   createBackendPlugin,
   type NotificationStrategy,
   Versioned,
-  secret,
-  color,
+  configString,
   markdownToHtml,
   markdownToPlainText,
   wrapInEmailLayout,
+  configNumber,
+  configBoolean,
 } from "@checkmate-monitor/backend-api";
 import { notificationStrategyExtensionPoint } from "@checkmate-monitor/notification-backend";
 import { z } from "zod";
@@ -19,16 +20,23 @@ import { pluginMetadata } from "./plugin-metadata";
 
 /**
  * SMTP configuration schema with versioning support.
- * Uses secret() for sensitive fields.
+ * Uses configString with x-secret for sensitive fields.
  */
 const smtpConfigSchemaV1 = z.object({
-  host: z.string().optional().describe("SMTP server hostname"),
-  port: z.number().default(587).describe("SMTP server port"),
-  secure: z.boolean().default(false).describe("Use TLS/SSL (port 465)"),
-  username: secret({ description: "SMTP username" }).optional(),
-  password: secret({ description: "SMTP password" }).optional(),
-  fromAddress: z.string().email().optional().describe("Sender email address"),
-  fromName: z.string().optional().describe("Sender display name"),
+  host: configString({}).optional().describe("SMTP server hostname"),
+  port: configNumber({}).default(587).describe("SMTP server port"),
+  secure: configBoolean({}).default(false).describe("Use TLS/SSL (port 465)"),
+  username: configString({ "x-secret": true })
+    .describe("SMTP username")
+    .optional(),
+  password: configString({ "x-secret": true })
+    .describe("SMTP password")
+    .optional(),
+  fromAddress: configString({})
+    .email()
+    .optional()
+    .describe("Sender email address"),
+  fromName: configString({}).optional().describe("Sender display name"),
 });
 
 type SmtpConfig = z.infer<typeof smtpConfigSchemaV1>;
@@ -42,14 +50,17 @@ type SmtpConfig = z.infer<typeof smtpConfigSchemaV1>;
  * Admins can customize branding via the settings UI.
  */
 const smtpLayoutConfigSchemaV1 = z.object({
-  logoUrl: z.string().url().optional().describe("Logo URL (max 200px wide)"),
-  primaryColor: color({
-    description: "Primary brand color (hex)",
-    defaultValue: "#3b82f6",
-  }),
-  accentColor: color({ description: "Accent color for buttons" }).optional(),
-  footerText: z
-    .string()
+  logoUrl: configString({})
+    .url()
+    .optional()
+    .describe("Logo URL (max 200px wide)"),
+  primaryColor: configString({ "x-color": true })
+    .describe("Primary brand color (hex)")
+    .default("#3b82f6"),
+  accentColor: configString({ "x-color": true })
+    .describe("Accent color for buttons")
+    .optional(),
+  footerText: configString({})
     .default("This is an automated notification.")
     .describe("Footer text"),
 });
