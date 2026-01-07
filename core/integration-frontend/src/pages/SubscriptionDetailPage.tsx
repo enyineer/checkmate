@@ -298,6 +298,7 @@ export const SubscriptionDetailPage = () => {
                     value={providerConfig}
                     onChange={setProviderConfig}
                     optionsResolvers={optionsResolvers}
+                    templateProperties={payloadProperties}
                   />
                   <div className="mt-4">
                     <Button

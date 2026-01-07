@@ -251,3 +251,67 @@ export function hidden(options?: HiddenFieldOptions) {
 export function isHiddenSchema(schema: z.ZodTypeAny): boolean {
   return hiddenSchemas.has(unwrapSchema(schema));
 }
+
+// =============================================================================
+// Template Fields (for mustache-style templating with payload properties)
+// =============================================================================
+
+/**
+ * WeakSet to track which schemas are template fields.
+ */
+const templateSchemas = new WeakSet<z.ZodTypeAny>();
+
+/**
+ * Options for template helper.
+ */
+export interface TemplateFieldOptions {
+  /** Description for the field (shown in UI) */
+  description?: string;
+  /** Default value for the template */
+  defaultValue?: string;
+}
+
+/**
+ * Creates a string field that supports mustache-style templating.
+ * Used for fields where users can use {{payload.field}} syntax.
+ * DynamicForm will render these fields with TemplateEditor component.
+ *
+ * DO NOT chain .describe() or .default() after this function.
+ * Pass options instead to ensure WeakSet tracking works correctly.
+ *
+ * @example
+ * // Template field with description:
+ * summaryTemplate: template({ description: "Issue summary template" }),
+ *
+ * // Template with default:
+ * bodyTemplate: template({
+ *   description: "Request body template",
+ *   defaultValue: '{"title": "{{payload.title}}"}'
+ * }),
+ */
+export function template(options?: TemplateFieldOptions) {
+  const base = z.string().brand<"template">();
+  let schema: z.ZodTypeAny = options?.description
+    ? base.describe(options.description)
+    : base;
+
+  // Track the final schema (after describe)
+  templateSchemas.add(schema);
+
+  // Apply default if provided
+  if (options?.defaultValue !== undefined) {
+    schema = (schema as z.ZodString).default(options.defaultValue);
+  }
+
+  return schema as z.ZodType<string & z.$brand<"template">>;
+}
+
+export type Template = z.infer<ReturnType<typeof template>>;
+
+/**
+ * Runtime check for template-branded schemas.
+ * Automatically unwraps ZodOptional, ZodDefault, ZodNullable to check the inner schema.
+ */
+export function isTemplateSchema(schema: z.ZodTypeAny): boolean {
+  return templateSchemas.has(unwrapSchema(schema));
+}

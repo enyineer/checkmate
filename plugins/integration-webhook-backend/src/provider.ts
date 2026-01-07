@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Versioned, secret } from "@checkmate-monitor/backend-api";
+import { Versioned, secret, template } from "@checkmate-monitor/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -92,12 +92,10 @@ export const webhookConfigSchemaV1 = z.object({
     .describe("Additional custom headers to include"),
 
   /** Custom body template. Use {{payload.field}} syntax for templating. */
-  bodyTemplate: z
-    .string()
-    .optional()
-    .describe(
-      "Custom request body template. Use {{payload.field}} syntax to include event data. Leave empty for default JSON payload."
-    ),
+  bodyTemplate: template({
+    description:
+      "Custom request body template. Use {{payload.field}} syntax to include event data. Leave empty for default JSON payload.",
+  }).optional(),
 
   timeout: z
     .number()
@@ -183,6 +181,20 @@ Configure your server to:
     // Validate config
     const config = webhookConfigSchemaV1.parse(providerConfig);
 
+    // Build template context for all template-able fields
+    const templateContext = {
+      deliveryId: event.deliveryId,
+      eventType: event.eventId,
+      eventId: event.eventId,
+      timestamp: event.timestamp,
+      subscriptionId: subscription.id,
+      subscriptionName: subscription.name,
+      payload: event.payload,
+    };
+
+    // Expand URL template if it contains template syntax
+    const url = expandTemplate(config.url, templateContext);
+
     // Build headers
     const headers: Record<string, string> = {
       "Content-Type": config.contentType,
@@ -216,10 +228,10 @@ Configure your server to:
       }
     }
 
-    // Add custom headers
+    // Add custom headers (with template expansion)
     if (config.customHeaders) {
       for (const header of config.customHeaders) {
-        headers[header.name] = header.value;
+        headers[header.name] = expandTemplate(header.value, templateContext);
       }
     }
 
@@ -228,15 +240,6 @@ Configure your server to:
 
     if (config.bodyTemplate) {
       // Use custom template with context
-      const templateContext = {
-        deliveryId: event.deliveryId,
-        eventType: event.eventId,
-        eventId: event.eventId,
-        timestamp: event.timestamp,
-        subscriptionId: subscription.id,
-        subscriptionName: subscription.name,
-        payload: event.payload,
-      };
       body = expandTemplate(config.bodyTemplate, templateContext);
     } else {
       // Default payload format
@@ -259,12 +262,10 @@ Configure your server to:
             }).toString();
     }
 
-    logger.debug(
-      `Delivering webhook to ${config.url} for event ${event.eventId}`
-    );
+    logger.debug(`Delivering webhook to ${url} for event ${event.eventId}`);
 
     try {
-      const response = await fetch(config.url, {
+      const response = await fetch(url, {
         method: config.method,
         headers,
         body,

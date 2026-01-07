@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   isSecretSchema,
   isColorSchema,
+  isTemplateSchema,
   getOptionsResolverMetadata,
   isHiddenSchema,
 } from "./branded-types";
@@ -62,6 +63,11 @@ function addSchemaMetadata(
     // Hidden field
     if (isHiddenSchema(zodField)) {
       jsonField["x-hidden"] = true;
+    }
+
+    // Template field
+    if (isTemplateSchema(zodField)) {
+      jsonField["x-template"] = true;
     }
 
     // Options resolver field

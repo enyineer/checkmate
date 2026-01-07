@@ -20,6 +20,8 @@ import {
   EmptyState,
   Toggle,
   ColorPicker,
+  TemplateEditor,
+  type TemplateProperty,
 } from "../index";
 
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -41,6 +43,7 @@ export interface JsonSchemaProperty {
   "x-depends-on"?: string[]; // Field names this field depends on (triggers refetch when they change)
   "x-hidden"?: boolean; // Field should be hidden in form (auto-populated)
   "x-searchable"?: boolean; // Shows a search input for filtering dropdown options
+  "x-template"?: boolean; // Field supports mustache-style templating
 }
 
 /** Option returned by an options resolver */
@@ -68,6 +71,11 @@ interface DynamicFormProps {
    * Referenced by x-options-resolver in schema properties.
    */
   optionsResolvers?: Record<string, OptionsResolver>;
+  /**
+   * Optional list of available template properties for template fields.
+   * Passed to TemplateEditor for autocompletion hints.
+   */
+  templateProperties?: TemplateProperty[];
 }
 
 const JsonField: React.FC<{
@@ -387,6 +395,7 @@ const FormField: React.FC<{
   isRequired?: boolean;
   formValues: Record<string, unknown>;
   optionsResolvers?: Record<string, OptionsResolver>;
+  templateProperties?: TemplateProperty[];
   onChange: (val: unknown) => void;
 }> = ({
   id,
@@ -396,6 +405,7 @@ const FormField: React.FC<{
   isRequired,
   formValues,
   optionsResolvers,
+  templateProperties,
   onChange,
 }) => {
   const description = propSchema.description || "";
@@ -568,6 +578,39 @@ const FormField: React.FC<{
       );
     }
 
+    // Template field with TemplateEditor
+    const isTemplate = (
+      propSchema as JsonSchemaProperty & { "x-template"?: boolean }
+    )["x-template"];
+
+    if (isTemplate) {
+      return (
+        <div className="space-y-2">
+          <div>
+            <Label htmlFor={id}>
+              {label} {isRequired && "*"}
+            </Label>
+            {cleanDesc && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {cleanDesc}
+              </p>
+            )}
+          </div>
+          <TemplateEditor
+            value={(value as string) || ""}
+            onChange={(val) => onChange(val)}
+            availableProperties={templateProperties}
+            placeholder={
+              propSchema.default
+                ? `Default: ${String(propSchema.default)}`
+                : "Enter template..."
+            }
+            rows={4}
+          />
+        </div>
+      );
+    }
+
     // Color picker field
     const isColor = (
       propSchema as JsonSchemaProperty & { "x-color"?: boolean }
@@ -716,6 +759,7 @@ const FormField: React.FC<{
             isRequired={propSchema.required?.includes(key)}
             formValues={formValues}
             optionsResolvers={optionsResolvers}
+            templateProperties={templateProperties}
             onChange={(val) =>
               onChange({ ...(value as Record<string, unknown>), [key]: val })
             }
@@ -788,6 +832,7 @@ const FormField: React.FC<{
                   value={item}
                   formValues={formValues}
                   optionsResolvers={optionsResolvers}
+                  templateProperties={templateProperties}
                   onChange={(val) => {
                     const next = [...(items as unknown[])];
                     next[index] = val;
@@ -833,6 +878,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   value,
   onChange,
   optionsResolvers,
+  templateProperties,
 }) => {
   // Initialize form with default values from schema
   React.useEffect(() => {
@@ -878,6 +924,7 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
               isRequired={isRequired}
               formValues={value}
               optionsResolvers={optionsResolvers}
+              templateProperties={templateProperties}
               onChange={(val) => onChange({ ...value, [key]: val })}
             />
           );

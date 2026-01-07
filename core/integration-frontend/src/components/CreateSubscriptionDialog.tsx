@@ -452,6 +452,7 @@ export const CreateSubscriptionDialog = ({
                           value={providerConfig}
                           onChange={setProviderConfig}
                           optionsResolvers={optionsResolvers}
+                          templateProperties={payloadProperties}
                         />
                       </div>
                     </div>
