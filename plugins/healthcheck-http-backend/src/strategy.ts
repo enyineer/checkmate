@@ -5,6 +5,8 @@ import {
   HealthCheckRunForAggregation,
   Versioned,
   z,
+  jsonPathField,
+  evaluateJsonPathAssertions,
 } from "@checkmate-monitor/backend-api";
 
 /**
@@ -15,11 +17,11 @@ export const httpHeaderSchema = z.object({
   value: z.string().describe("Header value"),
 });
 
-export const httpHealthCheckAssertionSchema = z.object({
-  path: z.string().describe("JSONPath to extract value (e.g. $.status)"),
-  operator: z.enum(["equals", "contains", "matches", "exists", "notEquals"]),
-  expectedValue: z.string().optional(),
-});
+/**
+ * HTTP health check assertion schema using shared JSONPath field factory.
+ * Supports dynamic operators with runtime type coercion.
+ */
+export const httpHealthCheckAssertionSchema = jsonPathField();
 
 export const httpHealthCheckConfigSchema = z.object({
   url: z.string().url().describe("The full URL of the endpoint to check."),
@@ -187,51 +189,29 @@ export class HttpHealthCheckStrategy
           };
         }
 
-        for (const assertion of validatedConfig.assertions) {
-          const results = JSONPath({
-            path: assertion.path,
-            json: responseData as object,
-            wrap: false,
-          });
+        // Use shared assertion utility for evaluation
+        const extractPath = (path: string, json: unknown) =>
+          JSONPath({ path, json: json as object, wrap: false });
 
-          const actualValue =
-            results === undefined ? undefined : String(results);
-          const expectedValue = assertion.expectedValue;
+        const failedAssertion = evaluateJsonPathAssertions(
+          validatedConfig.assertions,
+          responseData,
+          extractPath
+        );
 
-          let passed = false;
-          switch (assertion.operator) {
-            case "exists": {
-              passed = results !== undefined;
-              break;
-            }
-            case "equals": {
-              passed = actualValue === expectedValue;
-              break;
-            }
-            case "notEquals": {
-              passed = actualValue !== expectedValue;
-              break;
-            }
-            case "contains": {
-              passed = actualValue?.includes(expectedValue || "") ?? false;
-              break;
-            }
-            case "matches": {
-              passed = new RegExp(expectedValue || "").test(actualValue || "");
-              break;
-            }
-          }
-
-          if (!passed) {
-            return {
-              status: "unhealthy",
-              latencyMs: latency,
-              message: `Assertion failed: [${assertion.path}] ${
-                assertion.operator
-              } ${expectedValue || ""}. Actual: ${actualValue}`,
-              metadata: { statusCode: response.status, assertion },
-            };
-          }
+        if (failedAssertion) {
+          const actualValue = extractPath(failedAssertion.path, responseData);
+          return {
+            status: "unhealthy",
+            latencyMs: latency,
+            message: `Assertion failed: [${failedAssertion.path}] ${
+              failedAssertion.operator
+            } ${failedAssertion.value || ""}. Actual: ${actualValue}`,
+            metadata: {
+              statusCode: response.status,
+              assertion: failedAssertion,
+            },
+          };
         }
       }
 

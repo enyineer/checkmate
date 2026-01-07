@@ -42,7 +42,7 @@ describe("HttpHealthCheckStrategy Assertions", () => {
     const config: HttpHealthCheckConfig = {
       ...defaultConfig,
       assertions: [
-        { path: "$.status", operator: "equals", expectedValue: "UP" },
+        { path: "$.status", operator: "equals", value: "UP" },
       ],
     };
 
@@ -62,7 +62,7 @@ describe("HttpHealthCheckStrategy Assertions", () => {
     const config: HttpHealthCheckConfig = {
       ...defaultConfig,
       assertions: [
-        { path: "$.status", operator: "equals", expectedValue: "UP" },
+        { path: "$.status", operator: "equals", value: "UP" },
       ],
     };
 
@@ -117,7 +117,7 @@ describe("HttpHealthCheckStrategy Assertions", () => {
     const config: HttpHealthCheckConfig = {
       ...defaultConfig,
       assertions: [
-        { path: "$.message", operator: "contains", expectedValue: "Hello" },
+        { path: "$.message", operator: "contains", value: "Hello" },
       ],
     };
 
@@ -139,7 +139,7 @@ describe("HttpHealthCheckStrategy Assertions", () => {
         {
           path: "$.id",
           operator: "matches",
-          expectedValue: "^[a-z]{3}-\\d{3}$",
+          value: "^[a-z]{3}-\\d{3}$",
         },
       ],
     };
@@ -177,7 +177,7 @@ describe("HttpHealthCheckStrategy Assertions", () => {
     const config: HttpHealthCheckConfig = {
       ...defaultConfig,
       assertions: [
-        { path: "$.code", operator: "equals", expectedValue: "123" },
+        { path: "$.code", operator: "equals", value: "123" },
       ],
     };
 
@@ -196,7 +196,7 @@ describe("HttpHealthCheckStrategy Assertions", () => {
     const config: HttpHealthCheckConfig = {
       ...defaultConfig,
       assertions: [
-        { path: "$.active", operator: "equals", expectedValue: "true" },
+        { path: "$.active", operator: "equals", value: "true" },
       ],
     };
 
