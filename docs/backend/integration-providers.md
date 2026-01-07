@@ -398,3 +398,210 @@ describe("MyServiceProvider", () => {
   });
 });
 ```
+
+## Connection-Based Providers with Dynamic Options
+
+Some integrations (like Jira, Slack, GitHub) require pre-configured connections with credentials, and configuration fields that need to dynamically fetch options from the external API.
+
+### Connection Schema
+
+Define a connection schema for storing API credentials:
+
+```typescript
+import { z } from "zod";
+import { secret } from "@checkmate-monitor/backend-api";
+
+export const MyServiceConnectionConfigSchema = z.object({
+  baseUrl: z.string().url().describe("Service API URL"),
+  email: z.string().email().describe("User email"),
+  apiToken: secret({ description: "API token" }),
+});
+
+export type MyServiceConnectionConfig = z.infer<typeof MyServiceConnectionConfigSchema>;
+```
+
+### Provider Config with Dynamic Options
+
+Use `optionsResolver()` for fields that need to fetch options from the external API:
+
+```typescript
+import { optionsResolver, hidden } from "@checkmate-monitor/backend-api";
+
+// Define resolver names as constants
+export const RESOLVERS = {
+  PROJECT_OPTIONS: "projectOptions",
+  ISSUE_TYPE_OPTIONS: "issueTypeOptions",
+  FIELD_OPTIONS: "fieldOptions",
+} as const;
+
+export const MyServiceProviderConfigSchema = z.object({
+  // Hidden field for connection reference
+  connectionId: hidden({ description: "Connection ID" }),
+  
+  // Static options from backend
+  projectKey: optionsResolver({
+    description: "Project",
+    resolver: RESOLVERS.PROJECT_OPTIONS,
+  }),
+  
+  // Dependent options (refetch when projectKey changes)
+  issueTypeId: optionsResolver({
+    description: "Issue type",
+    resolver: RESOLVERS.ISSUE_TYPE_OPTIONS,
+    dependsOn: ["projectKey"],
+  }),
+  
+  // Searchable dropdown for many options
+  fieldKey: optionsResolver({
+    description: "Field",
+    resolver: RESOLVERS.FIELD_OPTIONS,
+    dependsOn: ["projectKey", "issueTypeId"],
+    searchable: true,
+  }),
+});
+```
+
+### Implementing getConnectionOptions
+
+The provider must implement `getConnectionOptions()` to handle option resolver calls:
+
+```typescript
+import type {
+  IntegrationProvider,
+  ConnectionOption,
+  GetConnectionOptionsParams,
+} from "@checkmate-monitor/integration-backend";
+
+export const myServiceProvider: IntegrationProvider<MyServiceConfig> = {
+  id: "myservice",
+  displayName: "My Service",
+  
+  // Connection schema for storing credentials
+  connectionSchema: new Versioned({
+    version: 1,
+    schema: MyServiceConnectionConfigSchema,
+  }),
+  
+  // Provider config uses dynamic options
+  config: new Versioned({
+    version: 1,
+    schema: MyServiceProviderConfigSchema,
+  }),
+
+  /**
+   * Fetch dynamic options for resolver fields.
+   * Called by the frontend when a field with optionsResolver needs options.
+   */
+  async getConnectionOptions(
+    params: GetConnectionOptionsParams
+  ): Promise<ConnectionOption[]> {
+    const {
+      connectionId,
+      resolverName,
+      context, // Current form values
+      getConnectionWithCredentials,
+      logger,
+    } = params;
+
+    // Get the connection with credentials
+    const connection = await getConnectionWithCredentials(connectionId);
+    if (!connection) {
+      return [];
+    }
+
+    const config = connection.config as MyServiceConnectionConfig;
+    const client = createApiClient(config, logger);
+
+    try {
+      switch (resolverName) {
+        case RESOLVERS.PROJECT_OPTIONS: {
+          const projects = await client.getProjects();
+          return projects.map((p) => ({
+            value: p.key,
+            label: `${p.name} (${p.key})`,
+          }));
+        }
+
+        case RESOLVERS.ISSUE_TYPE_OPTIONS: {
+          // Access dependent field from context
+          const projectKey = context?.projectKey as string | undefined;
+          if (!projectKey) {
+            return [];
+          }
+          const issueTypes = await client.getIssueTypes(projectKey);
+          return issueTypes.map((t) => ({
+            value: t.id,
+            label: t.name,
+          }));
+        }
+
+        case RESOLVERS.FIELD_OPTIONS: {
+          const projectKey = context?.projectKey as string | undefined;
+          const issueTypeId = context?.issueTypeId as string | undefined;
+          if (!projectKey || !issueTypeId) {
+            return [];
+          }
+          const fields = await client.getFields(projectKey, issueTypeId);
+          return fields.map((f) => ({
+            value: f.key,
+            label: `${f.name}${f.required ? " *" : ""}`,
+          }));
+        }
+
+        default:
+          logger.error(`Unknown resolver: ${resolverName}`);
+          return [];
+      }
+    } catch (error) {
+      logger.error("Failed to get options", error);
+      return [];
+    }
+  },
+
+  // ... deliver() implementation
+};
+```
+
+### How Dynamic Options Flow Works
+
+1. **Frontend renders form** with `optionsResolver` fields
+2. **DynamicForm detects** `x-options-resolver` metadata in JSON Schema
+3. **Frontend calls** `getConnectionOptions` RPC with resolver name and current form values
+4. **Backend routes** the call to the provider's `getConnectionOptions` method
+5. **Provider fetches** options from external API using connection credentials
+6. **Options returned** to frontend and rendered in dropdown
+
+### Dependency Tracking
+
+The `dependsOn` option enables smart refetching:
+
+```typescript
+issueTypeId: optionsResolver({
+  resolver: "issueTypeOptions",
+  dependsOn: ["projectKey"], // Only refetch when projectKey changes
+})
+```
+
+- Options are **only refetched** when a dependent field value changes
+- Other form changes do **not** trigger unnecessary API calls
+- This is implemented using React refs to avoid adding formValues to useEffect dependencies
+
+### Searchable Dropdowns
+
+For fields with many options, enable searchable:
+
+```typescript
+fieldKey: optionsResolver({
+  resolver: "fieldOptions",
+  searchable: true, // Enables search inside dropdown
+})
+```
+
+This renders a dropdown with a search input inside the dropdown panel, allowing users to filter options by typing.
+
+### Reference Implementation
+
+See the Jira integration provider for a complete example:
+- [`integration-jira-backend/src/provider.ts`](/plugins/integration-jira-backend/src/provider.ts) - Full provider with `getConnectionOptions`
+- [`integration-jira-backend/src/jira-client.ts`](/plugins/integration-jira-backend/src/jira-client.ts) - API client for fetching options
+

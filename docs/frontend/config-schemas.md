@@ -179,6 +179,74 @@ const schema = z.object({
 - Validates hex format (`#RGB` or `#RRGGBB`)
 - Supports optional default values
 
+### `optionsResolver()` - Dynamic Dropdowns
+
+Use for fields that need to fetch options dynamically from the backend:
+
+```typescript
+import { optionsResolver } from "@checkmate-monitor/backend-api";
+
+const schema = z.object({
+  // Basic options resolver
+  projectKey: optionsResolver({
+    description: "Jira project",
+    resolver: "projectOptions",
+  }),
+  
+  // With dependencies (refetches when dependent fields change)
+  issueTypeId: optionsResolver({
+    description: "Issue type",
+    resolver: "issueTypeOptions",
+    dependsOn: ["projectKey"],
+  }),
+  
+  // With searchable dropdown for many options
+  fieldKey: optionsResolver({
+    description: "Jira field",
+    resolver: "fieldOptions",
+    dependsOn: ["projectKey", "issueTypeId"],
+    searchable: true,
+  }),
+});
+```
+
+**Features:**
+- Renders as a dropdown that fetches options from backend
+- `resolver`: Name of the resolver function to call
+- `dependsOn`: Array of field names that trigger refetch when changed (only these fields trigger refetches, not all form changes)
+- `searchable`: When true, renders a searchable dropdown with filter input inside
+
+**JSON Schema metadata produced:**
+- `x-options-resolver`: The resolver name
+- `x-depends-on`: Array of dependent field names
+- `x-searchable`: Boolean for searchable dropdown
+
+**Implementation requirements:**
+The provider must implement `getConnectionOptions()` to handle resolver calls. See [Integration Providers](../backend/integration-providers.md#connection-based-providers-with-dynamic-options) for details.
+
+### `hidden()` - Auto-populated Fields
+
+Use for fields that are auto-populated and should not be shown in the form:
+
+```typescript
+import { hidden } from "@checkmate-monitor/backend-api";
+
+const schema = z.object({
+  // Hidden field (auto-populated)
+  connectionId: hidden({
+    description: "Connection ID (auto-populated)",
+  }),
+  
+  // Normal visible fields
+  name: z.string().describe("Subscription name"),
+});
+```
+
+**Features:**
+- Field is hidden from the form UI
+- Value is typically set programmatically
+- Useful for connection IDs or other auto-populated values
+
 
 ## Secret Handling Best Practices
 
