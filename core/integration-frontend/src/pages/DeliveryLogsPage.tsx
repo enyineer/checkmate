@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   FileText,
   RefreshCw,
@@ -22,6 +21,7 @@ import {
   TableRow,
   useToast,
   usePagination,
+  BackLink,
 } from "@checkmate-monitor/ui";
 import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
 import { resolveRoute } from "@checkmate-monitor/common";
@@ -58,7 +58,6 @@ const statusConfig: Record<
 };
 
 export const DeliveryLogsPage = () => {
-  const navigate = useNavigate();
   const rpcApi = useApi(rpcApiRef);
   const client = rpcApi.forPlugin(IntegrationApi);
   const toast = useToast();
@@ -103,12 +102,9 @@ export const DeliveryLogsPage = () => {
       subtitle="View and manage webhook delivery attempts"
       loading={loading}
       actions={
-        <Button
-          variant="outline"
-          onClick={() => navigate(resolveRoute(integrationRoutes.routes.list))}
-        >
+        <BackLink to={resolveRoute(integrationRoutes.routes.list)}>
           Back to Subscriptions
-        </Button>
+        </BackLink>
       }
     >
       <div className="space-y-6">

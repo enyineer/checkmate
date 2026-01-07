@@ -5,9 +5,8 @@
  * Uses the provider's connectionSchema with DynamicForm for the configuration UI.
  */
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
-  ArrowLeft,
   Plus,
   Settings2,
   Trash2,
@@ -42,6 +41,7 @@ import {
   Label,
   useToast,
   ConfirmationModal,
+  BackLink,
 } from "@checkmate-monitor/ui";
 import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
 import { resolveRoute } from "@checkmate-monitor/common";
@@ -59,9 +59,9 @@ export const ProviderConnectionsPage = () => {
   const toast = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [provider, setProvider] = useState<IntegrationProviderInfo | undefined>(
-    
-  );
+  const [provider, setProvider] = useState<
+    IntegrationProviderInfo | undefined
+  >();
   const [connections, setConnections] = useState<ProviderConnectionRedacted[]>(
     []
   );
@@ -248,12 +248,9 @@ export const ProviderConnectionsPage = () => {
       loading={loading}
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link to={resolveRoute(integrationRoutes.routes.list)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Integrations
-            </Link>
-          </Button>
+          <BackLink to={resolveRoute(integrationRoutes.routes.list)}>
+            Back to Integrations
+          </BackLink>
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Connection

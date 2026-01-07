@@ -17,17 +17,11 @@ import {
   LoadingSpinner,
   SubscribeButton,
   useToast,
+  BackLink,
 } from "@checkmate-monitor/ui";
 import { authApiRef } from "@checkmate-monitor/auth-frontend/api";
 
-import {
-  ArrowLeft,
-  Activity,
-  Info,
-  Users,
-  FileJson,
-  Calendar,
-} from "lucide-react";
+import { Activity, Info, Users, FileJson, Calendar } from "lucide-react";
 
 const CATALOG_PLUGIN_ID = "catalog";
 
@@ -147,13 +141,7 @@ export const SystemDetailPage: React.FC = () => {
   if (notFound || !system) {
     return (
       <div className="space-y-6">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
+        <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
         <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="p-12 text-center">
             <h2 className="text-xl font-semibold text-destructive mb-2">
@@ -172,13 +160,7 @@ export const SystemDetailPage: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
+        <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
       </div>
 
       {/* System Name with Subscribe Button */}
