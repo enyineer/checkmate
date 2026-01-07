@@ -13,7 +13,6 @@ import type {
   ConnectionOption,
   GetConnectionOptionsParams,
 } from "@checkmate-monitor/integration-backend";
-import { JiraFieldMappingSchema } from "@checkmate-monitor/integration-jira-common";
 import { createJiraClient, createJiraClientFromConfig } from "./jira-client";
 import { expandTemplate } from "./template-engine";
 
@@ -37,7 +36,23 @@ export const JIRA_RESOLVERS = {
   PROJECT_OPTIONS: "projectOptions",
   ISSUE_TYPE_OPTIONS: "issueTypeOptions",
   PRIORITY_OPTIONS: "priorityOptions",
+  FIELD_OPTIONS: "fieldOptions",
 } as const;
+
+/**
+ * Dynamic field mapping schema with options resolver for field key.
+ * Uses optionsResolver to fetch available fields from Jira based on project and issue type.
+ */
+export const DynamicJiraFieldMappingSchema = z.object({
+  /** Jira field key - fetched dynamically from Jira */
+  fieldKey: optionsResolver({
+    description: "Jira field",
+    resolver: JIRA_RESOLVERS.FIELD_OPTIONS,
+    dependsOn: ["projectKey", "issueTypeId"],
+  }),
+  /** Template string with {{payload.property}} placeholders */
+  template: z.string().describe("Template value"),
+});
 
 /**
  * Provider configuration for Jira subscriptions.
@@ -72,7 +87,7 @@ export const JiraSubscriptionConfigSchema = z.object({
   }).optional(),
   /** Additional field mappings */
   fieldMappings: z
-    .array(JiraFieldMappingSchema)
+    .array(DynamicJiraFieldMappingSchema)
     .optional()
     .describe("Additional field mappings"),
 });
@@ -198,6 +213,31 @@ If a property is missing, the placeholder will be preserved in the output for de
               value: p.id,
               label: p.name,
             }));
+          }
+
+          case JIRA_RESOLVERS.FIELD_OPTIONS: {
+            const projectKey = context?.projectKey as string | undefined;
+            const issueTypeId = context?.issueTypeId as string | undefined;
+            if (!projectKey || !issueTypeId) {
+              return [];
+            }
+            const fields = await client.getFields(projectKey, issueTypeId);
+            // Filter out standard fields that are handled separately
+            const excludedFields = new Set([
+              "summary",
+              "description",
+              "priority",
+              "issuetype",
+              "project",
+              "reporter",
+              "assignee",
+            ]);
+            return fields
+              .filter((f) => !excludedFields.has(f.key))
+              .map((f) => ({
+                value: f.key,
+                label: `${f.name}${f.required ? " *" : ""}`,
+              }));
           }
 
           default: {

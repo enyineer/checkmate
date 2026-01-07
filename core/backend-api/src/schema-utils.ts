@@ -10,11 +10,29 @@ import {
  * Adds x-secret, x-color, x-options-resolver, x-depends-on, and x-hidden
  * metadata to JSON Schema for branded Zod fields.
  * This is used internally by toJsonSchema.
+ * Recursively processes nested objects and arrays.
  */
 function addSchemaMetadata(
   zodSchema: z.ZodTypeAny,
   jsonSchema: Record<string, unknown>
 ): void {
+  // Handle arrays - recurse into items
+  if (zodSchema instanceof z.ZodArray) {
+    const itemsSchema = (zodSchema as z.ZodArray<z.ZodTypeAny>).element;
+    const jsonItems = jsonSchema.items as Record<string, unknown> | undefined;
+    if (jsonItems) {
+      addSchemaMetadata(itemsSchema, jsonItems);
+    }
+    return;
+  }
+
+  // Handle optional - unwrap and recurse
+  if (zodSchema instanceof z.ZodOptional) {
+    const innerSchema = zodSchema.unwrap() as z.ZodTypeAny;
+    addSchemaMetadata(innerSchema, jsonSchema);
+    return;
+  }
+
   // Type guard to check if this is an object schema
   if (!("shape" in zodSchema)) return;
 
@@ -27,30 +45,36 @@ function addSchemaMetadata(
 
   for (const [key, fieldSchema] of Object.entries(objectSchema.shape)) {
     const zodField = fieldSchema as z.ZodTypeAny;
+    const jsonField = properties[key];
+
+    if (!jsonField) continue;
 
     // Secret field
-    if (isSecretSchema(zodField) && properties[key]) {
-      properties[key]["x-secret"] = true;
+    if (isSecretSchema(zodField)) {
+      jsonField["x-secret"] = true;
     }
 
     // Color field
-    if (isColorSchema(zodField) && properties[key]) {
-      properties[key]["x-color"] = true;
+    if (isColorSchema(zodField)) {
+      jsonField["x-color"] = true;
     }
 
     // Hidden field
-    if (isHiddenSchema(zodField) && properties[key]) {
-      properties[key]["x-hidden"] = true;
+    if (isHiddenSchema(zodField)) {
+      jsonField["x-hidden"] = true;
     }
 
     // Options resolver field
     const resolverMeta = getOptionsResolverMetadata(zodField);
-    if (resolverMeta && properties[key]) {
-      properties[key]["x-options-resolver"] = resolverMeta.resolver;
+    if (resolverMeta) {
+      jsonField["x-options-resolver"] = resolverMeta.resolver;
       if (resolverMeta.dependsOn) {
-        properties[key]["x-depends-on"] = resolverMeta.dependsOn;
+        jsonField["x-depends-on"] = resolverMeta.dependsOn;
       }
     }
+
+    // Recurse into nested objects and arrays
+    addSchemaMetadata(zodField, jsonField);
   }
 }
 

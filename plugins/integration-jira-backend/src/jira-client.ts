@@ -178,53 +178,53 @@ export function createJiraClient(options: JiraClientOptions) {
 
     /**
      * Get fields available for creating issues with a specific type.
+     * Uses the /issue/createmeta/{projectIdOrKey}/issuetypes/{issueTypeId} endpoint.
      */
     async getFields(
       projectKey: string,
       issueTypeId: string
     ): Promise<JiraField[]> {
-      interface CreateMeta {
-        projects: Array<{
-          issuetypes: Array<{
+      interface FieldsResponse {
+        startAt: number;
+        maxResults: number;
+        total: number;
+        fields: Array<{
+          key: string;
+          fieldId: string;
+          name: string;
+          required: boolean;
+          schema?: {
+            type: string;
+            system?: string;
+            custom?: string;
+            customId?: number;
+          };
+          allowedValues?: Array<{
             id: string;
-            fields: Record<
-              string,
-              {
-                key: string;
-                name: string;
-                required: boolean;
-                schema?: {
-                  type: string;
-                  system?: string;
-                  custom?: string;
-                  customId?: number;
-                };
-                allowedValues?: Array<{
-                  id: string;
-                  name?: string;
-                  value?: string;
-                }>;
-              }
-            >;
+            name?: string;
+            value?: string;
           }>;
         }>;
       }
 
-      const result = await request<CreateMeta>(
-        `/issue/createmeta?projectKeys=${encodeURIComponent(
-          projectKey
-        )}&issuetypeIds=${issueTypeId}&expand=projects.issuetypes.fields`
+      logger.debug(
+        `Fetching fields for project: ${projectKey}, issueType: ${issueTypeId}`
       );
 
-      const project = result.projects?.[0];
-      const issueType = project?.issuetypes?.find((t) => t.id === issueTypeId);
+      const result = await request<FieldsResponse>(
+        `/issue/createmeta/${encodeURIComponent(
+          projectKey
+        )}/issuetypes/${encodeURIComponent(issueTypeId)}`
+      );
 
-      if (!issueType) {
-        return [];
-      }
+      logger.debug(
+        `Found ${
+          result.fields?.length ?? 0
+        } fields for project ${projectKey}, issueType ${issueTypeId}`
+      );
 
-      return Object.entries(issueType.fields).map(([key, field]) => ({
-        key,
+      return (result.fields || []).map((field) => ({
+        key: field.key || field.fieldId,
         name: field.name,
         required: field.required,
         schema: field.schema,
