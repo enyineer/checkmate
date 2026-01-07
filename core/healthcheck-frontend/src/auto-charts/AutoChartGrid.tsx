@@ -9,6 +9,7 @@ import type { ChartField } from "./schema-parser";
 import { extractChartFields, getFieldValue } from "./schema-parser";
 import { useStrategySchemas } from "./useStrategySchemas";
 import type { HealthCheckDiagramSlotContext } from "../slots";
+import type { StoredHealthCheckResult } from "@checkmate-monitor/healthcheck-common";
 import {
   Card,
   CardContent,
@@ -330,10 +331,9 @@ function getLatestValue(
   if (context.type === "raw") {
     const runs = context.runs;
     if (runs.length === 0) return undefined;
-    // Strategy-specific fields are in result.metadata, not result directly
-    const result = runs.at(-1)?.result as Record<string, unknown> | undefined;
-    const metadata = result?.metadata as Record<string, unknown> | undefined;
-    return getFieldValue(metadata, fieldName);
+    // result is typed as StoredHealthCheckResult with { status, latencyMs, message, metadata }
+    const result = runs.at(-1)?.result as StoredHealthCheckResult | undefined;
+    return getFieldValue(result?.metadata, fieldName);
   } else {
     const buckets = context.buckets;
     if (buckets.length === 0) return undefined;
@@ -357,11 +357,9 @@ function getAllValues(
   if (context.type === "raw") {
     return context.runs
       .map((run) => {
-        const result = run.result as Record<string, unknown>;
-        const metadata = result?.metadata as
-          | Record<string, unknown>
-          | undefined;
-        return getFieldValue(metadata, fieldName);
+        // result is typed as StoredHealthCheckResult with { status, latencyMs, message, metadata }
+        const result = run.result as StoredHealthCheckResult;
+        return getFieldValue(result?.metadata, fieldName);
       })
       .filter((v): v is number => typeof v === "number");
   }

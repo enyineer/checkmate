@@ -143,6 +143,27 @@ export const HealthCheckRunSchema = z.object({
 export type HealthCheckRun = z.infer<typeof HealthCheckRunSchema>;
 
 /**
+ * Schema for the result object stored in HealthCheckRun.result.
+ * Mirrors the HealthCheckResult type from backend-api but is available to frontend.
+ *
+ * Structure:
+ * - status: The health status from the strategy execution
+ * - latencyMs: Execution time in milliseconds
+ * - message: Human-readable status message
+ * - metadata: Strategy-specific fields (e.g., statusCode, contentType for HTTP)
+ */
+export const StoredHealthCheckResultSchema = z.object({
+  status: HealthCheckStatusSchema,
+  latencyMs: z.number().optional(),
+  message: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type StoredHealthCheckResult = z.infer<
+  typeof StoredHealthCheckResultSchema
+>;
+
+/**
  * Public schema for health check runs without sensitive result data.
  * Used by public endpoints accessible to anonymous/authenticated users.
  */
