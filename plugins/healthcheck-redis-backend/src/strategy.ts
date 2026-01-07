@@ -7,7 +7,7 @@ import {
   z,
   timeThresholdField,
   booleanField,
-  stringField,
+  enumField,
   evaluateAssertions,
   secret,
 } from "@checkmate-monitor/backend-api";
@@ -17,13 +17,19 @@ import {
 // ============================================================================
 
 /**
+ * Valid Redis server roles from the INFO replication command.
+ */
+const RedisRole = z.enum(["master", "slave", "sentinel"]);
+export type RedisRole = z.infer<typeof RedisRole>;
+
+/**
  * Assertion schema for Redis health checks using shared factories.
  */
 const redisAssertionSchema = z.discriminatedUnion("field", [
   timeThresholdField("connectionTime"),
   timeThresholdField("pingTime"),
   booleanField("pingSuccess"),
-  stringField("role"),
+  enumField("role", RedisRole.options),
 ]);
 
 export type RedisAssertion = z.infer<typeof redisAssertionSchema>;
