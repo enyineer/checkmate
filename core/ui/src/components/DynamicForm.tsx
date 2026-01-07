@@ -43,7 +43,6 @@ export interface JsonSchemaProperty {
   "x-depends-on"?: string[]; // Field names this field depends on (triggers refetch when they change)
   "x-hidden"?: boolean; // Field should be hidden in form (auto-populated)
   "x-searchable"?: boolean; // Shows a search input for filtering dropdown options
-  "x-template"?: boolean; // Field supports mustache-style templating
 }
 
 /** Option returned by an options resolver */
@@ -605,39 +604,6 @@ const FormField: React.FC<{
               Leave empty to keep existing value
             </p>
           )}
-        </div>
-      );
-    }
-
-    // Template field with TemplateEditor
-    const isTemplate = (
-      propSchema as JsonSchemaProperty & { "x-template"?: boolean }
-    )["x-template"];
-
-    if (isTemplate) {
-      return (
-        <div className="space-y-2">
-          <div>
-            <Label htmlFor={id}>
-              {label} {isRequired && "*"}
-            </Label>
-            {cleanDesc && (
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {cleanDesc}
-              </p>
-            )}
-          </div>
-          <TemplateEditor
-            value={(value as string) || ""}
-            onChange={(val) => onChange(val)}
-            availableProperties={templateProperties}
-            placeholder={
-              propSchema.default
-                ? `Default: ${String(propSchema.default)}`
-                : "Enter template..."
-            }
-            rows={4}
-          />
         </div>
       );
     }

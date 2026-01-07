@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Versioned, secret, template } from "@checkmate-monitor/backend-api";
+import { Versioned, secret } from "@checkmate-monitor/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -92,10 +92,12 @@ export const webhookConfigSchemaV1 = z.object({
     .describe("Additional custom headers to include"),
 
   /** Custom body template. Use {{payload.field}} syntax for templating. */
-  bodyTemplate: template({
-    description:
-      "Custom request body template. Use {{payload.field}} syntax to include event data. Leave empty for default JSON payload.",
-  }).optional(),
+  bodyTemplate: z
+    .string()
+    .optional()
+    .describe(
+      "Custom request body template. Use {{payload.field}} syntax to include event data. Leave empty for default JSON payload."
+    ),
 
   timeout: z
     .number()
