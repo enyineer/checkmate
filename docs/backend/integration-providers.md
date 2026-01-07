@@ -19,7 +19,7 @@ An **integration provider** is a plugin that handles event delivery to a specifi
 ## Provider Interface
 
 ```typescript
-interface IntegrationProvider<TConfig> {
+interface IntegrationProvider<TConfig, TConnection = undefined> {
   /** Local identifier, namespaced on registration */
   id: string;
   
@@ -32,17 +32,26 @@ interface IntegrationProvider<TConfig> {
   /** Lucide icon name for UI */
   icon?: string;
   
-  /** Provider-specific configuration schema */
-  config: VersionedConfig<TConfig>;
+  /** Per-subscription configuration schema */
+  config: Versioned<TConfig>;
+  
+  /** Optional site-wide connection schema (for shared credentials) */
+  connectionSchema?: Versioned<TConnection>;
   
   /** Events this provider can handle (undefined = all) */
   supportedEvents?: string[];
+  
+  /** Optional documentation for users */
+  documentation?: ProviderDocumentation;
   
   /** Deliver an event to the external system */
   deliver(context: IntegrationDeliveryContext<TConfig>): Promise<IntegrationDeliveryResult>;
   
   /** Optional: Test the provider configuration */
   testConnection?(config: TConfig): Promise<TestConnectionResult>;
+  
+  /** Optional: Fetch dynamic options for cascading dropdowns */
+  getConnectionOptions?(params: GetConnectionOptionsParams): Promise<ConnectionOption[]>;
 }
 ```
 
@@ -112,8 +121,7 @@ import type {
   IntegrationDeliveryContext,
   IntegrationDeliveryResult,
   TestConnectionResult,
-  VersionedConfig,
-} from "@checkmate-monitor/integration-common";
+} from "@checkmate-monitor/integration-backend";
 
 export const myServiceProvider: IntegrationProvider<MyServiceConfig> = {
   id: "myservice",
@@ -124,7 +132,7 @@ export const myServiceProvider: IntegrationProvider<MyServiceConfig> = {
   config: new Versioned({
     version: 1,
     schema: myServiceConfigSchemaV1,
-  }) as VersionedConfig<MyServiceConfig>,
+  }),
 
   // Optional: Limit which events this provider accepts
   // supportedEvents: ["incident.created", "incident.resolved"],
