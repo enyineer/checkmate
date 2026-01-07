@@ -17,6 +17,8 @@ import {
   NotificationApi,
   type EnrichedSubscription,
 } from "@checkmate-monitor/notification-common";
+import { IncidentApi } from "@checkmate-monitor/incident-common";
+import { MaintenanceApi } from "@checkmate-monitor/maintenance-common";
 import {
   Card,
   CardHeader,
@@ -29,7 +31,14 @@ import {
   SubscribeButton,
   useToast,
 } from "@checkmate-monitor/ui";
-import { LayoutGrid, Info, Server, Activity, ChevronRight } from "lucide-react";
+import {
+  LayoutGrid,
+  Server,
+  Activity,
+  ChevronRight,
+  AlertTriangle,
+  Wrench,
+} from "lucide-react";
 import { authApiRef } from "@checkmate-monitor/auth-frontend/api";
 
 const CATALOG_PLUGIN_ID = "catalog";
@@ -44,6 +53,8 @@ export const Dashboard: React.FC = () => {
   const catalogApi = useApi(catalogApiRef);
   const rpcApi = useApi(rpcApiRef);
   const notificationApi = rpcApi.forPlugin(NotificationApi);
+  const incidentApi = rpcApi.forPlugin(IncidentApi);
+  const maintenanceApi = rpcApi.forPlugin(MaintenanceApi);
   const navigate = useNavigate();
   const toast = useToast();
   const authApi = useApi(authApiRef);
@@ -53,6 +64,11 @@ export const Dashboard: React.FC = () => {
     GroupWithSystems[]
   >([]);
   const [loading, setLoading] = useState(true);
+
+  // Overview statistics state
+  const [systemsCount, setSystemsCount] = useState(0);
+  const [activeIncidentsCount, setActiveIncidentsCount] = useState(0);
+  const [activeMaintenancesCount, setActiveMaintenancesCount] = useState(0);
 
   // Subscription state
   const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>(
@@ -69,8 +85,18 @@ export const Dashboard: React.FC = () => {
   }, [session, notificationApi]);
 
   useEffect(() => {
-    Promise.all([catalogApi.getGroups(), catalogApi.getSystems()])
-      .then(([groups, systems]) => {
+    Promise.all([
+      catalogApi.getGroups(),
+      catalogApi.getSystems(),
+      incidentApi.listIncidents({ includeResolved: false }),
+      maintenanceApi.listMaintenances({ status: "in_progress" }),
+    ])
+      .then(([groups, systems, incidents, maintenances]) => {
+        // Set overview statistics
+        setSystemsCount(systems.length);
+        setActiveIncidentsCount(incidents.length);
+        setActiveMaintenancesCount(maintenances.length);
+
         // Create a map of system IDs to systems
         const systemMap = new Map(systems.map((s) => [s.id, s]));
 
@@ -90,7 +116,7 @@ export const Dashboard: React.FC = () => {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [catalogApi]);
+  }, [catalogApi, incidentApi, maintenanceApi]);
 
   const handleSystemClick = (systemId: string) => {
     navigate(resolveRoute(catalogRoutes.routes.systemDetail, { systemId }));
@@ -233,28 +259,38 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <section>
         <SectionHeader
-          title="Site Information"
-          icon={<Info className="w-5 h-5" />}
+          title="Overview"
+          icon={<Activity className="w-5 h-5" />}
         />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <StatusCard
-            variant="gradient"
-            title="Instance Status"
-            value="Operational"
-            description="Checkmate Core v0.0.1"
-            icon={<Activity className="w-4 h-4 animate-pulse" />}
+            title="Total Systems"
+            value={loading ? "..." : systemsCount}
+            description="Monitored systems in your catalog"
+            icon={<Server className="w-4 h-4" />}
           />
 
           <StatusCard
-            title="Region"
-            value="eu-central-1"
-            description="Frankfurt, Germany"
+            variant={activeIncidentsCount > 0 ? "gradient" : "default"}
+            title="Active Incidents"
+            value={loading ? "..." : activeIncidentsCount}
+            description={
+              activeIncidentsCount === 0
+                ? "All systems operating normally"
+                : "Unresolved issues requiring attention"
+            }
+            icon={<AlertTriangle className="w-4 h-4" />}
           />
 
           <StatusCard
-            title="Environment"
-            value="Production"
-            description="Managed by Checkmate"
+            title="Active Maintenances"
+            value={loading ? "..." : activeMaintenancesCount}
+            description={
+              activeMaintenancesCount === 0
+                ? "No scheduled maintenance"
+                : "Ongoing or scheduled maintenance windows"
+            }
+            icon={<Wrench className="w-4 h-4" />}
           />
         </div>
       </section>
