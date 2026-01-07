@@ -1026,6 +1026,21 @@
         "typescript": "^5.0.0",
       },
     },
+    "plugins/healthcheck-redis-backend": {
+      "name": "@checkmate-monitor/healthcheck-redis-backend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate-monitor/backend-api": "workspace:*",
+        "@checkmate-monitor/common": "workspace:*",
+        "ioredis": "^5.3.0",
+      },
+      "devDependencies": {
+        "@checkmate-monitor/scripts": "workspace:*",
+        "@checkmate-monitor/tsconfig": "workspace:*",
+        "@types/bun": "^1.0.0",
+        "typescript": "^5.0.0",
+      },
+    },
     "plugins/healthcheck-tcp-backend": {
       "name": "@checkmate-monitor/healthcheck-tcp-backend",
       "version": "0.0.1",
@@ -1392,6 +1407,8 @@
 
     "@checkmate-monitor/healthcheck-postgres-backend": ["@checkmate-monitor/healthcheck-postgres-backend@workspace:plugins/healthcheck-postgres-backend"],
 
+    "@checkmate-monitor/healthcheck-redis-backend": ["@checkmate-monitor/healthcheck-redis-backend@workspace:plugins/healthcheck-redis-backend"],
+
     "@checkmate-monitor/healthcheck-tcp-backend": ["@checkmate-monitor/healthcheck-tcp-backend@workspace:plugins/healthcheck-tcp-backend"],
 
     "@checkmate-monitor/healthcheck-tls-backend": ["@checkmate-monitor/healthcheck-tls-backend@workspace:plugins/healthcheck-tls-backend"],
@@ -1574,7 +1591,7 @@
 
     "@ioredis/as-callback": ["@ioredis/as-callback@3.0.0", "", {}, "sha512-Kqv1rZ3WbgOrS+hgzJ5xG5WQuhvzzSTRYvNeyPMLOAM78MHSnuKI20JeJGbpuAt//LCuP0vsexZcorqW7kWhJg=="],
 
-    "@ioredis/commands": ["@ioredis/commands@1.5.0", "", {}, "sha512-eUgLqrMf8nJkZxT24JvVRrQya1vZkQh8BBeYNwGDqa5I0VUi8ACx7uFvAaLxintokpTenkK6DASvo/bvNbBGow=="],
+    "@ioredis/commands": ["@ioredis/commands@1.4.0", "", {}, "sha512-aFT2yemJJo+TZCmieA7qnYGQooOS7QfNmYrzGtsYd3g9j5iDP8AimYYAesf79ohjbLG12XxC4nG5DyEnC88AsQ=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 
@@ -3074,7 +3091,7 @@
 
     "import-fresh/resolve-from": ["resolve-from@4.0.0", "", {}, "sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g=="],
 
-    "ioredis/@ioredis/commands": ["@ioredis/commands@1.4.0", "", {}, "sha512-aFT2yemJJo+TZCmieA7qnYGQooOS7QfNmYrzGtsYd3g9j5iDP8AimYYAesf79ohjbLG12XxC4nG5DyEnC88AsQ=="],
+    "ioredis-mock/@ioredis/commands": ["@ioredis/commands@1.5.0", "", {}, "sha512-eUgLqrMf8nJkZxT24JvVRrQya1vZkQh8BBeYNwGDqa5I0VUi8ACx7uFvAaLxintokpTenkK6DASvo/bvNbBGow=="],
 
     "mdast-util-from-markdown/@types/mdast": ["@types/mdast@3.0.15", "", { "dependencies": { "@types/unist": "^2" } }, "sha512-LnwD+mUEfxWMa1QpDraczIn6k0Ee3SMicuYSSzS6ZYl2gKS09EClnJYGd8Du6rfc5r/GZEk5o1mRb8TaTj03sQ=="],
 
