@@ -67,12 +67,13 @@ const HealthCheckHistoryDetailPageContent = () => {
       )}...`}
       loading={permissionLoading}
       allowed={canManage}
+      actions={
+        <BackLink to={resolveRoute(healthcheckRoutes.routes.history)}>
+          Back to All History
+        </BackLink>
+      }
     >
-      <BackLink to={resolveRoute(healthcheckRoutes.routes.history)}>
-        Back to All History
-      </BackLink>
-
-      <Card className="mt-4">
+      <Card>
         <CardHeader>
           <CardTitle>Run History</CardTitle>
         </CardHeader>

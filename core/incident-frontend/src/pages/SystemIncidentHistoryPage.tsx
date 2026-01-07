@@ -120,23 +120,24 @@ const SystemIncidentHistoryPageContent: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
-      {system && (
-        <BackLink
-          to={resolveRoute(catalogRoutes.routes.systemDetail, {
-            systemId: system.id,
-          })}
-        >
-          Back to {system.name}
-        </BackLink>
-      )}
-
       <Card>
         <CardHeader className="border-b border-border">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>
-              Incident History{system ? ` - ${system.name}` : ""}
-            </CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>
+                Incident History{system ? ` - ${system.name}` : ""}
+              </CardTitle>
+            </div>
+            {system && (
+              <BackLink
+                to={resolveRoute(catalogRoutes.routes.systemDetail, {
+                  systemId: system.id,
+                })}
+              >
+                Back to {system.name}
+              </BackLink>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">

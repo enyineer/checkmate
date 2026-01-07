@@ -141,151 +141,146 @@ const MaintenanceDetailPageContent: React.FC = () => {
     maintenance.status !== "cancelled";
 
   return (
-    <div className="space-y-6">
-      {primarySystemId && (
-        <BackLink
-          onClick={() =>
-            navigate(
-              resolveRoute(maintenanceRoutes.routes.systemHistory, {
-                systemId: primarySystemId,
-              })
-            )
-          }
-        >
-          Back to History
-        </BackLink>
-      )}
-
-      <PageLayout
-        title={maintenance.title}
-        subtitle="Maintenance details and status history"
-        loading={false}
-        allowed={true}
-      >
-        <div className="space-y-6">
-          {/* Maintenance Info Card */}
-          <Card>
-            <CardHeader className="border-b border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle>Maintenance Details</CardTitle>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getMaintenanceStatusBadge(maintenance.status)}
-                  {canComplete && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleComplete}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                      Complete
-                    </Button>
-                  )}
-                </div>
+    <PageLayout
+      title={maintenance.title}
+      subtitle="Maintenance details and status history"
+      loading={false}
+      allowed={true}
+      actions={
+        primarySystemId ? (
+          <BackLink
+            onClick={() =>
+              navigate(
+                resolveRoute(maintenanceRoutes.routes.systemHistory, {
+                  systemId: primarySystemId,
+                })
+              )
+            }
+          >
+            Back to History
+          </BackLink>
+        ) : undefined
+      }
+    >
+      <div className="space-y-6">
+        {/* Maintenance Info Card */}
+        <Card>
+          <CardHeader className="border-b border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Maintenance Details</CardTitle>
               </div>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              {maintenance.description && (
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">
-                    Description
-                  </h4>
-                  <p className="text-foreground">{maintenance.description}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">
-                    Start Time
-                  </h4>
-                  <div className="flex items-center gap-2 text-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>{format(new Date(maintenance.startAt), "PPpp")}</span>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">
-                    End Time
-                  </h4>
-                  <div className="flex items-center gap-2 text-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{format(new Date(maintenance.endAt), "PPpp")}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">
-                  Affected Systems
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {maintenance.systemIds.map((systemId) => (
-                    <Link
-                      key={systemId}
-                      to={resolveRoute(catalogRoutes.routes.systemDetail, {
-                        systemId,
-                      })}
-                    >
-                      <Badge
-                        variant="outline"
-                        className="cursor-pointer hover:bg-muted"
-                      >
-                        <Server className="h-3 w-3 mr-1" />
-                        {getSystemName(systemId)}
-                      </Badge>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Status Updates Timeline */}
-          <Card>
-            <CardHeader className="border-b border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle>Status Updates</CardTitle>
-                </div>
-                {canManage && !showUpdateForm && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowUpdateForm(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Update
+              <div className="flex items-center gap-2">
+                {getMaintenanceStatusBadge(maintenance.status)}
+                {canComplete && (
+                  <Button variant="outline" size="sm" onClick={handleComplete}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    Complete
                   </Button>
                 )}
               </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {/* Add Update Form */}
-              {showUpdateForm && (
-                <div className="mb-6">
-                  <MaintenanceUpdateForm
-                    maintenanceId={maintenanceId}
-                    onSuccess={handleUpdateSuccess}
-                    onCancel={() => setShowUpdateForm(false)}
-                  />
-                </div>
-              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            {maintenance.description && (
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                  Description
+                </h4>
+                <p className="text-foreground">{maintenance.description}</p>
+              </div>
+            )}
 
-              <StatusUpdateTimeline
-                updates={maintenance.updates}
-                renderStatusBadge={getMaintenanceStatusBadge}
-                emptyTitle="No status updates"
-                emptyDescription="No status updates have been posted for this maintenance."
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </PageLayout>
-    </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                  Start Time
+                </h4>
+                <div className="flex items-center gap-2 text-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>{format(new Date(maintenance.startAt), "PPpp")}</span>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                  End Time
+                </h4>
+                <div className="flex items-center gap-2 text-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>{format(new Date(maintenance.endAt), "PPpp")}</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                Affected Systems
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {maintenance.systemIds.map((systemId) => (
+                  <Link
+                    key={systemId}
+                    to={resolveRoute(catalogRoutes.routes.systemDetail, {
+                      systemId,
+                    })}
+                  >
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-muted"
+                    >
+                      <Server className="h-3 w-3 mr-1" />
+                      {getSystemName(systemId)}
+                    </Badge>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Status Updates Timeline */}
+        <Card>
+          <CardHeader className="border-b border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Status Updates</CardTitle>
+              </div>
+              {canManage && !showUpdateForm && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowUpdateForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Update
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Add Update Form */}
+            {showUpdateForm && (
+              <div className="mb-6">
+                <MaintenanceUpdateForm
+                  maintenanceId={maintenanceId}
+                  onSuccess={handleUpdateSuccess}
+                  onCancel={() => setShowUpdateForm(false)}
+                />
+              </div>
+            )}
+
+            <StatusUpdateTimeline
+              updates={maintenance.updates}
+              renderStatusBadge={getMaintenanceStatusBadge}
+              emptyTitle="No status updates"
+              emptyDescription="No status updates have been posted for this maintenance."
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </PageLayout>
   );
 };
 

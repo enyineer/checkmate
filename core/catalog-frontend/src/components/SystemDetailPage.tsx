@@ -141,12 +141,17 @@ export const SystemDetailPage: React.FC = () => {
   if (notFound || !system) {
     return (
       <div className="space-y-6">
-        <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Activity className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">
+              System Not Found
+            </h1>
+          </div>
+          <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
+        </div>
         <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="p-12 text-center">
-            <h2 className="text-xl font-semibold text-destructive mb-2">
-              System Not Found
-            </h2>
             <p className="text-destructive-foreground">
               The system you're looking for doesn't exist or has been removed.
             </p>
@@ -158,25 +163,23 @@ export const SystemDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
-      </div>
-
-      {/* System Name with Subscribe Button */}
+      {/* System Name with Subscribe Button and Back Link */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Activity className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold text-foreground">{system.name}</h1>
         </div>
-        {session && (
-          <SubscribeButton
-            isSubscribed={isSubscribed}
-            onSubscribe={handleSubscribe}
-            onUnsubscribe={handleUnsubscribe}
-            loading={subscriptionLoading}
-          />
-        )}
+        <div className="flex items-center gap-4">
+          {session && (
+            <SubscribeButton
+              isSubscribed={isSubscribed}
+              onSubscribe={handleSubscribe}
+              onUnsubscribe={handleUnsubscribe}
+              loading={subscriptionLoading}
+            />
+          )}
+          <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
+        </div>
       </div>
 
       {/* Top Extension Slot for urgent items like maintenance alerts */}

@@ -137,10 +137,6 @@ const IncidentDetailPageContent: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
-      <BackLink to={resolveRoute(incidentRoutes.routes.config, {})}>
-        Back to Incidents
-      </BackLink>
-
       {/* Incident Header */}
       <Card
         className={
@@ -177,6 +173,9 @@ const IncidentDetailPageContent: React.FC = () => {
                 Resolve Incident
               </Button>
             )}
+            <BackLink to={resolveRoute(incidentRoutes.routes.config, {})}>
+              Back to Incidents
+            </BackLink>
           </div>
         </CardHeader>
         <CardContent className="p-4 space-y-4">

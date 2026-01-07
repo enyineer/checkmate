@@ -100,97 +100,96 @@ const SystemMaintenanceHistoryPageContent: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <BackLink
-        onClick={() =>
-          navigate(
-            resolveRoute(catalogRoutes.routes.systemDetail, { systemId })
-          )
-        }
-      >
-        Back to System
-      </BackLink>
-
-      <PageLayout
-        title={`Maintenance History: ${systemName}`}
-        subtitle="All past and scheduled maintenances for this system"
-        loading={loading}
-        allowed={true}
-      >
-        <Card>
-          <CardHeader className="border-b border-border">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>Maintenance History</CardTitle>
+    <PageLayout
+      title={`Maintenance History: ${systemName}`}
+      subtitle="All past and scheduled maintenances for this system"
+      loading={loading}
+      allowed={true}
+      actions={
+        <BackLink
+          onClick={() =>
+            navigate(
+              resolveRoute(catalogRoutes.routes.systemDetail, { systemId })
+            )
+          }
+        >
+          Back to System
+        </BackLink>
+      }
+    >
+      <Card>
+        <CardHeader className="border-b border-border">
+          <div className="flex items-center gap-2">
+            <History className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Maintenance History</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-12 flex justify-center">
+              <LoadingSpinner />
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loading ? (
-              <div className="p-12 flex justify-center">
-                <LoadingSpinner />
-              </div>
-            ) : maintenances.length === 0 ? (
-              <EmptyState
-                title="No maintenances found"
-                description="There are no recorded maintenances for this system."
-              />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Start</TableHead>
-                    <TableHead>End</TableHead>
+          ) : maintenances.length === 0 ? (
+            <EmptyState
+              title="No maintenances found"
+              description="There are no recorded maintenances for this system."
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Start</TableHead>
+                  <TableHead>End</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {maintenances.map((m) => (
+                  <TableRow
+                    key={m.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() =>
+                      navigate(
+                        resolveRoute(maintenanceRoutes.routes.detail, {
+                          maintenanceId: m.id,
+                        })
+                      )
+                    }
+                  >
+                    <TableCell>
+                      <p className="font-medium text-foreground">{m.title}</p>
+                      {m.description && (
+                        <p className="text-sm text-muted-foreground truncate max-w-xs">
+                          {m.description}
+                        </p>
+                      )}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(m.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          {format(new Date(m.startAt), "MMM d, yyyy HH:mm")}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {format(new Date(m.endAt), "MMM d, yyyy HH:mm")}
+                        </span>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {maintenances.map((m) => (
-                    <TableRow
-                      key={m.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() =>
-                        navigate(
-                          resolveRoute(maintenanceRoutes.routes.detail, {
-                            maintenanceId: m.id,
-                          })
-                        )
-                      }
-                    >
-                      <TableCell>
-                        <p className="font-medium text-foreground">{m.title}</p>
-                        {m.description && (
-                          <p className="text-sm text-muted-foreground truncate max-w-xs">
-                            {m.description}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(m.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          <span>
-                            {format(new Date(m.startAt), "MMM d, yyyy HH:mm")}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {format(new Date(m.endAt), "MMM d, yyyy HH:mm")}
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </PageLayout>
-    </div>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </PageLayout>
   );
 };
 
