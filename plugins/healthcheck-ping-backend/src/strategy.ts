@@ -54,14 +54,41 @@ export type PingConfig = z.infer<typeof pingConfigSchema>;
  * Per-run result metadata.
  */
 const pingResultSchema = z.object({
-  packetsSent: z.number(),
-  packetsReceived: z.number(),
-  packetLoss: z.number(), // percentage 0-100
-  minLatency: z.number().optional(),
-  avgLatency: z.number().optional(),
-  maxLatency: z.number().optional(),
-  failedAssertion: pingAssertionSchema.optional(),
-  error: z.string().optional(),
+  packetsSent: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Packets Sent",
+  }),
+  packetsReceived: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Packets Received",
+  }),
+  packetLoss: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Packet Loss",
+    "x-chart-unit": "%",
+  }),
+  minLatency: z.number().optional().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Min Latency",
+    "x-chart-unit": "ms",
+  }),
+  avgLatency: z.number().optional().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Latency",
+    "x-chart-unit": "ms",
+  }),
+  maxLatency: z.number().optional().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Max Latency",
+    "x-chart-unit": "ms",
+  }),
+  failedAssertion: pingAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type PingResult = z.infer<typeof pingResultSchema>;
@@ -70,10 +97,25 @@ export type PingResult = z.infer<typeof pingResultSchema>;
  * Aggregated metadata for buckets.
  */
 const pingAggregatedSchema = z.object({
-  avgPacketLoss: z.number(),
-  avgLatency: z.number(),
-  maxLatency: z.number(),
-  errorCount: z.number(),
+  avgPacketLoss: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Avg Packet Loss",
+    "x-chart-unit": "%",
+  }),
+  avgLatency: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Latency",
+    "x-chart-unit": "ms",
+  }),
+  maxLatency: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Max Latency",
+    "x-chart-unit": "ms",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type PingAggregatedResult = z.infer<typeof pingAggregatedSchema>;

@@ -277,6 +277,210 @@ This gives users the flexibility to:
 - Check for ranges: `{ field: "statusCode", operator: "lessThan", value: 300 }`
 - Combine multiple checks: status code AND response time AND content type
 
+## Auto-Generated Charts
+
+Health check strategies can automatically generate chart visualizations by annotating schema fields with chart metadata. This eliminates the need to write custom chart components for standard metrics.
+
+### Overview
+
+Use Zod's `.meta()` method to attach chart annotations to result and aggregated result schema fields. These annotations flow through `toJSONSchema()` and are used by the frontend to render appropriate visualizations.
+
+```typescript
+const myResultSchema = z.object({
+  responseTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Response Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+});
+```
+
+### Chart Metadata Keys
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `x-chart-type` | ✅ | The chart type to render (see available types below) |
+| `x-chart-label` | Optional | Human-readable label (defaults to field name) |
+| `x-chart-unit` | Optional | Unit suffix for values (e.g., `ms`, `%`, `days`) |
+
+### Available Chart Types
+
+#### Numeric Types
+
+| Type | Use Case | Best For |
+|------|----------|----------|
+| `line` | Time series data | Latencies, response times, durations |
+| `bar` | Distributions | Status code counts, category breakdowns |
+| `counter` | Single numeric values | Counts, totals, exit codes |
+| `gauge` | Percentages (0-100) | Success rates, packet loss |
+
+#### Non-Numeric Types
+
+| Type | Use Case | Best For |
+|------|----------|----------|
+| `boolean` | True/false indicators | Connected state, success flags |
+| `text` | String display | Version info, status messages |
+| `status` | Error/warning badges | Error messages |
+
+#### Special
+
+| Type | Use Case |
+|------|----------|
+| `hidden` | Skip visualization (use for internal fields like `failedAssertion`) |
+
+### Per-Run Result Schema
+
+Annotate per-run result fields to show metrics for individual check executions:
+
+```typescript
+const myResultSchema = z.object({
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  serverVersion: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Server Version",
+  }),
+  failedAssertion: myAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",  // Don't visualize
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
+});
+```
+
+### Aggregated Result Schema
+
+Annotate aggregated result fields for bucket-level visualizations:
+
+```typescript
+const myAggregatedSchema = z.object({
+  avgConnectionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  statusCodeCounts: z.record(z.string(), z.number()).meta({
+    "x-chart-type": "bar",
+    "x-chart-label": "Status Code Distribution",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
+});
+```
+
+### Complete Example
+
+```typescript
+import {
+  HealthCheckStrategy,
+  Versioned,
+  z,
+} from "@checkmate-monitor/backend-api";
+
+// Per-run result with chart annotations
+const redisResultSchema = z.object({
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  pingTimeMs: z.number().optional().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Ping Time",
+    "x-chart-unit": "ms",
+  }),
+  pingSuccess: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Ping Success",
+  }),
+  role: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Role",
+  }),
+  redisVersion: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Redis Version",
+  }),
+  failedAssertion: redisAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
+});
+
+// Aggregated result with chart annotations
+const redisAggregatedSchema = z.object({
+  avgConnectionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  avgPingTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Ping Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
+});
+
+export class RedisHealthCheckStrategy implements HealthCheckStrategy<...> {
+  id = "redis";
+  displayName = "Redis Health Check";
+  
+  result = new Versioned({ version: 1, schema: redisResultSchema });
+  aggregatedResult = new Versioned({ version: 1, schema: redisAggregatedSchema });
+  
+  // ... rest of implementation
+}
+```
+
+### Custom Charts vs Auto-Charts
+
+Auto-generated charts work well for standard metrics. For complex visualizations, use [custom chart components](../frontend/healthcheck-charts.md):
+
+| Feature | Auto-Charts | Custom Charts |
+|---------|-------------|---------------|
+| Setup effort | Schema annotations only | Full React component |
+| Customization | Limited to chart types | Full control |
+| Best for | Standard metrics | Complex visualizations |
+
+Auto-charts render alongside custom chart extensions - they complement rather than replace custom visualizations.
+
 ## Next Steps
 
 - [Health Check Data Management](./healthcheck-data-management.md) - Storage and aggregation

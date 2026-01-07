@@ -50,11 +50,26 @@ export type TcpConfig = z.infer<typeof tcpConfigSchema>;
  * Per-run result metadata.
  */
 const tcpResultSchema = z.object({
-  connected: z.boolean(),
-  connectionTimeMs: z.number(),
-  banner: z.string().optional(),
-  failedAssertion: tcpAssertionSchema.optional(),
-  error: z.string().optional(),
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  banner: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Banner",
+  }),
+  failedAssertion: tcpAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type TcpResult = z.infer<typeof tcpResultSchema>;
@@ -63,9 +78,20 @@ export type TcpResult = z.infer<typeof tcpResultSchema>;
  * Aggregated metadata for buckets.
  */
 const tcpAggregatedSchema = z.object({
-  avgConnectionTime: z.number(),
-  successRate: z.number(), // percentage
-  errorCount: z.number(),
+  avgConnectionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type TcpAggregatedResult = z.infer<typeof tcpAggregatedSchema>;

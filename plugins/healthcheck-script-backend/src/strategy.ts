@@ -60,15 +60,42 @@ export type ScriptConfigInput = z.input<typeof scriptConfigSchema>;
  * Per-run result metadata.
  */
 const scriptResultSchema = z.object({
-  executed: z.boolean(),
-  executionTimeMs: z.number(),
-  exitCode: z.number().optional(),
-  stdout: z.string().optional(),
-  stderr: z.string().optional(),
-  success: z.boolean(),
-  timedOut: z.boolean(),
-  failedAssertion: scriptAssertionSchema.optional(),
-  error: z.string().optional(),
+  executed: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Executed",
+  }),
+  executionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Execution Time",
+    "x-chart-unit": "ms",
+  }),
+  exitCode: z.number().optional().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Exit Code",
+  }),
+  stdout: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Stdout",
+  }),
+  stderr: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Stderr",
+  }),
+  success: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Success",
+  }),
+  timedOut: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Timed Out",
+  }),
+  failedAssertion: scriptAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type ScriptResult = z.infer<typeof scriptResultSchema>;
@@ -77,10 +104,24 @@ export type ScriptResult = z.infer<typeof scriptResultSchema>;
  * Aggregated metadata for buckets.
  */
 const scriptAggregatedSchema = z.object({
-  avgExecutionTime: z.number(),
-  successRate: z.number(),
-  errorCount: z.number(),
-  timeoutCount: z.number(),
+  avgExecutionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Execution Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
+  timeoutCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Timeouts",
+  }),
 });
 
 export type ScriptAggregatedResult = z.infer<typeof scriptAggregatedSchema>;

@@ -58,12 +58,30 @@ export type DnsConfig = z.infer<typeof dnsConfigSchema>;
  * Per-run result metadata.
  */
 const dnsResultSchema = z.object({
-  resolvedValues: z.array(z.string()),
-  recordCount: z.number(),
-  nameserver: z.string().optional(),
-  resolutionTimeMs: z.number(),
-  failedAssertion: dnsAssertionSchema.optional(),
-  error: z.string().optional(),
+  resolvedValues: z.array(z.string()).meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Resolved Values",
+  }),
+  recordCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Record Count",
+  }),
+  nameserver: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Nameserver",
+  }),
+  resolutionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Resolution Time",
+    "x-chart-unit": "ms",
+  }),
+  failedAssertion: dnsAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type DnsResult = z.infer<typeof dnsResultSchema>;
@@ -72,9 +90,19 @@ export type DnsResult = z.infer<typeof dnsResultSchema>;
  * Aggregated metadata for buckets.
  */
 const dnsAggregatedSchema = z.object({
-  avgResolutionTime: z.number(),
-  failureCount: z.number(),
-  errorCount: z.number(),
+  avgResolutionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Resolution Time",
+    "x-chart-unit": "ms",
+  }),
+  failureCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Failures",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type DnsAggregatedResult = z.infer<typeof dnsAggregatedSchema>;

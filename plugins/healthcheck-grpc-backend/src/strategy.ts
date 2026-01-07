@@ -66,11 +66,26 @@ export type GrpcConfigInput = z.input<typeof grpcConfigSchema>;
  * Per-run result metadata.
  */
 const grpcResultSchema = z.object({
-  connected: z.boolean(),
-  responseTimeMs: z.number(),
-  status: GrpcHealthStatus,
-  failedAssertion: grpcAssertionSchema.optional(),
-  error: z.string().optional(),
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  responseTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Response Time",
+    "x-chart-unit": "ms",
+  }),
+  status: GrpcHealthStatus.meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Status",
+  }),
+  failedAssertion: grpcAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type GrpcResult = z.infer<typeof grpcResultSchema>;
@@ -79,10 +94,24 @@ export type GrpcResult = z.infer<typeof grpcResultSchema>;
  * Aggregated metadata for buckets.
  */
 const grpcAggregatedSchema = z.object({
-  avgResponseTime: z.number(),
-  successRate: z.number(),
-  errorCount: z.number(),
-  servingCount: z.number(),
+  avgResponseTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Response Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
+  servingCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Serving",
+  }),
 });
 
 export type GrpcAggregatedResult = z.infer<typeof grpcAggregatedSchema>;

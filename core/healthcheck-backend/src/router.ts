@@ -35,6 +35,8 @@ export const createHealthCheckRouter = (
         displayName: s.displayName,
         description: s.description,
         configSchema: zod.toJSONSchema(s.config.schema),
+        resultSchema: s.result ? zod.toJSONSchema(s.result.schema) : undefined,
+        aggregatedResultSchema: zod.toJSONSchema(s.aggregatedResult.schema),
       }));
     }),
 

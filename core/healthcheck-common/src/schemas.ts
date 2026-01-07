@@ -7,6 +7,10 @@ export const HealthCheckStrategyDtoSchema = z.object({
   displayName: z.string(),
   description: z.string().optional(),
   configSchema: z.record(z.string(), z.unknown()),
+  /** JSON Schema for per-run result metadata (with chart annotations) */
+  resultSchema: z.record(z.string(), z.unknown()).optional(),
+  /** JSON Schema for aggregated result metadata (with chart annotations) */
+  aggregatedResultSchema: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const HealthCheckConfigurationSchema = z.object({

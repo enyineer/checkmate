@@ -67,14 +67,39 @@ export type RedisConfigInput = z.input<typeof redisConfigSchema>;
  * Per-run result metadata.
  */
 const redisResultSchema = z.object({
-  connected: z.boolean(),
-  connectionTimeMs: z.number(),
-  pingTimeMs: z.number().optional(),
-  pingSuccess: z.boolean(),
-  role: z.string().optional(),
-  redisVersion: z.string().optional(),
-  failedAssertion: redisAssertionSchema.optional(),
-  error: z.string().optional(),
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  pingTimeMs: z.number().optional().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Ping Time",
+    "x-chart-unit": "ms",
+  }),
+  pingSuccess: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Ping Success",
+  }),
+  role: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Role",
+  }),
+  redisVersion: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Redis Version",
+  }),
+  failedAssertion: redisAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type RedisResult = z.infer<typeof redisResultSchema>;
@@ -83,10 +108,25 @@ export type RedisResult = z.infer<typeof redisResultSchema>;
  * Aggregated metadata for buckets.
  */
 const redisAggregatedSchema = z.object({
-  avgConnectionTime: z.number(),
-  avgPingTime: z.number(),
-  successRate: z.number(),
-  errorCount: z.number(),
+  avgConnectionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  avgPingTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Ping Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type RedisAggregatedResult = z.infer<typeof redisAggregatedSchema>;

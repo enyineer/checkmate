@@ -20,3 +20,4 @@ export * from "./oauth-handler";
 export * from "./markdown";
 export * from "./email-layout";
 export * from "./assertions";
+export * from "./chart-metadata";

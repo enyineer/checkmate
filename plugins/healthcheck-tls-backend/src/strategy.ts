@@ -64,18 +64,54 @@ export type TlsConfig = z.infer<typeof tlsConfigSchema>;
  * Per-run result metadata.
  */
 const tlsResultSchema = z.object({
-  connected: z.boolean(),
-  isValid: z.boolean(),
-  isSelfSigned: z.boolean(),
-  issuer: z.string(),
-  subject: z.string(),
-  validFrom: z.string(),
-  validTo: z.string(),
-  daysUntilExpiry: z.number(),
-  protocol: z.string().optional(),
-  cipher: z.string().optional(),
-  failedAssertion: tlsAssertionSchema.optional(),
-  error: z.string().optional(),
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  isValid: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Certificate Valid",
+  }),
+  isSelfSigned: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Self-Signed",
+  }),
+  issuer: z.string().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Issuer",
+  }),
+  subject: z.string().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Subject",
+  }),
+  validFrom: z.string().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Valid From",
+  }),
+  validTo: z.string().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Valid To",
+  }),
+  daysUntilExpiry: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Days Until Expiry",
+    "x-chart-unit": "days",
+  }),
+  protocol: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Protocol",
+  }),
+  cipher: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Cipher",
+  }),
+  failedAssertion: tlsAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type TlsResult = z.infer<typeof tlsResultSchema>;
@@ -84,10 +120,24 @@ export type TlsResult = z.infer<typeof tlsResultSchema>;
  * Aggregated metadata for buckets.
  */
 const tlsAggregatedSchema = z.object({
-  avgDaysUntilExpiry: z.number(),
-  minDaysUntilExpiry: z.number(),
-  invalidCount: z.number(),
-  errorCount: z.number(),
+  avgDaysUntilExpiry: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Days Until Expiry",
+    "x-chart-unit": "days",
+  }),
+  minDaysUntilExpiry: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Min Days Until Expiry",
+    "x-chart-unit": "days",
+  }),
+  invalidCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Invalid Certificates",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type TlsAggregatedResult = z.infer<typeof tlsAggregatedSchema>;

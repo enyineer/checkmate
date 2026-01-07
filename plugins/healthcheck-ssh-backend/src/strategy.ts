@@ -64,15 +64,43 @@ export type SshConfigInput = z.input<typeof sshConfigSchema>;
  * Per-run result metadata.
  */
 const sshResultSchema = z.object({
-  connected: z.boolean(),
-  connectionTimeMs: z.number(),
-  commandTimeMs: z.number().optional(),
-  exitCode: z.number().optional(),
-  stdout: z.string().optional(),
-  stderr: z.string().optional(),
-  commandSuccess: z.boolean(),
-  failedAssertion: sshAssertionSchema.optional(),
-  error: z.string().optional(),
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  commandTimeMs: z.number().optional().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Command Time",
+    "x-chart-unit": "ms",
+  }),
+  exitCode: z.number().optional().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Exit Code",
+  }),
+  stdout: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Stdout",
+  }),
+  stderr: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Stderr",
+  }),
+  commandSuccess: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Command Success",
+  }),
+  failedAssertion: sshAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type SshResult = z.infer<typeof sshResultSchema>;
@@ -81,10 +109,25 @@ export type SshResult = z.infer<typeof sshResultSchema>;
  * Aggregated metadata for buckets.
  */
 const sshAggregatedSchema = z.object({
-  avgConnectionTime: z.number(),
-  avgCommandTime: z.number(),
-  successRate: z.number(),
-  errorCount: z.number(),
+  avgConnectionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  avgCommandTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Command Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type SshAggregatedResult = z.infer<typeof sshAggregatedSchema>;

@@ -127,18 +127,35 @@ export type HttpHealthCheckConfig = z.infer<typeof httpHealthCheckConfigSchema>;
 
 /** Per-run result metadata */
 const httpResultMetadataSchema = z.object({
-  statusCode: z.number().optional(),
-  contentType: z.string().optional(),
-  failedAssertion: httpAssertionSchema.optional(),
-  error: z.string().optional(),
+  statusCode: z.number().optional().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Status Code",
+  }),
+  contentType: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Content Type",
+  }),
+  failedAssertion: httpAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type HttpResultMetadata = z.infer<typeof httpResultMetadataSchema>;
 
 /** Aggregated metadata for buckets */
 const httpAggregatedMetadataSchema = z.object({
-  statusCodeCounts: z.record(z.string(), z.number()),
-  errorCount: z.number(),
+  statusCodeCounts: z.record(z.string(), z.number()).meta({
+    "x-chart-type": "bar",
+    "x-chart-label": "Status Code Distribution",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type HttpAggregatedMetadata = z.infer<

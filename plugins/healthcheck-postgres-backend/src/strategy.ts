@@ -66,14 +66,39 @@ export type PostgresConfigInput = z.input<typeof postgresConfigSchema>;
  * Per-run result metadata.
  */
 const postgresResultSchema = z.object({
-  connected: z.boolean(),
-  connectionTimeMs: z.number(),
-  queryTimeMs: z.number().optional(),
-  rowCount: z.number().optional(),
-  serverVersion: z.string().optional(),
-  querySuccess: z.boolean(),
-  failedAssertion: postgresAssertionSchema.optional(),
-  error: z.string().optional(),
+  connected: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  queryTimeMs: z.number().optional().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Query Time",
+    "x-chart-unit": "ms",
+  }),
+  rowCount: z.number().optional().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Row Count",
+  }),
+  serverVersion: z.string().optional().meta({
+    "x-chart-type": "text",
+    "x-chart-label": "Server Version",
+  }),
+  querySuccess: z.boolean().meta({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Query Success",
+  }),
+  failedAssertion: postgresAssertionSchema.optional().meta({
+    "x-chart-type": "hidden",
+  }),
+  error: z.string().optional().meta({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }),
 });
 
 export type PostgresResult = z.infer<typeof postgresResultSchema>;
@@ -82,10 +107,25 @@ export type PostgresResult = z.infer<typeof postgresResultSchema>;
  * Aggregated metadata for buckets.
  */
 const postgresAggregatedSchema = z.object({
-  avgConnectionTime: z.number(),
-  avgQueryTime: z.number(),
-  successRate: z.number(),
-  errorCount: z.number(),
+  avgConnectionTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  avgQueryTime: z.number().meta({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Query Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: z.number().meta({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: z.number().meta({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
 });
 
 export type PostgresAggregatedResult = z.infer<typeof postgresAggregatedSchema>;
