@@ -9,6 +9,7 @@ import {
   booleanField,
   stringField,
   evaluateAssertions,
+  secret,
 } from "@checkmate-monitor/backend-api";
 
 // ============================================================================
@@ -39,7 +40,7 @@ export const redisConfigSchema = z.object({
     .max(65_535)
     .default(6379)
     .describe("Redis port"),
-  password: z.string().optional().describe("Password for authentication"),
+  password: secret({ description: "Password for authentication" }).optional(),
   database: z.number().int().min(0).default(0).describe("Database index"),
   tls: z.boolean().default(false).describe("Use TLS connection"),
   timeout: z

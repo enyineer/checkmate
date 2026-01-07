@@ -9,6 +9,7 @@ import {
   numericField,
   booleanField,
   evaluateAssertions,
+  secret,
 } from "@checkmate-monitor/backend-api";
 
 // ============================================================================
@@ -41,7 +42,7 @@ export const mysqlConfigSchema = z.object({
     .describe("MySQL port"),
   database: z.string().describe("Database name"),
   user: z.string().describe("Username for authentication"),
-  password: z.string().describe("Password for authentication"),
+  password: secret({ description: "Password for authentication" }),
   timeout: z
     .number()
     .min(100)
