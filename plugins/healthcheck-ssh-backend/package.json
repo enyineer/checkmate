@@ -1,0 +1,23 @@
+{
+  "name": "@checkmate-monitor/healthcheck-ssh-backend",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "bun run lint:code",
+    "lint:code": "eslint . --max-warnings 0"
+  },
+  "dependencies": {
+    "@checkmate-monitor/backend-api": "workspace:*",
+    "@checkmate-monitor/common": "workspace:*",
+    "ssh2": "^1.15.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.0.0",
+    "@types/ssh2": "^1.15.0",
+    "typescript": "^5.0.0",
+    "@checkmate-monitor/tsconfig": "workspace:*",
+    "@checkmate-monitor/scripts": "workspace:*"
+  }
+}
