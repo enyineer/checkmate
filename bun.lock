@@ -967,6 +967,20 @@
         "typescript": "^5.0.0",
       },
     },
+    "plugins/healthcheck-ping-backend": {
+      "name": "@checkmate-monitor/healthcheck-ping-backend",
+      "version": "0.0.1",
+      "dependencies": {
+        "@checkmate-monitor/backend-api": "workspace:*",
+        "@checkmate-monitor/common": "workspace:*",
+      },
+      "devDependencies": {
+        "@checkmate-monitor/scripts": "workspace:*",
+        "@checkmate-monitor/tsconfig": "workspace:*",
+        "@types/bun": "^1.0.0",
+        "typescript": "^5.0.0",
+      },
+    },
     "plugins/integration-jira-backend": {
       "name": "@checkmate-monitor/integration-jira-backend",
       "version": "0.0.1",
@@ -1296,6 +1310,8 @@
     "@checkmate-monitor/healthcheck-frontend": ["@checkmate-monitor/healthcheck-frontend@workspace:core/healthcheck-frontend"],
 
     "@checkmate-monitor/healthcheck-http-backend": ["@checkmate-monitor/healthcheck-http-backend@workspace:plugins/healthcheck-http-backend"],
+
+    "@checkmate-monitor/healthcheck-ping-backend": ["@checkmate-monitor/healthcheck-ping-backend@workspace:plugins/healthcheck-ping-backend"],
 
     "@checkmate-monitor/incident-backend": ["@checkmate-monitor/incident-backend@workspace:core/incident-backend"],
 
