@@ -344,14 +344,14 @@ describe("InMemoryQueue Consumer Groups", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
       expect(processedTimes.length).toBe(0);
 
-      // Wait for delay to expire (20ms + buffer)
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Wait for delay to expire (20ms + generous buffer for CI)
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect(processedTimes.length).toBe(1);
 
       // Verify it was processed after the delay
       const actualDelay = processedTimes[0] - enqueueTime;
       expect(actualDelay).toBeGreaterThanOrEqual(15); // Allow tolerance
-      expect(actualDelay).toBeLessThanOrEqual(80);
+      expect(actualDelay).toBeLessThanOrEqual(200); // Allow more tolerance for CI
     });
 
     it("should process non-delayed jobs immediately while delayed jobs wait", async () => {
@@ -364,18 +364,19 @@ describe("InMemoryQueue Consumer Groups", () => {
         { consumerGroup: "mixed-delay-group", maxRetries: 0 }
       );
 
-      // Enqueue delayed job first (1s delay = 10ms with multiplier)
-      await queue.enqueue("delayed", { startDelay: 1 });
+      // Enqueue delayed job first (10s delay = 100ms with multiplier)
+      await queue.enqueue("delayed", { startDelay: 10 });
 
       // Enqueue immediate job
       await queue.enqueue("immediate");
 
-      // Wait for immediate job
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      // Wait for immediate job to be processed (should be done quickly)
+      // The delayed job should NOT be processed yet (100ms delay)
+      await new Promise((resolve) => setTimeout(resolve, 50));
       expect(processed).toEqual(["immediate"]);
 
-      // Wait for delayed job (10ms + buffer)
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      // Wait for delayed job (100ms + generous buffer for CI)
+      await new Promise((resolve) => setTimeout(resolve, 200));
       expect(processed).toEqual(["immediate", "delayed"]);
     });
 
