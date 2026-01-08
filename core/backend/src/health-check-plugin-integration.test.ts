@@ -5,7 +5,10 @@ import {
   HealthCheckStrategy,
   Versioned,
 } from "@checkmate-monitor/backend-api";
-import { createMockQueueManager } from "@checkmate-monitor/test-utils-backend";
+import {
+  createMockQueueManager,
+  createMockLogger,
+} from "@checkmate-monitor/test-utils-backend";
 import { z } from "zod";
 
 // Note: ./db and ./logger are mocked via test-preload.ts (bunfig.toml preload)
@@ -62,11 +65,13 @@ describe("HealthCheck Plugin Integration", () => {
       },
     });
 
-    // Register mock queueManager since EventBus depends on it
+    // Register mock services since core-services is mocked as no-op
     pluginManager.registerService(
       coreServices.queueManager,
       createMockQueueManager()
     );
+    pluginManager.registerService(coreServices.logger, createMockLogger());
+    pluginManager.registerService(coreServices.database, {} as never); // Mock database
 
     // 4. Load plugins using the PluginManager with manual injection
     await pluginManager.loadPlugins(mockRouter, [testPlugin], {

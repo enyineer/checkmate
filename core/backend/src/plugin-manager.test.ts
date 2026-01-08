@@ -445,11 +445,13 @@ describe("PluginManager", () => {
         },
       });
 
-      // Register mock queueManager since EventBus depends on it
+      // Register mock services since core-services is mocked as no-op
       pluginManager.registerService(
         coreServices.queueManager,
         createMockQueueManager()
       );
+      pluginManager.registerService(coreServices.logger, createMockLogger());
+      pluginManager.registerService(coreServices.database, {} as never); // Mock database
 
       // Use manual plugin injection with skipDiscovery to avoid loading real plugins
       await pluginManager.loadPlugins(mockRouter, [testPlugin], {
