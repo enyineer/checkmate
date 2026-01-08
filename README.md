@@ -25,6 +25,101 @@
 >
 > Breaking changes are to be expected regularly in this development phase. We're still happy if you try it out and give us feedback!
 
+## 📸 Screenshots
+
+<details>
+<summary><strong>🏠 Dashboard & Navigation</strong></summary>
+
+### Dashboard Overview
+![Dashboard Overview](screenshots/dashboard-overview.png)
+
+### Command Palette
+![Command Palette](screenshots/command-palette.png)
+
+</details>
+
+<details>
+<summary><strong>✅ Health Checks</strong></summary>
+
+### Health Check Configuration
+![Health Check Configuration](screenshots/health-check-configuration.png)
+
+### Health Check Details
+![Health Check Details 1](screenshots/health-check-configuration-details-1.png)
+![Health Check Details 2](screenshots/health-check-configuration-details-2.png)
+
+### System Details with Health Status
+![System Details](screenshots/system-details.png)
+
+</details>
+
+<details>
+<summary><strong>🚨 Incidents & Maintenance</strong></summary>
+
+### Incident Management
+![Incident Configuration](screenshots/incident-configuration.png)
+![Incident Details](screenshots/incident-details.png)
+
+### Maintenance Windows
+![Maintenance Configuration](screenshots/maintenance-configuration.png)
+![Maintenance Details](screenshots/maintenance-details.png)
+
+</details>
+
+<details>
+<summary><strong>📋 Catalog & Notifications</strong></summary>
+
+### System Catalog
+![Catalog Configuration](screenshots/catalog-configuration.png)
+
+### Notification Center
+![Notification Overview](screenshots/notification-overview.png)
+![Notifications Configuration](screenshots/notifications-configuration.png)
+
+### Telegram Integration Example
+![Telegram Notification](screenshots/telegram-notification-example.png)
+
+</details>
+
+<details>
+<summary><strong>🔌 Integrations & Queues</strong></summary>
+
+### External Integrations
+![Integrations Configuration](screenshots/integrations-configuration.png)
+![Integration Connection Details](screenshots/integrations-connection-details.png)
+
+### Queue Management
+![Queue Configuration](screenshots/queue-configuration.png)
+
+</details>
+
+<details>
+<summary><strong>🔐 Authentication & Security</strong></summary>
+
+### User Management
+![Users Configuration](screenshots/auth-configuration-users.png)
+
+### Role-Based Access Control
+![Roles Configuration](screenshots/auth-configuration-roles.png)
+
+### Authentication Strategies
+![Strategies Configuration](screenshots/auth-configuration-strategies.png)
+
+### External Applications
+![Applications Configuration](screenshots/auth-configuration-applications.png)
+
+</details>
+
+<details>
+<summary><strong>📖 API Documentation</strong></summary>
+
+### Built-in API Docs
+![API Documentation](screenshots/api-docuementation.png)
+
+</details>
+
+---
+
 ## ✨ What is Checkmate?
 
 **Checkmate** is a self-hosted, open-source status page and monitoring platform that helps you:
