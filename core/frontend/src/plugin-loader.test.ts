@@ -42,10 +42,11 @@ describe("frontend loadPlugins", () => {
     // Reset registry before test
     pluginRegistry.reset();
 
+    // With eager loading, modules are already resolved objects, not async functions
     const mockModules = {
-      "../../../plugins/local-frontend/src/index.tsx": async () => ({
+      "../../../plugins/local-frontend/src/index.tsx": {
         default: { metadata: { pluginId: "local" }, extensions: [] },
-      }),
+      },
     };
 
     // We also need to mock dynamic import() for remote plugins

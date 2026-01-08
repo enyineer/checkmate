@@ -57,6 +57,9 @@ describe("HealthCheck Router", () => {
               version: 1,
               schema: z.object({}),
             },
+            aggregatedResult: {
+              schema: z.object({}),
+            },
           },
         ]),
       } as any,
