@@ -25,18 +25,21 @@ export default defineConfig(({ mode }) => {
         "/assets": target,
       },
     },
+    // Ensure react-router-dom and react are pre-bundled together
+    optimizeDeps: {
+      include: ["react", "react-dom", "react-router-dom"],
+    },
     build: {
-      rollupOptions: {
-        external: [
-          "react",
-          "react-dom",
-          "react-dom/client",
-          "react-router-dom",
-          "@checkmate-monitor/frontend-api",
-        ],
-      },
+      // Use esnext to support top-level await and modern ES features
+      target: "esnext",
     },
     resolve: {
+      // CRITICAL: Dedupe React packages to ensure single instance in monorepo
+      // Without this, each workspace package can bundle its own React copy,
+      // causing "useContext is null" errors when react-router-dom components
+      // try to use a different React instance's context.
+      // See: https://vitejs.dev/config/shared-options#resolve-dedupe
+      dedupe: ["react", "react-dom", "react-router-dom", "react/jsx-runtime"],
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },

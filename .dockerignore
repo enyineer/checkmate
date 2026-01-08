@@ -1,16 +1,29 @@
+# Dependencies (handled by bun install in Docker)
 node_modules
+**/node_modules
+
+# Git and CI
 .git
 .github
 .changeset
+
+# Development files
 .dev
+**/.dev
 .env
 .env.*
 *.log
+
+# Build outputs (rebuilt in Docker)
 dist/
+**/dist/
+
+# Documentation (not needed for runtime)
 docs/
 screenshots/
 *.md
 !README.md
-core/frontend/node_modules
-plugins/*/node_modules
-core/backend/.dev
+
+# TypeScript build info
+*.tsbuildinfo
+**/*.tsbuildinfo

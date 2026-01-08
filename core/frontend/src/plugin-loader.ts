@@ -3,9 +3,7 @@ import {
   pluginRegistry,
 } from "@checkmate-monitor/frontend-api";
 
-export async function loadPlugins(
-  overrideModules?: Record<string, () => Promise<unknown>>
-) {
+export async function loadPlugins(overrideModules?: Record<string, unknown>) {
   console.log("🔌 discovering plugins...");
 
   // 1. Fetch enabled plugins from backend
@@ -18,20 +16,22 @@ export async function loadPlugins(
     const enabledPlugins: { name: string; path: string }[] =
       await response.json();
 
-    // 2. Glob all available local plugins
+    // 2. Get all available local plugins using eager loading
+    // This avoids dynamic import issues in production builds
     // Load from both core/ (essential) and plugins/ (providers)
-    // Skip glob calls when override modules provided (for testing in non-Vite environments)
-    let modules: Record<string, () => Promise<unknown>>;
+    let modules: Record<string, unknown>;
     if (overrideModules) {
       modules = overrideModules;
     } else {
       const coreModules =
         // @ts-expect-error - Vite specific property
-        import.meta.glob("../../*-frontend/src/index.tsx");
+        import.meta.glob("../../*-frontend/src/index.tsx", { eager: true });
 
       const pluginModules =
         // @ts-expect-error - Vite specific property
-        import.meta.glob("../../../plugins/*-frontend/src/index.tsx");
+        import.meta.glob("../../../plugins/*-frontend/src/index.tsx", {
+          eager: true,
+        });
 
       modules = { ...coreModules, ...pluginModules };
     }
@@ -45,11 +45,11 @@ export async function loadPlugins(
     // 3. Load and register enabled plugins
     const registeredNames = new Set<string>();
 
-    // Phase 1: Local plugins (bundled)
-    for (const [path, loader] of Object.entries(modules)) {
-      try {
-        const mod = await (loader as () => Promise<unknown>)();
+    // Phase 1: Local plugins (bundled with eager loading - already loaded)
+    const entries = Object.entries(modules);
 
+    for (const [path, mod] of entries) {
+      try {
         if (typeof mod !== "object" || mod === null) {
           continue;
         }

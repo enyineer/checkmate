@@ -3,9 +3,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "npm run vite-vendor && vite",
-    "build": "npm run vite-vendor && vite build",
-    "vite-vendor": "vite build --config vite.config.vendor.ts",
+    "dev": "vite",
+    "build": "vite build",
     "typecheck": "tsc --noEmit",
     "lint": "bun run lint:code",
     "preview": "vite preview",
