@@ -91,29 +91,29 @@ Strategies can have up to three configuration layers:
 
 ```typescript
 import { z } from "zod";
-import { secret, color, Versioned } from "@checkmate-monitor/backend-api";
+import { configString, configNumber, configBoolean, Versioned } from "@checkmate-monitor/backend-api";
 
 // Infrastructure config (SMTP server, API keys)
 const smtpConfigSchemaV1 = z.object({
-  host: z.string().describe("SMTP server hostname"),
-  port: z.number().default(587).describe("SMTP server port"),
-  secure: z.boolean().default(false).describe("Use TLS/SSL"),
-  username: secret().optional().describe("SMTP username"),
-  password: secret().optional().describe("SMTP password"),
-  fromAddress: z.string().email().describe("Sender email address"),
-  fromName: z.string().optional().describe("Sender display name"),
+  host: configString({}).describe("SMTP server hostname"),
+  port: configNumber({}).default(587).describe("SMTP server port"),
+  secure: configBoolean({}).default(false).describe("Use TLS/SSL"),
+  username: configString({ "x-secret": true }).optional().describe("SMTP username"),
+  password: configString({ "x-secret": true }).optional().describe("SMTP password"),
+  fromAddress: configString({}).email().describe("Sender email address"),
+  fromName: configString({}).optional().describe("Sender display name"),
 });
 
 // Layout config (admin-customizable branding)
 const smtpLayoutConfigSchemaV1 = z.object({
-  logoUrl: z.string().url().optional().describe("Logo URL (max 200px wide)"),
-  primaryColor: color("#3b82f6").describe("Primary brand color"),
-  accentColor: color().optional().describe("Accent color for buttons"),
-  footerText: z.string().default("This is an automated notification.").describe("Footer text"),
+  logoUrl: configString({}).url().optional().describe("Logo URL (max 200px wide)"),
+  primaryColor: configString({ "x-color": true }).default("#3b82f6").describe("Primary brand color"),
+  accentColor: configString({ "x-color": true }).optional().describe("Accent color for buttons"),
+  footerText: configString({}).default("This is an automated notification.").describe("Footer text"),
 });
 ```
 
-> **💡 Tip:** Use `color()` for hex color fields and `secret()` for sensitive data. These render as specialized inputs in the admin UI (color picker, password field).
+> **💡 Tip:** Use `configString({ "x-color": true })` for hex color fields and `configString({ "x-secret": true })` for sensitive data. These render as specialized inputs in the admin UI (color picker, password field).
 
 ### 3. Implement the Strategy Interface
 
@@ -255,10 +255,10 @@ Rich-content strategies (email) can support admin-customizable layouts:
 
 ```typescript
 const layoutConfigSchema = z.object({
-  logoUrl: z.string().url().optional().describe("Company logo URL"),
-  primaryColor: color("#3b82f6").describe("Header/accent color"),
-  accentColor: color().optional().describe("Button color"),
-  footerText: z.string().default("Sent by Checkmate").describe("Footer text"),
+  logoUrl: configString({}).url().optional().describe("Company logo URL"),
+  primaryColor: configString({ "x-color": true }).default("#3b82f6").describe("Header/accent color"),
+  accentColor: configString({ "x-color": true }).optional().describe("Button color"),
+  footerText: configString({}).default("Sent by Checkmate").describe("Footer text"),
 });
 
 const strategy: NotificationStrategy<Config, undefined, LayoutConfig> = {
@@ -471,20 +471,20 @@ async send(context) {
 }
 ```
 
-### 3. Use Branded Types for Special Fields
+### 3. Use Factory Functions for Specialized Fields
 
-Use platform branded types for specialized UI and validation:
+Use platform factory functions for specialized UI and validation:
 
 ```typescript
-import { secret, color } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkmate-monitor/backend-api";
 
 const config = z.object({
   // Secrets: rendered as password inputs, encrypted at rest
-  apiKey: secret().describe("API key for service"),
+  apiKey: configString({ "x-secret": true }).describe("API key for service"),
   
   // Colors: rendered as color picker, validated as hex
-  brandColor: color("#3b82f6").describe("Primary brand color"),
-  accentColor: color().optional().describe("Optional accent"),
+  brandColor: configString({ "x-color": true }).default("#3b82f6").describe("Primary brand color"),
+  accentColor: configString({ "x-color": true }).optional().describe("Optional accent"),
 });
 ```
 

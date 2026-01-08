@@ -31,7 +31,7 @@ ENCRYPTION_MASTER_KEY=<your-generated-key-here>
 
 ### What Gets Encrypted?
 
-Any configuration field marked with `secret()` in the Zod schema will be automatically encrypted, including:
+Any configuration field marked with `configString({ "x-secret": true })` in the Zod schema will be automatically encrypted, including:
 - OAuth client secrets (GitHub, Google, etc.)
 - API keys and tokens
 - Database passwords in connection strings

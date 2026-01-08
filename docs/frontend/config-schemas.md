@@ -66,18 +66,18 @@ export const createMyPluginRouter = () => {
 
 ### 2. Plugin/Strategy Schema Definition
 
-Use the `secret()` helper for sensitive fields:
+Use factory functions for fields that need specialized handling:
 
 ```typescript
-import { secret } from "@checkmate-monitor/backend-api";
+import { configString, configNumber, configBoolean } from "@checkmate-monitor/backend-api";
 import { z } from "zod";
 
 const configSchema = z.object({
-  host: z.string().default("localhost").describe("API host"),
-  port: z.number().default(443).describe("API port"),
-  apiKey: secret().describe("API authentication key"),  // ✅ Marked as secret
-  username: z.string().optional().describe("Username"),
-  password: secret().optional().describe("Password"),   // ✅ Marked as secret
+  host: configString({}).default("localhost").describe("API host"),
+  port: configNumber({}).default(443).describe("API port"),
+  apiKey: configString({ "x-secret": true }).describe("API authentication key"),  // Marked as secret
+  username: configString({}).optional().describe("Username"),
+  password: configString({ "x-secret": true }).optional().describe("Password"),   // Marked as secret
 });
 ```
 
@@ -137,20 +137,20 @@ if (isColor) {
 }
 ```
 
-## Branded Types Reference
+## Factory Functions Reference
 
-The platform provides two branded Zod types for specialized field rendering:
+The platform provides factory functions for creating Zod schemas with specialized metadata:
 
-### `secret()` - Sensitive Data
+### `configString({ "x-secret": true })` - Sensitive Data
 
 Use for passwords, API keys, tokens, and other sensitive data:
 
 ```typescript
-import { secret } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkmate-monitor/backend-api";
 
 const schema = z.object({
-  apiKey: secret().describe("API authentication key"),
-  password: secret().optional().describe("Optional password"),
+  apiKey: configString({ "x-secret": true }).describe("API authentication key"),
+  password: configString({ "x-secret": true }).optional().describe("Optional password"),
 });
 ```
 
@@ -159,18 +159,18 @@ const schema = z.object({
 - Values are encrypted at rest via `ConfigService`
 - Redacted when returning config to frontend
 
-### `color()` - Hex Colors
+### `configString({ "x-color": true })` - Hex Colors
 
 Use for hex color values (e.g., brand colors, theme colors):
 
 ```typescript
-import { color } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkmate-monitor/backend-api";
 
 const schema = z.object({
   // With default value
-  primaryColor: color("#3b82f6").describe("Primary brand color"),
+  primaryColor: configString({ "x-color": true }).default("#3b82f6").describe("Primary brand color"),
   // Optional without default
-  accentColor: color().optional().describe("Accent color"),
+  accentColor: configString({ "x-color": true }).optional().describe("Accent color"),
 });
 ```
 
@@ -179,66 +179,56 @@ const schema = z.object({
 - Validates hex format (`#RGB` or `#RRGGBB`)
 - Supports optional default values
 
-### `optionsResolver()` - Dynamic Dropdowns
+### `configString({ "x-options-resolver": ... })` - Dynamic Dropdowns
 
 Use for fields that need to fetch options dynamically from the backend:
 
 ```typescript
-import { optionsResolver } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkmate-monitor/backend-api";
 
 const schema = z.object({
   // Basic options resolver
-  projectKey: optionsResolver({
-    description: "Jira project",
-    resolver: "projectOptions",
-  }),
+  projectKey: configString({
+    "x-options-resolver": "projectOptions",
+  }).describe("Jira project"),
   
   // With dependencies (refetches when dependent fields change)
-  issueTypeId: optionsResolver({
-    description: "Issue type",
-    resolver: "issueTypeOptions",
-    dependsOn: ["projectKey"],
-  }),
+  issueTypeId: configString({
+    "x-options-resolver": "issueTypeOptions",
+    "x-depends-on": ["projectKey"],
+  }).describe("Issue type"),
   
   // With searchable dropdown for many options
-  fieldKey: optionsResolver({
-    description: "Jira field",
-    resolver: "fieldOptions",
-    dependsOn: ["projectKey", "issueTypeId"],
-    searchable: true,
-  }),
+  fieldKey: configString({
+    "x-options-resolver": "fieldOptions",
+    "x-depends-on": ["projectKey", "issueTypeId"],
+    "x-searchable": true,
+  }).describe("Jira field"),
 });
 ```
 
 **Features:**
 - Renders as a dropdown that fetches options from backend
-- `resolver`: Name of the resolver function to call
-- `dependsOn`: Array of field names that trigger refetch when changed (only these fields trigger refetches, not all form changes)
-- `searchable`: When true, renders a searchable dropdown with filter input inside
-
-**JSON Schema metadata produced:**
-- `x-options-resolver`: The resolver name
-- `x-depends-on`: Array of dependent field names
-- `x-searchable`: Boolean for searchable dropdown
+- `x-options-resolver`: Name of the resolver function to call
+- `x-depends-on`: Array of field names that trigger refetch when changed
+- `x-searchable`: When true, renders a searchable dropdown with filter input inside
 
 **Implementation requirements:**
 The provider must implement `getConnectionOptions()` to handle resolver calls. See [Integration Providers](../backend/integration-providers.md#connection-based-providers-with-dynamic-options) for details.
 
-### `hidden()` - Auto-populated Fields
+### `configString({ "x-hidden": true })` - Auto-populated Fields
 
 Use for fields that are auto-populated and should not be shown in the form:
 
 ```typescript
-import { hidden } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkmate-monitor/backend-api";
 
 const schema = z.object({
   // Hidden field (auto-populated)
-  connectionId: hidden({
-    description: "Connection ID (auto-populated)",
-  }),
+  connectionId: configString({ "x-hidden": true }).describe("Connection ID (auto-populated)"),
   
   // Normal visible fields
-  name: z.string().describe("Subscription name"),
+  name: configString({}).describe("Subscription name"),
 });
 ```
 
@@ -252,7 +242,7 @@ const schema = z.object({
 
 ### 1. Marking Fields as Secrets
 
-Use the `secret()` helper for any sensitive data:
+Use `configString({ "x-secret": true })` for any sensitive data:
 - Passwords
 - API keys
 - Authentication tokens
@@ -260,14 +250,14 @@ Use the `secret()` helper for any sensitive data:
 - Database connection strings with credentials
 
 ```typescript
-import { secret } from "@checkmate-monitor/backend-api";
+import { configString, configNumber } from "@checkmate-monitor/backend-api";
 
 const schema = z.object({
   // Regular field
-  timeout: z.number().default(5000),
+  timeout: configNumber({}).default(5000),
   
   // Secret field
-  accessToken: secret().describe("OAuth access token"),
+  accessToken: configString({ "x-secret": true }).describe("OAuth access token"),
 });
 ```
 
@@ -278,10 +268,10 @@ Secrets can be optional or required (via defaults):
 ```typescript
 const schema = z.object({
   // Optional secret (can be empty)
-  password: secret().optional().describe("Password (optional)"),
+  password: configString({ "x-secret": true }).optional().describe("Password (optional)"),
   
   // Required secret (has default, but user should change it)
-  apiKey: secret().default("").describe("API Key"),
+  apiKey: configString({ "x-secret": true }).default("").describe("API Key"),
 });
 ```
 
@@ -349,10 +339,10 @@ password: z.string().describe("Password")
 
 ### ✅ Correct Pattern
 ```typescript
-import { toJsonSchema, secret } from "@checkmate-monitor/backend-api";
+import { toJsonSchema, configString } from "@checkmate-monitor/backend-api";
 
 // In schema
-password: secret().describe("Password")
+password: configString({ "x-secret": true }).describe("Password")
 
 // In router
 configSchema: toJsonSchema(p.configSchema)
@@ -370,7 +360,7 @@ configSchema: toJsonSchema(p.configSchema)
 **Always follow these rules when exposing config schemas to the frontend:**
 
 1. ✅ Use `toJsonSchema()` from `@checkmate-monitor/backend-api`, not Zod's native method
-2. ✅ Mark sensitive fields with `secret()` in your schemas  
+2. ✅ Mark sensitive fields with `configString({ "x-secret": true })` in your schemas  
 3. ✅ Use `ConfigService.getRedacted()` when returning current config to frontend
 4. ✅ Test that secret fields have `x-secret: true` metadata
 

@@ -141,15 +141,15 @@ const configs = await config.list();
 
 ### Secret Handling
 
-ConfigService automatically encrypts/decrypts secrets marked with `z.secret()`:
+ConfigService automatically encrypts/decrypts secrets marked with `configString({ "x-secret": true })`:
 
 ```typescript
-import { secret } from "@checkmate-monitor/backend-api";
+import { configString, configBoolean, configNumber } from "@checkmate-monitor/backend-api";
 
 const githubStrategySchema = z.object({
-  clientId: z.string(),
-  clientSecret: secret(z.string()), // Marked as secret
-  enabled: z.boolean(),
+  clientId: configString({}),
+  clientSecret: configString({ "x-secret": true }), // Marked as secret
+  enabled: configBoolean({}),
 });
 
 // When you save:
@@ -250,10 +250,12 @@ But entities need:
 
 **Auth Backend** - Strategy configurations:
 ```typescript
+import { configString } from "@checkmate-monitor/backend-api";
+
 // Stores: "Which auth strategies are enabled?"
 await config.set("github", githubSchema, 1, {
   clientId: "...",
-  clientSecret: secret("..."),
+  clientSecret: "...", // Auto-encrypted via configString({ "x-secret": true })
   enabled: true,
 });
 ```
@@ -320,10 +322,12 @@ export const authStrategy = pgTable("auth_strategy", {
 
 ### After (ConfigService):
 ```typescript
+import { configString } from "@checkmate-monitor/backend-api";
+
 // ✅ New: Use ConfigService
 await config.set("github", schema, 1, {
   clientId: "...",
-  clientSecret: secret("..."), // Auto-encrypted
+  clientSecret: "...", // Auto-encrypted via configString({ "x-secret": true })
   enabled: true,
 });
 
@@ -350,10 +354,12 @@ await db.insert(healthChecks).values({
 
 ### 3. Mark Secrets in Schemas
 ```typescript
+import { configString } from "@checkmate-monitor/backend-api";
+
 // ✅ Good: Explicit secret marking
 const schema = z.object({
-  apiKey: secret(z.string()),
-  apiUrl: z.string().url(),
+  apiKey: configString({ "x-secret": true }),
+  apiUrl: configString({}).url(),
 });
 ```
 
@@ -365,8 +371,11 @@ export const integrations = pgTable("integrations", {
 });
 
 // ✅ Good: Use ConfigService for secrets
+const schema = z.object({
+  webhookUrl: configString({ "x-secret": true }),
+});
 await config.set("slack-integration", schema, 1, {
-  webhookUrl: secret("https://..."),
+  webhookUrl: "https://...", // Auto-encrypted
 });
 ```
 

@@ -8,21 +8,49 @@ Common patterns for managing plugin configuration. See [Versioned Configs](../ba
 
 ```typescript
 import { z } from "zod";
-import { secret } from "@checkmate-monitor/backend-api";
+import { configString, configNumber, configBoolean } from "@checkmate-monitor/backend-api";
 
 const configSchema = z.object({
-  // Simple fields
-  enabled: z.boolean().default(true).describe("Enable this feature"),
-  maxItems: z.number().min(1).max(1000).default(100).describe("Maximum items"),
+  // Simple fields using factory functions
+  enabled: configBoolean({}).default(true).describe("Enable this feature"),
+  maxItems: configNumber({}).min(1).max(1000).default(100).describe("Maximum items"),
   
   // Secret field (encrypted at rest)
-  apiKey: secret().describe("API key for external service"),
+  apiKey: configString({ "x-secret": true }).describe("API key for external service"),
   
   // Optional with default
-  retryAttempts: z.number().default(3).describe("Number of retries"),
+  retryAttempts: configNumber({}).default(3).describe("Number of retries"),
 });
 
 type MyConfig = z.infer<typeof configSchema>;
+```
+
+## Available Factory Functions
+
+| Factory | Base Type | Common Metadata |
+|---------|-----------|-----------------|
+| `configString({})` | `z.string()` | `x-secret`, `x-color`, `x-hidden`, `x-options-resolver` |
+| `configNumber({})` | `z.number()` | Chart annotations |
+| `configBoolean({})` | `z.boolean()` | Toggle fields |
+
+## Metadata Keys
+
+```typescript
+// Secret - encrypted in database, redacted for frontend
+apiKey: configString({ "x-secret": true })
+
+// Color picker UI
+primaryColor: configString({ "x-color": true })
+
+// Hidden from form UI (auto-populated fields)
+connectionId: configString({ "x-hidden": true })
+
+// Dynamic options from backend resolver
+projectKey: configString({ 
+  "x-options-resolver": "projectOptions",
+  "x-depends-on": ["connectionId"],
+  "x-searchable": true,
+})
 ```
 
 ---
@@ -97,9 +125,9 @@ For queue plugins or time-sensitive tests:
 
 ```typescript
 const configSchema = z.object({
-  concurrency: z.number().default(10),
+  concurrency: configNumber({}).default(10),
   // Testing-only option
-  delayMultiplier: z.number().min(0).max(1).default(1)
+  delayMultiplier: configNumber({}).min(0).max(1).default(1)
     .describe("Delay multiplier (default: 1). Only change for testing purposes."),
 });
 

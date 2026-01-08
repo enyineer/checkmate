@@ -82,22 +82,22 @@ mkdir -p plugins/integration-myservice-backend/src
 
 ### 2. Define the Configuration Schema
 
-Use Zod to define the provider's configuration. Use `secret()` for sensitive fields:
+Use Zod to define the provider's configuration. Use `configString({ "x-secret": true })` for sensitive fields:
 
 ```typescript
 // src/provider.ts
 import { z } from "zod";
-import { Versioned, secret } from "@checkmate-monitor/backend-api";
+import { Versioned, configString, configNumber } from "@checkmate-monitor/backend-api";
 
 export const myServiceConfigSchemaV1 = z.object({
   // Required fields
-  apiEndpoint: z.string().url().describe("Service API endpoint"),
+  apiEndpoint: configString({}).url().describe("Service API endpoint"),
   
   // Secret fields (encrypted at rest)
-  apiKey: secret({ description: "API Key for authentication" }),
+  apiKey: configString({ "x-secret": true }).describe("API Key for authentication"),
   
   // Optional fields with defaults
-  timeout: z.number()
+  timeout: configNumber({})
     .min(1_000)
     .max(60_000)
     .default(10_000)
@@ -316,7 +316,7 @@ interface IntegrationDeliveryResult {
 
 ## Best Practices
 
-1. **Use `secret()` for sensitive config**: API keys, tokens, passwords
+1. **Use `configString({ "x-secret": true })` for sensitive config**: API keys, tokens, passwords
 2. **Set reasonable timeouts**: Default 10 seconds, allow user configuration
 3. **Parse error responses**: Include meaningful error messages for debugging
 4. **Implement `testConnection`**: Helps users validate their configuration
@@ -336,10 +336,10 @@ export const slackProvider: IntegrationProvider<SlackConfig> = {
   config: new Versioned({
     version: 1,
     schema: z.object({
-      webhookUrl: secret({ description: "Slack Incoming Webhook URL" }),
-      channel: z.string().optional().describe("Override channel (optional)"),
-      username: z.string().default("Checkmate").describe("Bot username"),
-      iconEmoji: z.string().default(":robot_face:").describe("Bot icon emoji"),
+      webhookUrl: configString({ "x-secret": true }).describe("Slack Incoming Webhook URL"),
+      channel: configString({}).optional().describe("Override channel (optional)"),
+      username: configString({}).default("Checkmate").describe("Bot username"),
+      iconEmoji: configString({}).default(":robot_face:").describe("Bot icon emoji"),
     }),
   }),
 
@@ -417,12 +417,12 @@ Define a connection schema for storing API credentials:
 
 ```typescript
 import { z } from "zod";
-import { secret } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkmate-monitor/backend-api";
 
 export const MyServiceConnectionConfigSchema = z.object({
-  baseUrl: z.string().url().describe("Service API URL"),
-  email: z.string().email().describe("User email"),
-  apiToken: secret({ description: "API token" }),
+  baseUrl: configString({}).url().describe("Service API URL"),
+  email: configString({}).email().describe("User email"),
+  apiToken: configString({ "x-secret": true }).describe("API token"),
 });
 
 export type MyServiceConnectionConfig = z.infer<typeof MyServiceConnectionConfigSchema>;
@@ -430,11 +430,9 @@ export type MyServiceConnectionConfig = z.infer<typeof MyServiceConnectionConfig
 
 ### Provider Config with Dynamic Options
 
-Use `optionsResolver()` for fields that need to fetch options from the external API:
+Use `configString()` with metadata for fields that need to fetch options from the external API:
 
 ```typescript
-import { optionsResolver, hidden } from "@checkmate-monitor/backend-api";
-
 // Define resolver names as constants
 export const RESOLVERS = {
   PROJECT_OPTIONS: "projectOptions",
@@ -444,28 +442,25 @@ export const RESOLVERS = {
 
 export const MyServiceProviderConfigSchema = z.object({
   // Hidden field for connection reference
-  connectionId: hidden({ description: "Connection ID" }),
+  connectionId: configString({ "x-hidden": true }).describe("Connection ID"),
   
   // Static options from backend
-  projectKey: optionsResolver({
-    description: "Project",
-    resolver: RESOLVERS.PROJECT_OPTIONS,
-  }),
+  projectKey: configString({
+    "x-options-resolver": RESOLVERS.PROJECT_OPTIONS,
+  }).describe("Project"),
   
   // Dependent options (refetch when projectKey changes)
-  issueTypeId: optionsResolver({
-    description: "Issue type",
-    resolver: RESOLVERS.ISSUE_TYPE_OPTIONS,
-    dependsOn: ["projectKey"],
-  }),
+  issueTypeId: configString({
+    "x-options-resolver": RESOLVERS.ISSUE_TYPE_OPTIONS,
+    "x-depends-on": ["projectKey"],
+  }).describe("Issue type"),
   
   // Searchable dropdown for many options
-  fieldKey: optionsResolver({
-    description: "Field",
-    resolver: RESOLVERS.FIELD_OPTIONS,
-    dependsOn: ["projectKey", "issueTypeId"],
-    searchable: true,
-  }),
+  fieldKey: configString({
+    "x-options-resolver": RESOLVERS.FIELD_OPTIONS,
+    "x-depends-on": ["projectKey", "issueTypeId"],
+    "x-searchable": true,
+  }).describe("Field"),
 });
 ```
 
@@ -584,9 +579,9 @@ export const myServiceProvider: IntegrationProvider<MyServiceConfig> = {
 The `dependsOn` option enables smart refetching:
 
 ```typescript
-issueTypeId: optionsResolver({
-  resolver: "issueTypeOptions",
-  dependsOn: ["projectKey"], // Only refetch when projectKey changes
+issueTypeId: configString({
+  "x-options-resolver": "issueTypeOptions",
+  "x-depends-on": ["projectKey"], // Only refetch when projectKey changes
 })
 ```
 
@@ -599,9 +594,9 @@ issueTypeId: optionsResolver({
 For fields with many options, enable searchable:
 
 ```typescript
-fieldKey: optionsResolver({
-  resolver: "fieldOptions",
-  searchable: true, // Enables search inside dropdown
+fieldKey: configString({
+  "x-options-resolver": "fieldOptions",
+  "x-searchable": true, // Enables search inside dropdown
 })
 ```
 
