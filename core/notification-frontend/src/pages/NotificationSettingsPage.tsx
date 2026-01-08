@@ -50,6 +50,7 @@ export const NotificationSettingsPage = () => {
   });
   const [retentionLoading, setRetentionLoading] = useState(true);
   const [retentionSaving, setRetentionSaving] = useState(false);
+  const [retentionValid, setRetentionValid] = useState(true);
 
   // Subscription state - now uses enriched subscriptions only
   const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>(
@@ -479,12 +480,13 @@ export const NotificationSettingsPage = () => {
                     schema={retentionSchema}
                     value={retentionSettings}
                     onChange={setRetentionSettings}
+                    onValidChange={setRetentionValid}
                   />
                   <Button
                     onClick={() => {
                       void handleSaveRetention();
                     }}
-                    disabled={retentionSaving}
+                    disabled={retentionSaving || !retentionValid}
                   >
                     {retentionSaving ? "Saving..." : "Save Settings"}
                   </Button>

@@ -42,6 +42,11 @@ export interface DynamicFormProps {
   value: Record<string, unknown>;
   onChange: (value: Record<string, unknown>) => void;
   /**
+   * Optional callback when form validity changes.
+   * Reports true if all required fields are filled.
+   */
+  onValidChange?: (isValid: boolean) => void;
+  /**
    * Optional map of resolver names to functions that fetch dynamic options.
    * Referenced by x-options-resolver in schema properties.
    */

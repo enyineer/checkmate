@@ -74,6 +74,7 @@ export function UserChannelCard({
     channel.userConfig ?? {}
   );
   const [localEnabled, setLocalEnabled] = useState(channel.enabled);
+  const [configValid, setConfigValid] = useState(true); // Start true since existing config is valid
 
   const requiresOAuth = channel.contactResolution.type === "oauth-link";
   const requiresUserConfig = channel.contactResolution.type === "user-config";
@@ -284,11 +285,12 @@ export function UserChannelCard({
             schema={channel.userConfigSchema}
             value={userConfig}
             onChange={setUserConfig}
+            onValidChange={setConfigValid}
           />
           <div className="mt-4 flex justify-end">
             <Button
               onClick={() => void handleSaveConfig()}
-              disabled={saving}
+              disabled={saving || !configValid}
               size="sm"
             >
               {saving ? "Saving..." : "Save Settings"}

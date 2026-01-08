@@ -126,6 +126,7 @@ export const AuthSettingsPage: React.FC = () => {
   >({ allowRegistration: true });
   const [loadingRegistration, setLoadingRegistration] = useState(true);
   const [savingRegistration, setSavingRegistration] = useState(false);
+  const [registrationValid, setRegistrationValid] = useState(true);
 
   // Applications state
   type Application = {
@@ -783,10 +784,11 @@ export const AuthSettingsPage: React.FC = () => {
                       schema={registrationSchema}
                       value={registrationSettings}
                       onChange={setRegistrationSettings}
+                      onValidChange={setRegistrationValid}
                     />
                     <Button
                       onClick={() => void handleSaveRegistration()}
-                      disabled={savingRegistration}
+                      disabled={savingRegistration || !registrationValid}
                     >
                       {savingRegistration ? "Saving..." : "Save Settings"}
                     </Button>

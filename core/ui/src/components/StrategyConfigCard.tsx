@@ -121,6 +121,18 @@ export function StrategyConfigCard({
     return initial;
   });
 
+  // Section-specific validation state
+  const [sectionValid, setSectionValid] = useState<Record<string, boolean>>(
+    () => {
+      const initial: Record<string, boolean> = {};
+      for (const section of configSections) {
+        // Start as true for existing configs
+        initial[section.id] = true;
+      }
+      return initial;
+    }
+  );
+
   // Determine if we're in controlled or uncontrolled mode
   const isControlled = controlledExpanded !== undefined;
   const expanded = isControlled ? controlledExpanded : internalExpanded;
@@ -158,6 +170,10 @@ export function StrategyConfigCard({
     value: Record<string, unknown>
   ) => {
     setSectionValues((prev) => ({ ...prev, [sectionId]: value }));
+  };
+
+  const handleSectionValidChange = (sectionId: string, isValid: boolean) => {
+    setSectionValid((prev) => ({ ...prev, [sectionId]: isValid }));
   };
 
   const handleSaveSection = async (section: ConfigSection) => {
@@ -292,13 +308,16 @@ export function StrategyConfigCard({
                   onChange={(value) =>
                     handleSectionValueChange(section.id, value)
                   }
+                  onValidChange={(isValid) =>
+                    handleSectionValidChange(section.id, isValid)
+                  }
                 />
 
                 {section.onSave && (
                   <div className="mt-4 flex justify-end">
                     <Button
                       onClick={() => void handleSaveSection(section)}
-                      disabled={saving}
+                      disabled={saving || !sectionValid[section.id]}
                       size="sm"
                     >
                       {saving ? "Saving..." : `Save ${section.title}`}

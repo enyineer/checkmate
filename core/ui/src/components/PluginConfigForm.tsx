@@ -24,6 +24,7 @@ interface PluginConfigFormProps {
   onPluginChange: (id: string) => void;
   config: Record<string, unknown>;
   onConfigChange: (config: Record<string, unknown>) => void;
+  onValidChange?: (isValid: boolean) => void;
   disabled?: boolean;
 }
 
@@ -34,6 +35,7 @@ export const PluginConfigForm: React.FC<PluginConfigFormProps> = ({
   onPluginChange,
   config,
   onConfigChange,
+  onValidChange,
   disabled,
 }) => {
   const selectedPlugin = plugins.find((p) => p.id === selectedPluginId);
@@ -80,6 +82,7 @@ export const PluginConfigForm: React.FC<PluginConfigFormProps> = ({
             schema={selectedPlugin.configSchema}
             value={config}
             onChange={onConfigChange}
+            onValidChange={onValidChange}
           />
         </div>
       )}

@@ -2,9 +2,31 @@ import React from "react";
 
 import { EmptyState } from "../../index";
 
-import type { DynamicFormProps } from "./types";
+import type { DynamicFormProps, JsonSchemaProperty } from "./types";
 import { extractDefaults } from "./utils";
 import { FormField } from "./FormField";
+
+/**
+ * Check if a value is considered "empty" for validation purposes.
+ */
+function isValueEmpty(val: unknown, propSchema: JsonSchemaProperty): boolean {
+  if (val === undefined || val === null) return true;
+  if (typeof val === "string" && val.trim() === "") return true;
+  // For arrays, check if empty
+  if (Array.isArray(val) && val.length === 0) return true;
+  // For objects (nested schemas), recursively check required fields
+  if (propSchema.type === "object" && propSchema.properties) {
+    const objVal = val as Record<string, unknown>;
+    const requiredKeys = propSchema.required ?? [];
+    for (const key of requiredKeys) {
+      const nestedPropSchema = propSchema.properties[key];
+      if (nestedPropSchema && isValueEmpty(objVal[key], nestedPropSchema)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 /**
  * DynamicForm generates a form from a JSON Schema.
@@ -15,9 +37,13 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   schema,
   value,
   onChange,
+  onValidChange,
   optionsResolvers,
   templateProperties,
 }) => {
+  // Track previous validity to avoid redundant callbacks
+  const prevValidRef = React.useRef<boolean | undefined>(undefined);
+
   // Initialize form with default values from schema
   React.useEffect(() => {
     if (!schema || !schema.properties) return;
@@ -30,6 +56,34 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
       onChange(merged);
     }
   }, [schema]); // Only run when schema changes
+
+  // Compute validity and report changes
+  React.useEffect(() => {
+    if (!onValidChange || !schema || !schema.properties) return;
+
+    // Check all required fields (including hidden ones like connectionId)
+    const requiredKeys = schema.required ?? [];
+    let isValid = true;
+
+    for (const key of requiredKeys) {
+      const propSchema = schema.properties[key];
+      if (!propSchema) continue;
+
+      // Skip hidden fields - they are auto-populated
+      if (propSchema["x-hidden"]) continue;
+
+      if (isValueEmpty(value[key], propSchema)) {
+        isValid = false;
+        break;
+      }
+    }
+
+    // Only call onValidChange if validity actually changed
+    if (prevValidRef.current !== isValid) {
+      prevValidRef.current = isValid;
+      onValidChange(isValid);
+    }
+  }, [schema, value, onValidChange]);
 
   if (
     !schema ||

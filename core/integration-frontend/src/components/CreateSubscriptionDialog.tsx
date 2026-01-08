@@ -89,6 +89,8 @@ export const SubscriptionDialog = ({
   const [payloadProperties, setPayloadProperties] = useState<PayloadProperty[]>(
     []
   );
+  // Track whether DynamicForm fields are valid (all required fields filled)
+  const [providerConfigValid, setProviderConfigValid] = useState(false);
 
   // Fetch events when dialog opens
   const fetchEvents = useCallback(async () => {
@@ -188,8 +190,27 @@ export const SubscriptionDialog = ({
       setConnections([]);
       setSelectedConnectionId("");
       setDeleteDialogOpen(false);
+      setProviderConfigValid(false);
     }
   }, [open, subscription]);
+
+  // For providers with custom config components or no configSchema,
+  // DynamicForm won't report validity, so assume valid
+  useEffect(() => {
+    if (!selectedProvider) return;
+
+    const hasCustomConfig = getProviderConfigExtension(
+      selectedProvider.qualifiedId
+    );
+    const hasNoSchema =
+      !selectedProvider.configSchema ||
+      !selectedProvider.configSchema.properties ||
+      Object.keys(selectedProvider.configSchema.properties).length === 0;
+
+    if (hasCustomConfig || hasNoSchema) {
+      setProviderConfigValid(true);
+    }
+  }, [selectedProvider]);
 
   const handleProviderSelect = (provider: IntegrationProviderInfo) => {
     setSelectedProvider(provider);
@@ -532,6 +553,7 @@ export const SubscriptionDialog = ({
                             schema={selectedProvider.configSchema}
                             value={providerConfig}
                             onChange={setProviderConfig}
+                            onValidChange={setProviderConfigValid}
                             optionsResolvers={optionsResolvers}
                             templateProperties={payloadProperties}
                           />
@@ -588,7 +610,12 @@ export const SubscriptionDialog = ({
                 onClick={() =>
                   void (isEditMode ? handleSave() : handleCreate())
                 }
-                disabled={!name.trim() || !selectedEventId || saving}
+                disabled={
+                  !name.trim() ||
+                  !selectedEventId ||
+                  !providerConfigValid ||
+                  saving
+                }
               >
                 {saving
                   ? isEditMode

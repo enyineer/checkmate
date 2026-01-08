@@ -85,6 +85,9 @@ export const ProviderConnectionsPage = () => {
     Record<string, { success: boolean; message?: string }>
   >({});
 
+  // Form validation state
+  const [configValid, setConfigValid] = useState(false);
+
   const fetchData = useCallback(async () => {
     if (!providerId) return;
 
@@ -132,6 +135,14 @@ export const ProviderConnectionsPage = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Reset form when creating
+  const openCreateDialog = () => {
+    setFormName("");
+    setFormConfig({});
+    setConfigValid(false);
+    setCreateDialogOpen(true);
   };
 
   const handleUpdate = async () => {
@@ -205,6 +216,7 @@ export const ProviderConnectionsPage = () => {
     setSelectedConnection(connection);
     setFormName(connection.name);
     setFormConfig(connection.configPreview);
+    setConfigValid(true); // Existing connections should have valid config
     setEditDialogOpen(true);
   };
 
@@ -251,7 +263,7 @@ export const ProviderConnectionsPage = () => {
           <BackLink to={resolveRoute(integrationRoutes.routes.list)}>
             Back to Integrations
           </BackLink>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={openCreateDialog}>
             <Plus className="h-4 w-4 mr-2" />
             New Connection
           </Button>
@@ -269,7 +281,7 @@ export const ProviderConnectionsPage = () => {
           title="No connections configured"
           description="Create a connection to start using this provider"
         >
-          <Button onClick={() => setCreateDialogOpen(true)} className="mt-4">
+          <Button onClick={openCreateDialog} className="mt-4">
             <Plus className="h-4 w-4 mr-2" />
             Create Connection
           </Button>
@@ -383,6 +395,7 @@ export const ProviderConnectionsPage = () => {
                 schema={provider.connectionSchema}
                 value={formConfig}
                 onChange={setFormConfig}
+                onValidChange={setConfigValid}
               />
             )}
           </div>
@@ -395,7 +408,7 @@ export const ProviderConnectionsPage = () => {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!formName.trim() || saving}
+              disabled={!formName.trim() || !configValid || saving}
             >
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create
@@ -425,6 +438,7 @@ export const ProviderConnectionsPage = () => {
                 schema={provider.connectionSchema}
                 value={formConfig}
                 onChange={setFormConfig}
+                onValidChange={setConfigValid}
               />
             )}
           </div>
@@ -432,7 +446,7 @@ export const ProviderConnectionsPage = () => {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdate} disabled={saving}>
+            <Button onClick={handleUpdate} disabled={!configValid || saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Changes
             </Button>
