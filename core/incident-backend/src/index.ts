@@ -5,6 +5,8 @@ import {
   permissionList,
   pluginMetadata,
   incidentContract,
+  incidentRoutes,
+  permissions,
 } from "@checkmate-monitor/incident-common";
 import {
   createBackendPlugin,
@@ -15,6 +17,8 @@ import { IncidentService } from "./service";
 import { createRouter } from "./router";
 import { CatalogApi } from "@checkmate-monitor/catalog-common";
 import { catalogHooks } from "@checkmate-monitor/catalog-backend";
+import { registerSearchProvider } from "@checkmate-monitor/command-backend";
+import { resolveRoute } from "@checkmate-monitor/common";
 import { incidentHooks } from "./hooks";
 
 // =============================================================================
@@ -120,6 +124,31 @@ export default createBackendPlugin({
           logger
         );
         rpc.registerRouter(router, incidentContract);
+
+        // Register "Create Incident" command in the command palette
+        registerSearchProvider({
+          pluginMetadata,
+          commands: [
+            {
+              id: "create",
+              title: "Create Incident",
+              subtitle: "Report a new incident affecting systems",
+              iconName: "AlertCircle",
+              route:
+                resolveRoute(incidentRoutes.routes.config) + "?action=create",
+              requiredPermissions: [permissions.incidentManage],
+            },
+            {
+              id: "manage",
+              title: "Manage Incidents",
+              subtitle: "Manage incidents affecting systems",
+              iconName: "AlertCircle",
+              shortcuts: ["meta+shift+i", "ctrl+shift+i"],
+              route: resolveRoute(incidentRoutes.routes.config),
+              requiredPermissions: [permissions.incidentManage],
+            },
+          ],
+        });
 
         logger.debug("✅ Incident Backend initialized.");
       },

@@ -1,5 +1,11 @@
 import { useMemo } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  useNavigate,
+} from "react-router-dom";
 import {
   ApiProvider,
   ApiRegistryBuilder,
@@ -21,9 +27,29 @@ import {
   PermissionDenied,
   LoadingSpinner,
   ToastProvider,
+  AmbientBackground,
 } from "@checkmate-monitor/ui";
 import { SignalProvider } from "@checkmate-monitor/signal-frontend";
 import { usePluginLifecycle } from "./hooks/usePluginLifecycle";
+import {
+  useCommands,
+  useGlobalShortcuts,
+} from "@checkmate-monitor/command-frontend";
+
+/**
+ * Component that registers global keyboard shortcuts for all commands.
+ * Uses react-router's navigate for SPA navigation.
+ */
+function GlobalShortcuts() {
+  const { commands } = useCommands();
+  const navigate = useNavigate();
+
+  // Pass "*" as permission since backend already filters by permission
+  useGlobalShortcuts(commands, navigate, ["*"]);
+
+  // This component renders nothing - it only registers event listeners
+  return <></>;
+}
 
 const RouteGuard: React.FC<{
   children: React.ReactNode;
@@ -60,8 +86,10 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-background text-foreground font-sans">
-        <header className="p-4 bg-card shadow-sm border-b border-border flex justify-between items-center z-50 relative">
+      {/* Global keyboard shortcuts for commands */}
+      <GlobalShortcuts />
+      <AmbientBackground className="text-foreground font-sans">
+        <header className="p-4 bg-card/80 backdrop-blur-sm shadow-sm border-b border-border flex justify-between items-center z-50 relative">
           <div className="flex items-center gap-8">
             <Link to="/">
               <h1 className="text-xl font-bold text-primary">Checkmate</h1>
@@ -98,7 +126,7 @@ function AppContent() {
             ))}
           </Routes>
         </main>
-      </div>
+      </AmbientBackground>
     </BrowserRouter>
   );
 }

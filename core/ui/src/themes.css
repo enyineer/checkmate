@@ -184,3 +184,21 @@
   animation: bell-ring 0.5s ease-in-out;
   transform-origin: top center;
 }
+
+/* Subtle tile pulse animation - gentle breathing effect */
+@keyframes tile-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.tile-glow {
+  animation: tile-pulse 12s ease-in-out infinite;
+  animation-delay: var(--glow-delay, 0s);
+}

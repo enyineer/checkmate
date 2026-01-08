@@ -5,10 +5,12 @@ import {
   permissionList,
   pluginMetadata,
   catalogContract,
+  catalogRoutes,
 } from "@checkmate-monitor/catalog-common";
 import { createCatalogRouter } from "./router";
 import { NotificationApi } from "@checkmate-monitor/notification-common";
-import type { InferClient } from "@checkmate-monitor/common";
+import { resolveRoute, type InferClient } from "@checkmate-monitor/common";
+import { registerSearchProvider } from "@checkmate-monitor/command-backend";
 
 // Database schema is still needed for types in creating the router
 import * as schema from "./schema";
@@ -46,6 +48,39 @@ export default createBackendPlugin({
           pluginId: pluginMetadata.pluginId,
         });
         rpc.registerRouter(catalogRouter, catalogContract);
+
+        // Register catalog systems as searchable in the command palette
+        registerSearchProvider({
+          pluginMetadata,
+          provider: {
+            id: "systems",
+            name: "Systems",
+            priority: 100, // High priority - systems are primary search target
+            search: async (query) => {
+              const systems = await typedDb.select().from(schema.systems);
+              const q = query.toLowerCase();
+
+              return systems
+                .filter(
+                  (s) =>
+                    !q ||
+                    s.name.toLowerCase().includes(q) ||
+                    s.description?.toLowerCase().includes(q)
+                )
+                .map((s) => ({
+                  id: s.id,
+                  type: "entity" as const,
+                  title: s.name,
+                  subtitle: s.description ?? undefined,
+                  category: "Systems",
+                  iconName: "Activity",
+                  route: resolveRoute(catalogRoutes.routes.systemDetail, {
+                    systemId: s.id,
+                  }),
+                }));
+            },
+          },
+        });
 
         logger.debug("✅ Catalog Backend initialized.");
       },

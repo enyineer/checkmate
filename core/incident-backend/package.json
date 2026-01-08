@@ -14,6 +14,7 @@
     "@checkmate-monitor/incident-common": "workspace:*",
     "@checkmate-monitor/catalog-common": "workspace:*",
     "@checkmate-monitor/catalog-backend": "workspace:*",
+    "@checkmate-monitor/command-backend": "workspace:*",
     "@checkmate-monitor/signal-common": "workspace:*",
     "@checkmate-monitor/integration-backend": "workspace:*",
     "@checkmate-monitor/integration-common": "workspace:*",

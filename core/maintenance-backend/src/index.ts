@@ -5,6 +5,8 @@ import {
   permissionList,
   pluginMetadata,
   maintenanceContract,
+  maintenanceRoutes,
+  permissions,
 } from "@checkmate-monitor/maintenance-common";
 import {
   createBackendPlugin,
@@ -14,6 +16,8 @@ import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-b
 import { MaintenanceService } from "./service";
 import { createRouter } from "./router";
 import { CatalogApi } from "@checkmate-monitor/catalog-common";
+import { registerSearchProvider } from "@checkmate-monitor/command-backend";
+import { resolveRoute } from "@checkmate-monitor/common";
 import { maintenanceHooks } from "./hooks";
 
 // =============================================================================
@@ -100,6 +104,32 @@ export default createBackendPlugin({
           logger
         );
         rpc.registerRouter(router, maintenanceContract);
+
+        // Register "Create Maintenance" command in the command palette
+        registerSearchProvider({
+          pluginMetadata,
+          commands: [
+            {
+              id: "create",
+              title: "Create Maintenance",
+              subtitle: "Schedule a maintenance window",
+              iconName: "Wrench",
+              route:
+                resolveRoute(maintenanceRoutes.routes.config) +
+                "?action=create",
+              requiredPermissions: [permissions.maintenanceManage],
+            },
+            {
+              id: "manage",
+              title: "Manage Maintenance",
+              subtitle: "Manage maintenance windows",
+              iconName: "Wrench",
+              shortcuts: ["meta+shift+m", "ctrl+shift+m"],
+              route: resolveRoute(maintenanceRoutes.routes.config),
+              requiredPermissions: [permissions.maintenanceManage],
+            },
+          ],
+        });
 
         logger.debug("✅ Maintenance Backend initialized.");
       },

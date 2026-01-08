@@ -14,6 +14,7 @@
     "@checkmate-monitor/maintenance-common": "workspace:*",
     "@checkmate-monitor/notification-common": "workspace:*",
     "@checkmate-monitor/catalog-common": "workspace:*",
+    "@checkmate-monitor/command-backend": "workspace:*",
     "@checkmate-monitor/signal-common": "workspace:*",
     "@checkmate-monitor/integration-backend": "workspace:*",
     "@checkmate-monitor/integration-common": "workspace:*",

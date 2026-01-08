@@ -1,0 +1,27 @@
+{
+  "name": "@checkmate-monitor/command-frontend",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@checkmate-monitor/command-common": "workspace:*",
+    "@checkmate-monitor/common": "workspace:*",
+    "@checkmate-monitor/frontend-api": "workspace:*",
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/react": "^18.2.0",
+    "@checkmate-monitor/tsconfig": "workspace:*",
+    "@checkmate-monitor/scripts": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "bun run lint:code",
+    "lint:code": "eslint . --max-warnings 0"
+  }
+}

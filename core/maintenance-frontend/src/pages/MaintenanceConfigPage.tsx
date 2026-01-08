@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   useApi,
   rpcApiRef,
@@ -51,6 +52,7 @@ const MaintenanceConfigPageContent: React.FC = () => {
   const api = useApi(maintenanceApiRef);
   const rpcApi = useApi(rpcApiRef);
   const permissionApi = useApi(permissionApiRef);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const catalogApi = useMemo(() => rpcApi.forPlugin(CatalogApi), [rpcApi]);
   const toast = useToast();
@@ -103,6 +105,17 @@ const MaintenanceConfigPageContent: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [statusFilter]);
+
+  // Handle ?action=create URL parameter (from command palette)
+  useEffect(() => {
+    if (searchParams.get("action") === "create" && canManage) {
+      setEditingMaintenance(undefined);
+      setEditorOpen(true);
+      // Clear the URL param after opening
+      searchParams.delete("action");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, canManage, setSearchParams]);
 
   const handleCreate = () => {
     setEditingMaintenance(undefined);

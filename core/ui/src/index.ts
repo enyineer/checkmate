@@ -50,3 +50,4 @@ export * from "./components/TemplateEditor";
 export * from "./components/AnimatedCounter";
 export * from "./components/CommandPalette";
 export * from "./components/TerminalFeed";
+export * from "./components/AmbientBackground";

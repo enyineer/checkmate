@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, Input } from "@checkmate-monitor/ui";
-import { useApi } from "@checkmate-monitor/frontend-api";
-import { catalogApiRef } from "@checkmate-monitor/catalog-frontend";
-import { catalogRoutes, type System } from "@checkmate-monitor/catalog-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+import {
+  useDebouncedSearch,
+  useFormatShortcut,
+} from "@checkmate-monitor/command-frontend";
+import type { SearchResult } from "@checkmate-monitor/command-common";
 import {
   Activity,
   Search,
   ArrowUp,
   ArrowDown,
   CornerDownLeft,
+  AlertCircle,
+  Wrench,
+  Command,
 } from "lucide-react";
 
 interface SearchDialogProps {
@@ -18,55 +22,65 @@ interface SearchDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Icon mapping for different result types
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Activity,
+  AlertCircle,
+  Wrench,
+  Command,
+};
+
 export const SearchDialog: React.FC<SearchDialogProps> = ({
   open,
   onOpenChange,
 }) => {
   const navigate = useNavigate();
-  const catalogApi = useApi(catalogApiRef);
+  const formatShortcut = useFormatShortcut();
+  const { results, loading, search, reset } = useDebouncedSearch(300);
 
   const [query, setQuery] = useState("");
-  const [systems, setSystems] = useState<System[]>([]);
-  const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch systems when dialog opens
+  // Trigger search when dialog opens or query changes
   useEffect(() => {
     if (open) {
-      setLoading(true);
-      catalogApi
-        .getSystems()
-        .then(setSystems)
-        .catch(console.error)
-        .finally(() => setLoading(false));
-
+      search(query);
       // Focus input after dialog opens
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       // Reset state when dialog closes
       setQuery("");
       setSelectedIndex(0);
+      reset();
     }
-  }, [open, catalogApi]);
+  }, [open, query, search, reset]);
 
-  // Filter systems based on query
-  const filteredSystems = systems.filter((system) =>
-    system.name.toLowerCase().includes(query.toLowerCase())
-  );
+  // Group results by category
+  const groupedResults: Record<string, SearchResult[]> = {};
+  for (const result of results) {
+    const category = result.category;
+    if (!groupedResults[category]) {
+      groupedResults[category] = [];
+    }
+    groupedResults[category].push(result);
+  }
 
-  // Reset selection when query changes
+  // Flatten for navigation
+  const flatResults = Object.values(groupedResults).flat();
+
+  // Reset selection when results change
   useEffect(() => {
     setSelectedIndex(0);
-  }, [query]);
+  }, [results]);
 
   const handleSelect = useCallback(
-    (system: System) => {
+    (result: SearchResult) => {
       onOpenChange(false);
-      navigate(
-        resolveRoute(catalogRoutes.routes.systemDetail, { systemId: system.id })
-      );
+      if (result.route) {
+        navigate(result.route);
+      }
     },
     [navigate, onOpenChange]
   );
@@ -78,7 +92,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
         case "ArrowDown": {
           e.preventDefault();
           setSelectedIndex((prev) =>
-            Math.min(prev + 1, filteredSystems.length - 1)
+            Math.min(prev + 1, flatResults.length - 1)
           );
           break;
         }
@@ -89,8 +103,8 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
         }
         case "Enter": {
           e.preventDefault();
-          if (filteredSystems[selectedIndex]) {
-            handleSelect(filteredSystems[selectedIndex]);
+          if (flatResults[selectedIndex]) {
+            handleSelect(flatResults[selectedIndex]);
           }
           break;
         }
@@ -101,8 +115,58 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
         }
       }
     },
-    [filteredSystems, selectedIndex, handleSelect, onOpenChange]
+    [flatResults, selectedIndex, handleSelect, onOpenChange]
   );
+
+  // Render a single result item
+  const renderResult = (result: SearchResult, globalIndex: number) => {
+    const IconComponent = iconMap[result.iconName ?? ""] ?? Activity;
+    const isSelected = globalIndex === selectedIndex;
+
+    return (
+      <button
+        key={result.id}
+        onClick={() => handleSelect(result)}
+        onMouseEnter={() => setSelectedIndex(globalIndex)}
+        className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
+          isSelected
+            ? "bg-primary/10 text-foreground"
+            : "text-muted-foreground hover:bg-muted/50"
+        }`}
+      >
+        <IconComponent className="w-4 h-4 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <span className="block truncate">{result.title}</span>
+          {result.subtitle && (
+            <span className="block text-xs text-muted-foreground truncate">
+              {result.subtitle}
+            </span>
+          )}
+        </div>
+        {/* Show shortcuts for commands */}
+        {result.type === "command" &&
+          result.shortcuts &&
+          result.shortcuts.length > 0 && (
+            <div className="flex gap-1">
+              {result.shortcuts.slice(0, 1).map((shortcut) => (
+                <kbd
+                  key={shortcut}
+                  className="px-1.5 py-0.5 text-xs rounded bg-muted border border-border font-mono"
+                >
+                  {formatShortcut(shortcut)}
+                </kbd>
+              ))}
+            </div>
+          )}
+        {isSelected && (
+          <CornerDownLeft className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        )}
+      </button>
+    );
+  };
+
+  // Track global index for selection
+  let globalIndex = 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,7 +182,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search systems..."
+            placeholder="Search commands and systems..."
             className="border-0 bg-transparent focus-visible:ring-0 px-0 text-base"
           />
         </div>
@@ -127,31 +191,29 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
         <div className="max-h-[300px] overflow-y-auto py-2">
           {loading ? (
             <div className="px-4 py-8 text-center text-muted-foreground">
-              Loading systems...
+              Searching...
             </div>
-          ) : filteredSystems.length === 0 ? (
+          ) : flatResults.length === 0 ? (
             <div className="px-4 py-8 text-center text-muted-foreground">
-              {query ? "No systems found" : "Start typing to search..."}
+              {query ? "No results found" : "Start typing to search..."}
             </div>
           ) : (
-            filteredSystems.map((system, index) => (
-              <button
-                key={system.id}
-                onClick={() => handleSelect(system)}
-                onMouseEnter={() => setSelectedIndex(index)}
-                className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${
-                  index === selectedIndex
-                    ? "bg-primary/10 text-foreground"
-                    : "text-muted-foreground hover:bg-muted/50"
-                }`}
-              >
-                <Activity className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 truncate">{system.name}</span>
-                {index === selectedIndex && (
-                  <CornerDownLeft className="w-4 h-4 text-muted-foreground" />
-                )}
-              </button>
-            ))
+            Object.entries(groupedResults).map(
+              ([category, categoryResults]) => (
+                <div key={category}>
+                  {/* Category header */}
+                  <div className="px-4 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/30">
+                    {category} ({categoryResults.length})
+                  </div>
+                  {/* Category results */}
+                  {categoryResults.map((result) => {
+                    const element = renderResult(result, globalIndex);
+                    globalIndex++;
+                    return element;
+                  })}
+                </div>
+              )
+            )
           )}
         </div>
 

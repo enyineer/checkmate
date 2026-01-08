@@ -14,6 +14,7 @@
   "dependencies": {
     "@checkmate-monitor/auth-frontend": "workspace:*",
     "@checkmate-monitor/catalog-frontend": "workspace:*",
+    "@checkmate-monitor/command-frontend": "workspace:*",
     "@checkmate-monitor/common": "workspace:*",
     "@checkmate-monitor/frontend-api": "workspace:*",
     "@checkmate-monitor/signal-common": "workspace:*",
