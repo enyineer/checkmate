@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:vendor": "vite build --config vite.config.vendor.ts",
+    "build": "bun run build:vendor && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "bun run lint:code",
     "preview": "vite preview",
