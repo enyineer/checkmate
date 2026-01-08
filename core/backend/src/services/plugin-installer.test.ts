@@ -56,13 +56,14 @@ describe("PluginLocalInstaller", () => {
     mockExistsSync.mockReturnValue(true);
   });
 
-  it("should install a package using npm", async () => {
+  it("should install a package using bun", async () => {
     const result = await installer.install("my-plugin");
 
     expect(customExec).toHaveBeenCalled();
     const command = customExec.mock.calls[0][0];
-    expect(command).toContain("npm install my-plugin");
-    expect(command).toContain(`--prefix ${path.resolve(runtimeDir)}`);
+    expect(command).toContain("bun install my-plugin");
+    expect(command).toContain(`--cwd ${path.resolve(runtimeDir)}`);
+    expect(command).toContain("--no-save");
 
     expect(result.name).toBe("mock-plugin");
   });
@@ -72,7 +73,7 @@ describe("PluginLocalInstaller", () => {
 
     expect(customExec).toHaveBeenCalled();
     const command = customExec.mock.calls[0][0];
-    expect(command).toContain("npm install @scope/plugin");
+    expect(command).toContain("bun install @scope/plugin");
 
     expect(result.name).toBe("mock-plugin");
   });

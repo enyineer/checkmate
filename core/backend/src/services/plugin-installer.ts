@@ -29,10 +29,10 @@ export class PluginLocalInstaller implements PluginInstaller {
         `🔌 Installing plugin: ${packageName} into ${this.runtimeDir}`
       );
 
-      // We use npm install --prefix to avoid messing with the global bun lockfile
-      // and to have a self-contained node_modules in the runtime directory.
+      // Use bun install with --no-save to avoid creating/modifying lockfiles
+      // in the runtime directory. This keeps plugins isolated from the main app.
       await this.execAsync(
-        `npm install ${packageName} --prefix ${this.runtimeDir} --no-save`
+        `bun install ${packageName} --cwd ${this.runtimeDir} --no-save`
       );
 
       // Extract the actual package name (packageName could be a URL or @org/name@version)
