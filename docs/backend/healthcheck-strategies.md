@@ -283,16 +283,22 @@ Health check strategies can automatically generate chart visualizations by annot
 
 ### Overview
 
-Use Zod's `.meta()` method to attach chart annotations to result and aggregated result schema fields. These annotations flow through `toJSONSchema()` and are used by the frontend to render appropriate visualizations.
+Use factory functions from `@checkmate-monitor/healthcheck-common` to create schema fields with chart annotations. These annotations flow through the health result registry and are used by the frontend to render appropriate visualizations.
 
 ```typescript
+import {
+  healthResultNumber,
+  healthResultString,
+  healthResultBoolean,
+} from "@checkmate-monitor/healthcheck-common";
+
 const myResultSchema = z.object({
-  responseTimeMs: z.number().meta({
+  responseTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Response Time",
     "x-chart-unit": "ms",
   }),
-  successRate: z.number().meta({
+  successRate: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Success Rate",
     "x-chart-unit": "%",
@@ -336,27 +342,31 @@ const myResultSchema = z.object({
 Annotate per-run result fields to show metrics for individual check executions:
 
 ```typescript
+import {
+  healthResultNumber,
+  healthResultString,
+  healthResultBoolean,
+} from "@checkmate-monitor/healthcheck-common";
+
 const myResultSchema = z.object({
-  connected: z.boolean().meta({
+  connected: healthResultBoolean({
     "x-chart-type": "boolean",
     "x-chart-label": "Connected",
   }),
-  connectionTimeMs: z.number().meta({
+  connectionTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Connection Time",
     "x-chart-unit": "ms",
   }),
-  serverVersion: z.string().optional().meta({
+  serverVersion: healthResultString({
     "x-chart-type": "text",
     "x-chart-label": "Server Version",
-  }),
-  failedAssertion: myAssertionSchema.optional().meta({
-    "x-chart-type": "hidden",  // Don't visualize
-  }),
-  error: z.string().optional().meta({
+  }).optional(),
+  failedAssertion: myAssertionSchema.optional(), // No annotation = not rendered
+  error: healthResultString({
     "x-chart-type": "status",
     "x-chart-label": "Error",
-  }),
+  }).optional(),
 });
 ```
 
@@ -366,12 +376,12 @@ Annotate aggregated result fields for bucket-level visualizations:
 
 ```typescript
 const myAggregatedSchema = z.object({
-  avgConnectionTime: z.number().meta({
+  avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
     "x-chart-unit": "ms",
   }),
-  successRate: z.number().meta({
+  successRate: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Success Rate",
     "x-chart-unit": "%",
@@ -380,7 +390,7 @@ const myAggregatedSchema = z.object({
     "x-chart-type": "bar",
     "x-chart-label": "Status Code Distribution",
   }),
-  errorCount: z.number().meta({
+  errorCount: healthResultNumber({
     "x-chart-type": "counter",
     "x-chart-label": "Errors",
   }),
@@ -395,62 +405,65 @@ import {
   Versioned,
   z,
 } from "@checkmate-monitor/backend-api";
+import {
+  healthResultBoolean,
+  healthResultNumber,
+  healthResultString,
+} from "@checkmate-monitor/healthcheck-common";
 
 // Per-run result with chart annotations
 const redisResultSchema = z.object({
-  connected: z.boolean().meta({
+  connected: healthResultBoolean({
     "x-chart-type": "boolean",
     "x-chart-label": "Connected",
   }),
-  connectionTimeMs: z.number().meta({
+  connectionTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Connection Time",
     "x-chart-unit": "ms",
   }),
-  pingTimeMs: z.number().optional().meta({
+  pingTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Ping Time",
     "x-chart-unit": "ms",
-  }),
-  pingSuccess: z.boolean().meta({
+  }).optional(),
+  pingSuccess: healthResultBoolean({
     "x-chart-type": "boolean",
     "x-chart-label": "Ping Success",
   }),
-  role: z.string().optional().meta({
+  role: healthResultString({
     "x-chart-type": "text",
     "x-chart-label": "Role",
-  }),
-  redisVersion: z.string().optional().meta({
+  }).optional(),
+  redisVersion: healthResultString({
     "x-chart-type": "text",
     "x-chart-label": "Redis Version",
-  }),
-  failedAssertion: redisAssertionSchema.optional().meta({
-    "x-chart-type": "hidden",
-  }),
-  error: z.string().optional().meta({
+  }).optional(),
+  failedAssertion: redisAssertionSchema.optional(),
+  error: healthResultString({
     "x-chart-type": "status",
     "x-chart-label": "Error",
-  }),
+  }).optional(),
 });
 
 // Aggregated result with chart annotations
 const redisAggregatedSchema = z.object({
-  avgConnectionTime: z.number().meta({
+  avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
     "x-chart-unit": "ms",
   }),
-  avgPingTime: z.number().meta({
+  avgPingTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Ping Time",
     "x-chart-unit": "ms",
   }),
-  successRate: z.number().meta({
+  successRate: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Success Rate",
     "x-chart-unit": "%",
   }),
-  errorCount: z.number().meta({
+  errorCount: healthResultNumber({
     "x-chart-type": "counter",
     "x-chart-label": "Errors",
   }),
