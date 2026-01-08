@@ -16,8 +16,9 @@ permissions:
   id-token: write
 
 jobs:
-  quality:
-    name: Quality Checks
+  # Run quality checks in parallel for faster CI
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -34,15 +35,45 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
       - name: Lint
         run: bun run lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
 
       - name: Run Tests
         run: bun test
 
   release:
     name: Release & Publish NPM
-    needs: quality
+    needs: [typecheck, lint, test]
     runs-on: ubuntu-latest
     outputs:
       published: ${{ steps.changesets.outputs.published }}
