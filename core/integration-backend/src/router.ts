@@ -217,7 +217,8 @@ export function createIntegrationRouter(deps: RouterDeps) {
       } = input;
 
       // Validate provider exists
-      if (!providerRegistry.hasProvider(providerId)) {
+      const provider = providerRegistry.getProvider(providerId);
+      if (!provider) {
         throw new ORPCError("BAD_REQUEST", {
           message: `Provider not found: ${providerId}`,
         });
@@ -227,6 +228,15 @@ export function createIntegrationRouter(deps: RouterDeps) {
       if (!eventRegistry.hasEvent(eventId)) {
         throw new ORPCError("BAD_REQUEST", {
           message: `Event type not found: ${eventId}`,
+        });
+      }
+
+      // Validate providerConfig against the provider's schema
+      const configParseResult =
+        provider.config.schema.safeParse(providerConfig);
+      if (!configParseResult.success) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: `Invalid provider configuration: ${configParseResult.error.message}`,
         });
       }
 
@@ -288,6 +298,21 @@ export function createIntegrationRouter(deps: RouterDeps) {
         throw new ORPCError("BAD_REQUEST", {
           message: `Event type not found: ${updates.eventId}`,
         });
+      }
+
+      // Validate providerConfig if updated
+      if (updates.providerConfig) {
+        const provider = providerRegistry.getProvider(existing.providerId);
+        if (provider) {
+          const configParseResult = provider.config.schema.safeParse(
+            updates.providerConfig
+          );
+          if (!configParseResult.success) {
+            throw new ORPCError("BAD_REQUEST", {
+              message: `Invalid provider configuration: ${configParseResult.error.message}`,
+            });
+          }
+        }
       }
 
       const now = new Date();
