@@ -176,7 +176,7 @@ export function registerCoreServices({
   // 4. Fetch Factory (Scoped)
   registry.registerFactory(coreServices.fetch, async (metadata) => {
     const auth = await registry.get(coreServices.auth, metadata);
-    const apiBaseUrl = process.env.API_BASE_URL || "http://localhost:3000";
+    const apiBaseUrl = process.env.INTERNAL_URL || "http://localhost:3000";
 
     const fetchWithAuth = async (
       input: RequestInfo | URL,
@@ -237,7 +237,7 @@ export function registerCoreServices({
   // 5. RPC Client Factory (Scoped, Typed)
   registry.registerFactory(coreServices.rpcClient, async (metadata) => {
     const fetchService = await registry.get(coreServices.fetch, metadata);
-    const apiBaseUrl = process.env.API_BASE_URL || "http://localhost:3000";
+    const apiBaseUrl = process.env.INTERNAL_URL || "http://localhost:3000";
 
     // Create RPC Link using the fetch service (already has auth)
     const link = new RPCLink({

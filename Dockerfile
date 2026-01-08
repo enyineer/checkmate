@@ -54,10 +54,14 @@ ENV CHECKMATE_DATA_DIR=/app/data
 ENV CHECKMATE_PLUGINS_DIR=/app/runtime_plugins
 ENV CHECKMATE_FRONTEND_DIST=/app/core/frontend/dist
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/docker-entrypoint.sh"]
 CMD ["bun", "run", "core/backend/src/index.ts"]
 
 EXPOSE 3000

@@ -273,13 +273,25 @@ Checkmate is built from the ground up as a **modular plugin system**:
 
 ### Docker (Recommended)
 
+**👉 [Full Docker Getting Started Guide](./docs/getting-started/docker.md)**
+
+Checkmate requires four environment variables:
+
+| Variable | Description | How to Generate |
+|----------|-------------|-----------------|
+| `DATABASE_URL` | PostgreSQL connection string | Your database provider |
+| `ENCRYPTION_MASTER_KEY` | 64 hex chars (32 bytes) | `openssl rand -hex 32` |
+| `BETTER_AUTH_SECRET` | Min 32 characters | `openssl rand -base64 32` |
+| `BASE_URL` | Public URL for Checkmate | Your domain (e.g., `https://status.example.com`) |
+
 ```bash
 # Pull and run the latest version
 docker pull ghcr.io/enyineer/checkmate:latest
 docker run -d \
   -e DATABASE_URL=postgresql://user:pass@host:5432/checkmate \
-  -e ENCRYPTION_MASTER_KEY=your-encryption-master-key \
-  -e LOG_LEVEL=info \
+  -e ENCRYPTION_MASTER_KEY=$(openssl rand -hex 32) \
+  -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+  -e BASE_URL=http://localhost:3000 \
   -p 3000:3000 \
   ghcr.io/enyineer/checkmate:latest
 ```

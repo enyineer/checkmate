@@ -7,7 +7,8 @@ Welcome to the Checkmate documentation! This index will help you find the inform
 New to Checkmate? Start here:
 
 1. **[Project README](https://github.com/enyineer/checkmate#readme)** - Project overview and setup instructions
-2. **[Contributing Guide](./getting-started/contributing.md)** - Set up your development environment
+2. **[Docker Deployment](./getting-started/docker.md)** - Deploy Checkmate with Docker
+3. **[Contributing Guide](./getting-started/contributing.md)** - Set up your development environment
 
 ## Architecture
 
