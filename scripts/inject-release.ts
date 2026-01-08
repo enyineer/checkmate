@@ -119,12 +119,12 @@ async function main() {
   const content = await readFile(filePath, "utf8");
   const data = parseFrontmatter(content);
 
-  data.packages.push({ name: RELEASE_PACKAGE, type: highestBumpType });
+  data.packages.push({ name: RELEASE_PACKAGE, type: "minor" });
 
   await writeFile(filePath, serializeChangeset(data));
 
   console.log(
-    `Injected ${RELEASE_PACKAGE} (${highestBumpType}) into ${firstChangesetWithoutRelease}`
+    `Injected ${RELEASE_PACKAGE} (minor) into ${firstChangesetWithoutRelease}`
   );
 }
 
