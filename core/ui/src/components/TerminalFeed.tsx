@@ -12,6 +12,8 @@ export interface TerminalEntry {
 interface TerminalFeedProps {
   entries: TerminalEntry[];
   maxEntries?: number;
+  /** Maximum height for the terminal content area (e.g., "300px", "50vh") */
+  maxHeight?: string;
   title?: string;
   className?: string;
 }
@@ -56,6 +58,7 @@ const formatTime = (date: Date): string => {
 export const TerminalFeed: React.FC<TerminalFeedProps> = ({
   entries,
   maxEntries = 8,
+  maxHeight,
   title = "terminal",
   className,
 }) => {
@@ -82,7 +85,10 @@ export const TerminalFeed: React.FC<TerminalFeedProps> = ({
       </div>
 
       {/* Terminal content */}
-      <div className="p-4 font-mono text-sm space-y-1 min-h-[200px]">
+      <div
+        className="p-4 font-mono text-sm space-y-1 min-h-[200px] overflow-y-auto"
+        style={maxHeight ? { maxHeight } : undefined}
+      >
         {displayEntries.length === 0 ? (
           <div className="text-gray-500 animate-pulse">
             Waiting for events...

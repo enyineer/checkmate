@@ -398,6 +398,7 @@ export const Dashboard: React.FC = () => {
             <TerminalFeed
               entries={terminalEntries}
               maxEntries={MAX_TERMINAL_ENTRIES}
+              maxHeight="350px"
               title="checkmate status --watch"
             />
           </section>
