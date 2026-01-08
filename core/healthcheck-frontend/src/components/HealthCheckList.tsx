@@ -32,7 +32,7 @@ export const HealthCheckList: React.FC<HealthCheckListProps> = ({
   };
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
