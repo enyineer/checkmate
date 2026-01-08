@@ -125,7 +125,7 @@ docker compose up -d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LOG_LEVEL` | `info` | Logging level (debug, info, warn, error) |
-| `INTERNAL_URL` | `http://localhost:3000` | Internal RPC URL. Set to K8s service name (e.g., `http://checkmate-service:3000`) for multi-pod load balancing. |
+| `INTERNAL_URL` | (falls back to `BASE_URL`) | Internal RPC URL for backend-to-backend calls. Set to K8s service name (e.g., `http://checkmate-service:3000`) for multi-pod load balancing. |
 
 ## Default Admin Credentials
 

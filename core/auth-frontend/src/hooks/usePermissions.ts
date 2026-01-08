@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { authClient } from "../lib/auth-client";
+import { useAuthClient } from "../lib/auth-client";
 import { rpcApiRef, useApi } from "@checkmate-monitor/frontend-api";
 import { AuthApi } from "@checkmate-monitor/auth-common";
 
 export const usePermissions = () => {
+  const authClient = useAuthClient();
   const { data: session } = authClient.useSession();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);

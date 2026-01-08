@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
@@ -6,10 +6,9 @@ import path from "node:path";
 const monorepoRoot = path.resolve(__dirname, "../..");
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
-  // Load env from monorepo root
-  const env = loadEnv(mode, monorepoRoot, "");
-  const target = env.VITE_API_BASE_URL || "http://localhost:3000";
+export default defineConfig(() => {
+  // Backend URL for proxy - always targets local backend in dev
+  const backendUrl = "http://localhost:3000";
   return {
     // Tell Vite to look for .env files in monorepo root
     envDir: monorepoRoot,
@@ -19,10 +18,10 @@ export default defineConfig(({ mode }) => {
         // Proxy API requests and WebSocket connections to backend
         // Use regex to ensure /api-docs doesn't match (it starts with /api but isn't an API call)
         "^/api/": {
-          target,
+          target: backendUrl,
           ws: true, // Enable WebSocket proxy
         },
-        "/assets": target,
+        "/assets": backendUrl,
       },
     },
     // ============================================================

@@ -7,10 +7,7 @@ export class CoreRpcApi implements RpcApi {
   public client: unknown;
   private pluginClientCache: Map<string, unknown> = new Map();
 
-  constructor() {
-    const baseUrl =
-      import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
+  constructor(baseUrl: string = "http://localhost:3000") {
     const link = new RPCLink({
       url: `${baseUrl}/api`,
       fetch: (input: RequestInfo | URL, init?: RequestInit) =>

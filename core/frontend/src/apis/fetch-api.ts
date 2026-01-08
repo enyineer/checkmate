@@ -1,7 +1,11 @@
 import { FetchApi } from "@checkmate-monitor/frontend-api";
 
 export class CoreFetchApi implements FetchApi {
-  constructor() {}
+  private baseUrl: string;
+
+  constructor(baseUrl: string = "http://localhost:3000") {
+    this.baseUrl = baseUrl;
+  }
 
   async fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
     const headers = new Headers(init?.headers);
@@ -18,9 +22,7 @@ export class CoreFetchApi implements FetchApi {
   } {
     return {
       fetch: (path: string, init?: RequestInit) => {
-        const baseUrl =
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-        return this.fetch(`${baseUrl}/api/${pluginId}${path}`, init);
+        return this.fetch(`${this.baseUrl}/api/${pluginId}${path}`, init);
       },
     };
   }

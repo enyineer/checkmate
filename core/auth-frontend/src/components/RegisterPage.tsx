@@ -27,7 +27,7 @@ import {
 } from "@checkmate-monitor/ui";
 import { useEnabledStrategies } from "../hooks/useEnabledStrategies";
 import { SocialProviderButton } from "./SocialProviderButton";
-import { authClient } from "../lib/auth-client";
+import { useAuthClient } from "../lib/auth-client";
 
 export const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -42,6 +42,7 @@ export const RegisterPage = () => {
   const { strategies, loading: strategiesLoading } = useEnabledStrategies();
   const [registrationAllowed, setRegistrationAllowed] = useState<boolean>(true);
   const [checkingRegistration, setCheckingRegistration] = useState(true);
+  const authClient = useAuthClient();
 
   // Validate password on change
   useEffect(() => {

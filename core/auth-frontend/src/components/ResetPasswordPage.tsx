@@ -19,7 +19,7 @@ import {
   AlertTitle,
   AlertDescription,
 } from "@checkmate-monitor/ui";
-import { authClient } from "../lib/auth-client";
+import { useAuthClient } from "../lib/auth-client";
 
 export const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
@@ -32,6 +32,7 @@ export const ResetPasswordPage = () => {
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const authClient = useAuthClient();
 
   // Validate password on change
   useEffect(() => {

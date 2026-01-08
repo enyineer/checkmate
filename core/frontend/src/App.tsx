@@ -19,6 +19,9 @@ import {
   DashboardSlot,
   NavbarSlot,
   NavbarMainSlot,
+  RuntimeConfigProvider,
+  useRuntimeConfigLoading,
+  useRuntimeConfig,
 } from "@checkmate-monitor/frontend-api";
 import { ConsoleLoggerApi } from "./apis/logger-api";
 import { CoreFetchApi } from "./apis/fetch-api";
@@ -131,7 +134,13 @@ function AppContent() {
   );
 }
 
-function App() {
+/**
+ * App wrapper that provides APIs and waits for runtime config to load.
+ */
+function AppWithApis() {
+  const isConfigLoading = useRuntimeConfigLoading();
+  const { baseUrl } = useRuntimeConfig();
+
   const apiRegistry = useMemo(() => {
     // Initialize API Registry with core apiRefs
     const registryBuilder = new ApiRegistryBuilder()
@@ -142,10 +151,10 @@ function App() {
         useManagePermission: () => ({ loading: false, allowed: true }),
       })
       .registerFactory(fetchApiRef, (_registry) => {
-        return new CoreFetchApi();
+        return new CoreFetchApi(baseUrl);
       })
       .registerFactory(rpcApiRef, (_registry) => {
-        return new CoreRpcApi();
+        return new CoreRpcApi(baseUrl);
       });
 
     // Register API factories from plugins
@@ -165,16 +174,33 @@ function App() {
     }
 
     return registryBuilder.build();
-  }, []);
+  }, [baseUrl]);
+
+  // Show loading while fetching runtime config
+  if (isConfigLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <ApiProvider registry={apiRegistry}>
-      <SignalProvider>
+      <SignalProvider backendUrl={baseUrl}>
         <ToastProvider>
           <AppContent />
         </ToastProvider>
       </SignalProvider>
     </ApiProvider>
+  );
+}
+
+function App() {
+  return (
+    <RuntimeConfigProvider>
+      <AppWithApis />
+    </RuntimeConfigProvider>
   );
 }
 

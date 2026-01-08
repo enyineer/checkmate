@@ -17,7 +17,7 @@ import { AuthErrorPage } from "./components/AuthErrorPage";
 import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { authApiRef, AuthApi, AuthSession } from "./api";
-import { authClient } from "./lib/auth-client";
+import { getAuthClientLazy } from "./lib/auth-client";
 
 import { usePermissions } from "./hooks/usePermissions";
 
@@ -93,7 +93,7 @@ class AuthPermissionApi implements PermissionApi {
  */
 class BetterAuthApi implements AuthApi {
   async signIn(email: string, password: string) {
-    const res = await authClient.signIn.email({ email, password });
+    const res = await getAuthClientLazy().signIn.email({ email, password });
     if (res.error) {
       const error = new Error(res.error.message || res.error.statusText);
       error.name = res.error.code || "AuthError";
@@ -118,9 +118,9 @@ class BetterAuthApi implements AuthApi {
   }
 
   async signInWithSocial(provider: string) {
-    const frontendUrl =
-      import.meta.env.VITE_FRONTEND_URL || "http://localhost:5173";
-    await authClient.signIn.social({
+    // Use current origin as callback URL (works in dev and production)
+    const frontendUrl = globalThis.location?.origin || "http://localhost:5173";
+    await getAuthClientLazy().signIn.social({
       provider,
       callbackURL: frontendUrl,
       errorCallbackURL: `${frontendUrl}${resolveRoute(
@@ -130,7 +130,7 @@ class BetterAuthApi implements AuthApi {
   }
 
   async signOut() {
-    await authClient.signOut({
+    await getAuthClientLazy().signOut({
       fetchOptions: {
         onSuccess: () => {
           // Redirect to frontend root after successful logout
@@ -141,7 +141,7 @@ class BetterAuthApi implements AuthApi {
   }
 
   async getSession() {
-    const res = await authClient.getSession();
+    const res = await getAuthClientLazy().getSession();
     if (res.error) {
       const error = new Error(res.error.message || res.error.statusText);
       error.name = res.error.code || "AuthError";
@@ -156,7 +156,7 @@ class BetterAuthApi implements AuthApi {
   }
 
   useSession() {
-    const { data, isPending, error } = authClient.useSession();
+    const { data, isPending, error } = getAuthClientLazy().useSession();
     return {
       data: data as AuthSession | undefined,
       isPending,

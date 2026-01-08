@@ -37,10 +37,21 @@ const pluginManager = new PluginManager();
 // WebSocket handler instance (initialized during init)
 let wsHandler: ReturnType<typeof createWebSocketHandler> | undefined;
 
+// CORS configuration
+// - In production: uses BASE_URL
+// - In development: allows both backend origin and Vite dev server
+const corsOrigin = process.env.BASE_URL || "http://localhost:3000";
+const corsOrigins = [corsOrigin];
+
+// Allow Vite dev server in development
+if (!process.env.BASE_URL || corsOrigin.includes("localhost")) {
+  corsOrigins.push("http://localhost:5173");
+}
+
 app.use(
   "*",
   cors({
-    origin: process.env.VITE_FRONTEND_URL || "http://localhost:5173",
+    origin: corsOrigins,
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["POST", "GET", "PUT", "PATCH", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
@@ -49,6 +60,12 @@ app.use(
   })
 );
 app.use("*", logger());
+
+// Runtime config endpoint - returns BASE_URL for frontend
+app.get("/api/config", (c) => {
+  const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+  return c.json({ baseUrl });
+});
 
 app.get("/api/plugins", async (c) => {
   // Only return remote plugins that need to be loaded via HTTP
@@ -219,7 +236,7 @@ const init = async () => {
   const authService = await pluginManager.getService(coreServices.auth);
   if (authService) {
     const { createOpenApiHandler } = await import("./openapi-router");
-    const baseUrl = process.env.VITE_BACKEND_URL || "http://localhost:3000";
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     const openApiHandler = createOpenApiHandler({
       pluginManager,
       authService,
