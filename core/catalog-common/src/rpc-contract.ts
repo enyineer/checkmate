@@ -67,6 +67,11 @@ export const catalogContract = {
     .meta({ userType: "public", permissions: [permissions.catalogRead.id] })
     .output(z.array(SystemSchema)),
 
+  getSystem: _base
+    .meta({ userType: "public", permissions: [permissions.catalogRead.id] })
+    .input(z.object({ systemId: z.string() }))
+    .output(SystemSchema.nullable()),
+
   getGroups: _base
     .meta({ userType: "public", permissions: [permissions.catalogRead.id] })
     .output(z.array(GroupSchema)),

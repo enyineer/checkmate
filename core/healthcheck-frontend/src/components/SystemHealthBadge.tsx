@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useApi, type SlotContext } from "@checkmate-monitor/frontend-api";
 import { useSignal } from "@checkmate-monitor/signal-frontend";
 import { SystemStateBadgesSlot } from "@checkmate-monitor/catalog-common";
-import { HEALTH_CHECK_STATE_CHANGED } from "@checkmate-monitor/healthcheck-common";
+import { HEALTH_CHECK_RUN_COMPLETED } from "@checkmate-monitor/healthcheck-common";
 import { healthCheckApiRef } from "../api";
 import { HealthBadge, type HealthStatus } from "@checkmate-monitor/ui";
 
@@ -35,7 +35,7 @@ export const SystemHealthBadge: React.FC<Props> = ({ system }) => {
   }, [refetch]);
 
   // Listen for realtime health check updates
-  useSignal(HEALTH_CHECK_STATE_CHANGED, ({ systemId: changedId }) => {
+  useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
     if (changedId === system?.id) {
       refetch();
     }

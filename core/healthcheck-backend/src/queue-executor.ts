@@ -14,7 +14,7 @@ import { eq, and, max } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { type SignalService } from "@checkmate-monitor/signal-common";
 import {
-  HEALTH_CHECK_STATE_CHANGED,
+  HEALTH_CHECK_RUN_COMPLETED,
   type HealthCheckStatus,
 } from "@checkmate-monitor/healthcheck-common";
 import { CatalogApi, catalogRoutes } from "@checkmate-monitor/catalog-common";
@@ -183,10 +183,11 @@ async function executeHealthCheckJob(props: {
   const previousStatus = previousState.status;
 
   try {
-    // Fetch configuration
+    // Fetch configuration (including name for signals)
     const [configRow] = await db
       .select({
         configId: healthCheckConfigurations.id,
+        configName: healthCheckConfigurations.name,
         strategyId: healthCheckConfigurations.strategyId,
         config: healthCheckConfigurations.config,
         interval: healthCheckConfigurations.intervalSeconds,
@@ -211,6 +212,18 @@ async function executeHealthCheckJob(props: {
         `Health check ${configId} for system ${systemId} not found or disabled, not rescheduling`
       );
       return;
+    }
+
+    // Fetch system name for signal payload
+    let systemName = systemId;
+    try {
+      const system = await catalogClient.getSystem({ systemId });
+      if (system) {
+        systemName = system.name;
+      }
+    } catch {
+      // Fall back to systemId if catalog lookup fails
+      logger.debug(`Could not fetch system name for ${systemId}, using ID`);
     }
 
     const strategy = registry.getStrategy(configRow.strategyId);
@@ -239,11 +252,14 @@ async function executeHealthCheckJob(props: {
       `Ran health check ${configId} for system ${systemId}: ${result.status}`
     );
 
-    // Broadcast signal for realtime frontend updates
-    await signalService.broadcast(HEALTH_CHECK_STATE_CHANGED, {
+    // Broadcast enriched signal for realtime frontend updates (e.g., terminal feed)
+    await signalService.broadcast(HEALTH_CHECK_RUN_COMPLETED, {
       systemId,
+      systemName,
       configurationId: configId,
+      configurationName: configRow.configName,
       status: result.status,
+      latencyMs: result.latencyMs,
     });
 
     // Check if aggregated state changed and notify subscribers
@@ -311,10 +327,31 @@ async function executeHealthCheckJob(props: {
       result: { error: String(error) } as Record<string, unknown>,
     });
 
-    // Broadcast failure signal for realtime frontend updates
-    await signalService.broadcast(HEALTH_CHECK_STATE_CHANGED, {
+    // Try to fetch names for the enriched signal (best-effort)
+    let systemName = systemId;
+    let configName = configId;
+    try {
+      const system = await catalogClient.getSystem({ systemId });
+      if (system) {
+        systemName = system.name;
+      }
+      const [config] = await db
+        .select({ name: healthCheckConfigurations.name })
+        .from(healthCheckConfigurations)
+        .where(eq(healthCheckConfigurations.id, configId));
+      if (config) {
+        configName = config.name;
+      }
+    } catch {
+      // Use IDs as fallback
+    }
+
+    // Broadcast enriched failure signal for realtime frontend updates
+    await signalService.broadcast(HEALTH_CHECK_RUN_COMPLETED, {
       systemId,
+      systemName,
       configurationId: configId,
+      configurationName: configName,
       status: "unhealthy",
     });
 

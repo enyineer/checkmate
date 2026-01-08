@@ -100,6 +100,18 @@ export const createCatalogRouter = ({
     >;
   });
 
+  const getSystem = os.getSystem.handler(async ({ input }) => {
+    const system = await entityService.getSystem(input.systemId);
+    if (!system) {
+      // oRPC contract uses .nullable() which requires null
+      // eslint-disable-next-line unicorn/no-null
+      return null;
+    }
+    return system as typeof system & {
+      metadata: Record<string, unknown> | null;
+    };
+  });
+
   const getGroups = os.getGroups.handler(async () => {
     const groups = await entityService.getGroups();
     return groups as unknown as Array<
@@ -282,6 +294,7 @@ export const createCatalogRouter = ({
   return os.router({
     getEntities,
     getSystems,
+    getSystem,
     getGroups,
     createSystem,
     updateSystem,

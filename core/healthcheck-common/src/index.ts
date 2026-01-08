@@ -43,14 +43,17 @@ import { createSignal } from "@checkmate-monitor/signal-common";
 import { z } from "zod";
 
 /**
- * Broadcast when a health check run completes and status potentially changes.
- * Frontend components listening to this signal can refetch state for the affected system.
+ * Broadcast when a health check run completes.
+ * Frontend components listening to this signal can update live activity feeds.
  */
-export const HEALTH_CHECK_STATE_CHANGED = createSignal(
-  "healthcheck.state.changed",
+export const HEALTH_CHECK_RUN_COMPLETED = createSignal(
+  "healthcheck.run.completed",
   z.object({
     systemId: z.string(),
+    systemName: z.string(),
     configurationId: z.string(),
+    configurationName: z.string(),
     status: z.enum(["healthy", "degraded", "unhealthy"]),
+    latencyMs: z.number().optional(),
   })
 );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useApi,
@@ -19,6 +19,8 @@ import {
 } from "@checkmate-monitor/notification-common";
 import { IncidentApi } from "@checkmate-monitor/incident-common";
 import { MaintenanceApi } from "@checkmate-monitor/maintenance-common";
+import { HEALTH_CHECK_RUN_COMPLETED } from "@checkmate-monitor/healthcheck-common";
+import { useSignal } from "@checkmate-monitor/signal-frontend";
 import {
   Card,
   CardHeader,
@@ -30,6 +32,10 @@ import {
   LoadingSpinner,
   SubscribeButton,
   useToast,
+  CommandPalette,
+  AnimatedCounter,
+  TerminalFeed,
+  type TerminalEntry,
 } from "@checkmate-monitor/ui";
 import {
   LayoutGrid,
@@ -38,16 +44,36 @@ import {
   ChevronRight,
   AlertTriangle,
   Wrench,
+  Terminal,
 } from "lucide-react";
 import { authApiRef } from "@checkmate-monitor/auth-frontend/api";
+import { SearchDialog } from "./components/SearchDialog";
 
 const CATALOG_PLUGIN_ID = "catalog";
+const MAX_TERMINAL_ENTRIES = 8;
 
 const getGroupId = (groupId: string) => `${CATALOG_PLUGIN_ID}.group.${groupId}`;
 
 interface GroupWithSystems extends Group {
   systems: System[];
 }
+
+// Map health check status to terminal entry variant
+const statusToVariant = (
+  status: "healthy" | "degraded" | "unhealthy"
+): TerminalEntry["variant"] => {
+  switch (status) {
+    case "healthy": {
+      return "success";
+    }
+    case "degraded": {
+      return "warning";
+    }
+    case "unhealthy": {
+      return "error";
+    }
+  }
+};
 
 export const Dashboard: React.FC = () => {
   const catalogApi = useApi(catalogApiRef);
@@ -70,6 +96,12 @@ export const Dashboard: React.FC = () => {
   const [activeIncidentsCount, setActiveIncidentsCount] = useState(0);
   const [activeMaintenancesCount, setActiveMaintenancesCount] = useState(0);
 
+  // Terminal feed entries from real healthcheck signals
+  const [terminalEntries, setTerminalEntries] = useState<TerminalEntry[]>([]);
+
+  // Search dialog state
+  const [searchOpen, setSearchOpen] = useState(false);
+
   // Subscription state
   const [subscriptions, setSubscriptions] = useState<EnrichedSubscription[]>(
     []
@@ -77,6 +109,37 @@ export const Dashboard: React.FC = () => {
   const [subscriptionLoading, setSubscriptionLoading] = useState<
     Record<string, boolean>
   >({});
+
+  // Listen for health check runs and add to terminal feed
+  useSignal(
+    HEALTH_CHECK_RUN_COMPLETED,
+    ({ systemName, configurationName, status, latencyMs }) => {
+      const newEntry: TerminalEntry = {
+        id: `${configurationName}-${Date.now()}`,
+        timestamp: new Date(),
+        content: `${systemName} (${configurationName}) → ${status}`,
+        variant: statusToVariant(status),
+        suffix: latencyMs === undefined ? undefined : `${latencyMs}ms`,
+      };
+
+      setTerminalEntries((prev) =>
+        [newEntry, ...prev].slice(0, MAX_TERMINAL_ENTRIES)
+      );
+    }
+  );
+
+  // Global keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (session) {
@@ -127,46 +190,52 @@ export const Dashboard: React.FC = () => {
     return subscriptions.some((s) => s.groupId === fullId);
   };
 
-  const handleSubscribe = async (groupId: string) => {
-    const fullId = getGroupId(groupId);
-    setSubscriptionLoading((prev) => ({ ...prev, [groupId]: true }));
-    try {
-      await notificationApi.subscribe({ groupId: fullId });
-      setSubscriptions((prev) => [
-        ...prev,
-        {
-          groupId: fullId,
-          groupName: "",
-          groupDescription: "",
-          ownerPlugin: CATALOG_PLUGIN_ID,
-          subscribedAt: new Date(),
-        },
-      ]);
-      toast.success("Subscribed to group notifications");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to subscribe";
-      toast.error(message);
-    } finally {
-      setSubscriptionLoading((prev) => ({ ...prev, [groupId]: false }));
-    }
-  };
+  const handleSubscribe = useCallback(
+    async (groupId: string) => {
+      const fullId = getGroupId(groupId);
+      setSubscriptionLoading((prev) => ({ ...prev, [groupId]: true }));
+      try {
+        await notificationApi.subscribe({ groupId: fullId });
+        setSubscriptions((prev) => [
+          ...prev,
+          {
+            groupId: fullId,
+            groupName: "",
+            groupDescription: "",
+            ownerPlugin: CATALOG_PLUGIN_ID,
+            subscribedAt: new Date(),
+          },
+        ]);
+        toast.success("Subscribed to group notifications");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to subscribe";
+        toast.error(message);
+      } finally {
+        setSubscriptionLoading((prev) => ({ ...prev, [groupId]: false }));
+      }
+    },
+    [notificationApi, toast]
+  );
 
-  const handleUnsubscribe = async (groupId: string) => {
-    const fullId = getGroupId(groupId);
-    setSubscriptionLoading((prev) => ({ ...prev, [groupId]: true }));
-    try {
-      await notificationApi.unsubscribe({ groupId: fullId });
-      setSubscriptions((prev) => prev.filter((s) => s.groupId !== fullId));
-      toast.success("Unsubscribed from group notifications");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to unsubscribe";
-      toast.error(message);
-    } finally {
-      setSubscriptionLoading((prev) => ({ ...prev, [groupId]: false }));
-    }
-  };
+  const handleUnsubscribe = useCallback(
+    async (groupId: string) => {
+      const fullId = getGroupId(groupId);
+      setSubscriptionLoading((prev) => ({ ...prev, [groupId]: true }));
+      try {
+        await notificationApi.unsubscribe({ groupId: fullId });
+        setSubscriptions((prev) => prev.filter((s) => s.groupId !== fullId));
+        toast.success("Unsubscribed from group notifications");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to unsubscribe";
+        toast.error(message);
+      } finally {
+        setSubscriptionLoading((prev) => ({ ...prev, [groupId]: false }));
+      }
+    },
+    [notificationApi, toast]
+  );
 
   const renderGroupsContent = () => {
     if (loading) {
@@ -256,52 +325,95 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <section>
-        <SectionHeader
-          title="Overview"
-          icon={<Activity className="w-5 h-5" />}
-        />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <StatusCard
-            title="Total Systems"
-            value={loading ? "..." : systemsCount}
-            description="Monitored systems in your catalog"
-            icon={<Server className="w-4 h-4" />}
-          />
+    <>
+      {/* Search Dialog */}
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
-          <StatusCard
-            variant={activeIncidentsCount > 0 ? "gradient" : "default"}
-            title="Active Incidents"
-            value={loading ? "..." : activeIncidentsCount}
-            description={
-              activeIncidentsCount === 0
-                ? "All systems operating normally"
-                : "Unresolved issues requiring attention"
-            }
-            icon={<AlertTriangle className="w-4 h-4" />}
+      <div className="space-y-8 animate-in fade-in duration-500">
+        {/* Command Palette Hero */}
+        <section>
+          <CommandPalette
+            onClick={() => setSearchOpen(true)}
+            placeholder="Search systems, incidents, or run commands..."
           />
+        </section>
 
-          <StatusCard
-            title="Active Maintenances"
-            value={loading ? "..." : activeMaintenancesCount}
-            description={
-              activeMaintenancesCount === 0
-                ? "No scheduled maintenance"
-                : "Ongoing or scheduled maintenance windows"
-            }
-            icon={<Wrench className="w-4 h-4" />}
+        {/* Overview Section */}
+        <section>
+          <SectionHeader
+            title="Overview"
+            icon={<Activity className="w-5 h-5" />}
           />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <StatusCard
+              title="Total Systems"
+              value={loading ? "..." : <AnimatedCounter value={systemsCount} />}
+              description="Monitored systems in your catalog"
+              icon={<Server className="w-4 h-4" />}
+            />
+
+            <StatusCard
+              variant={activeIncidentsCount > 0 ? "gradient" : "default"}
+              title="Active Incidents"
+              value={
+                loading ? (
+                  "..."
+                ) : (
+                  <AnimatedCounter value={activeIncidentsCount} />
+                )
+              }
+              description={
+                activeIncidentsCount === 0
+                  ? "All systems operating normally"
+                  : "Unresolved issues requiring attention"
+              }
+              icon={<AlertTriangle className="w-4 h-4" />}
+            />
+
+            <StatusCard
+              title="Active Maintenances"
+              value={
+                loading ? (
+                  "..."
+                ) : (
+                  <AnimatedCounter value={activeMaintenancesCount} />
+                )
+              }
+              description={
+                activeMaintenancesCount === 0
+                  ? "No scheduled maintenance"
+                  : "Ongoing or scheduled maintenance windows"
+              }
+              icon={<Wrench className="w-4 h-4" />}
+            />
+          </div>
+        </section>
+
+        {/* Terminal Feed and System Groups - Two Column Layout */}
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Terminal Feed */}
+          <section className="lg:col-span-1">
+            <SectionHeader
+              title="Recent Activity"
+              icon={<Terminal className="w-5 h-5" />}
+            />
+            <TerminalFeed
+              entries={terminalEntries}
+              maxEntries={MAX_TERMINAL_ENTRIES}
+              title="checkmate status --watch"
+            />
+          </section>
+
+          {/* System Groups */}
+          <section className="lg:col-span-2">
+            <SectionHeader
+              title="System Groups"
+              icon={<LayoutGrid className="w-5 h-5" />}
+            />
+            {renderGroupsContent()}
+          </section>
         </div>
-      </section>
-
-      <section>
-        <SectionHeader
-          title="System Groups"
-          icon={<LayoutGrid className="w-5 h-5" />}
-        />
-        {renderGroupsContent()}
-      </section>
-    </div>
+      </div>
+    </>
   );
 };

@@ -3,7 +3,7 @@ import { useApi, type SlotContext } from "@checkmate-monitor/frontend-api";
 import { useSignal } from "@checkmate-monitor/signal-frontend";
 import { healthCheckApiRef } from "../api";
 import { SystemDetailsSlot } from "@checkmate-monitor/catalog-common";
-import { HEALTH_CHECK_STATE_CHANGED } from "@checkmate-monitor/healthcheck-common";
+import { HEALTH_CHECK_RUN_COMPLETED } from "@checkmate-monitor/healthcheck-common";
 import {
   HealthBadge,
   LoadingSpinner,
@@ -247,7 +247,7 @@ export const HealthCheckSystemOverview: React.FC<SlotProps> = (props) => {
   }, [refetch]);
 
   // Listen for realtime health check updates
-  useSignal(HEALTH_CHECK_STATE_CHANGED, ({ systemId: changedId }) => {
+  useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
     if (changedId === systemId) {
       refetch();
     }
