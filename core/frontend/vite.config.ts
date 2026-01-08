@@ -25,7 +25,24 @@ export default defineConfig(({ mode }) => {
         "/assets": target,
       },
     },
-    // Ensure react-router-dom and react are pre-bundled together
+    // ============================================================
+    // React Instance Sharing Strategy
+    // ============================================================
+    // This config works with two complementary mechanisms:
+    //
+    // 1. BUNDLED PLUGINS (core/* and plugins/*):
+    //    - resolve.dedupe forces Rollup to use single React copy
+    //    - Works at build time when all imports are visible
+    //
+    // 2. RUNTIME PLUGINS (loaded dynamically via import()):
+    //    - Import Maps in index.html resolve "react" → /vendor/react.js
+    //    - Vendor bundles built by vite.config.vendor.ts
+    //    - dedupe can't help here since plugins load AFTER build
+    //
+    // Both mechanisms ensure all code uses the same React instance.
+    // ============================================================
+
+    // Pre-bundle React deps for faster dev server startup (dev mode only)
     optimizeDeps: {
       include: ["react", "react-dom", "react-router-dom"],
     },
@@ -34,11 +51,9 @@ export default defineConfig(({ mode }) => {
       target: "esnext",
     },
     resolve: {
-      // CRITICAL: Dedupe React packages to ensure single instance in monorepo
+      // Force all monorepo packages to use the same React copy at build time.
       // Without this, each workspace package can bundle its own React copy,
-      // causing "useContext is null" errors when react-router-dom components
-      // try to use a different React instance's context.
-      // See: https://vitejs.dev/config/shared-options#resolve-dedupe
+      // causing "useContext is null" errors from context mismatch.
       dedupe: ["react", "react-dom", "react-router-dom", "react/jsx-runtime"],
       alias: {
         "@": path.resolve(__dirname, "./src"),
