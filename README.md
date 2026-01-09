@@ -193,6 +193,8 @@ Organize your infrastructure into **Systems** and **Groups**. Track dependencies
 |---------|-------------|
 | 📧 **SMTP** | Email notifications with templated content |
 | 💬 **Telegram** | Instant messaging with rich formatting |
+| 💼 **Microsoft Teams** | Personal chat messages via Microsoft Graph API |
+| 🌐 **Webex** | Direct messages through Cisco Webex |
 | 🔔 **In-App** | Realtime notification center with read/unread tracking |
 
 Subscribe users to systems and automatically notify them on status changes.
@@ -205,7 +207,9 @@ Subscribe users to systems and automatically notify them on status changes.
 | Integration | Use Case |
 |-------------|----------|
 | 🎫 **Jira** | Auto-create tickets from incidents |
-| 🌐 **Webhooks** | Custom HTTP callbacks for any event |
+| 💼 **Microsoft Teams** | Post to channels and manage conversations |
+| 🌐 **Webex** | Post to Webex spaces with Adaptive Cards |
+| 🔗 **Webhooks** | Custom HTTP callbacks for any event |
 
 Event-driven architecture means you can react to health changes, incidents, and maintenance with automated workflows.
 
