@@ -113,21 +113,29 @@ export function createOAuthCallbackHandler(
     const finalReturnUrl = returnUrl || defaultReturnUrl;
 
     try {
+      // Get strategy config to pass to OAuth functions
+      const strategyConfig = await strategyService.getStrategyConfig(
+        strategyId
+      );
+      if (!strategyConfig) {
+        return Response.redirect(
+          `${baseUrl}${finalReturnUrl}?error=${encodeURIComponent(
+            "Strategy not configured"
+          )}`,
+          302
+        );
+      }
+
       // Exchange code for tokens
       const callbackUrl = `${baseUrl}/api/notification/oauth/${strategyId}/callback`;
 
-      // Resolve client ID and secret (may be functions)
-      const clientIdVal = oauth.clientId;
-      const clientSecretVal = oauth.clientSecret;
-      const clientId =
-        typeof clientIdVal === "function" ? await clientIdVal() : clientIdVal;
-      const clientSecret =
-        typeof clientSecretVal === "function"
-          ? await clientSecretVal()
-          : clientSecretVal;
+      // Call OAuth config functions with strategy config
+      const clientId = oauth.clientId(strategyConfig);
+      const clientSecret = oauth.clientSecret(strategyConfig);
+      const tokenUrl = oauth.tokenUrl(strategyConfig);
 
       // Exchange authorization code for tokens
-      const tokenResponse = await fetch(oauth.tokenUrl, {
+      const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",

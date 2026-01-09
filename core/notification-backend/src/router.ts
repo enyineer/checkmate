@@ -906,6 +906,16 @@ export const createNotificationRouter = (
           });
         }
 
+        // Get strategy config to pass to OAuth functions
+        const strategyConfig = await strategyService.getStrategyConfig(
+          strategyId
+        );
+        if (!strategyConfig) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: `Strategy ${strategyId} is not configured. Please configure it in admin settings first.`,
+          });
+        }
+
         // Build the OAuth authorization URL
         const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
         const callbackUrl = `${baseUrl}/api/notification/oauth/${strategyId}/callback`;
@@ -919,13 +929,13 @@ export const createNotificationRouter = (
         });
         const state = btoa(stateData);
 
-        // Resolve client ID (may be a function)
-        const clientIdVal = strategy.oauth.clientId;
-        const clientId =
-          typeof clientIdVal === "function" ? await clientIdVal() : clientIdVal;
+        // Call OAuth config functions with strategy config
+        const clientId = strategy.oauth.clientId(strategyConfig);
+        const authorizationUrl =
+          strategy.oauth.authorizationUrl(strategyConfig);
 
         // Build authorization URL
-        const url = new URL(strategy.oauth.authorizationUrl);
+        const url = new URL(authorizationUrl);
         url.searchParams.set("client_id", clientId);
         url.searchParams.set("redirect_uri", callbackUrl);
         url.searchParams.set("scope", strategy.oauth.scopes.join(" "));

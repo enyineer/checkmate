@@ -108,18 +108,18 @@ export interface NotificationSendContext<
  * - POST /api/notification/oauth/{qualifiedId}/refresh
  * - DELETE /api/notification/oauth/{qualifiedId}/unlink
  */
-export interface StrategyOAuthConfig {
+export interface StrategyOAuthConfig<TConfig = unknown> {
   /**
    * OAuth 2.0 client ID.
-   * Can be a function for lazy loading from ConfigService.
+   * Receives the strategy config so credentials can be extracted directly.
    */
-  clientId: string | (() => string | Promise<string>);
+  clientId: (config: TConfig) => string;
 
   /**
    * OAuth 2.0 client secret.
-   * Can be a function for lazy loading from ConfigService.
+   * Receives the strategy config so credentials can be extracted directly.
    */
-  clientSecret: string | (() => string | Promise<string>);
+  clientSecret: (config: TConfig) => string;
 
   /**
    * Scopes to request from the OAuth provider.
@@ -128,15 +128,17 @@ export interface StrategyOAuthConfig {
 
   /**
    * Provider's authorization URL (where users are redirected to consent).
-   * @example "https://slack.com/oauth/v2/authorize"
+   * Receives the strategy config for tenant-specific URLs.
+   * @example (config) => `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/authorize`
    */
-  authorizationUrl: string;
+  authorizationUrl: (config: TConfig) => string;
 
   /**
    * Provider's token exchange URL.
-   * @example "https://slack.com/api/oauth.v2.access"
+   * Receives the strategy config for tenant-specific URLs.
+   * @example (config) => `https://login.microsoftonline.com/${config.tenantId}/oauth2/v2.0/token`
    */
-  tokenUrl: string;
+  tokenUrl: (config: TConfig) => string;
 
   /**
    * Extract the user's external ID from the token response.
@@ -318,7 +320,7 @@ export interface NotificationStrategy<
    * }
    * ```
    */
-  oauth?: StrategyOAuthConfig;
+  oauth?: StrategyOAuthConfig<TConfig>;
 
   /**
    * Markdown instructions shown when admins configure platform-wide strategy settings.
@@ -382,8 +384,8 @@ export interface NotificationStrategyRegistry {
    * @param strategy - The strategy to register
    * @param pluginMetadata - Plugin metadata for namespacing
    */
-  register(
-    strategy: NotificationStrategy<unknown, unknown, unknown>,
+  register<TConfig, TUserConfig, TLayoutConfig>(
+    strategy: NotificationStrategy<TConfig, TUserConfig, TLayoutConfig>,
     pluginMetadata: PluginMetadata
   ): void;
 

@@ -156,9 +156,6 @@ function buildAdaptiveCard(options: AdaptiveCardOptions): object {
 // Teams Strategy Implementation
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// Store config reference for OAuth config functions
-let storedConfig: TeamsConfig | undefined;
-
 /**
  * Microsoft Teams notification strategy.
  * Sends notifications as personal chat messages via Microsoft Graph API.
@@ -181,20 +178,18 @@ const teamsStrategy: NotificationStrategy<TeamsConfig> = {
   userInstructions,
 
   // OAuth configuration for Microsoft identity platform
+  // All functions receive the strategy config - no module-scoped variables needed
   oauth: {
-    get clientId() {
-      return storedConfig?.clientId ?? "";
-    },
-    get clientSecret() {
-      return storedConfig?.clientSecret ?? "";
-    },
+    clientId: (config) => config.clientId ?? "",
+    clientSecret: (config) => config.clientSecret ?? "",
     scopes: ["Chat.ReadWrite", "User.Read", "offline_access"],
-    get authorizationUrl() {
-      const tenantId = storedConfig?.tenantId ?? "common";
+    authorizationUrl: (config) => {
+      // "common" works for multi-tenant Azure AD apps
+      const tenantId = config.tenantId ?? "common";
       return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`;
     },
-    get tokenUrl() {
-      const tenantId = storedConfig?.tenantId ?? "common";
+    tokenUrl: (config) => {
+      const tenantId = config.tenantId ?? "common";
       return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
     },
     extractExternalId: (response: Record<string, unknown>) => {
@@ -227,15 +222,12 @@ const teamsStrategy: NotificationStrategy<TeamsConfig> = {
       response.refresh_token as string | undefined,
     extractExpiresIn: (response: Record<string, unknown>) =>
       response.expires_in as number | undefined,
-  } satisfies StrategyOAuthConfig,
+  } satisfies StrategyOAuthConfig<TeamsConfig>,
 
   async send(
     context: NotificationSendContext<TeamsConfig>
   ): Promise<NotificationDeliveryResult> {
     const { notification, strategyConfig, logger } = context;
-
-    // Store config for OAuth getters
-    storedConfig = strategyConfig;
 
     if (!strategyConfig.clientId || !strategyConfig.clientSecret) {
       return {
@@ -289,25 +281,26 @@ const teamsStrategy: NotificationStrategy<TeamsConfig> = {
         const errorText = await chatResponse.text();
         logger.error("Failed to create/get Teams chat", {
           status: chatResponse.status,
-          error: errorText.slice(0, 200),
+          error: errorText.slice(0, 500),
         });
         return {
           success: false,
-          error: `Failed to create Teams chat (${chatResponse.status})`,
+          error: `Failed to create Teams chat: ${chatResponse.status}`,
         };
       }
 
       const chatData = (await chatResponse.json()) as { id: string };
       const chatId = chatData.id;
 
-      // Step 2: Send the message with Adaptive Card
-      const adaptiveCard = buildAdaptiveCard({
+      // Step 2: Build adaptive card for the message
+      const card = buildAdaptiveCard({
         title: notification.title,
         body: notification.body,
         importance: notification.importance,
         action: notification.action,
       });
 
+      // Step 3: Send message to the chat
       const messageResponse = await fetch(
         `${GRAPH_API_BASE}/chats/${chatId}/messages`,
         {
@@ -325,7 +318,7 @@ const teamsStrategy: NotificationStrategy<TeamsConfig> = {
               {
                 id: "adaptiveCard",
                 contentType: "application/vnd.microsoft.card.adaptive",
-                content: JSON.stringify(adaptiveCard),
+                content: JSON.stringify(card),
               },
             ],
           }),
@@ -337,15 +330,15 @@ const teamsStrategy: NotificationStrategy<TeamsConfig> = {
         const errorText = await messageResponse.text();
         logger.error("Failed to send Teams message", {
           status: messageResponse.status,
-          error: errorText.slice(0, 200),
+          error: errorText.slice(0, 500),
         });
         return {
           success: false,
-          error: `Failed to send Teams message (${messageResponse.status})`,
+          error: `Failed to send Teams message: ${messageResponse.status}`,
         };
       }
 
-      const messageData = (await messageResponse.json()) as { id?: string };
+      const messageData = (await messageResponse.json()) as { id: string };
 
       return {
         success: true,

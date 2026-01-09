@@ -30,8 +30,8 @@ export interface NotificationStrategyExtensionPoint {
    * Register a notification strategy.
    * The strategy will be namespaced by the plugin's ID automatically.
    */
-  addStrategy(
-    strategy: NotificationStrategy<unknown, unknown, unknown>,
+  addStrategy<TConfig, TUserConfig, TLayoutConfig>(
+    strategy: NotificationStrategy<TConfig, TUserConfig, TLayoutConfig>,
     pluginMetadata: PluginMetadata
   ): void;
 }
@@ -66,19 +66,20 @@ function createNotificationStrategyRegistry(): NotificationStrategyRegistry & {
   }> = [];
 
   return {
-    register(
-      strategy: NotificationStrategy<unknown, unknown, unknown>,
+    register<TConfig, TUserConfig, TLayoutConfig>(
+      strategy: NotificationStrategy<TConfig, TUserConfig, TLayoutConfig>,
       metadata: PluginMetadata
     ): void {
       const qualifiedId = `${metadata.pluginId}.${strategy.id}`;
       const permissionId = `${metadata.pluginId}.strategy.${strategy.id}.use`;
 
+      // Cast to unknown for storage - registry stores heterogeneous strategies
       const registered: RegisteredNotificationStrategy<
         unknown,
         unknown,
         unknown
       > = {
-        ...strategy,
+        ...(strategy as NotificationStrategy<unknown, unknown, unknown>),
         qualifiedId,
         ownerPluginId: metadata.pluginId,
         permissionId,
