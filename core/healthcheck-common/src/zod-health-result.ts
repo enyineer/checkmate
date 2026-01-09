@@ -10,6 +10,7 @@ import { z } from "zod";
  * Numeric types:
  * - line: Time series line chart for numeric metrics over time
  * - bar: Bar chart for distributions (record of string to number)
+ * - pie: Pie chart for category distributions (record of string to number)
  * - counter: Simple count display with trend indicator
  * - gauge: Percentage gauge for rates/percentages (0-100)
  *
@@ -21,6 +22,7 @@ import { z } from "zod";
 export type ChartType =
   | "line"
   | "bar"
+  | "pie"
   | "counter"
   | "gauge"
   | "boolean"
@@ -84,4 +86,42 @@ export function healthResultBoolean(meta: HealthResultMeta) {
   const schema = z.boolean();
   schema.register(healthResultRegistry, meta);
   return schema;
+}
+
+// ============================================================================
+// METADATA RETRIEVAL - For toJsonSchema integration
+// ============================================================================
+
+/**
+ * Unwraps a Zod schema to get the inner schema, handling:
+ * - ZodOptional
+ * - ZodDefault
+ * - ZodNullable
+ */
+function unwrapSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
+  let unwrapped = schema;
+
+  if (unwrapped instanceof z.ZodOptional) {
+    unwrapped = unwrapped.unwrap() as z.ZodTypeAny;
+  }
+
+  if (unwrapped instanceof z.ZodDefault) {
+    unwrapped = unwrapped.def.innerType as z.ZodTypeAny;
+  }
+
+  if (unwrapped instanceof z.ZodNullable) {
+    unwrapped = unwrapped.unwrap() as z.ZodTypeAny;
+  }
+
+  return unwrapped;
+}
+
+/**
+ * Get health result metadata for a schema.
+ * Automatically unwraps Optional/Default/Nullable wrappers.
+ */
+export function getHealthResultMeta(
+  schema: z.ZodTypeAny
+): HealthResultMeta | undefined {
+  return healthResultRegistry.get(unwrapSchema(schema));
 }

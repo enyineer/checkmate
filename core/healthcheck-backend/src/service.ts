@@ -614,10 +614,15 @@ export class HealthCheckService {
       if (!bucketMap.has(key)) {
         bucketMap.set(key, { bucketStart, runs: [] });
       }
+      // run.result is StoredHealthCheckResult: { status, latencyMs, message, metadata }
+      // Strategy's aggregateResult expects metadata to be the strategy-specific fields
+      const storedResult = run.result as {
+        metadata?: Record<string, unknown>;
+      } | null;
       bucketMap.get(key)!.runs.push({
         status: run.status,
         latencyMs: run.latencyMs ?? undefined,
-        metadata: run.result ?? undefined,
+        metadata: storedResult?.metadata ?? undefined,
       });
     }
 
@@ -637,7 +642,7 @@ export class HealthCheckService {
 
       const latencies = bucket.runs
         .map((r) => r.latencyMs)
-        .filter((l): l is number => l !== null);
+        .filter((l): l is number => typeof l === "number");
       const avgLatencyMs =
         latencies.length > 0
           ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)

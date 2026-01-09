@@ -5,19 +5,7 @@
  * and x-chart-unit metadata for auto-chart rendering.
  */
 
-/**
- * Available chart types for auto-generated visualizations.
- * Mirrors the backend ChartType but defined locally since frontend
- * cannot import from backend-api.
- */
-export type ChartType =
-  | "line"
-  | "bar"
-  | "counter"
-  | "gauge"
-  | "boolean"
-  | "text"
-  | "status";
+import type { ChartType } from "@checkstack/healthcheck-common";
 
 /**
  * Chart field information extracted from JSON Schema.

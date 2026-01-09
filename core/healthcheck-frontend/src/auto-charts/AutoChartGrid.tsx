@@ -10,12 +10,22 @@ import { extractChartFields, getFieldValue } from "./schema-parser";
 import { useStrategySchemas } from "./useStrategySchemas";
 import type { HealthCheckDiagramSlotContext } from "../slots";
 import type { StoredHealthCheckResult } from "@checkstack/healthcheck-common";
+import { Card, CardContent, CardHeader, CardTitle } from "@checkstack/ui";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@checkstack/ui";
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  RadialBarChart,
+  RadialBar,
+} from "recharts";
 
 interface AutoChartGridProps {
   context: HealthCheckDiagramSlotContext;
@@ -102,6 +112,9 @@ function ChartRenderer({ field, context }: ChartRendererProps) {
     case "bar": {
       return <BarChartRenderer field={field} context={context} />;
     }
+    case "pie": {
+      return <PieChartRenderer field={field} context={context} />;
+    }
     case "boolean": {
       return <BooleanRenderer field={field} context={context} />;
     }
@@ -122,27 +135,53 @@ function ChartRenderer({ field, context }: ChartRendererProps) {
 // =============================================================================
 
 /**
- * Renders a large counter value with optional trend.
+ * Renders a counter showing frequency distribution of all unique values.
+ * Counts how many times each value appears across all runs/buckets.
  */
 function CounterRenderer({ field, context }: ChartRendererProps) {
-  const value = getLatestValue(field.name, context);
-  const displayValue = typeof value === "number" ? value : "—";
-  const unit = field.unit ?? "";
+  const counts = getValueCounts(field.name, context);
+  const entries = Object.entries(counts);
 
-  return (
-    <div className="text-2xl font-bold">
-      {displayValue}
-      {unit && (
-        <span className="text-sm font-normal text-muted-foreground ml-1">
-          {unit}
+  if (entries.length === 0) {
+    return <div className="text-muted-foreground">No data</div>;
+  }
+
+  // Sort by count (descending) then by value
+  entries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  // If there's only one unique value, show it prominently with count
+  if (entries.length === 1) {
+    const [value, count] = entries[0];
+    return (
+      <div className="text-2xl font-bold">
+        {value}
+        <span className="text-sm font-normal text-muted-foreground ml-2">
+          ({count}×)
         </span>
+      </div>
+    );
+  }
+
+  // Multiple unique values: show as a compact list
+  return (
+    <div className="space-y-1">
+      {entries.slice(0, 5).map(([value, count]) => (
+        <div key={value} className="flex items-center justify-between">
+          <span className="font-mono text-sm">{value}</span>
+          <span className="text-muted-foreground text-sm">{count}×</span>
+        </div>
+      ))}
+      {entries.length > 5 && (
+        <div className="text-xs text-muted-foreground">
+          +{entries.length - 5} more
+        </div>
       )}
     </div>
   );
 }
 
 /**
- * Renders a percentage gauge visualization.
+ * Renders a percentage gauge visualization using Recharts RadialBarChart.
  */
 function GaugeRenderer({ field, context }: ChartRendererProps) {
   const value = getLatestValue(field.name, context);
@@ -151,38 +190,36 @@ function GaugeRenderer({ field, context }: ChartRendererProps) {
   const unit = field.unit ?? "%";
 
   // Determine color based on value (for rates: higher is better)
-  const colorClass =
+  const fillColor =
     numValue >= 90
-      ? "text-green-500"
+      ? "hsl(var(--success))"
       : numValue >= 70
-      ? "text-yellow-500"
-      : "text-red-500";
+      ? "hsl(var(--warning))"
+      : "hsl(var(--destructive))";
+
+  const data = [{ name: field.label, value: numValue, fill: fillColor }];
 
   return (
     <div className="flex items-center gap-3">
-      <div className="relative w-16 h-16">
-        <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
-          <circle
-            cx="18"
-            cy="18"
-            r="15.5"
-            fill="none"
-            className="stroke-muted"
-            strokeWidth="3"
+      <ResponsiveContainer width={80} height={80}>
+        <RadialBarChart
+          cx="50%"
+          cy="50%"
+          innerRadius="60%"
+          outerRadius="100%"
+          barSize={8}
+          data={data}
+          startAngle={90}
+          endAngle={-270}
+        >
+          <RadialBar
+            dataKey="value"
+            cornerRadius={4}
+            background={{ fill: "hsl(var(--muted))" }}
           />
-          <circle
-            cx="18"
-            cy="18"
-            r="15.5"
-            fill="none"
-            className={colorClass.replace("text-", "stroke-")}
-            strokeWidth="3"
-            strokeDasharray={`${numValue} 100`}
-            strokeLinecap="round"
-          />
-        </svg>
-      </div>
-      <div className={`text-2xl font-bold ${colorClass}`}>
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="text-2xl font-bold" style={{ color: fillColor }}>
         {numValue.toFixed(1)}
         {unit}
       </div>
@@ -247,8 +284,7 @@ function StatusRenderer({ field, context }: ChartRendererProps) {
 }
 
 /**
- * Renders a simple line chart visualization.
- * For now, shows min/avg/max summary. Full charts can be added later.
+ * Renders an area chart for time series data using Recharts AreaChart.
  */
 function LineChartRenderer({ field, context }: ChartRendererProps) {
   const values = getAllValues(field.name, context);
@@ -258,31 +294,81 @@ function LineChartRenderer({ field, context }: ChartRendererProps) {
     return <div className="text-muted-foreground">No data</div>;
   }
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  // Transform values to recharts data format
+  const chartData = values.map((value, index) => ({
+    index,
+    value,
+  }));
+
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
 
   return (
-    <div className="space-y-1">
-      <div className="text-2xl font-bold">
-        {avg.toFixed(1)}
+    <div className="space-y-2">
+      <div className="text-lg font-medium">
+        Avg: {avg.toFixed(1)}
         {unit && (
           <span className="text-sm font-normal text-muted-foreground ml-1">
             {unit}
           </span>
         )}
       </div>
-      <div className="text-xs text-muted-foreground">
-        Min: {min.toFixed(1)}
-        {unit} · Max: {max.toFixed(1)}
-        {unit}
-      </div>
+      <ResponsiveContainer width="100%" height={60}>
+        <AreaChart data={chartData}>
+          <defs>
+            <linearGradient
+              id={`gradient-${field.name}`}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop
+                offset="5%"
+                stopColor="hsl(var(--primary))"
+                stopOpacity={0.3}
+              />
+              <stop
+                offset="95%"
+                stopColor="hsl(var(--primary))"
+                stopOpacity={0}
+              />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="hsl(var(--primary))"
+            fill={`url(#gradient-${field.name})`}
+            strokeWidth={2}
+          />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return;
+              const data = payload[0].payload as { value: number };
+              return (
+                <div
+                  className="rounded-md border bg-popover p-2 text-sm shadow-md"
+                  style={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                  }}
+                >
+                  <p className="font-medium">
+                    {data.value.toFixed(1)}
+                    {unit}
+                  </p>
+                </div>
+              );
+            }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }
 
 /**
- * Renders a bar chart for record values.
+ * Renders a horizontal bar chart for record values using Recharts BarChart.
  */
 function BarChartRenderer({ field, context }: ChartRendererProps) {
   const value = getLatestValue(field.name, context);
@@ -291,25 +377,154 @@ function BarChartRenderer({ field, context }: ChartRendererProps) {
     return <div className="text-muted-foreground">No data</div>;
   }
 
-  const entries = Object.entries(value as Record<string, number>).slice(0, 5);
-  const maxValue = Math.max(...entries.map(([, v]) => v), 1);
+  const entries = Object.entries(value as Record<string, number>).slice(0, 8);
+  const chartData = entries.map(([name, value]) => ({ name, value }));
 
   return (
-    <div className="space-y-2">
-      {entries.map(([key, val]) => (
-        <div key={key} className="flex items-center gap-2">
-          <span className="text-xs w-12 text-right text-muted-foreground">
-            {key}
-          </span>
-          <div className="flex-1 h-4 bg-muted rounded overflow-hidden">
+    <ResponsiveContainer
+      width="100%"
+      height={Math.max(100, entries.length * 28)}
+    >
+      <BarChart
+        data={chartData}
+        layout="vertical"
+        margin={{ left: 20, right: 20 }}
+      >
+        <XAxis type="number" hide />
+        <YAxis
+          type="category"
+          dataKey="name"
+          tickLine={false}
+          axisLine={false}
+          tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+          width={50}
+        />
+        <Tooltip
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return;
+            const data = payload[0].payload as { name: string; value: number };
+            return (
+              <div
+                className="rounded-md border bg-popover p-2 text-sm shadow-md"
+                style={{
+                  backgroundColor: "hsl(var(--popover))",
+                  border: "1px solid hsl(var(--border))",
+                }}
+              >
+                <p className="font-medium">
+                  {data.name}: {data.value}
+                </p>
+              </div>
+            );
+          }}
+        />
+        <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// Color palette for pie segments
+const CHART_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(var(--primary))",
+  "hsl(var(--secondary))",
+  "hsl(var(--muted))",
+];
+
+/**
+ * Renders a pie chart for category distribution values using Recharts PieChart.
+ * Supports both pre-aggregated objects (like statusCodeCounts) and simple values
+ * that need to be counted (like statusCode).
+ */
+function PieChartRenderer({ field, context }: ChartRendererProps) {
+  // First, try to get a pre-aggregated object value
+  const value = getLatestValue(field.name, context);
+
+  // Determine the data source: use pre-aggregated object or count simple values
+  let dataRecord: Record<string, number>;
+  // eslint-disable-next-line unicorn/prefer-ternary
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    // Already an object (like statusCodeCounts from aggregated schema)
+    dataRecord = value as Record<string, number>;
+  } else {
+    // Simple values (like statusCode) - count occurrences
+    dataRecord = getValueCounts(field.name, context);
+  }
+
+  const entries = Object.entries(dataRecord).slice(0, 8);
+  const total = entries.reduce((sum, [, v]) => sum + v, 0);
+
+  if (total === 0) {
+    return <div className="text-muted-foreground">No data</div>;
+  }
+
+  const chartData = entries.map(([name, value]) => ({ name, value }));
+
+  return (
+    <div className="flex items-center gap-4">
+      <ResponsiveContainer width={100} height={100}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={25}
+            outerRadius={45}
+            strokeWidth={0}
+          >
+            {chartData.map((_, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={CHART_COLORS[index % CHART_COLORS.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return;
+              const data = payload[0].payload as {
+                name: string;
+                value: number;
+              };
+              return (
+                <div
+                  className="rounded-md border bg-popover p-2 text-sm shadow-md"
+                  style={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                  }}
+                >
+                  <p className="font-medium">
+                    {data.name}: {data.value} (
+                    {((data.value / total) * 100).toFixed(0)}%)
+                  </p>
+                </div>
+              );
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="flex-1 space-y-1 text-xs">
+        {chartData.map((item, i) => (
+          <div key={item.name} className="flex items-center gap-2">
             <div
-              className="h-full bg-primary"
-              style={{ width: `${(val / maxValue) * 100}%` }}
+              className="w-3 h-3 rounded-sm"
+              style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
             />
+            <span className="text-muted-foreground">{item.name}</span>
+            <span className="ml-auto font-medium">
+              {item.value} ({((item.value / total) * 100).toFixed(0)}%)
+            </span>
           </div>
-          <span className="text-xs w-8">{val}</span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -319,10 +534,11 @@ function BarChartRenderer({ field, context }: ChartRendererProps) {
 // =============================================================================
 
 /**
- * Get the latest value for a field from the context.
+ * Get the aggregated value for a field from the context.
  *
- * For raw runs, the strategy-specific data is inside result.metadata.
- * For aggregated buckets, the data is directly in aggregatedResult.
+ * For raw runs: returns the latest value from result.metadata
+ * For aggregated buckets: combines record values (counters) across ALL buckets,
+ * or returns the latest for non-aggregatable types.
  */
 function getLatestValue(
   fieldName: string,
@@ -331,17 +547,100 @@ function getLatestValue(
   if (context.type === "raw") {
     const runs = context.runs;
     if (runs.length === 0) return undefined;
-    // result is typed as StoredHealthCheckResult with { status, latencyMs, message, metadata }
-    const result = runs.at(-1)?.result as StoredHealthCheckResult | undefined;
-    return getFieldValue(result?.metadata, fieldName);
+    // For raw runs, aggregate across all runs for record types
+    const allValues = runs.map((run) => {
+      const result = run.result as StoredHealthCheckResult | undefined;
+      return getFieldValue(result?.metadata, fieldName);
+    });
+
+    // If the values are record types (like statusCodeCounts), combine them
+    const firstVal = allValues.find((v) => v !== undefined);
+    if (firstVal && typeof firstVal === "object" && !Array.isArray(firstVal)) {
+      return combineRecordValues(allValues as Record<string, number>[]);
+    }
+    // For simple values, return the latest
+    return allValues.at(-1);
   } else {
     const buckets = context.buckets;
     if (buckets.length === 0) return undefined;
-    return getFieldValue(
-      buckets.at(-1)?.aggregatedResult as Record<string, unknown>,
-      fieldName
+
+    // Get all values for this field from all buckets
+    const allValues = buckets.map((bucket) =>
+      getFieldValue(
+        bucket.aggregatedResult as Record<string, unknown>,
+        fieldName
+      )
     );
+
+    // If the values are record types (like statusCodeCounts), combine them
+    const firstVal = allValues.find((v) => v !== undefined);
+    if (firstVal && typeof firstVal === "object" && !Array.isArray(firstVal)) {
+      return combineRecordValues(allValues as Record<string, number>[]);
+    }
+    // For simple values (like errorCount), sum them
+    if (typeof firstVal === "number") {
+      return allValues
+        .filter((v): v is number => typeof v === "number")
+        .reduce((sum, v) => sum + v, 0);
+    }
+    // For other types, return the latest
+    return allValues.at(-1);
   }
+}
+
+/**
+ * Combine record values (like statusCodeCounts) across multiple buckets/runs.
+ * Adds up the counts for each key.
+ */
+function combineRecordValues(
+  values: (Record<string, number> | undefined)[]
+): Record<string, number> {
+  const combined: Record<string, number> = {};
+  for (const val of values) {
+    if (!val || typeof val !== "object") continue;
+    for (const [key, count] of Object.entries(val)) {
+      if (typeof count === "number") {
+        combined[key] = (combined[key] || 0) + count;
+      }
+    }
+  }
+  return combined;
+}
+
+/**
+ * Count occurrences of each unique value for a field across all runs/buckets.
+ * Returns a record mapping each unique value to its count.
+ */
+function getValueCounts(
+  fieldName: string,
+  context: HealthCheckDiagramSlotContext
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+
+  if (context.type === "raw") {
+    for (const run of context.runs) {
+      const result = run.result as StoredHealthCheckResult | undefined;
+      const value = getFieldValue(result?.metadata, fieldName);
+      if (value !== undefined && value !== null) {
+        const key = String(value);
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    }
+  } else {
+    // For aggregated buckets, we need to look at each bucket's data
+    for (const bucket of context.buckets) {
+      const value = getFieldValue(
+        bucket.aggregatedResult as Record<string, unknown>,
+        fieldName
+      );
+      if (value !== undefined && value !== null) {
+        const key = String(value);
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    }
+  }
+
+  return counts;
 }
 
 /**

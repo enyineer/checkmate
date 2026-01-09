@@ -7,36 +7,12 @@ import {
   Cell,
 } from "recharts";
 import { format } from "date-fns";
+import type { HealthCheckDiagramSlotContext } from "../slots";
 
-export interface StatusDataPoint {
-  timestamp: Date;
-  status: "healthy" | "degraded" | "unhealthy";
-}
-
-export interface AggregatedStatusDataPoint {
-  bucketStart: Date;
-  healthyCount: number;
-  degradedCount: number;
-  unhealthyCount: number;
-  runCount: number;
-  bucketSize: "hourly" | "daily";
-}
-
-type RawStatusTimelineProps = {
-  type: "raw";
-  data: StatusDataPoint[];
+interface HealthCheckStatusTimelineProps {
+  context: HealthCheckDiagramSlotContext;
   height?: number;
-};
-
-type AggregatedStatusTimelineProps = {
-  type: "aggregated";
-  data: AggregatedStatusDataPoint[];
-  height?: number;
-};
-
-type HealthCheckStatusTimelineProps =
-  | RawStatusTimelineProps
-  | AggregatedStatusTimelineProps;
+}
 
 const statusColors = {
   healthy: "hsl(var(--success))",
@@ -51,28 +27,23 @@ const statusColors = {
  */
 export const HealthCheckStatusTimeline: React.FC<
   HealthCheckStatusTimelineProps
-> = (props) => {
-  const { height = 60 } = props;
+> = ({ context, height = 60 }) => {
+  if (context.type === "aggregated") {
+    const buckets = context.buckets;
 
-  if (props.data.length === 0) {
-    return (
-      <div
-        className="flex items-center justify-center text-muted-foreground"
-        style={{ height }}
-      >
-        No status data available
-      </div>
-    );
-  }
+    if (buckets.length === 0) {
+      return (
+        <div
+          className="flex items-center justify-center text-muted-foreground"
+          style={{ height }}
+        >
+          No status data available
+        </div>
+      );
+    }
 
-  const isAggregated = props.type === "aggregated";
-
-  // For raw data: transform to chart format
-  // For aggregated data: use stacked bar format
-  if (isAggregated) {
-    const aggData = props.data as AggregatedStatusDataPoint[];
-    const chartData = aggData.map((d) => ({
-      timestamp: d.bucketStart.getTime(),
+    const chartData = buckets.map((d) => ({
+      timestamp: new Date(d.bucketStart).getTime(),
       healthy: d.healthyCount,
       degraded: d.degradedCount,
       unhealthy: d.unhealthyCount,
@@ -80,7 +51,7 @@ export const HealthCheckStatusTimeline: React.FC<
     }));
 
     const timeFormat =
-      aggData[0]?.bucketSize === "daily" ? "MMM d" : "MMM d HH:mm";
+      buckets[0]?.bucketSize === "daily" ? "MMM d" : "MMM d HH:mm";
 
     return (
       <ResponsiveContainer width="100%" height={height}>
@@ -137,9 +108,21 @@ export const HealthCheckStatusTimeline: React.FC<
   }
 
   // Raw data path
-  const rawData = props.data as StatusDataPoint[];
-  const chartData = rawData.toReversed().map((d) => ({
-    timestamp: d.timestamp.getTime(),
+  const runs = context.runs;
+
+  if (runs.length === 0) {
+    return (
+      <div
+        className="flex items-center justify-center text-muted-foreground"
+        style={{ height }}
+      >
+        No status data available
+      </div>
+    );
+  }
+
+  const chartData = runs.toReversed().map((d) => ({
+    timestamp: new Date(d.timestamp).getTime(),
     value: 1, // Fixed height for visibility
     status: d.status,
   }));

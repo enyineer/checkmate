@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import { useApi, type SlotContext } from "@checkstack/frontend-api";
 import { useSignal } from "@checkstack/signal-frontend";
 import { healthCheckApiRef } from "../api";
@@ -23,28 +23,25 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { HealthCheckSparkline } from "./HealthCheckSparkline";
 import { HealthCheckLatencyChart } from "./HealthCheckLatencyChart";
 import { HealthCheckStatusTimeline } from "./HealthCheckStatusTimeline";
+import { HealthCheckDiagram } from "./HealthCheckDiagram";
+import { useHealthCheckData } from "../hooks/useHealthCheckData";
 
 import type {
   StateThresholds,
   HealthCheckStatus,
 } from "@checkstack/healthcheck-common";
-import { HealthCheckDiagram } from "./HealthCheckDiagram";
 
 type SlotProps = SlotContext<typeof SystemDetailsSlot>;
 
 interface HealthCheckOverviewItem {
   configurationId: string;
-  configurationName: string;
   strategyId: string;
+  name: string;
+  state: HealthCheckStatus;
   intervalSeconds: number;
-  enabled: boolean;
-  status: HealthCheckStatus;
+  lastRunAt?: Date;
   stateThresholds?: StateThresholds;
-  recentRuns: Array<{
-    id: string;
-    status: HealthCheckStatus;
-    timestamp: Date;
-  }>;
+  recentStatusHistory: HealthCheckStatus[];
 }
 
 interface ExpandedRowProps {
@@ -67,47 +64,20 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     return { startDate: start, endDate: end };
   });
 
-  // Chart data - fetches all runs for the time range (unpaginated)
-  const [chartData, setChartData] = useState<
-    Array<{
-      id: string;
-      status: HealthCheckStatus;
-      timestamp: Date;
-      latencyMs?: number;
-    }>
-  >([]);
-  const [chartLoading, setChartLoading] = useState(true);
-
-  const fetchChartData = useCallback(() => {
-    setChartLoading(true);
-    api
-      .getHistory({
-        systemId,
-        configurationId: item.configurationId,
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-        // Fetch up to 1000 data points for charts - enough for most time ranges
-        limit: 1000,
-        offset: 0,
-      })
-      .then((response) => {
-        setChartData(response.runs);
-      })
-      .finally(() => {
-        setChartLoading(false);
-      });
-  }, [
-    api,
+  // Use shared hook for chart data - handles both raw and aggregated modes
+  // and includes signal handling for automatic refresh
+  const {
+    context: chartContext,
+    loading: chartLoading,
+    isAggregated,
+    retentionConfig,
+  } = useHealthCheckData({
     systemId,
-    item.configurationId,
-    dateRange.startDate,
-    dateRange.endDate,
-  ]);
-
-  // Fetch chart data when date range changes
-  useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
+    configurationId: item.configurationId,
+    strategyId: item.strategyId,
+    dateRange,
+    limit: 1000,
+  });
 
   // Paginated history for the table
   const {
@@ -121,7 +91,6 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
       systemId: string;
       configurationId: string;
       startDate?: Date;
-      endDate?: Date;
     }) =>
       api.getHistory({
         systemId: params.systemId,
@@ -129,7 +98,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
         limit: params.limit,
         offset: params.offset,
         startDate: params.startDate,
-        endDate: params.endDate,
+        // Don't pass endDate - backend defaults to 'now' so new runs are included
       }),
     getItems: (response) => response.runs,
     getTotal: (response) => response.total,
@@ -137,16 +106,15 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
       systemId,
       configurationId: item.configurationId,
       startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
     },
     defaultLimit: 10,
   });
 
-  // Listen for realtime health check updates to refresh charts and history
+  // Listen for realtime health check updates to refresh history table
+  // Charts are refreshed automatically by useHealthCheckData
   useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
     if (changedId === systemId) {
-      fetchChartData();
-      pagination.refetch();
+      pagination.silentRefetch();
     }
   });
 
@@ -155,6 +123,54 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
       ? `Consecutive mode: Healthy after ${item.stateThresholds.healthy.minSuccessCount} success(es), Degraded after ${item.stateThresholds.degraded.minFailureCount} failure(s), Unhealthy after ${item.stateThresholds.unhealthy.minFailureCount} failure(s)`
       : `Window mode (${item.stateThresholds.windowSize} runs): Degraded at ${item.stateThresholds.degraded.minFailureCount}+ failures, Unhealthy at ${item.stateThresholds.unhealthy.minFailureCount}+ failures`
     : "Using default thresholds";
+
+  // Render charts - charts handle data transformation internally
+  const renderCharts = () => {
+    if (chartLoading) {
+      return <LoadingSpinner />;
+    }
+
+    if (!chartContext) {
+      return;
+    }
+
+    // Check if we have data to show
+    const hasData =
+      chartContext.type === "raw"
+        ? chartContext.runs.length > 0
+        : chartContext.buckets.length > 0;
+
+    if (!hasData) {
+      return;
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Status Timeline */}
+        <div>
+          <h4 className="text-sm font-medium mb-2">Status Timeline</h4>
+          <HealthCheckStatusTimeline context={chartContext} height={50} />
+        </div>
+
+        {/* Latency Chart */}
+        <div>
+          <h4 className="text-sm font-medium mb-2">Response Latency</h4>
+          <HealthCheckLatencyChart
+            context={chartContext}
+            height={150}
+            showAverage
+          />
+        </div>
+
+        {/* Extension Slot for custom strategy-specific diagrams */}
+        <HealthCheckDiagram
+          context={chartContext}
+          isAggregated={isAggregated}
+          rawRetentionDays={retentionConfig.rawRetentionDays}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 bg-muted/30 border-t space-y-4">
@@ -179,54 +195,8 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
-      {/* Charts Section - uses full date range data, not paginated */}
-      {chartLoading ? (
-        <LoadingSpinner />
-      ) : chartData.length > 0 ? (
-        <div className="space-y-4">
-          {/* Status Timeline */}
-          <div>
-            <h4 className="text-sm font-medium mb-2">Status Timeline</h4>
-            <HealthCheckStatusTimeline
-              type="raw"
-              data={chartData.map((r) => ({
-                timestamp: new Date(r.timestamp),
-                status: r.status,
-              }))}
-              height={50}
-            />
-          </div>
-
-          {/* Latency Chart - only if any run has latency data */}
-          {chartData.some((r) => r.latencyMs !== undefined) && (
-            <div>
-              <h4 className="text-sm font-medium mb-2">Response Latency</h4>
-              <HealthCheckLatencyChart
-                type="raw"
-                data={chartData
-                  .filter((r) => r.latencyMs !== undefined)
-                  .map((r) => ({
-                    timestamp: new Date(r.timestamp),
-                    latencyMs: r.latencyMs!,
-                    status: r.status,
-                  }))}
-                height={150}
-                showAverage
-              />
-            </div>
-          )}
-
-          {/* Extension Slot for custom strategy-specific diagrams */}
-          <HealthCheckDiagram
-            systemId={systemId}
-            configurationId={item.configurationId}
-            strategyId={item.strategyId}
-            dateRange={dateRange}
-            limit={1000}
-            offset={0}
-          />
-        </div>
-      ) : undefined}
+      {/* Charts Section */}
+      {renderCharts()}
 
       {loading ? (
         <LoadingSpinner />
@@ -246,7 +216,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
                     <TableCell>
                       <HealthBadge status={run.status} />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-muted-foreground">
                       {formatDistanceToNow(new Date(run.timestamp), {
                         addSuffix: true,
                       })}
@@ -256,125 +226,178 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
               </TableBody>
             </Table>
           </div>
-          {pagination.totalPages > 1 && (
-            <Pagination
-              page={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={pagination.setPage}
-              total={pagination.total}
-              limit={pagination.limit}
-              onPageSizeChange={pagination.setLimit}
-              showTotal
-            />
-          )}
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.setPage}
+            total={pagination.total}
+            limit={pagination.limit}
+            onPageSizeChange={pagination.setLimit}
+            showPageSize
+            showTotal
+          />
         </>
       ) : (
-        <p className="text-sm text-muted-foreground italic">No runs yet</p>
+        <div className="text-center text-muted-foreground py-4">
+          No runs recorded yet
+        </div>
       )}
     </div>
   );
 };
 
-export const HealthCheckSystemOverview: React.FC<SlotProps> = (props) => {
-  const { system } = props;
-  const systemId = system?.id;
-
+export function HealthCheckSystemOverview(props: SlotProps) {
+  const systemId = props.system.id;
   const api = useApi(healthCheckApiRef);
-  const [overview, setOverview] = useState<HealthCheckOverviewItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string>();
 
-  const refetch = useCallback(() => {
-    if (!systemId) return;
+  // Fetch health check overview
+  const [overview, setOverview] = React.useState<HealthCheckOverviewItem[]>([]);
+  const [initialLoading, setInitialLoading] = React.useState(true);
+  const [expandedRow, setExpandedRow] = React.useState<string | undefined>();
 
-    api
-      .getSystemHealthOverview({ systemId })
-      .then((data) => setOverview(data.checks))
-      .finally(() => setLoading(false));
+  const fetchOverview = React.useCallback(() => {
+    api.getSystemHealthOverview({ systemId }).then((data) => {
+      setOverview(
+        data.checks.map((check) => ({
+          configurationId: check.configurationId,
+          strategyId: check.strategyId,
+          name: check.configurationName,
+          state: check.status,
+          intervalSeconds: check.intervalSeconds,
+          lastRunAt: check.recentRuns[0]?.timestamp
+            ? new Date(check.recentRuns[0].timestamp)
+            : undefined,
+          stateThresholds: check.stateThresholds,
+          recentStatusHistory: check.recentRuns.map((r) => r.status),
+        }))
+      );
+      setInitialLoading(false);
+    });
   }, [api, systemId]);
 
-  // Initial fetch
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
+  React.useEffect(() => {
+    fetchOverview();
+  }, [fetchOverview]);
 
-  // Listen for realtime health check updates
+  // Listen for realtime health check updates - merge into existing state to avoid remounting expanded content
   useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
     if (changedId === systemId) {
-      refetch();
+      // Fetch fresh data but merge it into existing state to preserve object identity
+      // for unchanged items, preventing unnecessary re-renders of expanded content
+      api.getSystemHealthOverview({ systemId }).then((data) => {
+        setOverview((prev) => {
+          // Create a map of new items for quick lookup
+          const newItemsMap = new Map(
+            data.checks.map((item) => [item.configurationId, item])
+          );
+
+          // Update existing items in place, add new ones
+          const merged = prev.map((existing) => {
+            const updated = newItemsMap.get(existing.configurationId);
+            if (updated) {
+              newItemsMap.delete(existing.configurationId);
+              // Map API response to our internal format
+              const mappedItem: HealthCheckOverviewItem = {
+                configurationId: updated.configurationId,
+                strategyId: updated.strategyId,
+                name: updated.configurationName,
+                state: updated.status,
+                intervalSeconds: updated.intervalSeconds,
+                lastRunAt: updated.recentRuns[0]?.timestamp
+                  ? new Date(updated.recentRuns[0].timestamp)
+                  : undefined,
+                stateThresholds: updated.stateThresholds,
+                recentStatusHistory: updated.recentRuns.map((r) => r.status),
+              };
+              // Return updated data but preserve reference if nothing changed
+              return JSON.stringify(existing) === JSON.stringify(mappedItem)
+                ? existing
+                : mappedItem;
+            }
+            return existing;
+          });
+
+          // Add any new items that weren't in the previous list
+          for (const newItem of newItemsMap.values()) {
+            merged.push({
+              configurationId: newItem.configurationId,
+              strategyId: newItem.strategyId,
+              name: newItem.configurationName,
+              state: newItem.status,
+              intervalSeconds: newItem.intervalSeconds,
+              lastRunAt: newItem.recentRuns[0]?.timestamp
+                ? new Date(newItem.recentRuns[0].timestamp)
+                : undefined,
+              stateThresholds: newItem.stateThresholds,
+              recentStatusHistory: newItem.recentRuns.map((r) => r.status),
+            });
+          }
+
+          // Remove items that no longer exist
+          return merged.filter((item) =>
+            data.checks.some((c) => c.configurationId === item.configurationId)
+          );
+        });
+      });
     }
   });
 
-  if (loading) return <LoadingSpinner />;
+  if (initialLoading) {
+    return <LoadingSpinner />;
+  }
 
   if (overview.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        No health checks assigned to this system.
-      </p>
+      <div className="text-center text-muted-foreground py-4">
+        No health checks configured
+      </div>
     );
   }
 
   return (
     <div className="space-y-2">
       {overview.map((item) => {
-        const isExpanded = expandedId === item.configurationId;
-        const lastRun = item.recentRuns[0];
+        const isExpanded = expandedRow === item.configurationId;
 
         return (
-          <div
-            key={item.configurationId}
-            className="rounded-lg border bg-card transition-shadow hover:shadow-sm"
-          >
-            <div
-              className="flex items-center gap-4 p-3 cursor-pointer"
+          <div key={item.configurationId} className="rounded-md border bg-card">
+            <button
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
               onClick={() =>
-                setExpandedId(isExpanded ? undefined : item.configurationId)
+                setExpandedRow(isExpanded ? undefined : item.configurationId)
               }
             >
-              <div className="text-muted-foreground">
+              <div className="flex items-center gap-3">
                 {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm truncate">
-                    {item.configurationName}
-                  </span>
-                  {!item.enabled && (
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                      Disabled
-                    </span>
-                  )}
-                </div>
-                {lastRun && (
-                  <span className="text-xs text-muted-foreground">
+                <div>
+                  <div className="font-medium">{item.name}</div>
+                  <div className="text-sm text-muted-foreground">
                     Last run:{" "}
-                    {formatDistanceToNow(new Date(lastRun.timestamp), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                )}
+                    {item.lastRunAt
+                      ? formatDistanceToNow(item.lastRunAt, { addSuffix: true })
+                      : "never"}
+                  </div>
+                </div>
               </div>
-
-              <HealthCheckSparkline
-                runs={item.recentRuns}
-                className="hidden sm:flex"
-              />
-
-              <HealthBadge status={item.status} />
-            </div>
-
-            {isExpanded && systemId && (
-              <ExpandedDetails item={item} systemId={systemId} />
-            )}
+              <div className="flex items-center gap-4">
+                {item.recentStatusHistory.length > 0 && (
+                  <HealthCheckSparkline
+                    runs={item.recentStatusHistory.map((status) => ({
+                      status,
+                    }))}
+                  />
+                )}
+                <HealthBadge status={item.state} />
+              </div>
+            </button>
+            {isExpanded && <ExpandedDetails item={item} systemId={systemId} />}
           </div>
         );
       })}
     </div>
   );
-};
+}

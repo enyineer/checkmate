@@ -1,7 +1,7 @@
 import { implement, ORPCError } from "@orpc/server";
 import {
   autoAuthMiddleware,
-  zod,
+  toJsonSchema,
   type RpcContext,
   type HealthCheckRegistry,
 } from "@checkstack/backend-api";
@@ -9,6 +9,7 @@ import { healthCheckContract } from "@checkstack/healthcheck-common";
 import { HealthCheckService } from "./service";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
+import { toJsonSchemaWithChartMeta } from "./schema-utils";
 
 /**
  * Creates the healthcheck router using contract-based implementation.
@@ -34,9 +35,13 @@ export const createHealthCheckRouter = (
         id: s.id,
         displayName: s.displayName,
         description: s.description,
-        configSchema: zod.toJSONSchema(s.config.schema),
-        resultSchema: s.result ? zod.toJSONSchema(s.result.schema) : undefined,
-        aggregatedResultSchema: zod.toJSONSchema(s.aggregatedResult.schema),
+        configSchema: toJsonSchema(s.config.schema),
+        resultSchema: s.result
+          ? toJsonSchemaWithChartMeta(s.result.schema)
+          : undefined,
+        aggregatedResultSchema: toJsonSchemaWithChartMeta(
+          s.aggregatedResult.schema
+        ),
       }));
     }),
 

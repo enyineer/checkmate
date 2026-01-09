@@ -76,8 +76,10 @@ export interface PaginationState {
   nextPage: () => void;
   /** Go to previous page */
   prevPage: () => void;
-  /** Refresh current page */
+  /** Refresh current page (shows loading state) */
   refetch: () => void;
+  /** Refresh current page silently (no loading state, prevents UI flicker) */
+  silentRefetch: () => void;
 }
 
 /**
@@ -153,33 +155,38 @@ export function usePagination<TResponse, TItem, TExtraParams = object>({
     [extraParams]
   );
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(undefined);
+  const fetchData = useCallback(
+    async (showLoading = true) => {
+      if (showLoading) {
+        setLoading(true);
+      }
+      setError(undefined);
 
-    try {
-      const offset = (page - 1) * limit;
-      const params = {
-        limit,
-        offset,
-        ...extraParamsRef.current,
-      } as PaginationParams & TExtraParams;
+      try {
+        const offset = (page - 1) * limit;
+        const params = {
+          limit,
+          offset,
+          ...extraParamsRef.current,
+        } as PaginationParams & TExtraParams;
 
-      const response = await fetchFnRef.current(params);
-      setItems(getItemsRef.current(response));
-      setTotal(getTotalRef.current(response));
-    } catch (error_) {
-      setError(error_ instanceof Error ? error_ : new Error(String(error_)));
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, extraParamsKey]);
+        const response = await fetchFnRef.current(params);
+        setItems(getItemsRef.current(response));
+        setTotal(getTotalRef.current(response));
+      } catch (error_) {
+        setError(error_ instanceof Error ? error_ : new Error(String(error_)));
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, limit, extraParamsKey]
+  );
 
   // Fetch on mount and when dependencies change
   useEffect(() => {
     if (fetchOnMount || page !== defaultPage || limit !== defaultLimit) {
-      void fetchData();
+      void fetchData(true);
     }
   }, [fetchData, fetchOnMount, page, limit, defaultPage, defaultLimit]);
 
@@ -213,6 +220,14 @@ export function usePagination<TResponse, TItem, TExtraParams = object>({
     }
   }, [hasPrev]);
 
+  const refetch = useCallback(() => {
+    void fetchData(true);
+  }, [fetchData]);
+
+  const silentRefetch = useCallback(() => {
+    void fetchData(false);
+  }, [fetchData]);
+
   const pagination: PaginationState = {
     page,
     limit,
@@ -224,7 +239,8 @@ export function usePagination<TResponse, TItem, TExtraParams = object>({
     setLimit,
     nextPage,
     prevPage,
-    refetch: fetchData,
+    refetch,
+    silentRefetch,
   };
 
   return { items, loading, error, pagination };

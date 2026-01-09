@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import type { Signal } from "@checkstack/signal-common";
 import { useSignalContext } from "./SignalProvider";
 
@@ -7,6 +7,9 @@ import { useSignalContext } from "./SignalProvider";
  *
  * The callback will be invoked whenever the signal is received.
  * Subscriptions are automatically cleaned up on unmount.
+ *
+ * Note: The callback is stored in a ref internally, so you don't need to
+ * memoize it or worry about stale closures - the latest callback is always used.
  *
  * @example
  * ```tsx
@@ -27,12 +30,19 @@ export function useSignal<T>(
 ): void {
   const { subscribe } = useSignalContext();
 
-  // Memoize callback to prevent unnecessary resubscriptions
-  const stableCallback = useCallback(callback, [callback]);
+  // Store callback in ref to always use the latest version
+  // This prevents stale closure issues without requiring consumers to memoize
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
 
   useEffect(() => {
+    // Create a stable wrapper that always calls the latest callback
+    const stableCallback = (payload: T) => {
+      callbackRef.current(payload);
+    };
+
     return subscribe(signal, stableCallback);
-  }, [signal, stableCallback, subscribe]);
+  }, [signal, subscribe]);
 }
 
 /**

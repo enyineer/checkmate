@@ -6,7 +6,7 @@
  */
 
 export { extractChartFields, getFieldValue } from "./schema-parser";
-export type { ChartField, ChartType } from "./schema-parser";
+export type { ChartField } from "./schema-parser";
 export { AutoChartGrid } from "./AutoChartGrid";
 export { useStrategySchemas } from "./useStrategySchemas";
 export { autoChartExtension } from "./extension";

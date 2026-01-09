@@ -1,11 +1,13 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useApi, permissionApiRef } from "@checkstack/frontend-api";
 import { healthCheckApiRef } from "../api";
 import {
   permissions,
   DEFAULT_RETENTION_CONFIG,
   type RetentionConfig,
+  HEALTH_CHECK_RUN_COMPLETED,
 } from "@checkstack/healthcheck-common";
+import { useSignal } from "@checkstack/signal-frontend";
 import type {
   HealthCheckDiagramSlotContext,
   TypedHealthCheckRun,
@@ -123,48 +125,65 @@ export function useHealthCheckData({
       .finally(() => setRetentionLoading(false));
   }, [api, systemId, configurationId]);
 
+  // Fetch raw data function - extracted for reuse by signal handler
+  const fetchRawData = useCallback(
+    (showLoading = true) => {
+      if (showLoading) {
+        setRawLoading(true);
+      }
+      api
+        .getDetailedHistory({
+          systemId,
+          configurationId,
+          startDate: dateRange.startDate,
+          // Don't pass endDate for live updates - backend defaults to 'now'
+          limit,
+          offset,
+        })
+        .then((response) => {
+          setRawRuns(
+            response.runs.map((r) => ({
+              id: r.id,
+              configurationId,
+              systemId,
+              status: r.status,
+              timestamp: r.timestamp,
+              latencyMs: r.latencyMs,
+              result: r.result,
+            }))
+          );
+        })
+        .finally(() => setRawLoading(false));
+    },
+    [api, systemId, configurationId, dateRange.startDate, limit, offset]
+  );
+
   // Fetch raw data when in raw mode
   useEffect(() => {
     if (!hasPermission || permissionLoading || retentionLoading || isAggregated)
       return;
-
-    setRawLoading(true);
-    api
-      .getDetailedHistory({
-        systemId,
-        configurationId,
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-        limit,
-        offset,
-      })
-      .then((response) => {
-        setRawRuns(
-          response.runs.map((r) => ({
-            id: r.id,
-            configurationId,
-            systemId,
-            status: r.status,
-            timestamp: r.timestamp,
-            latencyMs: r.latencyMs,
-            result: r.result,
-          }))
-        );
-      })
-      .finally(() => setRawLoading(false));
+    fetchRawData(true);
   }, [
-    api,
-    systemId,
-    configurationId,
+    fetchRawData,
     hasPermission,
     permissionLoading,
     retentionLoading,
     isAggregated,
-    dateRange.startDate,
-    dateRange.endDate,
-    limit,
-    offset,
   ]);
+
+  // Listen for realtime health check updates to refresh data silently
+  useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
+    // Only refresh if we're in raw mode (not aggregated) and have permission
+    if (
+      changedId === systemId &&
+      hasPermission &&
+      !permissionLoading &&
+      !retentionLoading &&
+      !isAggregated
+    ) {
+      fetchRawData(false);
+    }
+  });
 
   // Fetch aggregated data when in aggregated mode
   useEffect(() => {

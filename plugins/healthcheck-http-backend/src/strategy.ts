@@ -132,11 +132,11 @@ export type HttpHealthCheckConfig = z.infer<typeof httpHealthCheckConfigSchema>;
 /** Per-run result metadata */
 const httpResultMetadataSchema = z.object({
   statusCode: healthResultNumber({
-    "x-chart-type": "counter",
+    "x-chart-type": "pie",
     "x-chart-label": "Status Code",
   }).optional(),
   contentType: healthResultString({
-    "x-chart-type": "text",
+    "x-chart-type": "counter",
     "x-chart-label": "Content Type",
   }).optional(),
   failedAssertion: httpAssertionSchema.optional(),
@@ -151,7 +151,7 @@ export type HttpResultMetadata = z.infer<typeof httpResultMetadataSchema>;
 /** Aggregated metadata for buckets */
 const httpAggregatedMetadataSchema = z.object({
   statusCodeCounts: z.record(z.string(), z.number()).meta({
-    "x-chart-type": "bar",
+    "x-chart-type": "pie",
     "x-chart-label": "Status Code Distribution",
   }),
   errorCount: healthResultNumber({
