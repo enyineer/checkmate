@@ -1,12 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import {
-  Plus,
-  Webhook,
-  ArrowRight,
-  Activity,
-  ChevronRight,
-} from "lucide-react";
+import { Plus, Webhook, ArrowRight, Activity } from "lucide-react";
 import {
   PageLayout,
   Card,
@@ -268,9 +262,7 @@ export const IntegrationsPage = () => {
                           {provider?.displayName ?? sub.providerId}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">
-                            {sub.eventId.split(".").pop()}
-                          </Badge>
+                          <Badge variant="outline">{sub.eventId}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -279,20 +271,17 @@ export const IntegrationsPage = () => {
                             {sub.enabled ? "Active" : "Disabled"}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleToggle(sub.id, !sub.enabled);
-                              }}
-                            >
-                              {sub.enabled ? "Disable" : "Enable"}
-                            </Button>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </div>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleToggle(sub.id, !sub.enabled);
+                            }}
+                          >
+                            {sub.enabled ? "Disable" : "Enable"}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
