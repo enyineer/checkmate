@@ -45,7 +45,7 @@ export {
 } from "./schemas";
 
 // NOTE: All backend-only types (IntegrationProvider, IntegrationDeliveryContext, etc.)
-// are defined in @checkmate-monitor/integration-backend/provider-types.
+// are defined in @checkstack/integration-backend/provider-types.
 // Frontend code should only use the Zod schemas above for API contracts.
 
 // Permissions

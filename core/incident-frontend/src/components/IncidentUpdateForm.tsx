@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useApi } from "@checkmate-monitor/frontend-api";
+import { useApi } from "@checkstack/frontend-api";
 import { incidentApiRef } from "../api";
-import type { IncidentStatus } from "@checkmate-monitor/incident-common";
+import type { IncidentStatus } from "@checkstack/incident-common";
 import {
   Button,
   Textarea,
@@ -12,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
   useToast,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { Loader2 } from "lucide-react";
 
 interface IncidentUpdateFormProps {

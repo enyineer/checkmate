@@ -4,11 +4,11 @@ import { HealthCheckRegistry } from "./health-check";
 import {
   QueuePluginRegistry,
   QueueManager,
-} from "@checkmate-monitor/queue-api";
+} from "@checkstack/queue-api";
 import {
   ProcedureMetadata,
   qualifyPermissionId,
-} from "@checkmate-monitor/common";
+} from "@checkstack/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   Logger,
@@ -18,7 +18,7 @@ import {
   RealUser,
   ServiceUser,
 } from "./types";
-import type { PluginMetadata } from "@checkmate-monitor/common";
+import type { PluginMetadata } from "@checkstack/common";
 import type { Hook } from "./hooks";
 
 // =============================================================================
@@ -66,7 +66,7 @@ export interface ServiceRpcContext extends RpcContext {
 export const os = baseOs.$context<RpcContext>();
 
 // Re-export ProcedureMetadata from common for convenience
-export type { ProcedureMetadata } from "@checkmate-monitor/common";
+export type { ProcedureMetadata } from "@checkstack/common";
 
 // =============================================================================
 // UNIFIED AUTH MIDDLEWARE
@@ -224,7 +224,7 @@ export const autoAuthMiddleware = os.middleware(
  * 3. Permissions are enforced based on meta.permissions
  *
  * @example
- * import { baseContractBuilder } from "@checkmate-monitor/backend-api";
+ * import { baseContractBuilder } from "@checkstack/backend-api";
  * import { permissions } from "./permissions";
  *
  * const myContract = {

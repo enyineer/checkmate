@@ -18,7 +18,7 @@ import {
   DynamicIcon,
   MarkdownBlock,
   type LucideIconName,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 
 /**
  * User channel data from getUserDeliveryChannels endpoint

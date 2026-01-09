@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/healthcheck-common",
-  "version": "0.1.1",
+  "name": "@checkstack/healthcheck-common",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -8,14 +8,14 @@
     }
   },
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/signal-common": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/signal-common": "workspace:*",
     "zod": "^4.2.1"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

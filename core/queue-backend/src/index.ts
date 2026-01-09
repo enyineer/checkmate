@@ -1,12 +1,12 @@
 import {
   createBackendPlugin,
   coreServices,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   permissionList,
   pluginMetadata,
   queueContract,
-} from "@checkmate-monitor/queue-common";
+} from "@checkstack/queue-common";
 import { createQueueRouter } from "./router";
 
 export default createBackendPlugin({

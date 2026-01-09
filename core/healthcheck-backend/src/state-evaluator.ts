@@ -3,8 +3,8 @@ import type {
   ConsecutiveThresholds,
   WindowThresholds,
   HealthCheckStatus,
-} from "@checkmate-monitor/healthcheck-common";
-import { DEFAULT_STATE_THRESHOLDS } from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
+import { DEFAULT_STATE_THRESHOLDS } from "@checkstack/healthcheck-common";
 
 interface RunForEvaluation {
   status: HealthCheckStatus;

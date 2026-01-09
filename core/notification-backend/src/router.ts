@@ -10,14 +10,14 @@ import {
   type NotificationPayload,
   type NotificationSendContext,
   Logger,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   notificationContract,
   NOTIFICATION_RECEIVED,
   NOTIFICATION_READ,
-} from "@checkmate-monitor/notification-common";
-import { AuthApi } from "@checkmate-monitor/auth-common";
-import type { SignalService } from "@checkmate-monitor/signal-common";
+} from "@checkstack/notification-common";
+import { AuthApi } from "@checkstack/auth-common";
+import type { SignalService } from "@checkstack/signal-common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import {
@@ -1025,7 +1025,7 @@ export const createNotificationRouter = (
         // Build test notification with markdown and action
         const testNotification: NotificationPayload = {
           title: "🧪 Test Notification",
-          body: `This is a **test notification** from Checkmate!\n\nIf you're seeing this, your *${strategy.displayName}* channel is working correctly.\n\n✅ Markdown formatting\n✅ Emoji support\n✅ Action buttons (below)`,
+          body: `This is a **test notification** from Checkstack!\n\nIf you're seeing this, your *${strategy.displayName}* channel is working correctly.\n\n✅ Markdown formatting\n✅ Emoji support\n✅ Action buttons (below)`,
           importance: "info",
           action: {
             label: "Open Notification Settings",

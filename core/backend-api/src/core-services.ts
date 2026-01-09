@@ -4,9 +4,9 @@ import type { HealthCheckRegistry } from "./health-check";
 import type {
   QueuePluginRegistry,
   QueueManager,
-} from "@checkmate-monitor/queue-api";
+} from "@checkstack/queue-api";
 import type { ConfigService } from "./config-service";
-import type { SignalService } from "@checkmate-monitor/signal-common";
+import type { SignalService } from "@checkstack/signal-common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   Logger,

@@ -1,4 +1,4 @@
-import { FetchApi } from "@checkmate-monitor/frontend-api";
+import { FetchApi } from "@checkstack/frontend-api";
 
 export class CoreFetchApi implements FetchApi {
   private baseUrl: string;

@@ -1,3 +1,3 @@
 {
-  "extends": "@checkmate-monitor/tsconfig/backend.json"
+  "extends": "@checkstack/tsconfig/backend.json"
 }

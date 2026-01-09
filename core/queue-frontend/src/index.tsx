@@ -4,7 +4,7 @@ import {
   UserMenuItemsSlot,
   createSlotExtension,
   createFrontendPlugin,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { queueApiRef, type QueueApiClient } from "./api";
 import { QueueConfigPage } from "./pages/QueueConfigPage";
 import { QueueUserMenuItems } from "./components/UserMenuItems";
@@ -13,7 +13,7 @@ import {
   QueueApi,
   pluginMetadata,
   permissions,
-} from "@checkmate-monitor/queue-common";
+} from "@checkstack/queue-common";
 
 export const queuePlugin = createFrontendPlugin({
   metadata: pluginMetadata,

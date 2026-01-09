@@ -4,8 +4,8 @@ import {
   autoAuthMiddleware,
   type RpcContext,
   type Logger,
-} from "@checkmate-monitor/backend-api";
-import type { SignalService } from "@checkmate-monitor/signal-common";
+} from "@checkstack/backend-api";
+import type { SignalService } from "@checkstack/signal-common";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 
 import type { IntegrationEventRegistry } from "./event-registry";
@@ -16,7 +16,7 @@ import * as schema from "./schema";
 import {
   integrationContract,
   INTEGRATION_SUBSCRIPTION_CHANGED,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 
 /**
  * Recursively extracts flattened property paths from a JSON Schema.

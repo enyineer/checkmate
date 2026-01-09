@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { AuthApi } from "@checkmate-monitor/auth-common";
+import { useApi, rpcApiRef } from "@checkstack/frontend-api";
+import { AuthApi } from "@checkstack/auth-common";
 import type { EnabledAuthStrategy } from "../api";
 
 export interface UseEnabledStrategiesResult {

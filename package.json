@@ -1,5 +1,5 @@
 {
-  "name": "checkmate-monorepo",
+  "name": "checkstack-monorepo",
   "private": true,
   "workspaces": [
     "core/*",
@@ -7,7 +7,7 @@
     "plugins/_test-scaffolds/*"
   ],
   "scripts": {
-    "dev": "docker compose up -d && bun run --filter '@checkmate-monitor/backend' --filter '@checkmate-monitor/frontend' dev",
+    "dev": "docker compose up -d && bun run --filter '@checkstack/backend' --filter '@checkstack/frontend' dev",
     "typecheck": "bun run scripts/typecheck.ts",
     "lint": "bun run lint:code && bun run lint:deps",
     "lint:code": "bun run eslint .",

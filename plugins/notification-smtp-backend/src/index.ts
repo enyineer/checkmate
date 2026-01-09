@@ -8,8 +8,8 @@ import {
   wrapInEmailLayout,
   configNumber,
   configBoolean,
-} from "@checkmate-monitor/backend-api";
-import { notificationStrategyExtensionPoint } from "@checkmate-monitor/notification-backend";
+} from "@checkstack/backend-api";
+import { notificationStrategyExtensionPoint } from "@checkstack/notification-backend";
 import { z } from "zod";
 import { createTransport, type Transporter } from "nodemailer";
 import { pluginMetadata } from "./plugin-metadata";

@@ -1,7 +1,7 @@
 import type {
   Logger,
   HookSubscribeOptions,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import type { IntegrationEventRegistry } from "./event-registry";
 import type { DeliveryCoordinator } from "./delivery-coordinator";
 import type { RegisteredIntegrationEvent } from "./provider-types";

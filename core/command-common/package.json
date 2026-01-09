@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/command-common",
-  "version": "0.0.3",
+  "name": "@checkstack/command-common",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -10,12 +10,12 @@
   "dependencies": {
     "@orpc/contract": "^0.48.0",
     "zod": "^4.2.1",
-    "@checkmate-monitor/common": "workspace:*"
+    "@checkstack/common": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

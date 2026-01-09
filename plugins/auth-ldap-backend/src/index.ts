@@ -5,13 +5,13 @@ import {
   coreServices,
   configBoolean,
   configNumber,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import { pluginMetadata } from "./plugin-metadata";
 import {
   betterAuthExtensionPoint,
   redirectToAuthError,
-} from "@checkmate-monitor/auth-backend";
-import { AuthApi } from "@checkmate-monitor/auth-common";
+} from "@checkstack/auth-backend";
+import { AuthApi } from "@checkstack/auth-common";
 import { z } from "zod";
 import { Client as LdapClient } from "ldapts";
 import { hashPassword } from "better-auth/crypto";

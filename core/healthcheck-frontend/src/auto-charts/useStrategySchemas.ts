@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { useApi } from "@checkmate-monitor/frontend-api";
+import { useApi } from "@checkstack/frontend-api";
 import { healthCheckApiRef } from "../api";
 
 interface StrategySchemas {

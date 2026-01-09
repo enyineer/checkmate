@@ -14,9 +14,9 @@ The command palette system consists of three packages:
 
 | Package | Purpose |
 |---------|---------|
-| `@checkmate-monitor/command-backend` | Backend registry and search aggregation |
-| `@checkmate-monitor/command-common` | Shared types and RPC contract |
-| `@checkmate-monitor/command-frontend` | Frontend hooks for search and shortcuts |
+| `@checkstack/command-backend` | Backend registry and search aggregation |
+| `@checkstack/command-common` | Shared types and RPC contract |
+| `@checkstack/command-frontend` | Frontend hooks for search and shortcuts |
 
 ## Registering Commands
 
@@ -27,9 +27,9 @@ Commands are actionable items that navigate users to specific routes. They can h
 For most plugins, use the simplified `commands` API:
 
 ```typescript
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
-import { pluginMetadata, permissions } from "@checkmate-monitor/my-plugin-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { registerSearchProvider } from "@checkstack/command-backend";
+import { pluginMetadata, permissions } from "@checkstack/my-plugin-common";
+import { resolveRoute } from "@checkstack/common";
 import { myRoutes } from "./routes";
 
 // In your plugin's init phase
@@ -87,9 +87,9 @@ shortcuts: ["meta+shift+i", "ctrl+shift+i"]
 For searchable entities (like systems, incidents, etc.), use the `provider` option:
 
 ```typescript
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
-import { pluginMetadata } from "@checkmate-monitor/my-plugin-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { registerSearchProvider } from "@checkstack/command-backend";
+import { pluginMetadata } from "@checkstack/my-plugin-common";
+import { resolveRoute } from "@checkstack/common";
 import * as schema from "./schema";
 
 registerSearchProvider({
@@ -185,13 +185,13 @@ Here's how the incident plugin registers its commands:
 
 ```typescript
 // incident-backend/src/index.ts
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
+import { registerSearchProvider } from "@checkstack/command-backend";
 import {
   pluginMetadata,
   permissions,
   incidentRoutes,
-} from "@checkmate-monitor/incident-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/incident-common";
+import { resolveRoute } from "@checkstack/common";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,

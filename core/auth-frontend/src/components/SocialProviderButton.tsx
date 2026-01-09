@@ -3,7 +3,7 @@ import {
   Button,
   DynamicIcon,
   type LucideIconName,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 
 interface SocialProviderButtonProps {
   displayName: string;

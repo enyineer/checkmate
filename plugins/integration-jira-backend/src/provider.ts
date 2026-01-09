@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Versioned, configString } from "@checkmate-monitor/backend-api";
+import { Versioned, configString } from "@checkstack/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -7,7 +7,7 @@ import type {
   TestConnectionResult,
   ConnectionOption,
   GetConnectionOptionsParams,
-} from "@checkmate-monitor/integration-backend";
+} from "@checkstack/integration-backend";
 import { createJiraClient, createJiraClientFromConfig } from "./jira-client";
 import { expandTemplate } from "./template-engine";
 

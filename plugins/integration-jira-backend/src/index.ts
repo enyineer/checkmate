@@ -1,9 +1,9 @@
 import {
   createBackendPlugin,
   coreServices,
-} from "@checkmate-monitor/backend-api";
-import { integrationProviderExtensionPoint } from "@checkmate-monitor/integration-backend";
-import { pluginMetadata } from "@checkmate-monitor/integration-jira-common";
+} from "@checkstack/backend-api";
+import { integrationProviderExtensionPoint } from "@checkstack/integration-backend";
+import { pluginMetadata } from "@checkstack/integration-jira-common";
 import { createJiraProvider } from "./provider";
 
 export const jiraPlugin = createBackendPlugin({

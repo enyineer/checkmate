@@ -6,9 +6,9 @@ import {
   Input,
   DynamicIcon,
   type LucideIconName,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { useDebouncedSearch, useFormatShortcut } from "../index";
-import type { SearchResult } from "@checkmate-monitor/command-common";
+import type { SearchResult } from "@checkstack/command-common";
 import { Search, ArrowUp, ArrowDown, CornerDownLeft } from "lucide-react";
 
 interface SearchDialogProps {

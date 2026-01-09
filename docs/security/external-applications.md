@@ -4,7 +4,7 @@ title: External Applications (API Keys)
 
 # External Applications (API Keys)
 
-External Applications provide programmatic access to the Checkmate API for non-human clients like CI/CD pipelines, monitoring tools, and custom integrations.
+External Applications provide programmatic access to the Checkstack API for non-human clients like CI/CD pipelines, monitoring tools, and custom integrations.
 
 ## Overview
 
@@ -53,7 +53,7 @@ All oRPC endpoints are available at `/api/{pluginId}/` and accept JSON POST requ
 ### Basic Example (curl)
 
 ```bash
-curl -X POST https://your-checkmate-instance.com/api/catalog/ \
+curl -X POST https://your-checkstack-instance.com/api/catalog/ \
   -H "Authorization: Bearer ck_YOUR_APP_ID_YOUR_SECRET" \
   -H "Content-Type: application/json" \
   -d '{"getSystems": {}}'
@@ -62,7 +62,7 @@ curl -X POST https://your-checkmate-instance.com/api/catalog/ \
 ### JavaScript/TypeScript (fetch)
 
 ```typescript
-const API_BASE = "https://your-checkmate-instance.com";
+const API_BASE = "https://your-checkstack-instance.com";
 const API_KEY = "ck_YOUR_APP_ID_YOUR_SECRET";
 
 // Call a single procedure
@@ -119,7 +119,7 @@ const { getSystems, getGroups } = await response.json();
 ```python
 import requests
 
-API_BASE = "https://your-checkmate-instance.com"
+API_BASE = "https://your-checkstack-instance.com"
 API_KEY = "ck_YOUR_APP_ID_YOUR_SECRET"
 
 def call_rpc(plugin_id: str, procedure: str, input_data=None):

@@ -2,7 +2,7 @@
 ---
 # Queue Usage Patterns
 
-Common patterns for using the Checkmate Queue system. See [Queue System](../backend/queue-system.md) for full documentation.
+Common patterns for using the Checkstack Queue system. See [Queue System](../backend/queue-system.md) for full documentation.
 
 ## Pattern 1: Periodic Health Checks (Recurring Jobs)
 

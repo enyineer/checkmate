@@ -3,7 +3,7 @@ import {
   HealthCheckConfiguration,
   HealthCheckStrategyDto,
   CreateHealthCheckConfiguration,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 import {
   Button,
   Input,
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 
 interface HealthCheckEditorProps {
   strategies: HealthCheckStrategyDto[];

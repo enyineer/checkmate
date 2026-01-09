@@ -4,7 +4,7 @@ import {
   webhookConfigSchemaV1,
   type WebhookConfig,
 } from "./provider";
-import type { IntegrationDeliveryContext } from "@checkmate-monitor/integration-backend";
+import type { IntegrationDeliveryContext } from "@checkstack/integration-backend";
 
 /**
  * Unit tests for the Webhook Integration Provider.

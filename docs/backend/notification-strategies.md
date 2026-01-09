@@ -91,7 +91,7 @@ Strategies can have up to three configuration layers:
 
 ```typescript
 import { z } from "zod";
-import { configString, configNumber, configBoolean, Versioned } from "@checkmate-monitor/backend-api";
+import { configString, configNumber, configBoolean, Versioned } from "@checkstack/backend-api";
 
 // Infrastructure config (SMTP server, API keys)
 const smtpConfigSchemaV1 = z.object({
@@ -124,7 +124,7 @@ import {
   markdownToHtml,
   markdownToPlainText,
   wrapInEmailLayout,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 
 const smtpStrategy: NotificationStrategy<SmtpConfig, undefined, SmtpLayoutConfig> = {
   id: "smtp",
@@ -172,8 +172,8 @@ const smtpStrategy: NotificationStrategy<SmtpConfig, undefined, SmtpLayoutConfig
 ### 4. Register via Extension Point
 
 ```typescript
-import { createBackendPlugin } from "@checkmate-monitor/backend-api";
-import { notificationStrategyExtensionPoint } from "@checkmate-monitor/notification-backend";
+import { createBackendPlugin } from "@checkstack/backend-api";
+import { notificationStrategyExtensionPoint } from "@checkstack/notification-backend";
 import { pluginMetadata } from "./plugin-metadata";
 
 export default createBackendPlugin({
@@ -224,7 +224,7 @@ import {
   markdownToHtml, 
   markdownToPlainText, 
   markdownToSlackMrkdwn 
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 
 // Email strategy
 const bodyHtml = markdownToHtml(notification.body);
@@ -258,7 +258,7 @@ const layoutConfigSchema = z.object({
   logoUrl: configString({}).url().optional().describe("Company logo URL"),
   primaryColor: configString({ "x-color": true }).default("#3b82f6").describe("Header/accent color"),
   accentColor: configString({ "x-color": true }).optional().describe("Button color"),
-  footerText: configString({}).default("Sent by Checkmate").describe("Footer text"),
+  footerText: configString({}).default("Sent by Checkstack").describe("Footer text"),
 });
 
 const strategy: NotificationStrategy<Config, undefined, LayoutConfig> = {
@@ -272,7 +272,7 @@ const strategy: NotificationStrategy<Config, undefined, LayoutConfig> = {
 The `wrapInEmailLayout()` utility generates a responsive HTML email template:
 
 ```typescript
-import { wrapInEmailLayout } from "@checkmate-monitor/backend-api";
+import { wrapInEmailLayout } from "@checkstack/backend-api";
 
 const html = wrapInEmailLayout({
   title: notification.title,
@@ -412,7 +412,7 @@ import {
   configString,
   Versioned,
   type StrategyOAuthConfig,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 
 const teamsConfigSchema = z.object({
   tenantId: configString({}).describe("Azure AD Tenant ID"),
@@ -644,7 +644,7 @@ async send(context) {
 Use platform factory functions for specialized UI and validation:
 
 ```typescript
-import { configString } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkstack/backend-api";
 
 const config = z.object({
   // Secrets: rendered as password inputs, encrypted at rest
@@ -661,7 +661,7 @@ const config = z.object({
 Always use the platform utilities for converting notification body content:
 
 ```typescript
-import { markdownToHtml, markdownToPlainText } from "@checkmate-monitor/backend-api";
+import { markdownToHtml, markdownToPlainText } from "@checkstack/backend-api";
 
 // Rich content (email)
 const html = markdownToHtml(notification.body);
@@ -675,7 +675,7 @@ const text = markdownToPlainText(notification.body);
 For email strategies, use `wrapInEmailLayout()` for consistent, responsive emails:
 
 ```typescript
-import { wrapInEmailLayout } from "@checkmate-monitor/backend-api";
+import { wrapInEmailLayout } from "@checkstack/backend-api";
 
 const html = wrapInEmailLayout({
   title: notification.title,

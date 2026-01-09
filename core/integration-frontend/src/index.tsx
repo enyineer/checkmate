@@ -2,12 +2,12 @@ import {
   createFrontendPlugin,
   createSlotExtension,
   UserMenuItemsSlot,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import {
   integrationRoutes,
   pluginMetadata,
   permissions,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 import { IntegrationsPage } from "./pages/IntegrationsPage";
 import { DeliveryLogsPage } from "./pages/DeliveryLogsPage";
 import { ProviderConnectionsPage } from "./pages/ProviderConnectionsPage";

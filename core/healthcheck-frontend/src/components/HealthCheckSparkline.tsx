@@ -1,6 +1,6 @@
 import React from "react";
-import type { HealthCheckStatus } from "@checkmate-monitor/healthcheck-common";
-import { cn } from "@checkmate-monitor/ui";
+import type { HealthCheckStatus } from "@checkstack/healthcheck-common";
+import { cn } from "@checkstack/ui";
 
 interface HealthCheckSparklineProps {
   runs: Array<{

@@ -9,7 +9,7 @@ import {
 import type {
   Signal,
   ServerToClientMessage,
-} from "@checkmate-monitor/signal-common";
+} from "@checkstack/signal-common";
 
 // =============================================================================
 // CONTEXT TYPES

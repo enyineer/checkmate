@@ -1,4 +1,4 @@
-import { createPermission } from "@checkmate-monitor/common";
+import { createPermission } from "@checkstack/common";
 
 export const permissions = {
   apiDocsView: createPermission("api-docs", "read", "View API Documentation", {

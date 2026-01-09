@@ -2,8 +2,8 @@ import {
   HealthCheckRegistry,
   Logger,
   type EmitHookFn,
-} from "@checkmate-monitor/backend-api";
-import { QueueManager } from "@checkmate-monitor/queue-api";
+} from "@checkstack/backend-api";
+import { QueueManager } from "@checkstack/queue-api";
 import {
   healthCheckConfigurations,
   systemHealthChecks,
@@ -12,13 +12,13 @@ import {
 import * as schema from "./schema";
 import { eq, and, max } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { type SignalService } from "@checkmate-monitor/signal-common";
+import { type SignalService } from "@checkstack/signal-common";
 import {
   HEALTH_CHECK_RUN_COMPLETED,
   type HealthCheckStatus,
-} from "@checkmate-monitor/healthcheck-common";
-import { CatalogApi, catalogRoutes } from "@checkmate-monitor/catalog-common";
-import { resolveRoute, type InferClient } from "@checkmate-monitor/common";
+} from "@checkstack/healthcheck-common";
+import { CatalogApi, catalogRoutes } from "@checkstack/catalog-common";
+import { resolveRoute, type InferClient } from "@checkstack/common";
 import { HealthCheckService } from "./service";
 import { healthCheckHooks } from "./hooks";
 

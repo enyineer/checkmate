@@ -3,11 +3,11 @@ import {
   createSlotExtension,
   NavbarRightSlot,
   UserMenuItemsSlot,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import {
   notificationRoutes,
   pluginMetadata,
-} from "@checkmate-monitor/notification-common";
+} from "@checkstack/notification-common";
 import { NotificationBell } from "./components/NotificationBell";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { NotificationSettingsPage } from "./pages/NotificationSettingsPage";

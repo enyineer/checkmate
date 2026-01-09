@@ -7,12 +7,12 @@ import {
   timeThresholdField,
   stringField,
   evaluateAssertions,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   healthResultBoolean,
   healthResultNumber,
   healthResultString,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 // ============================================================================
 // SCHEMAS

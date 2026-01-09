@@ -1,4 +1,4 @@
-# @checkmate-monitor/release
+# @checkstack/release
 
 ## 0.5.0
 

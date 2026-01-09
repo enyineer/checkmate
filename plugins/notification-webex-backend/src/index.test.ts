@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, mock, spyOn } from "bun:test";
-import type { Logger } from "@checkmate-monitor/backend-api";
+import type { Logger } from "@checkstack/backend-api";
 
 // Re-export for testing since we can't import directly from index.ts without side effects
 // We'll test the schemas and strategy logic indirectly through the provider
@@ -38,7 +38,7 @@ describe("Webex Notification Strategy", () => {
     // Import schemas inline to avoid plugin initialization side effects
     it("validates admin config - requires bot token", async () => {
       const { z } = await import("zod");
-      const { configString } = await import("@checkmate-monitor/backend-api");
+      const { configString } = await import("@checkstack/backend-api");
 
       const webexConfigSchemaV1 = z.object({
         botToken: configString({ "x-secret": true }).describe(

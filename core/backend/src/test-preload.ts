@@ -10,8 +10,8 @@ import {
   createMockDbModule,
   createMockLoggerModule,
   createMockLogger,
-} from "@checkmate-monitor/test-utils-backend";
-import { coreServices } from "@checkmate-monitor/backend-api";
+} from "@checkstack/test-utils-backend";
+import { coreServices } from "@checkstack/backend-api";
 import path from "node:path";
 
 // Get absolute paths to the modules we need to mock

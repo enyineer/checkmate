@@ -2,12 +2,12 @@ import { implement } from "@orpc/server";
 import {
   autoAuthMiddleware,
   type RpcContext,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   commandContract,
   filterByPermissions,
   type SearchResult,
-} from "@checkmate-monitor/command-common";
+} from "@checkstack/command-common";
 import { getSearchProviders } from "./registry";
 
 /**

@@ -4,21 +4,21 @@ import {
   useApi,
   rpcApiRef,
   wrapInSuspense,
-} from "@checkmate-monitor/frontend-api";
-import { useSignal } from "@checkmate-monitor/signal-frontend";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/frontend-api";
+import { useSignal } from "@checkstack/signal-frontend";
+import { resolveRoute } from "@checkstack/common";
 import { incidentApiRef } from "../api";
 import {
   incidentRoutes,
   INCIDENT_UPDATED,
   type IncidentWithSystems,
   type IncidentStatus,
-} from "@checkmate-monitor/incident-common";
+} from "@checkstack/incident-common";
 import {
   CatalogApi,
   type System,
   catalogRoutes,
-} from "@checkmate-monitor/catalog-common";
+} from "@checkstack/catalog-common";
 import {
   Card,
   CardHeader,
@@ -28,7 +28,7 @@ import {
   LoadingSpinner,
   EmptyState,
   BackLink,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { AlertTriangle, Clock, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 

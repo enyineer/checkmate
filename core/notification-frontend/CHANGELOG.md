@@ -1,4 +1,4 @@
-# @checkmate-monitor/notification-frontend
+# @checkstack/notification-frontend
 
 ## 0.1.4
 
@@ -6,7 +6,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -31,7 +31,7 @@
 
   **Changes:**
 
-  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkmate-monitor/frontend-api`
+  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkstack/frontend-api`
   - `LoginNavbarAction` now pre-fetches all permissions and credential account info before rendering the menu
   - All user menu item components now use the passed context for synchronous permission checks instead of async hooks
   - Uses `qualifyPermissionId` helper for fully-qualified permission IDs
@@ -45,35 +45,35 @@
 - Updated dependencies [ae33df2]
 - Updated dependencies [a65e002]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/auth-frontend@0.3.0
-  - @checkmate-monitor/ui@0.1.2
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/frontend-api@0.1.0
-  - @checkmate-monitor/notification-common@0.1.1
-  - @checkmate-monitor/signal-frontend@0.1.1
+  - @checkstack/auth-frontend@0.3.0
+  - @checkstack/ui@0.1.2
+  - @checkstack/common@0.2.0
+  - @checkstack/frontend-api@0.1.0
+  - @checkstack/notification-common@0.1.1
+  - @checkstack/signal-frontend@0.1.1
 
 ## 0.1.3
 
 ### Patch Changes
 
 - Updated dependencies [1bf71bb]
-  - @checkmate-monitor/auth-frontend@0.2.1
+  - @checkstack/auth-frontend@0.2.1
 
 ## 0.1.2
 
 ### Patch Changes
 
 - Updated dependencies [e26c08e]
-  - @checkmate-monitor/auth-frontend@0.2.0
+  - @checkstack/auth-frontend@0.2.0
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
-  - @checkmate-monitor/auth-frontend@0.1.1
-  - @checkmate-monitor/ui@0.1.1
+  - @checkstack/frontend-api@0.0.3
+  - @checkstack/auth-frontend@0.1.1
+  - @checkstack/ui@0.1.1
 
 ## 0.1.0
 
@@ -83,22 +83,22 @@
 
   ## New Packages
 
-  - **@checkmate-monitor/signal-common**: Shared types including `Signal`, `SignalService`, `createSignal()`, and WebSocket protocol messages
-  - **@checkmate-monitor/signal-backend**: `SignalServiceImpl` with EventBus integration and Bun WebSocket handler using native pub/sub
-  - **@checkmate-monitor/signal-frontend**: React `SignalProvider` and `useSignal()` hook for consuming typed signals
+  - **@checkstack/signal-common**: Shared types including `Signal`, `SignalService`, `createSignal()`, and WebSocket protocol messages
+  - **@checkstack/signal-backend**: `SignalServiceImpl` with EventBus integration and Bun WebSocket handler using native pub/sub
+  - **@checkstack/signal-frontend**: React `SignalProvider` and `useSignal()` hook for consuming typed signals
 
   ## Changes
 
-  - **@checkmate-monitor/backend-api**: Added `coreServices.signalService` reference for plugins to emit signals
-  - **@checkmate-monitor/backend**: Integrated WebSocket server at `/api/signals/ws` with session-based authentication
+  - **@checkstack/backend-api**: Added `coreServices.signalService` reference for plugins to emit signals
+  - **@checkstack/backend**: Integrated WebSocket server at `/api/signals/ws` with session-based authentication
 
   ## Usage
 
   Backend plugins can emit signals:
 
   ```typescript
-  import { coreServices } from "@checkmate-monitor/backend-api";
-  import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+  import { coreServices } from "@checkstack/backend-api";
+  import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
 
   const signalService = context.signalService;
   await signalService.sendToUser(NOTIFICATION_RECEIVED, userId, { ... });
@@ -107,8 +107,8 @@
   Frontend components subscribe to signals:
 
   ```tsx
-  import { useSignal } from "@checkmate-monitor/signal-frontend";
-  import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+  import { useSignal } from "@checkstack/signal-frontend";
+  import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
 
   useSignal(NOTIFICATION_RECEIVED, (payload) => {
     // Handle realtime notification
@@ -132,7 +132,7 @@
 
   ## New Telegram Notification Plugin
 
-  Added `@checkmate-monitor/notification-telegram-backend` plugin for sending notifications via Telegram:
+  Added `@checkstack/notification-telegram-backend` plugin for sending notifications via Telegram:
 
   - Uses [grammY](https://grammy.dev/) framework for Telegram Bot API integration
   - Sends messages with MarkdownV2 formatting and inline keyboard buttons for actions
@@ -154,9 +154,9 @@
 - Updated dependencies [32f2535]
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
-  - @checkmate-monitor/ui@0.1.0
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/notification-common@0.1.0
-  - @checkmate-monitor/auth-frontend@0.1.0
-  - @checkmate-monitor/signal-frontend@0.1.0
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/ui@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/notification-common@0.1.0
+  - @checkstack/auth-frontend@0.1.0
+  - @checkstack/signal-frontend@0.1.0
+  - @checkstack/frontend-api@0.0.2

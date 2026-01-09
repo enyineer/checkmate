@@ -4,13 +4,13 @@ import {
   useApi,
   permissionApiRef,
   rpcApiRef,
-} from "@checkmate-monitor/frontend-api";
-import { PageLayout, useToast, Tabs, TabPanel } from "@checkmate-monitor/ui";
+} from "@checkstack/frontend-api";
+import { PageLayout, useToast, Tabs, TabPanel } from "@checkstack/ui";
 import { authApiRef, AuthUser, Role, AuthStrategy, Permission } from "../api";
 import {
   permissions as authPermissions,
   AuthApi,
-} from "@checkmate-monitor/auth-common";
+} from "@checkstack/auth-common";
 import { Shield, Settings2, Users, Key } from "lucide-react";
 import { UsersTab } from "./UsersTab";
 import { RolesTab } from "./RolesTab";

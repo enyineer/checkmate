@@ -5,13 +5,13 @@ import {
   rpcApiRef,
   permissionApiRef,
   wrapInSuspense,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { incidentApiRef } from "../api";
 import type {
   IncidentWithSystems,
   IncidentStatus,
-} from "@checkmate-monitor/incident-common";
-import { CatalogApi, type System } from "@checkmate-monitor/catalog-common";
+} from "@checkstack/incident-common";
+import { CatalogApi, type System } from "@checkstack/catalog-common";
 import {
   Card,
   CardHeader,
@@ -35,7 +35,7 @@ import {
   useToast,
   ConfirmationModal,
   PageLayout,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import {
   Plus,
   AlertTriangle,

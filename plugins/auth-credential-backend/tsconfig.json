@@ -1,5 +1,5 @@
 {
-  "extends": "@checkmate-monitor/tsconfig/base.json",
+  "extends": "@checkstack/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

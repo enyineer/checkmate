@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { Bell } from "lucide-react";
-import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
-import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { resolveRoute } from "@checkmate-monitor/common";
-import { notificationRoutes } from "@checkmate-monitor/notification-common";
+import type { UserMenuItemsContext } from "@checkstack/frontend-api";
+import { DropdownMenuItem } from "@checkstack/ui";
+import { resolveRoute } from "@checkstack/common";
+import { notificationRoutes } from "@checkstack/notification-common";
 
 export const NotificationUserMenuItems = (_props: UserMenuItemsContext) => {
   return (

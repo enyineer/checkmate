@@ -25,7 +25,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultTheme = "system",
-  storageKey = "checkmate-ui-theme",
+  storageKey = "checkstack-ui-theme",
   ...props
 }) => {
   const [theme, setTheme] = useState<Theme>(

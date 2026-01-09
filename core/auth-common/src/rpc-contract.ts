@@ -3,7 +3,7 @@ import {
   createClientDefinition,
   type ProcedureMetadata,
   lucideIconSchema,
-} from "@checkmate-monitor/common";
+} from "@checkstack/common";
 import { z } from "zod";
 import { permissions } from "./permissions";
 import { pluginMetadata } from "./plugin-metadata";

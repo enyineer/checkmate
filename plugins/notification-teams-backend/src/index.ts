@@ -7,8 +7,8 @@ import {
   type NotificationSendContext,
   type NotificationDeliveryResult,
   type StrategyOAuthConfig,
-} from "@checkmate-monitor/backend-api";
-import { notificationStrategyExtensionPoint } from "@checkmate-monitor/notification-backend";
+} from "@checkstack/backend-api";
+import { notificationStrategyExtensionPoint } from "@checkstack/notification-backend";
 import { pluginMetadata } from "./plugin-metadata";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -39,7 +39,7 @@ const adminInstructions = `
 1. Go to [Azure Portal](https://portal.azure.com/) → **Microsoft Entra ID** (formerly Azure AD)
 2. Navigate to **App registrations** → **New registration**
 3. Fill in the application details:
-   - **Name**: Your notification bot name (e.g., "Checkmate Alerts")
+   - **Name**: Your notification bot name (e.g., "Checkstack Alerts")
    - **Supported account types**: Choose based on your tenant requirements
    - **Redirect URI**: Select "Web" and enter: \`{YOUR_BASE_URL}/api/notification/oauth/callback/teams\`
 4. Click **Register**
@@ -76,7 +76,7 @@ const userInstructions = `
 3. Review and accept the requested permissions
 4. You'll be redirected back automatically
 
-Once connected, you'll receive notifications as personal chat messages from the Checkmate bot in Microsoft Teams.
+Once connected, you'll receive notifications as personal chat messages from the Checkstack bot in Microsoft Teams.
 
 > **Note**: Make sure you're signed into the correct Microsoft account that has access to Microsoft Teams.
 `.trim();

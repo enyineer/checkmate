@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "bun:test";
 import { z } from "zod";
-import { configString, isSecretSchema } from "@checkmate-monitor/backend-api";
-import { encrypt, decrypt, isEncrypted } from "@checkmate-monitor/backend-api";
+import { configString, isSecretSchema } from "@checkstack/backend-api";
+import { encrypt, decrypt, isEncrypted } from "@checkstack/backend-api";
 
 describe("Secret Detection", () => {
   it("should detect direct secret fields", () => {

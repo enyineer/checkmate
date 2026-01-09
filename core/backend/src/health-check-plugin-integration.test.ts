@@ -4,11 +4,11 @@ import {
   createBackendPlugin,
   HealthCheckStrategy,
   Versioned,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   createMockQueueManager,
   createMockLogger,
-} from "@checkmate-monitor/test-utils-backend";
+} from "@checkstack/test-utils-backend";
 import { z } from "zod";
 
 // Note: ./db and ./logger are mocked via test-preload.ts (bunfig.toml preload)

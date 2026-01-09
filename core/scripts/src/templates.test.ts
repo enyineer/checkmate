@@ -90,7 +90,7 @@ describe("CLI Template Scaffolding", () => {
         () => {
           try {
             execSync(
-              `bun run --filter '@checkmate-monitor/${pluginName}' typecheck`,
+              `bun run --filter '@checkstack/${pluginName}' typecheck`,
               {
                 cwd: rootDir,
                 stdio: "pipe",

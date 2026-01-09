@@ -2,7 +2,7 @@
 ---
 # Backend Test Utilities
 
-Checkmate provides a comprehensive set of testing utilities specifically designed for backend packages. These utilities enable fast, deterministic unit tests by providing sophisticated mocks for core services like databases, loggers, queues, and RPC contexts.
+Checkstack provides a comprehensive set of testing utilities specifically designed for backend packages. These utilities enable fast, deterministic unit tests by providing sophisticated mocks for core services like databases, loggers, queues, and RPC contexts.
 
 ## Table of Contents
 
@@ -19,16 +19,16 @@ Checkmate provides a comprehensive set of testing utilities specifically designe
 
 ### Philosophy: Side-Effect-Free Testing
 
-The test utilities in Checkmate follow a critical principle: **prevent side-effect poisoning** during test execution.
+The test utilities in Checkstack follow a critical principle: **prevent side-effect poisoning** during test execution.
 
 **Side-effect poisoning** occurs when importing a module triggers production code that requires a full production environment (e.g., database connections, environment variable validation, service initialization). This makes tests fragile, slow, and environment-dependent.
 
-To prevent this, Checkmate externalizes all testing utilities into dedicated packages:
+To prevent this, Checkstack externalizes all testing utilities into dedicated packages:
 
-- **`@checkmate-monitor/test-utils-backend`**: Core mocks for backend services (DB, Logger, Fetch, Queues)
-- **`@checkmate-monitor/backend-api/test-utils`**: Mocks for API-level structures (RpcContext)
+- **`@checkstack/test-utils-backend`**: Core mocks for backend services (DB, Logger, Fetch, Queues)
+- **`@checkstack/backend-api/test-utils`**: Mocks for API-level structures (RpcContext)
 
-> **CRITICAL**: Never import from main entry points like `@checkmate-monitor/backend` in unit tests. Always use the dedicated test utility packages.
+> **CRITICAL**: Never import from main entry points like `@checkstack/backend` in unit tests. Always use the dedicated test utility packages.
 
 ### Why Use These Utilities?
 
@@ -49,8 +49,8 @@ Add the test utilities to your `devDependencies`:
 ```json
 {
   "devDependencies": {
-    "@checkmate-monitor/test-utils-backend": "workspace:*",
-    "@checkmate-monitor/backend-api": "workspace:*"
+    "@checkstack/test-utils-backend": "workspace:*",
+    "@checkstack/backend-api": "workspace:*"
   }
 }
 ```
@@ -64,17 +64,17 @@ import {
   createMockLogger,
   createMockFetch,
   createMockQueueManager,
-} from "@checkmate-monitor/test-utils-backend";
+} from "@checkstack/test-utils-backend";
 
 // Import RPC context mocking
-import { createMockRpcContext } from "@checkmate-monitor/backend-api/test-utils";
+import { createMockRpcContext } from "@checkstack/backend-api/test-utils";
 ```
 
 ### Basic Test Structure
 
 ```typescript
 import { describe, test, expect, mock } from "bun:test";
-import { createMockDb, createMockLogger } from "@checkmate-monitor/test-utils-backend";
+import { createMockDb, createMockLogger } from "@checkstack/test-utils-backend";
 import { MyService } from "./my-service";
 
 describe("MyService", () => {
@@ -106,7 +106,7 @@ Creates a mock Drizzle database instance with support for the most common query 
 The mock supports chainable Drizzle queries:
 
 ```typescript
-import { createMockDb } from "@checkmate-monitor/test-utils-backend";
+import { createMockDb } from "@checkstack/test-utils-backend";
 
 const mockDb = createMockDb();
 
@@ -133,7 +133,7 @@ await mockDb.delete(usersTable).where(eq(usersTable.id, "123"));
 #### Basic Usage
 
 ```typescript
-import { createMockDb } from "@checkmate-monitor/test-utils-backend";
+import { createMockDb } from "@checkstack/test-utils-backend";
 
 test("should fetch user from database", async () => {
   const mockDb = createMockDb();
@@ -150,7 +150,7 @@ test("should fetch user from database", async () => {
 For complex queries, you can override the mock to return specific data:
 
 ```typescript
-import { createMockDb } from "@checkmate-monitor/test-utils-backend";
+import { createMockDb } from "@checkstack/test-utils-backend";
 
 test("should return specific user data", async () => {
   const mockDb = createMockDb();
@@ -178,7 +178,7 @@ For tests that import the database module directly, use `createMockDbModule`:
 
 ```typescript
 import { mock } from "bun:test";
-import { createMockDbModule } from "@checkmate-monitor/test-utils-backend";
+import { createMockDbModule } from "@checkstack/test-utils-backend";
 
 // Mock the entire database module
 mock.module("./db", () => createMockDbModule());
@@ -198,7 +198,7 @@ Creates a mock logger instance with support for all standard logging levels and 
 #### Basic Usage
 
 ```typescript
-import { createMockLogger } from "@checkmate-monitor/test-utils-backend";
+import { createMockLogger } from "@checkstack/test-utils-backend";
 
 test("should log service initialization", async () => {
   const mockLogger = createMockLogger();
@@ -243,7 +243,7 @@ const childLogger = logger.child({ context: "my-component" });
 
 ```typescript
 import { mock } from "bun:test";
-import { createMockLoggerModule } from "@checkmate-monitor/test-utils-backend";
+import { createMockLoggerModule } from "@checkstack/test-utils-backend";
 
 mock.module("./logger", () => createMockLoggerModule());
 
@@ -261,7 +261,7 @@ Creates a mock Fetch service for testing HTTP requests and inter-plugin communic
 #### Basic Usage
 
 ```typescript
-import { createMockFetch } from "@checkmate-monitor/test-utils-backend";
+import { createMockFetch } from "@checkstack/test-utils-backend";
 
 test("should make HTTP request", async () => {
   const mockFetch = createMockFetch();
@@ -340,7 +340,7 @@ Creates a mock QueueManager that produces simple in-memory mock queues for testi
 #### Basic Usage
 
 ```typescript
-import { createMockQueueManager } from "@checkmate-monitor/test-utils-backend";
+import { createMockQueueManager } from "@checkstack/test-utils-backend";
 
 test("should enqueue job", async () => {
   const mockQueueManager = createMockQueueManager();
@@ -391,7 +391,7 @@ Creates a complete mock RPC context with all dependencies pre-configured.
 #### Basic Usage
 
 ```typescript
-import { createMockRpcContext } from "@checkmate-monitor/backend-api/test-utils";
+import { createMockRpcContext } from "@checkstack/backend-api/test-utils";
 
 test("should handle RPC request", async () => {
   const ctx = createMockRpcContext();
@@ -439,7 +439,7 @@ test("should handle authenticated request", async () => {
 #### Testing Router Handlers
 
 ```typescript
-import { createMockRpcContext } from "@checkmate-monitor/backend-api/test-utils";
+import { createMockRpcContext } from "@checkstack/backend-api/test-utils";
 import { myRouter } from "./router";
 
 test("should handle getUser RPC call", async () => {
@@ -467,7 +467,7 @@ test("should handle getUser RPC call", async () => {
 
 ```typescript
 import { describe, test, expect } from "bun:test";
-import { createMockDb, createMockLogger } from "@checkmate-monitor/test-utils-backend";
+import { createMockDb, createMockLogger } from "@checkstack/test-utils-backend";
 import { UserService } from "./user-service";
 
 describe("UserService", () => {
@@ -505,7 +505,7 @@ describe("UserService", () => {
 
 ```typescript
 import { test, expect } from "bun:test";
-import { createMockRpcContext } from "@checkmate-monitor/backend-api/test-utils";
+import { createMockRpcContext } from "@checkstack/backend-api/test-utils";
 import { createUserRouter } from "./router";
 
 test("should handle createUser RPC call", async () => {
@@ -527,7 +527,7 @@ test("should handle createUser RPC call", async () => {
 
 ```typescript
 import { test, expect } from "bun:test";
-import { createMockFetch } from "@checkmate-monitor/test-utils-backend";
+import { createMockFetch } from "@checkstack/test-utils-backend";
 import { CatalogIntegration } from "./catalog-integration";
 
 test("should fetch entities from catalog plugin", async () => {
@@ -555,7 +555,7 @@ test("should fetch entities from catalog plugin", async () => {
 
 ```typescript
 import { test, expect } from "bun:test";
-import { createMockQueueManager, createMockLogger } from "@checkmate-monitor/test-utils-backend";
+import { createMockQueueManager, createMockLogger } from "@checkstack/test-utils-backend";
 import { EmailWorker } from "./email-worker";
 
 test("should process email jobs", async () => {
@@ -581,7 +581,7 @@ test("should process email jobs", async () => {
 
 ```typescript
 import { test, expect } from "bun:test";
-import { createMockLogger } from "@checkmate-monitor/test-utils-backend";
+import { createMockLogger } from "@checkstack/test-utils-backend";
 import { MultiStepProcessor } from "./processor";
 
 test("should use child loggers for each step", async () => {
@@ -615,7 +615,7 @@ const mockDb = {
 **✅ Good**: Import from test utilities
 
 ```typescript
-import { createMockDb } from "@checkmate-monitor/test-utils-backend";
+import { createMockDb } from "@checkstack/test-utils-backend";
 
 const mockDb = createMockDb();
 ```
@@ -626,17 +626,17 @@ const mockDb = createMockDb();
 
 ```typescript
 // DON'T DO THIS - triggers production initialization
-import { EventBus } from "@checkmate-monitor/backend";
+import { EventBus } from "@checkstack/backend";
 ```
 
 **✅ Good**: Import only what you need
 
 ```typescript
 // Import test utilities from dedicated packages
-import { createMockQueueManager } from "@checkmate-monitor/test-utils-backend";
+import { createMockQueueManager } from "@checkstack/test-utils-backend";
 
 // Import classes directly (no side effects)
-import { EventBus } from "@checkmate-monitor/backend/event-bus";
+import { EventBus } from "@checkstack/backend/event-bus";
 ```
 
 ### 3. Use Module Mocking for Integration Tests
@@ -645,7 +645,7 @@ When testing code that imports modules directly:
 
 ```typescript
 import { mock } from "bun:test";
-import { createMockDbModule } from "@checkmate-monitor/test-utils-backend";
+import { createMockDbModule } from "@checkstack/test-utils-backend";
 
 // Mock the module before importing the code under test
 mock.module("./db", () => createMockDbModule());
@@ -745,7 +745,7 @@ import { MyClass } from "./my-class"; // Not from index
 **Solution**: Use type assertions or provide explicit overrides:
 
 ```typescript
-import { RpcContext } from "@checkmate-monitor/backend-api";
+import { RpcContext } from "@checkstack/backend-api";
 
 const ctx = createMockRpcContext({
   user: { id: "1", email: "test@example.com" } as any,
@@ -777,7 +777,7 @@ expect(results).toHaveLength(1);
 
 ## Summary
 
-The Checkmate backend test utilities provide:
+The Checkstack backend test utilities provide:
 
 - **Comprehensive mocking** for all core services (DB, Logger, Fetch, Queue, RPC)
 - **Chainable interfaces** that match production behavior
@@ -785,7 +785,7 @@ The Checkmate backend test utilities provide:
 - **Side-effect-free** execution to keep tests fast and reliable
 - **Centralized maintenance** for consistency across the codebase
 
-Always use these utilities from their dedicated packages (`@checkmate-monitor/test-utils-backend`, `@checkmate-monitor/backend-api/test-utils`) to ensure clean, maintainable, and reliable tests.
+Always use these utilities from their dedicated packages (`@checkstack/test-utils-backend`, `@checkstack/backend-api/test-utils`) to ensure clean, maintainable, and reliable tests.
 
 For reference implementations, see:
 - [`createMockDb`](/core/test-utils-backend/src/mock-db.ts)

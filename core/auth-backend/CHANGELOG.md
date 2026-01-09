@@ -1,4 +1,4 @@
-# @checkmate-monitor/auth-backend
+# @checkstack/auth-backend
 
 ## 1.1.0
 
@@ -26,18 +26,18 @@
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/command-backend@0.1.0
-  - @checkmate-monitor/auth-common@0.2.1
-  - @checkmate-monitor/notification-common@0.1.1
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/command-backend@0.1.0
+  - @checkstack/auth-common@0.2.1
+  - @checkstack/notification-common@0.1.1
 
 ## 1.0.1
 
 ### Patch Changes
 
 - Updated dependencies [e26c08e]
-  - @checkmate-monitor/auth-common@0.2.0
+  - @checkstack/auth-common@0.2.0
 
 ## 1.0.0
 
@@ -100,7 +100,7 @@
 
   ## New Telegram Notification Plugin
 
-  Added `@checkmate-monitor/notification-telegram-backend` plugin for sending notifications via Telegram:
+  Added `@checkstack/notification-telegram-backend` plugin for sending notifications via Telegram:
 
   - Uses [grammY](https://grammy.dev/) framework for Telegram Bot API integration
   - Sends messages with MarkdownV2 formatting and inline keyboard buttons for actions
@@ -124,7 +124,7 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/auth-common@0.1.0
-  - @checkmate-monitor/notification-common@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/auth-common@0.1.0
+  - @checkstack/notification-common@0.1.0

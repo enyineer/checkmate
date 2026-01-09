@@ -1,6 +1,6 @@
 import type { Versioned, VersionedRecord } from "./config-versioning";
 import type { Logger } from "./types";
-import type { PluginMetadata, LucideIconName } from "@checkmate-monitor/common";
+import type { PluginMetadata, LucideIconName } from "@checkstack/common";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Contact Resolution Types
@@ -278,7 +278,7 @@ export interface NotificationStrategy<
    *   schema: z.object({
    *     logoUrl: z.string().url().optional(),
    *     primaryColor: z.string().default("#3b82f6"),
-   *     footerText: z.string().default("Sent by Checkmate"),
+   *     footerText: z.string().default("Sent by Checkstack"),
    *   }),
    * })
    * ```

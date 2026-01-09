@@ -4,20 +4,20 @@ import {
   useApi,
   wrapInSuspense,
   permissionApiRef,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { healthCheckApiRef } from "../api";
 import {
   HealthCheckConfiguration,
   HealthCheckStrategyDto,
   CreateHealthCheckConfiguration,
   healthcheckRoutes,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 import { HealthCheckList } from "../components/HealthCheckList";
 import { HealthCheckEditor } from "../components/HealthCheckEditor";
-import { Button, ConfirmationModal, PageLayout } from "@checkmate-monitor/ui";
+import { Button, ConfirmationModal, PageLayout } from "@checkstack/ui";
 import { Plus, History } from "lucide-react";
 import { Link } from "react-router-dom";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { resolveRoute } from "@checkstack/common";
 
 const HealthCheckConfigPageContent = () => {
   const api = useApi(healthCheckApiRef);

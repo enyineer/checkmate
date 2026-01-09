@@ -1,7 +1,7 @@
-title: Checkmate Documentation
+title: Checkstack Documentation
 description: Plugin-based application platform with extensible architecture
 theme: jekyll-theme-primer
-baseurl: /checkmate
+baseurl: /checkstack
 url: https://enyineer.github.io
 
 markdown: kramdown

@@ -1,13 +1,13 @@
 # Documentation Index
 
-Welcome to the Checkmate documentation! This index will help you find the information you need.
+Welcome to the Checkstack documentation! This index will help you find the information you need.
 
 ## Getting Started
 
-New to Checkmate? Start here:
+New to Checkstack? Start here:
 
-1. **[Project README](https://github.com/enyineer/checkmate#readme)** - Project overview and setup instructions
-2. **[Docker Deployment](./getting-started/docker.md)** - Deploy Checkmate with Docker
+1. **[Project README](https://github.com/enyineer/checkstack#readme)** - Project overview and setup instructions
+2. **[Docker Deployment](./getting-started/docker.md)** - Deploy Checkstack with Docker
 3. **[Contributing Guide](./getting-started/contributing.md)** - Set up your development environment
 
 ## Architecture
@@ -135,7 +135,7 @@ We welcome contributions! See the [Contributing Guide](./getting-started/contrib
 
 ## License
 
-Checkmate is licensed under the [Elastic License 2.0](../LICENSE.md).
+Checkstack is licensed under the [Elastic License 2.0](../LICENSE.md).
 
 ---
 

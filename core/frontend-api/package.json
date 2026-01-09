@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/frontend-api",
-  "version": "0.1.0",
+  "name": "@checkstack/frontend-api",
+  "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
@@ -12,14 +12,14 @@
     "react": "^18.0.0"
   },
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*",
+    "@checkstack/common": "workspace:*",
     "@orpc/client": "^1.13.2"
   },
   "devDependencies": {
     "@types/bun": "^1.3.5",
     "@types/react": "^18.0.0",
     "typescript": "^5.0.0",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   }
 }

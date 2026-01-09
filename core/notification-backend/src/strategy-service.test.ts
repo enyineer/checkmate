@@ -7,8 +7,8 @@ import type {
   ConfigService,
   NotificationStrategyRegistry,
   RegisteredNotificationStrategy,
-} from "@checkmate-monitor/backend-api";
-import { Versioned } from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
+import { Versioned } from "@checkstack/backend-api";
 import { z } from "zod";
 
 /**

@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/frontend",
-  "version": "0.1.4",
+  "name": "@checkstack/frontend",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,14 +12,14 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate-monitor/auth-frontend": "workspace:*",
-    "@checkmate-monitor/catalog-frontend": "workspace:*",
-    "@checkmate-monitor/command-frontend": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/frontend-api": "workspace:*",
-    "@checkmate-monitor/signal-common": "workspace:*",
-    "@checkmate-monitor/signal-frontend": "workspace:*",
-    "@checkmate-monitor/ui": "workspace:*",
+    "@checkstack/auth-frontend": "workspace:*",
+    "@checkstack/catalog-frontend": "workspace:*",
+    "@checkstack/command-frontend": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/frontend-api": "workspace:*",
+    "@checkstack/signal-common": "workspace:*",
+    "@checkstack/signal-frontend": "workspace:*",
+    "@checkstack/ui": "workspace:*",
     "@orpc/client": "^1.13.2",
     "better-auth": "^1.1.8",
     "class-variance-authority": "^0.7.0",
@@ -31,8 +31,8 @@
     "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {
-    "@checkmate-monitor/scripts": "workspace:*",
-    "@checkmate-monitor/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*",
+    "@checkstack/tsconfig": "workspace:*",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@vitejs/plugin-react": "^4.2.1",

@@ -1,9 +1,9 @@
-import { createApiRef } from "@checkmate-monitor/frontend-api";
-import { CatalogApi } from "@checkmate-monitor/catalog-common";
-import type { InferClient } from "@checkmate-monitor/common";
+import { createApiRef } from "@checkstack/frontend-api";
+import { CatalogApi } from "@checkstack/catalog-common";
+import type { InferClient } from "@checkstack/common";
 
 // Re-export types for convenience
-export type { System, Group, View } from "@checkmate-monitor/catalog-common";
+export type { System, Group, View } from "@checkstack/catalog-common";
 
 // CatalogApi client type inferred from the client definition
 export type CatalogApiClient = InferClient<typeof CatalogApi>;

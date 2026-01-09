@@ -5,7 +5,7 @@ import {
   type IntegrationProviderRegistry,
 } from "./provider-registry";
 import type { IntegrationProvider } from "./provider-types";
-import { Versioned } from "@checkmate-monitor/backend-api";
+import { Versioned } from "@checkstack/backend-api";
 
 /**
  * Unit tests for IntegrationProviderRegistry.

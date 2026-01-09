@@ -1,4 +1,4 @@
-# @checkmate-monitor/catalog-backend
+# @checkstack/catalog-backend
 
 ## 0.1.0
 
@@ -26,17 +26,17 @@
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/command-backend@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/notification-common@0.1.1
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/command-backend@0.1.0
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/notification-common@0.1.1
 
 ## 0.0.3
 
 ### Patch Changes
 
-- @checkmate-monitor/catalog-common@0.1.1
+- @checkstack/catalog-common@0.1.1
 
 ## 0.0.2
 
@@ -49,8 +49,8 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/notification-common@0.1.0
-  - @checkmate-monitor/command-backend@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/notification-common@0.1.0
+  - @checkstack/command-backend@0.0.2

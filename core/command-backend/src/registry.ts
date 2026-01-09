@@ -1,10 +1,10 @@
-import type { SearchResult } from "@checkmate-monitor/command-common";
+import type { SearchResult } from "@checkstack/command-common";
 import {
   qualifyPermissionId,
   type PluginMetadata,
   type Permission,
   type LucideIconName,
-} from "@checkmate-monitor/common";
+} from "@checkstack/common";
 
 // =============================================================================
 // TYPES

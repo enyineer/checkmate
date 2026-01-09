@@ -2,11 +2,11 @@ import {
   createBackendPlugin,
   coreServices,
   coreHooks,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   pluginMetadata,
   commandContract,
-} from "@checkmate-monitor/command-common";
+} from "@checkstack/command-common";
 import { createCommandRouter } from "./router";
 import { unregisterProvidersByPluginId } from "./registry";
 

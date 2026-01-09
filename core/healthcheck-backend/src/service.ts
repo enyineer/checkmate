@@ -5,7 +5,7 @@ import {
   StateThresholds,
   HealthCheckStatus,
   RetentionConfig,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 import {
   healthCheckConfigurations,
   systemHealthChecks,
@@ -18,7 +18,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ORPCError } from "@orpc/server";
 import { evaluateHealthStatus } from "./state-evaluator";
 import { stateThresholds } from "./state-thresholds-migrations";
-import type { HealthCheckRegistry } from "@checkmate-monitor/backend-api";
+import type { HealthCheckRegistry } from "@checkstack/backend-api";
 
 // Drizzle type helper
 type Db = NodePgDatabase<typeof schema>;

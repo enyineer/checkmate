@@ -3,9 +3,9 @@ import {
   useApi,
   wrapInSuspense,
   permissionApiRef,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { queueApiRef } from "../api";
-import { QueuePluginDto } from "@checkmate-monitor/queue-common";
+import { QueuePluginDto } from "@checkstack/queue-common";
 import {
   Button,
   Alert,
@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
   useToast,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { AlertTriangle, Save } from "lucide-react";
 
 const QueueConfigPageContent = () => {

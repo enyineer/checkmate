@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { AlertCircle, Home, LogIn } from "lucide-react";
-import { authRoutes } from "@checkmate-monitor/auth-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { authRoutes } from "@checkstack/auth-common";
+import { resolveRoute } from "@checkstack/common";
 import {
   Button,
   Card,
@@ -15,7 +15,7 @@ import {
   AlertContent,
   AlertTitle,
   AlertDescription,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 
 /**
  * Map technical error messages to user-friendly ones

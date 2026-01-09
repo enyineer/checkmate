@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
+import { useApi, rpcApiRef } from "@checkstack/frontend-api";
 import { catalogApiRef, System, Group } from "../api";
-import { ExtensionSlot } from "@checkmate-monitor/frontend-api";
+import { ExtensionSlot } from "@checkstack/frontend-api";
 import {
   SystemDetailsSlot,
   SystemDetailsTopSlot,
   SystemStateBadgesSlot,
-} from "@checkmate-monitor/catalog-common";
-import { NotificationApi } from "@checkmate-monitor/notification-common";
+} from "@checkstack/catalog-common";
+import { NotificationApi } from "@checkstack/notification-common";
 import {
   Card,
   CardHeader,
@@ -18,8 +18,8 @@ import {
   SubscribeButton,
   useToast,
   BackLink,
-} from "@checkmate-monitor/ui";
-import { authApiRef } from "@checkmate-monitor/auth-frontend/api";
+} from "@checkstack/ui";
+import { authApiRef } from "@checkstack/auth-frontend/api";
 
 import { Activity, Info, Users, FileJson, Calendar } from "lucide-react";
 

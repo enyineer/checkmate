@@ -7,7 +7,7 @@ import {
   jsonb,
   primaryKey,
 } from "drizzle-orm/pg-core";
-import type { NotificationAction } from "@checkmate-monitor/notification-common";
+import type { NotificationAction } from "@checkstack/notification-common";
 
 // User notifications table
 export const notifications = pgTable("notifications", {

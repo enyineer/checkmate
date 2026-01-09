@@ -1,4 +1,4 @@
-import { InfoBanner } from "@checkmate-monitor/ui";
+import { InfoBanner } from "@checkstack/ui";
 
 interface AggregatedDataBannerProps {
   bucketSize: "hourly" | "daily";

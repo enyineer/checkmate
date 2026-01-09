@@ -4,7 +4,7 @@
 
 ## Overview
 
-Each plugin in Checkmate has its own isolated database schema (e.g., `plugin_catalog`, `plugin_auth`). This ensures plugins don't conflict with each other and allows for clean separation of concerns.
+Each plugin in Checkstack has its own isolated database schema (e.g., `plugin_catalog`, `plugin_auth`). This ensures plugins don't conflict with each other and allows for clean separation of concerns.
 
 ## How It Works
 
@@ -70,7 +70,7 @@ Backend plugins with database schemas need:
 ```json
 {
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*",
+    "@checkstack/common": "workspace:*",
     "drizzle-orm": "^0.45.1"
   },
   "devDependencies": {

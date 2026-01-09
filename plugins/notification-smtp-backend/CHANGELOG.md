@@ -1,4 +1,4 @@
-# @checkmate-monitor/notification-smtp-backend
+# @checkstack/notification-smtp-backend
 
 ## 0.0.4
 
@@ -6,7 +6,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -16,15 +16,15 @@
 
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/notification-backend@0.1.2
-  - @checkmate-monitor/common@0.2.0
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/notification-backend@0.1.2
+  - @checkstack/common@0.2.0
 
 ## 0.0.3
 
 ### Patch Changes
 
-- @checkmate-monitor/notification-backend@0.1.1
+- @checkstack/notification-backend@0.1.1
 
 ## 0.0.2
 
@@ -47,7 +47,7 @@
 
   ## New Telegram Notification Plugin
 
-  Added `@checkmate-monitor/notification-telegram-backend` plugin for sending notifications via Telegram:
+  Added `@checkstack/notification-telegram-backend` plugin for sending notifications via Telegram:
 
   - Uses [grammY](https://grammy.dev/) framework for Telegram Bot API integration
   - Sends messages with MarkdownV2 formatting and inline keyboard buttons for actions
@@ -68,6 +68,6 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/notification-backend@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/notification-backend@0.1.0

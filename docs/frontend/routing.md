@@ -1,6 +1,6 @@
 # Frontend Routing
 
-This guide covers the routing system for frontend plugins in Checkmate.
+This guide covers the routing system for frontend plugins in Checkstack.
 
 ## Route Definition Pattern
 
@@ -10,7 +10,7 @@ Routes are defined in **common packages** using `createRoutes`, which establishe
 
 ```typescript
 // In your-plugin-common/src/routes.ts
-import { createRoutes } from "@checkmate-monitor/common";
+import { createRoutes } from "@checkstack/common";
 
 export const yourPluginRoutes = createRoutes("your-plugin", {
   home: "/",
@@ -31,8 +31,8 @@ Import the routes and use them with the `route` field:
 
 ```tsx
 // In your-plugin-frontend/src/index.tsx
-import { createFrontendPlugin } from "@checkmate-monitor/frontend-api";
-import { yourPluginRoutes, pluginMetadata } from "@checkmate-monitor/your-plugin-common";
+import { createFrontendPlugin } from "@checkstack/frontend-api";
+import { yourPluginRoutes, pluginMetadata } from "@checkstack/your-plugin-common";
 import { HomePage } from "./pages/HomePage";
 import { ConfigPage } from "./pages/ConfigPage";
 import { DetailPage } from "./pages/DetailPage";
@@ -59,12 +59,12 @@ export default createFrontendPlugin({
 
 ## Route Resolution
 
-Routes can be resolved using `resolveRoute` from `@checkmate-monitor/common`:
+Routes can be resolved using `resolveRoute` from `@checkstack/common`:
 
 ### In Components
 ```tsx
-import { resolveRoute } from "@checkmate-monitor/common";
-import { catalogRoutes } from "@checkmate-monitor/catalog-common";
+import { resolveRoute } from "@checkstack/common";
+import { catalogRoutes } from "@checkstack/catalog-common";
 
 // Simple route
 const configPath = resolveRoute(catalogRoutes.routes.config);
@@ -77,8 +77,8 @@ const detailPath = resolveRoute(catalogRoutes.routes.systemDetail, { systemId: "
 
 ### Using the Hook
 ```tsx
-import { usePluginRoute } from "@checkmate-monitor/frontend-api";
-import { maintenanceRoutes } from "@checkmate-monitor/maintenance-common";
+import { usePluginRoute } from "@checkstack/frontend-api";
+import { maintenanceRoutes } from "@checkstack/maintenance-common";
 
 function MyComponent() {
   const getRoute = usePluginRoute();

@@ -8,7 +8,7 @@
 import type {
   NotificationStrategyRegistry,
   ConfigService,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { createStrategyService } from "./strategy-service";
 import type * as schema from "./schema";

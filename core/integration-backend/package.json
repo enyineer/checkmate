@@ -1,9 +1,9 @@
 {
-  "name": "@checkmate-monitor/integration-backend",
-  "version": "0.1.0",
+  "name": "@checkstack/integration-backend",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
-  "checkmate": {
+  "checkstack": {
     "type": "backend"
   },
   "scripts": {
@@ -14,20 +14,20 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@checkmate-monitor/integration-common": "workspace:*",
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/signal-common": "workspace:*",
-    "@checkmate-monitor/queue-api": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/command-backend": "workspace:*",
+    "@checkstack/integration-common": "workspace:*",
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/signal-common": "workspace:*",
+    "@checkstack/queue-api": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/command-backend": "workspace:*",
     "drizzle-orm": "^0.45.1",
     "zod": "^4.2.1"
   },
   "devDependencies": {
-    "@checkmate-monitor/drizzle-helper": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/test-utils-backend": "workspace:*",
+    "@checkstack/drizzle-helper": "workspace:*",
+    "@checkstack/scripts": "workspace:*",
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/test-utils-backend": "workspace:*",
     "@orpc/server": "^1.13.2",
     "@types/node": "^20.0.0",
     "drizzle-kit": "^0.31.8",

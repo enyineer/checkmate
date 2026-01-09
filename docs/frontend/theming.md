@@ -2,7 +2,7 @@
 ---
 # Theming System
 
-The Checkmate UI system uses a centralized, configurable theming architecture based on CSS Custom Properties (CSS variables) and HSL color space. This system provides automatic dark mode support, semantic color tokens, and consistent styling across the entire platform.
+The Checkstack UI system uses a centralized, configurable theming architecture based on CSS Custom Properties (CSS variables) and HSL color space. This system provides automatic dark mode support, semantic color tokens, and consistent styling across the entire platform.
 
 ## Architecture Overview
 
@@ -10,7 +10,7 @@ The theming system consists of four key layers:
 
 1. **CSS Variables** (`core/ui/src/themes.css`) - Core color definitions using HSL values
 2. **Tailwind Integration** (`tailwind.config.js`) - Maps CSS variables to Tailwind utility classes
-3. **Theme Provider** (`@checkmate-monitor/ui/ThemeProvider`) - Runtime theme management and persistence
+3. **Theme Provider** (`@checkstack/ui/ThemeProvider`) - Runtime theme management and persistence
 4. **Component Adoption** - All components use semantic tokens instead of hardcoded colors
 
 ## How Theme Tokens Work
@@ -316,7 +316,7 @@ The `Toggle` component shows dynamic state-based theming:
 The `ThemeProvider` should wrap your application root:
 
 ```tsx
-import { ThemeProvider } from "@checkmate-monitor/ui";
+import { ThemeProvider } from "@checkstack/ui";
 
 function App() {
   return (
@@ -332,7 +332,7 @@ function App() {
 Access and control the current theme:
 
 ```tsx
-import { useTheme } from "@checkmate-monitor/ui";
+import { useTheme } from "@checkstack/ui";
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -369,7 +369,7 @@ Always verify your components in both light and dark modes:
 - ✅ Use semantic token names (`bg-primary`, `text-foreground`)
 - ✅ Leverage opacity modifiers (`bg-primary/10`, `hover:bg-accent/80`)
 - ✅ Test in both light and dark modes
-- ✅ Use `@checkmate-monitor/ui` components when possible (already theme-aware)
+- ✅ Use `@checkstack/ui` components when possible (already theme-aware)
 - ✅ Follow the established semantic patterns for your use case
 
 ### DON'T:
@@ -393,4 +393,4 @@ If you need to add new tokens, follow this process:
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 - [HSL Color Space](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/hsl)
 - [class-variance-authority](https://cva.style/docs)
-- [Radix UI](https://www.radix-ui.com/) - Unstyled components used in `@checkmate-monitor/ui`
+- [Radix UI](https://www.radix-ui.com/) - Unstyled components used in `@checkstack/ui`

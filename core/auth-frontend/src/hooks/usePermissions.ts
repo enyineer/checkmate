@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuthClient } from "../lib/auth-client";
-import { rpcApiRef, useApi } from "@checkmate-monitor/frontend-api";
-import { AuthApi } from "@checkmate-monitor/auth-common";
+import { rpcApiRef, useApi } from "@checkstack/frontend-api";
+import { AuthApi } from "@checkstack/auth-common";
 
 export const usePermissions = () => {
   const authClient = useAuthClient();

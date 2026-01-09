@@ -1,4 +1,4 @@
-# @checkmate-monitor/backend
+# @checkstack/backend
 
 ## 0.1.4
 
@@ -6,20 +6,20 @@
 
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/auth-common@0.2.1
-  - @checkmate-monitor/queue-api@1.0.1
-  - @checkmate-monitor/signal-backend@0.1.1
-  - @checkmate-monitor/api-docs-common@0.0.3
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/auth-common@0.2.1
+  - @checkstack/queue-api@1.0.1
+  - @checkstack/signal-backend@0.1.1
+  - @checkstack/api-docs-common@0.0.3
+  - @checkstack/signal-common@0.1.1
 
 ## 0.1.3
 
 ### Patch Changes
 
 - Updated dependencies [e26c08e]
-  - @checkmate-monitor/auth-common@0.2.0
+  - @checkstack/auth-common@0.2.0
 
 ## 0.1.2
 
@@ -87,22 +87,22 @@
 
   ## New Packages
 
-  - **@checkmate-monitor/signal-common**: Shared types including `Signal`, `SignalService`, `createSignal()`, and WebSocket protocol messages
-  - **@checkmate-monitor/signal-backend**: `SignalServiceImpl` with EventBus integration and Bun WebSocket handler using native pub/sub
-  - **@checkmate-monitor/signal-frontend**: React `SignalProvider` and `useSignal()` hook for consuming typed signals
+  - **@checkstack/signal-common**: Shared types including `Signal`, `SignalService`, `createSignal()`, and WebSocket protocol messages
+  - **@checkstack/signal-backend**: `SignalServiceImpl` with EventBus integration and Bun WebSocket handler using native pub/sub
+  - **@checkstack/signal-frontend**: React `SignalProvider` and `useSignal()` hook for consuming typed signals
 
   ## Changes
 
-  - **@checkmate-monitor/backend-api**: Added `coreServices.signalService` reference for plugins to emit signals
-  - **@checkmate-monitor/backend**: Integrated WebSocket server at `/api/signals/ws` with session-based authentication
+  - **@checkstack/backend-api**: Added `coreServices.signalService` reference for plugins to emit signals
+  - **@checkstack/backend**: Integrated WebSocket server at `/api/signals/ws` with session-based authentication
 
   ## Usage
 
   Backend plugins can emit signals:
 
   ```typescript
-  import { coreServices } from "@checkmate-monitor/backend-api";
-  import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+  import { coreServices } from "@checkstack/backend-api";
+  import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
 
   const signalService = context.signalService;
   await signalService.sendToUser(NOTIFICATION_RECEIVED, userId, { ... });
@@ -111,8 +111,8 @@
   Frontend components subscribe to signals:
 
   ```tsx
-  import { useSignal } from "@checkmate-monitor/signal-frontend";
-  import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+  import { useSignal } from "@checkstack/signal-frontend";
+  import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
 
   useSignal(NOTIFICATION_RECEIVED, (payload) => {
     // Handle realtime notification
@@ -123,30 +123,30 @@
 
 - ae19ff6: Add configurable state thresholds for health check evaluation
 
-  **@checkmate-monitor/backend-api:**
+  **@checkstack/backend-api:**
 
   - Added `VersionedData<T>` generic interface as base for all versioned data structures
   - `VersionedConfig<T>` now extends `VersionedData<T>` and adds `pluginId`
   - Added `migrateVersionedData()` utility function for running migrations on any `VersionedData` subtype
 
-  **@checkmate-monitor/backend:**
+  **@checkstack/backend:**
 
   - Refactored `ConfigMigrationRunner` to use the new `migrateVersionedData` utility
 
-  **@checkmate-monitor/healthcheck-common:**
+  **@checkstack/healthcheck-common:**
 
   - Added state threshold schemas with two evaluation modes (consecutive, window)
   - Added `stateThresholds` field to `AssociateHealthCheckSchema`
   - Added `getSystemHealthStatus` RPC endpoint contract
 
-  **@checkmate-monitor/healthcheck-backend:**
+  **@checkstack/healthcheck-backend:**
 
   - Added `stateThresholds` column to `system_health_checks` table
   - Added `state-evaluator.ts` with health status evaluation logic
   - Added `state-thresholds-migrations.ts` with migration infrastructure
   - Added `getSystemHealthStatus` RPC handler
 
-  **@checkmate-monitor/healthcheck-frontend:**
+  **@checkstack/healthcheck-frontend:**
 
   - Updated `SystemHealthBadge` to use new backend endpoint
 
@@ -201,10 +201,10 @@
 - Updated dependencies [b354ab3]
 - Updated dependencies [8e889b4]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/auth-common@0.1.0
-  - @checkmate-monitor/queue-api@1.0.0
-  - @checkmate-monitor/signal-common@0.1.0
-  - @checkmate-monitor/signal-backend@0.1.0
-  - @checkmate-monitor/api-docs-common@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/auth-common@0.1.0
+  - @checkstack/queue-api@1.0.0
+  - @checkstack/signal-common@0.1.0
+  - @checkstack/signal-backend@0.1.0
+  - @checkstack/api-docs-common@0.0.2

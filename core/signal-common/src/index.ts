@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Permission, PluginMetadata } from "@checkmate-monitor/common";
+import type { Permission, PluginMetadata } from "@checkstack/common";
 
 // =============================================================================
 // SIGNAL DEFINITION
@@ -132,7 +132,7 @@ export interface SignalService {
    *
    * @example
    * ```typescript
-   * import { pluginMetadata, permissions } from "@checkmate-monitor/healthcheck-common";
+   * import { pluginMetadata, permissions } from "@checkstack/healthcheck-common";
    *
    * await signalService.sendToAuthorizedUsers(
    *   HEALTH_STATE_CHANGED,

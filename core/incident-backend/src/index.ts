@@ -7,18 +7,18 @@ import {
   incidentContract,
   incidentRoutes,
   permissions,
-} from "@checkmate-monitor/incident-common";
+} from "@checkstack/incident-common";
 import {
   createBackendPlugin,
   coreServices,
-} from "@checkmate-monitor/backend-api";
-import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
+} from "@checkstack/backend-api";
+import { integrationEventExtensionPoint } from "@checkstack/integration-backend";
 import { IncidentService } from "./service";
 import { createRouter } from "./router";
-import { CatalogApi } from "@checkmate-monitor/catalog-common";
-import { catalogHooks } from "@checkmate-monitor/catalog-backend";
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { CatalogApi } from "@checkstack/catalog-common";
+import { catalogHooks } from "@checkstack/catalog-backend";
+import { registerSearchProvider } from "@checkstack/command-backend";
+import { resolveRoute } from "@checkstack/common";
 import { incidentHooks } from "./hooks";
 
 // =============================================================================

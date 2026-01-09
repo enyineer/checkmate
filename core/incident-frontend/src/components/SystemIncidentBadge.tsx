@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useApi, type SlotContext } from "@checkmate-monitor/frontend-api";
-import { useSignal } from "@checkmate-monitor/signal-frontend";
-import { SystemStateBadgesSlot } from "@checkmate-monitor/catalog-common";
+import { useApi, type SlotContext } from "@checkstack/frontend-api";
+import { useSignal } from "@checkstack/signal-frontend";
+import { SystemStateBadgesSlot } from "@checkstack/catalog-common";
 import { incidentApiRef } from "../api";
 import {
   INCIDENT_UPDATED,
   type IncidentWithSystems,
-} from "@checkmate-monitor/incident-common";
-import { Badge } from "@checkmate-monitor/ui";
+} from "@checkstack/incident-common";
+import { Badge } from "@checkstack/ui";
 
 type Props = SlotContext<typeof SystemStateBadgesSlot>;
 

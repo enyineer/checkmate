@@ -7,17 +7,17 @@ import {
   useToast,
   SectionHeader,
   DynamicForm,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import {
   useApi,
   rpcApiRef,
   permissionApiRef,
-} from "@checkmate-monitor/frontend-api";
-import type { EnrichedSubscription } from "@checkmate-monitor/notification-common";
+} from "@checkstack/frontend-api";
+import type { EnrichedSubscription } from "@checkstack/notification-common";
 import {
   NotificationApi,
   permissions,
-} from "@checkmate-monitor/notification-common";
+} from "@checkstack/notification-common";
 import {
   StrategyCard,
   type DeliveryStrategy,

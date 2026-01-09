@@ -113,7 +113,7 @@ export function getOptionsResolverMetadata(
  *
  * @example
  * ```typescript
- * import { configString } from "@checkmate-monitor/backend-api";
+ * import { configString } from "@checkstack/backend-api";
  *
  * const schema = z.object({
  *   apiToken: configString({ "x-secret": true }).describe("API Token"),

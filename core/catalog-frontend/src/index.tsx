@@ -4,14 +4,14 @@ import {
   UserMenuItemsSlot,
   createSlotExtension,
   createFrontendPlugin,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { catalogApiRef, type CatalogApiClient } from "./api";
 import {
   catalogRoutes,
   CatalogApi,
   pluginMetadata,
   permissions,
-} from "@checkmate-monitor/catalog-common";
+} from "@checkstack/catalog-common";
 
 import { CatalogPage } from "./components/CatalogPage";
 import { CatalogConfigPage } from "./components/CatalogConfigPage";

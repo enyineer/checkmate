@@ -1,4 +1,4 @@
-# @checkmate-monitor/queue-backend
+# @checkstack/queue-backend
 
 ## 0.0.3
 
@@ -6,10 +6,10 @@
 
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/queue-api@1.0.1
-  - @checkmate-monitor/queue-common@0.0.3
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/queue-api@1.0.1
+  - @checkstack/queue-common@0.0.3
 
 ## 0.0.2
 
@@ -23,7 +23,7 @@
 - Updated dependencies [b354ab3]
 - Updated dependencies [8e889b4]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/queue-api@1.0.0
-  - @checkmate-monitor/queue-common@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/queue-api@1.0.0
+  - @checkstack/queue-common@0.0.2

@@ -17,9 +17,9 @@ import {
   coreHooks,
   HookSubscribeOptions,
   RpcContext,
-} from "@checkmate-monitor/backend-api";
-import type { Permission } from "@checkmate-monitor/common";
-import { getPluginSchemaName } from "@checkmate-monitor/drizzle-helper";
+} from "@checkstack/backend-api";
+import type { Permission } from "@checkstack/common";
+import { getPluginSchemaName } from "@checkstack/drizzle-helper";
 import { rootLogger } from "../logger";
 import type { ServiceRegistry } from "../services/service-registry";
 import { plugins } from "../schema";
@@ -34,7 +34,7 @@ import { createApiRouteHandler, registerApiRoute } from "./api-router";
 import type { ExtensionPointManager } from "./extension-points";
 import { Router } from "@orpc/server";
 import { AnyContractRouter } from "@orpc/contract";
-import type { PluginMetadata } from "@checkmate-monitor/common";
+import type { PluginMetadata } from "@checkstack/common";
 
 export interface PluginLoaderDeps {
   registry: ServiceRegistry;

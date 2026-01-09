@@ -4,8 +4,8 @@ import {
   zod,
   type RpcContext,
   type HealthCheckRegistry,
-} from "@checkmate-monitor/backend-api";
-import { healthCheckContract } from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/backend-api";
+import { healthCheckContract } from "@checkstack/healthcheck-common";
 import { HealthCheckService } from "./service";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";

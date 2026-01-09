@@ -1,4 +1,4 @@
-# @checkmate-monitor/maintenance-frontend
+# @checkstack/maintenance-frontend
 
 ## 0.1.2
 
@@ -26,7 +26,7 @@
 
   **Changes:**
 
-  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkmate-monitor/frontend-api`
+  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkstack/frontend-api`
   - `LoginNavbarAction` now pre-fetches all permissions and credential account info before rendering the menu
   - All user menu item components now use the passed context for synchronous permission checks instead of async hooks
   - Uses `qualifyPermissionId` helper for fully-qualified permission IDs
@@ -39,22 +39,22 @@
 - Updated dependencies [a65e002]
 - Updated dependencies [ae33df2]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/ui@0.1.2
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/frontend-api@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/maintenance-common@0.1.2
-  - @checkmate-monitor/signal-frontend@0.1.1
+  - @checkstack/ui@0.1.2
+  - @checkstack/common@0.2.0
+  - @checkstack/frontend-api@0.1.0
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/maintenance-common@0.1.2
+  - @checkstack/signal-frontend@0.1.1
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
-  - @checkmate-monitor/catalog-common@0.1.1
-  - @checkmate-monitor/maintenance-common@0.1.1
-  - @checkmate-monitor/ui@0.1.1
+  - @checkstack/frontend-api@0.0.3
+  - @checkstack/catalog-common@0.1.1
+  - @checkstack/maintenance-common@0.1.1
+  - @checkstack/ui@0.1.1
 
 ## 0.1.0
 
@@ -62,10 +62,10 @@
 
 - eff5b4e: Add standalone maintenance scheduling plugin
 
-  - New `@checkmate-monitor/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
-  - New `@checkmate-monitor/maintenance-backend` package with Drizzle schema, service, and oRPC router
-  - New `@checkmate-monitor/maintenance-frontend` package with admin page and system detail panel
-  - Shared `DateTimePicker` component added to `@checkmate-monitor/ui`
+  - New `@checkstack/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
+  - New `@checkstack/maintenance-backend` package with Drizzle schema, service, and oRPC router
+  - New `@checkstack/maintenance-frontend` package with admin page and system detail panel
+  - Shared `DateTimePicker` component added to `@checkstack/ui`
   - Database migrations for maintenances, maintenance_systems, and maintenance_updates tables
 
 ### Patch Changes
@@ -75,9 +75,9 @@
 - Updated dependencies [4dd644d]
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
-  - @checkmate-monitor/maintenance-common@0.1.0
-  - @checkmate-monitor/ui@0.1.0
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/signal-frontend@0.1.0
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/maintenance-common@0.1.0
+  - @checkstack/ui@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/signal-frontend@0.1.0
+  - @checkstack/frontend-api@0.0.2

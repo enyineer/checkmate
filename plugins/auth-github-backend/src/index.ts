@@ -2,8 +2,8 @@ import {
   createBackendPlugin,
   type AuthStrategy,
   configString,
-} from "@checkmate-monitor/backend-api";
-import { betterAuthExtensionPoint } from "@checkmate-monitor/auth-backend";
+} from "@checkstack/backend-api";
+import { betterAuthExtensionPoint } from "@checkstack/auth-backend";
 import { z } from "zod";
 import { pluginMetadata } from "./plugin-metadata";
 
@@ -43,7 +43,7 @@ const githubStrategy: AuthStrategy<z.infer<typeof githubConfigV2>> = {
 
 1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
 2. Click **New OAuth App**
-3. Set **Homepage URL** to your Checkmate instance URL
+3. Set **Homepage URL** to your Checkstack instance URL
 4. Set **Authorization callback URL** to \`https://yourdomain.com/api/auth/callback/github\`
 5. Copy the **Client ID** and generate a **Client Secret**
 `.trim(),

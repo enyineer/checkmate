@@ -2,7 +2,7 @@ import {
   StrategyConfigCard,
   type ConfigSection,
   type LucideIconName,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 
 /**
  * Strategy data from getDeliveryStrategies endpoint

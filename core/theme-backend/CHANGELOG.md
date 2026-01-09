@@ -1,4 +1,4 @@
-# @checkmate-monitor/theme-backend
+# @checkstack/theme-backend
 
 ## 0.0.4
 
@@ -7,16 +7,16 @@
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/auth-backend@1.1.0
-  - @checkmate-monitor/theme-common@0.0.3
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/auth-backend@1.1.0
+  - @checkstack/theme-common@0.0.3
 
 ## 0.0.3
 
 ### Patch Changes
 
-- @checkmate-monitor/auth-backend@1.0.1
+- @checkstack/auth-backend@1.0.1
 
 ## 0.0.2
 
@@ -30,7 +30,7 @@
 - Updated dependencies [b354ab3]
 - Updated dependencies [8e889b4]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/auth-backend@1.0.0
-  - @checkmate-monitor/theme-common@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/auth-backend@1.0.0
+  - @checkstack/theme-common@0.0.2

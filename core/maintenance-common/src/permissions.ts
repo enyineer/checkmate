@@ -1,4 +1,4 @@
-import { createPermission, type Permission } from "@checkmate-monitor/common";
+import { createPermission, type Permission } from "@checkstack/common";
 
 export const permissions = {
   /** Read access to maintenances - granted to all authenticated users by default */

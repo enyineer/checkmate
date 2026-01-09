@@ -1,5 +1,5 @@
 import { oc } from "@orpc/contract";
-import { createClientDefinition } from "@checkmate-monitor/common";
+import { createClientDefinition } from "@checkstack/common";
 import { z } from "zod";
 import { permissions } from "./permissions";
 import { pluginMetadata } from "./plugin-metadata";

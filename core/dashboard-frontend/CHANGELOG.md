@@ -1,4 +1,4 @@
-# @checkmate-monitor/dashboard-frontend
+# @checkstack/dashboard-frontend
 
 ## 0.1.0
 
@@ -19,7 +19,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -34,49 +34,49 @@
 - Updated dependencies [ae33df2]
 - Updated dependencies [a65e002]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/auth-frontend@0.3.0
-  - @checkmate-monitor/ui@0.1.2
-  - @checkmate-monitor/catalog-frontend@0.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/command-frontend@0.1.0
-  - @checkmate-monitor/frontend-api@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/command-common@0.0.3
-  - @checkmate-monitor/healthcheck-common@0.1.1
-  - @checkmate-monitor/incident-common@0.1.2
-  - @checkmate-monitor/maintenance-common@0.1.2
-  - @checkmate-monitor/notification-common@0.1.1
-  - @checkmate-monitor/signal-frontend@0.1.1
+  - @checkstack/auth-frontend@0.3.0
+  - @checkstack/ui@0.1.2
+  - @checkstack/catalog-frontend@0.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/command-frontend@0.1.0
+  - @checkstack/frontend-api@0.1.0
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/command-common@0.0.3
+  - @checkstack/healthcheck-common@0.1.1
+  - @checkstack/incident-common@0.1.2
+  - @checkstack/maintenance-common@0.1.2
+  - @checkstack/notification-common@0.1.1
+  - @checkstack/signal-frontend@0.1.1
 
 ## 0.0.5
 
 ### Patch Changes
 
 - Updated dependencies [1bf71bb]
-  - @checkmate-monitor/auth-frontend@0.2.1
-  - @checkmate-monitor/catalog-frontend@0.0.5
+  - @checkstack/auth-frontend@0.2.1
+  - @checkstack/catalog-frontend@0.0.5
 
 ## 0.0.4
 
 ### Patch Changes
 
 - Updated dependencies [e26c08e]
-  - @checkmate-monitor/auth-frontend@0.2.0
-  - @checkmate-monitor/catalog-frontend@0.0.4
+  - @checkstack/auth-frontend@0.2.0
+  - @checkstack/catalog-frontend@0.0.4
 
 ## 0.0.3
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
-  - @checkmate-monitor/auth-frontend@0.1.1
-  - @checkmate-monitor/catalog-common@0.1.1
-  - @checkmate-monitor/catalog-frontend@0.0.3
-  - @checkmate-monitor/command-frontend@0.0.3
-  - @checkmate-monitor/incident-common@0.1.1
-  - @checkmate-monitor/maintenance-common@0.1.1
-  - @checkmate-monitor/ui@0.1.1
+  - @checkstack/frontend-api@0.0.3
+  - @checkstack/auth-frontend@0.1.1
+  - @checkstack/catalog-common@0.1.1
+  - @checkstack/catalog-frontend@0.0.3
+  - @checkstack/command-frontend@0.0.3
+  - @checkstack/incident-common@0.1.1
+  - @checkstack/maintenance-common@0.1.1
+  - @checkstack/ui@0.1.1
 
 ## 0.0.2
 
@@ -90,16 +90,16 @@
 - Updated dependencies [32f2535]
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
-  - @checkmate-monitor/maintenance-common@0.1.0
-  - @checkmate-monitor/ui@0.1.0
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/notification-common@0.1.0
-  - @checkmate-monitor/incident-common@0.1.0
-  - @checkmate-monitor/healthcheck-common@0.1.0
-  - @checkmate-monitor/auth-frontend@0.1.0
-  - @checkmate-monitor/signal-frontend@0.1.0
-  - @checkmate-monitor/catalog-frontend@0.0.2
-  - @checkmate-monitor/command-common@0.0.2
-  - @checkmate-monitor/command-frontend@0.0.2
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/maintenance-common@0.1.0
+  - @checkstack/ui@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/notification-common@0.1.0
+  - @checkstack/incident-common@0.1.0
+  - @checkstack/healthcheck-common@0.1.0
+  - @checkstack/auth-frontend@0.1.0
+  - @checkstack/signal-frontend@0.1.0
+  - @checkstack/catalog-frontend@0.0.2
+  - @checkstack/command-common@0.0.2
+  - @checkstack/command-frontend@0.0.2
+  - @checkstack/frontend-api@0.0.2

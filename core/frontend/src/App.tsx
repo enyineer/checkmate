@@ -23,7 +23,7 @@ import {
   RuntimeConfigProvider,
   useRuntimeConfigLoading,
   useRuntimeConfig,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { ConsoleLoggerApi } from "./apis/logger-api";
 import { CoreFetchApi } from "./apis/fetch-api";
 import { CoreRpcApi } from "./apis/rpc-api";
@@ -32,13 +32,13 @@ import {
   LoadingSpinner,
   ToastProvider,
   AmbientBackground,
-} from "@checkmate-monitor/ui";
-import { SignalProvider } from "@checkmate-monitor/signal-frontend";
+} from "@checkstack/ui";
+import { SignalProvider } from "@checkstack/signal-frontend";
 import { usePluginLifecycle } from "./hooks/usePluginLifecycle";
 import {
   useCommands,
   useGlobalShortcuts,
-} from "@checkmate-monitor/command-frontend";
+} from "@checkstack/command-frontend";
 
 /**
  * Component that registers global keyboard shortcuts for all commands.
@@ -98,7 +98,7 @@ function AppContent() {
             {/* Left: Logo and main navigation */}
             <div className="flex items-center gap-8 flex-shrink-0">
               <Link to="/">
-                <h1 className="text-xl font-bold text-primary">Checkmate</h1>
+                <h1 className="text-xl font-bold text-primary">Checkstack</h1>
               </Link>
               <nav className="hidden md:flex gap-1">
                 <ExtensionSlot slot={NavbarLeftSlot} />

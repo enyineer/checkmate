@@ -38,7 +38,7 @@ Custom charts must handle two data modes based on the selected time range:
 In your strategy's **common package**, define the result types:
 
 ```typescript
-// @checkmate-monitor/healthcheck-http-common/src/types.ts
+// @checkstack/healthcheck-http-common/src/types.ts
 import { z } from "zod";
 
 // Per-run result schema
@@ -63,8 +63,8 @@ export type HttpAggregatedResult = z.infer<typeof HttpAggregatedResultSchema>;
 In your strategy's **common package**, create a typed helper:
 
 ```typescript
-// @checkmate-monitor/healthcheck-http-common/src/slots.ts
-import { createDiagramExtensionFactory } from "@checkmate-monitor/healthcheck-frontend";
+// @checkstack/healthcheck-http-common/src/slots.ts
+import { createDiagramExtensionFactory } from "@checkstack/healthcheck-frontend";
 import { httpCheckMetadata } from "./plugin-metadata";
 import type { HttpResult, HttpAggregatedResult } from "./types";
 
@@ -83,11 +83,11 @@ export const createHttpDiagramExtension = createDiagramExtensionFactory<
 In your strategy's **frontend package**, create the chart components:
 
 ```typescript
-// @checkmate-monitor/healthcheck-http-frontend/src/charts/HttpStatusChart.tsx
+// @checkstack/healthcheck-http-frontend/src/charts/HttpStatusChart.tsx
 import React from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
-import type { RawDiagramContext } from "@checkmate-monitor/healthcheck-frontend";
-import type { HttpResult } from "@checkmate-monitor/healthcheck-http-common";
+import type { RawDiagramContext } from "@checkstack/healthcheck-frontend";
+import type { HttpResult } from "@checkstack/healthcheck-http-common";
 
 /**
  * Raw mode component - renders per-run data.
@@ -122,11 +122,11 @@ export const HttpStatusRawChart: React.FC<RawDiagramContext<HttpResult>> = ({
 ```
 
 ```typescript
-// @checkmate-monitor/healthcheck-http-frontend/src/charts/HttpStatusAggregatedChart.tsx
+// @checkstack/healthcheck-http-frontend/src/charts/HttpStatusAggregatedChart.tsx
 import React from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
-import type { AggregatedDiagramContext } from "@checkmate-monitor/healthcheck-frontend";
-import type { HttpAggregatedResult } from "@checkmate-monitor/healthcheck-http-common";
+import type { AggregatedDiagramContext } from "@checkstack/healthcheck-frontend";
+import type { HttpAggregatedResult } from "@checkstack/healthcheck-http-common";
 
 /**
  * Aggregated mode component - renders bucketed data.
@@ -167,9 +167,9 @@ export const HttpStatusAggregatedChart: React.FC<
 In your strategy's **frontend plugin**, register the extension:
 
 ```typescript
-// @checkmate-monitor/healthcheck-http-frontend/src/index.tsx
-import { createFrontendPlugin } from "@checkmate-monitor/frontend-api";
-import { createHttpDiagramExtension } from "@checkmate-monitor/healthcheck-http-common";
+// @checkstack/healthcheck-http-frontend/src/index.tsx
+import { createFrontendPlugin } from "@checkstack/frontend-api";
+import { createHttpDiagramExtension } from "@checkstack/healthcheck-http-common";
 import { HttpStatusRawChart } from "./charts/HttpStatusChart";
 import { HttpStatusAggregatedChart } from "./charts/HttpStatusAggregatedChart";
 
@@ -267,7 +267,7 @@ interface TypedAggregatedBucket<TAggregatedResult> {
 For advanced use cases, you can access the raw hook directly:
 
 ```typescript
-import { useHealthCheckData } from "@checkmate-monitor/healthcheck-frontend";
+import { useHealthCheckData } from "@checkstack/healthcheck-frontend";
 
 function MyCustomVisualization({ systemId, configurationId, strategyId, dateRange }) {
   const { 
@@ -304,7 +304,7 @@ function MyCustomVisualization({ systemId, configurationId, strategyId, dateRang
 For the simplest integration, use the wrapper component:
 
 ```typescript
-import { HealthCheckDiagram } from "@checkmate-monitor/healthcheck-frontend";
+import { HealthCheckDiagram } from "@checkstack/healthcheck-frontend";
 
 function MyPage({ systemId, configurationId, strategyId, dateRange }) {
   return (

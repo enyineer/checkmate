@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { EventBus } from "./event-bus";
-import type { QueueManager } from "@checkmate-monitor/queue-api";
-import type { Logger, Hook } from "@checkmate-monitor/backend-api";
-import { createHook } from "@checkmate-monitor/backend-api";
+import type { QueueManager } from "@checkstack/queue-api";
+import type { Logger, Hook } from "@checkstack/backend-api";
+import { createHook } from "@checkstack/backend-api";
 import {
   createMockLogger,
   createMockQueueManager,
-} from "@checkmate-monitor/test-utils-backend";
+} from "@checkstack/test-utils-backend";
 
 describe("EventBus", () => {
   let eventBus: EventBus;

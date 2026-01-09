@@ -1,4 +1,4 @@
-# @checkmate-monitor/notification-webex-backend
+# @checkstack/notification-webex-backend
 
 ## 0.1.0
 
@@ -15,6 +15,6 @@
 
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/notification-backend@0.1.2
-  - @checkmate-monitor/common@0.2.0
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/notification-backend@0.1.2
+  - @checkstack/common@0.2.0

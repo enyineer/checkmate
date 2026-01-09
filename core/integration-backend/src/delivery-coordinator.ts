@@ -1,13 +1,13 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { Logger } from "@checkmate-monitor/backend-api";
-import type { QueueManager } from "@checkmate-monitor/queue-api";
-import type { SignalService } from "@checkmate-monitor/signal-common";
+import type { Logger } from "@checkstack/backend-api";
+import type { QueueManager } from "@checkstack/queue-api";
+import type { SignalService } from "@checkstack/signal-common";
 import { eq, sql } from "drizzle-orm";
 
 import type { IntegrationProviderRegistry } from "./provider-registry";
 import type { ConnectionStore } from "./connection-store";
 import * as schema from "./schema";
-import { INTEGRATION_DELIVERY_COMPLETED } from "@checkmate-monitor/integration-common";
+import { INTEGRATION_DELIVERY_COMPLETED } from "@checkstack/integration-common";
 
 /**
  * Event payload for delivery routing

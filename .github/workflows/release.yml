@@ -127,7 +127,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build Frontend
-        run: bun run --filter '@checkmate-monitor/frontend' build
+        run: bun run --filter '@checkstack/frontend' build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -152,8 +152,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/checkmate:${{ steps.version.outputs.version }}
-            ghcr.io/${{ github.repository_owner }}/checkmate:latest
+            ghcr.io/${{ github.repository_owner }}/checkstack:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/checkstack:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -176,17 +176,17 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: Checkmate v${{ steps.version.outputs.version }}
+          name: Checkstack v${{ steps.version.outputs.version }}
           body: |
             ## Docker Image
 
             ```bash
-            docker pull ghcr.io/${{ github.repository_owner }}/checkmate:${{ steps.version.outputs.version }}
+            docker pull ghcr.io/${{ github.repository_owner }}/checkstack:${{ steps.version.outputs.version }}
             ```
 
             ## NPM Packages
 
-            All `@checkmate-monitor/*` packages have been published to npm.
+            All `@checkstack/*` packages have been published to npm.
 
             > ⚠️ **Note**: NPM packages require [Bun](https://bun.sh) runtime (not compatible with Node.js).
           generate_release_notes: true

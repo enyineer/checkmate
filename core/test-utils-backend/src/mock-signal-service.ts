@@ -1,5 +1,5 @@
-import { qualifyPermissionId } from "@checkmate-monitor/common";
-import type { SignalService, Signal } from "@checkmate-monitor/signal-common";
+import { qualifyPermissionId } from "@checkstack/common";
+import type { SignalService, Signal } from "@checkstack/signal-common";
 
 /**
  * Recorded signal emission for testing assertions.
@@ -64,8 +64,8 @@ export interface MockSignalService extends SignalService {
  *
  * @example
  * ```typescript
- * import { createMockSignalService } from "@checkmate-monitor/test-utils-backend";
- * import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+ * import { createMockSignalService } from "@checkstack/test-utils-backend";
+ * import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
  *
  * const mockSignalService = createMockSignalService();
  *

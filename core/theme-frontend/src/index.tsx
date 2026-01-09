@@ -2,8 +2,8 @@ import {
   createFrontendPlugin,
   NavbarRightSlot,
   UserMenuItemsBottomSlot,
-} from "@checkmate-monitor/frontend-api";
-import { pluginMetadata } from "@checkmate-monitor/theme-common";
+} from "@checkstack/frontend-api";
+import { pluginMetadata } from "@checkstack/theme-common";
 import { ThemeToggleMenuItem } from "./components/ThemeToggleMenuItem";
 import { ThemeSynchronizer } from "./components/ThemeSynchronizer";
 import { NavbarThemeToggle } from "./components/NavbarThemeToggle";

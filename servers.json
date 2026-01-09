@@ -1,12 +1,12 @@
 {
   "Servers": {
     "1": {
-      "Name": "Checkmate Local",
+      "Name": "Checkstack Local",
       "Group": "Servers",
       "Host": "postgres",
       "Port": 5432,
-      "MaintenanceDB": "checkmate",
-      "Username": "checkmate",
+      "MaintenanceDB": "checkstack",
+      "Username": "checkstack",
       "SSLMode": "prefer",
       "PassFile": "/pgpass"
     }

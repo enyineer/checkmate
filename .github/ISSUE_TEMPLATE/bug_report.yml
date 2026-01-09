@@ -1,5 +1,5 @@
 name: "🐛 Bug Report"
-description: Report a bug or unexpected behavior in Checkmate
+description: Report a bug or unexpected behavior in Checkstack
 title: "[Bug]: "
 labels: ["bug", "needs-review"]
 body:
@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         ## Bug Report
-        Thank you for helping improve Checkmate! Please fill out this form completely.
+        Thank you for helping improve Checkstack! Please fill out this form completely.
 
         > ⚠️ **Important**: Bug reports without a reproduction example will not be reviewed.
 
@@ -103,7 +103,7 @@ body:
       label: Environment
       description: Please provide details about your environment.
       placeholder: |
-        - Checkmate Version: [e.g., 1.2.0]
+        - Checkstack Version: [e.g., 1.2.0]
         - Deployment Method: [e.g., Docker, Bare Metal]
         - Browser (if frontend issue): [e.g., Chrome 120, Firefox 121]
         - Operating System: [e.g., Ubuntu 22.04, macOS 14]

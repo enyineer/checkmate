@@ -2,13 +2,13 @@ import { implement, ORPCError } from "@orpc/server";
 import {
   autoAuthMiddleware,
   type RpcContext,
-} from "@checkmate-monitor/backend-api";
-import { catalogContract } from "@checkmate-monitor/catalog-common";
+} from "@checkstack/backend-api";
+import { catalogContract } from "@checkstack/catalog-common";
 import { EntityService } from "./services/entity-service";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
-import { NotificationApi } from "@checkmate-monitor/notification-common";
-import type { InferClient } from "@checkmate-monitor/common";
+import { NotificationApi } from "@checkstack/notification-common";
+import type { InferClient } from "@checkstack/common";
 import { catalogHooks } from "./hooks";
 import { eq } from "drizzle-orm";
 

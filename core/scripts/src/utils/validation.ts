@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-const RESERVED_NAMES = new Set(["checkmate", "core", "api", "common"]);
+const RESERVED_NAMES = new Set(["checkstack", "core", "api", "common"]);
 
 /**
  * Validate plugin name follows naming conventions

@@ -3,17 +3,17 @@ import {
   incidentContract,
   INCIDENT_UPDATED,
   incidentRoutes,
-} from "@checkmate-monitor/incident-common";
+} from "@checkstack/incident-common";
 import {
   autoAuthMiddleware,
   Logger,
   type RpcContext,
-} from "@checkmate-monitor/backend-api";
-import type { SignalService } from "@checkmate-monitor/signal-common";
+} from "@checkstack/backend-api";
+import type { SignalService } from "@checkstack/signal-common";
 import type { IncidentService } from "./service";
-import { CatalogApi } from "@checkmate-monitor/catalog-common";
-import type { InferClient } from "@checkmate-monitor/common";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { CatalogApi } from "@checkstack/catalog-common";
+import type { InferClient } from "@checkstack/common";
+import { resolveRoute } from "@checkstack/common";
 import { incidentHooks } from "./hooks";
 
 export function createRouter(

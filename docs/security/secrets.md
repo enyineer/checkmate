@@ -2,7 +2,7 @@
 ---
 # Setting Up Secret Encryption
 
-Checkmate automatically encrypts sensitive configuration data (like OAuth client secrets, API keys, database passwords) using AES-256-GCM encryption before storing them in the database.
+Checkstack automatically encrypts sensitive configuration data (like OAuth client secrets, API keys, database passwords) using AES-256-GCM encryption before storing them in the database.
 
 ## Required Setup
 

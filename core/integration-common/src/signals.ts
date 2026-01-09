@@ -1,4 +1,4 @@
-import { createSignal } from "@checkmate-monitor/signal-common";
+import { createSignal } from "@checkstack/signal-common";
 import { z } from "zod";
 import { DeliveryStatusSchema } from "./schemas";
 

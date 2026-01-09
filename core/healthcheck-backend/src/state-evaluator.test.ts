@@ -4,7 +4,7 @@ import type {
   HealthCheckStatus,
   ConsecutiveThresholds,
   WindowThresholds,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 // Helper to create runs with timestamps
 function createRuns(

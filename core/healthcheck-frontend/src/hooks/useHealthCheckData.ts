@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
-import { useApi, permissionApiRef } from "@checkmate-monitor/frontend-api";
+import { useApi, permissionApiRef } from "@checkstack/frontend-api";
 import { healthCheckApiRef } from "../api";
 import {
   permissions,
   DEFAULT_RETENTION_CONFIG,
   type RetentionConfig,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 import type {
   HealthCheckDiagramSlotContext,
   TypedHealthCheckRun,

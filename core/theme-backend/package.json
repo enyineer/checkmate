@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/theme-backend",
-  "version": "0.0.4",
+  "name": "@checkstack/theme-backend",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
@@ -11,18 +11,18 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@checkmate-monitor/theme-common": "workspace:*",
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/auth-backend": "workspace:*",
+    "@checkstack/theme-common": "workspace:*",
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/auth-backend": "workspace:*",
     "drizzle-orm": "^0.45.1",
     "zod": "^4.2.1",
-    "@checkmate-monitor/common": "workspace:*"
+    "@checkstack/common": "workspace:*"
   },
   "devDependencies": {
-    "@checkmate-monitor/drizzle-helper": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/test-utils-backend": "workspace:*",
+    "@checkstack/drizzle-helper": "workspace:*",
+    "@checkstack/scripts": "workspace:*",
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/test-utils-backend": "workspace:*",
     "@orpc/server": "^1.13.2",
     "@types/node": "^20.0.0",
     "drizzle-kit": "^0.31.8",

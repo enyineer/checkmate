@@ -1,7 +1,7 @@
 import {
   FrontendPlugin,
   pluginRegistry,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 
 export async function loadPlugins(overrideModules?: Record<string, unknown>) {
   console.log("🔌 discovering plugins...");

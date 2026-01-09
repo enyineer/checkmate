@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { createAuthClient } from "better-auth/react";
-import { useRuntimeConfig } from "@checkmate-monitor/frontend-api";
+import { useRuntimeConfig } from "@checkstack/frontend-api";
 
 // Cache for lazy-initialized client
 let cachedClient: ReturnType<typeof createAuthClient> | undefined;

@@ -11,12 +11,12 @@ import type {
   ConfigService,
   Logger,
   Migration,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import type { IntegrationProviderRegistry } from "./provider-registry";
 import type {
   ProviderConnection,
   ProviderConnectionRedacted,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 
 // Schema for connection metadata (stored separately from config)
 const ConnectionMetadataSchema = z.object({

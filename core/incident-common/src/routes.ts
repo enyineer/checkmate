@@ -1,4 +1,4 @@
-import { createRoutes } from "@checkmate-monitor/common";
+import { createRoutes } from "@checkstack/common";
 
 /**
  * Route definitions for the incident plugin.
@@ -6,7 +6,7 @@ import { createRoutes } from "@checkmate-monitor/common";
  *
  * @example Frontend plugin usage
  * ```tsx
- * import { incidentRoutes } from "@checkmate-monitor/incident-common";
+ * import { incidentRoutes } from "@checkstack/incident-common";
  *
  * createFrontendPlugin({
  *   routes: [
@@ -17,8 +17,8 @@ import { createRoutes } from "@checkmate-monitor/common";
  *
  * @example Link generation
  * ```tsx
- * import { incidentRoutes } from "@checkmate-monitor/incident-common";
- * import { resolveRoute } from "@checkmate-monitor/common";
+ * import { incidentRoutes } from "@checkstack/incident-common";
+ * import { resolveRoute } from "@checkstack/common";
  *
  * const detailPath = resolveRoute(incidentRoutes.routes.detail, { incidentId });
  * ```

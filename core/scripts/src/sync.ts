@@ -35,8 +35,8 @@ for (const pkgPath of packages) {
   }
 
   if (
-    pkg.name === "@checkmate-monitor/scripts" ||
-    pkg.name === "@checkmate-monitor/tsconfig"
+    pkg.name === "@checkstack/scripts" ||
+    pkg.name === "@checkstack/tsconfig"
   )
     continue;
 
@@ -44,12 +44,12 @@ for (const pkgPath of packages) {
   pkg.scripts = pkg.scripts || {};
   pkg.devDependencies = pkg.devDependencies || {};
 
-  // Ensure @checkmate-monitor/scripts is present
-  if (pkg.devDependencies["@checkmate-monitor/scripts"] !== "workspace:*") {
+  // Ensure @checkstack/scripts is present
+  if (pkg.devDependencies["@checkstack/scripts"] !== "workspace:*") {
     console.log(
-      `  [${pkg.name}] Adding @checkmate-monitor/scripts to devDependencies`
+      `  [${pkg.name}] Adding @checkstack/scripts to devDependencies`
     );
-    pkg.devDependencies["@checkmate-monitor/scripts"] = "workspace:*";
+    pkg.devDependencies["@checkstack/scripts"] = "workspace:*";
     pkgChanged = true;
   }
 
@@ -93,7 +93,7 @@ for (const pkgPath of packages) {
       configType = "common.json";
     }
 
-    const expectedExtends = `@checkmate-monitor/tsconfig/${configType}`;
+    const expectedExtends = `@checkstack/tsconfig/${configType}`;
     if (tsconfig.extends !== expectedExtends) {
       console.log(
         `  [${pkg.name}] Updating tsconfig extends to ${expectedExtends}`

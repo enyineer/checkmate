@@ -1,4 +1,4 @@
-# @checkmate-monitor/maintenance-common
+# @checkstack/maintenance-common
 
 ## 0.1.2
 
@@ -7,16 +7,16 @@
 - Updated dependencies [a65e002]
 - Updated dependencies [ae33df2]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/frontend-api@0.1.0
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/common@0.2.0
+  - @checkstack/frontend-api@0.1.0
+  - @checkstack/signal-common@0.1.1
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
+  - @checkstack/frontend-api@0.0.3
 
 ## 0.1.0
 
@@ -24,10 +24,10 @@
 
 - eff5b4e: Add standalone maintenance scheduling plugin
 
-  - New `@checkmate-monitor/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
-  - New `@checkmate-monitor/maintenance-backend` package with Drizzle schema, service, and oRPC router
-  - New `@checkmate-monitor/maintenance-frontend` package with admin page and system detail panel
-  - Shared `DateTimePicker` component added to `@checkmate-monitor/ui`
+  - New `@checkstack/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
+  - New `@checkstack/maintenance-backend` package with Drizzle schema, service, and oRPC router
+  - New `@checkstack/maintenance-frontend` package with admin page and system detail panel
+  - Shared `DateTimePicker` component added to `@checkstack/ui`
   - Database migrations for maintenances, maintenance_systems, and maintenance_updates tables
 
 - 4dd644d: Enable external application (API key) access to management endpoints
@@ -51,6 +51,6 @@
 
 - Updated dependencies [ffc28f6]
 - Updated dependencies [b55fae6]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/signal-common@0.1.0
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/signal-common@0.1.0
+  - @checkstack/frontend-api@0.0.2

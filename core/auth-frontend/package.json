@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/auth-frontend",
-  "version": "0.3.0",
+  "name": "@checkstack/auth-frontend",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.tsx",
   "exports": {
@@ -14,21 +14,21 @@
     "test:e2e": "bunx playwright test"
   },
   "dependencies": {
-    "@checkmate-monitor/frontend-api": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/ui": "workspace:*",
+    "@checkstack/frontend-api": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/ui": "workspace:*",
     "react": "^18.2.0",
     "react-router-dom": "^6.22.0",
     "lucide-react": "^0.344.0",
     "better-auth": "^1.1.8",
-    "@checkmate-monitor/auth-common": "workspace:*"
+    "@checkstack/auth-common": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/react": "^18.2.0",
     "@playwright/test": "^1.49.0",
-    "@checkmate-monitor/test-utils-frontend": "workspace:*",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/test-utils-frontend": "workspace:*",
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   }
 }

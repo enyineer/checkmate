@@ -10,7 +10,7 @@ import {
   decrypt,
   isEncrypted,
   isSecretSchema,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import { pluginConfigs } from "../schema";
 
 /**

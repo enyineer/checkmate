@@ -10,8 +10,8 @@ import { eq, and, lt, sql } from "drizzle-orm";
 import type {
   HealthCheckRegistry,
   Logger,
-} from "@checkmate-monitor/backend-api";
-import type { QueueManager } from "@checkmate-monitor/queue-api";
+} from "@checkstack/backend-api";
+import type { QueueManager } from "@checkstack/queue-api";
 
 type Db = NodePgDatabase<typeof schema>;
 

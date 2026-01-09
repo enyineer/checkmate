@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/command-frontend",
-  "version": "0.1.0",
+  "name": "@checkstack/command-frontend",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -8,10 +8,10 @@
     }
   },
   "dependencies": {
-    "@checkmate-monitor/command-common": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/frontend-api": "workspace:*",
-    "@checkmate-monitor/ui": "workspace:*",
+    "@checkstack/command-common": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/frontend-api": "workspace:*",
+    "@checkstack/ui": "workspace:*",
     "lucide-react": "^0.468.0",
     "react": "^18.2.0",
     "react-router-dom": "^7.1.1"
@@ -19,8 +19,8 @@
   "devDependencies": {
     "typescript": "^5.7.2",
     "@types/react": "^18.2.0",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

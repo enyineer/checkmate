@@ -1,4 +1,4 @@
-import { LoggerApi } from "@checkmate-monitor/frontend-api";
+import { LoggerApi } from "@checkstack/frontend-api";
 
 export class ConsoleLoggerApi implements LoggerApi {
   info(message: string, ...args: unknown[]) {

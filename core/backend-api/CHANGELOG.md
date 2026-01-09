@@ -1,4 +1,4 @@
-# @checkmate-monitor/backend-api
+# @checkstack/backend-api
 
 ## 1.1.0
 
@@ -6,7 +6,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -21,9 +21,9 @@
   The `register` and `addStrategy` methods now use generic type parameters instead of `unknown`, allowing notification strategy plugins with typed OAuth configurations to be registered without compiler errors. This fixes contravariance issues where function parameters in `StrategyOAuthConfig<TConfig>` could not be assigned when `TConfig` was a specific type.
 
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/queue-api@1.0.1
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/common@0.2.0
+  - @checkstack/queue-api@1.0.1
+  - @checkstack/signal-common@0.1.1
 
 ## 1.0.0
 
@@ -111,30 +111,30 @@
 
 - ae19ff6: Add configurable state thresholds for health check evaluation
 
-  **@checkmate-monitor/backend-api:**
+  **@checkstack/backend-api:**
 
   - Added `VersionedData<T>` generic interface as base for all versioned data structures
   - `VersionedConfig<T>` now extends `VersionedData<T>` and adds `pluginId`
   - Added `migrateVersionedData()` utility function for running migrations on any `VersionedData` subtype
 
-  **@checkmate-monitor/backend:**
+  **@checkstack/backend:**
 
   - Refactored `ConfigMigrationRunner` to use the new `migrateVersionedData` utility
 
-  **@checkmate-monitor/healthcheck-common:**
+  **@checkstack/healthcheck-common:**
 
   - Added state threshold schemas with two evaluation modes (consecutive, window)
   - Added `stateThresholds` field to `AssociateHealthCheckSchema`
   - Added `getSystemHealthStatus` RPC endpoint contract
 
-  **@checkmate-monitor/healthcheck-backend:**
+  **@checkstack/healthcheck-backend:**
 
   - Added `stateThresholds` column to `system_health_checks` table
   - Added `state-evaluator.ts` with health status evaluation logic
   - Added `state-thresholds-migrations.ts` with migration infrastructure
   - Added `getSystemHealthStatus` RPC handler
 
-  **@checkmate-monitor/healthcheck-frontend:**
+  **@checkstack/healthcheck-frontend:**
 
   - Updated `SystemHealthBadge` to use new backend endpoint
 
@@ -142,22 +142,22 @@
 
   ## New Packages
 
-  - **@checkmate-monitor/signal-common**: Shared types including `Signal`, `SignalService`, `createSignal()`, and WebSocket protocol messages
-  - **@checkmate-monitor/signal-backend**: `SignalServiceImpl` with EventBus integration and Bun WebSocket handler using native pub/sub
-  - **@checkmate-monitor/signal-frontend**: React `SignalProvider` and `useSignal()` hook for consuming typed signals
+  - **@checkstack/signal-common**: Shared types including `Signal`, `SignalService`, `createSignal()`, and WebSocket protocol messages
+  - **@checkstack/signal-backend**: `SignalServiceImpl` with EventBus integration and Bun WebSocket handler using native pub/sub
+  - **@checkstack/signal-frontend**: React `SignalProvider` and `useSignal()` hook for consuming typed signals
 
   ## Changes
 
-  - **@checkmate-monitor/backend-api**: Added `coreServices.signalService` reference for plugins to emit signals
-  - **@checkmate-monitor/backend**: Integrated WebSocket server at `/api/signals/ws` with session-based authentication
+  - **@checkstack/backend-api**: Added `coreServices.signalService` reference for plugins to emit signals
+  - **@checkstack/backend**: Integrated WebSocket server at `/api/signals/ws` with session-based authentication
 
   ## Usage
 
   Backend plugins can emit signals:
 
   ```typescript
-  import { coreServices } from "@checkmate-monitor/backend-api";
-  import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+  import { coreServices } from "@checkstack/backend-api";
+  import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
 
   const signalService = context.signalService;
   await signalService.sendToUser(NOTIFICATION_RECEIVED, userId, { ... });
@@ -166,8 +166,8 @@
   Frontend components subscribe to signals:
 
   ```tsx
-  import { useSignal } from "@checkmate-monitor/signal-frontend";
-  import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+  import { useSignal } from "@checkstack/signal-frontend";
+  import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
 
   useSignal(NOTIFICATION_RECEIVED, (payload) => {
     // Handle realtime notification
@@ -191,7 +191,7 @@
 
   ## New Telegram Notification Plugin
 
-  Added `@checkmate-monitor/notification-telegram-backend` plugin for sending notifications via Telegram:
+  Added `@checkstack/notification-telegram-backend` plugin for sending notifications via Telegram:
 
   - Uses [grammY](https://grammy.dev/) framework for Telegram Bot API integration
   - Sends messages with MarkdownV2 formatting and inline keyboard buttons for actions
@@ -213,6 +213,6 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [8e889b4]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/queue-api@1.0.0
-  - @checkmate-monitor/signal-common@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/queue-api@1.0.0
+  - @checkstack/signal-common@0.1.0

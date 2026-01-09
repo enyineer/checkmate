@@ -3,14 +3,14 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { loadPlugins } from "./plugin-loader.ts";
-import { ThemeProvider } from "@checkmate-monitor/ui";
+import { ThemeProvider } from "@checkstack/ui";
 
 // Initialize plugins before rendering
 await loadPlugins();
 
 ReactDOM.createRoot(document.querySelector("#root")!).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="light" storageKey="checkmate-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="checkstack-ui-theme">
       <App />
     </ThemeProvider>
   </React.StrictMode>

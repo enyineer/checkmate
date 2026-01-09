@@ -1,14 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ListOrdered } from "lucide-react";
-import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
-import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import type { UserMenuItemsContext } from "@checkstack/frontend-api";
+import { DropdownMenuItem } from "@checkstack/ui";
+import { qualifyPermissionId, resolveRoute } from "@checkstack/common";
 import {
   queueRoutes,
   permissions,
   pluginMetadata,
-} from "@checkmate-monitor/queue-common";
+} from "@checkstack/queue-common";
 
 export const QueueUserMenuItems = ({
   permissions: userPerms,

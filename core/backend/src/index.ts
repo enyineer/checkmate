@@ -7,7 +7,7 @@ import { db } from "./db";
 import path from "node:path";
 import fs from "node:fs";
 import { rootLogger } from "./logger";
-import { coreServices, coreHooks } from "@checkmate-monitor/backend-api";
+import { coreServices, coreHooks } from "@checkstack/backend-api";
 import { plugins } from "./schema";
 import { eq, and } from "drizzle-orm";
 import { PluginLocalInstaller } from "./services/plugin-installer";
@@ -17,17 +17,17 @@ import {
   createWebSocketHandler,
   SignalServiceImpl,
   type WebSocketData,
-} from "@checkmate-monitor/signal-backend";
+} from "@checkstack/signal-backend";
 import {
   PLUGIN_INSTALLED,
   PLUGIN_DEREGISTERED,
-} from "@checkmate-monitor/signal-common";
+} from "@checkstack/signal-common";
 import { createPluginAdminRouter } from "./plugin-manager/plugin-admin-router";
 import {
   pluginMetadata as apiDocsMetadata,
   permissions as apiDocsPermissions,
-} from "@checkmate-monitor/api-docs-common";
-import { qualifyPermissionId } from "@checkmate-monitor/common";
+} from "@checkstack/api-docs-common";
+import { qualifyPermissionId } from "@checkstack/common";
 
 import { cors } from "hono/cors";
 
@@ -93,9 +93,9 @@ app.get("/.well-known/jwks.json", async (c) => {
   return c.json(jwks);
 });
 
-// Production: Serve frontend static files when CHECKMATE_FRONTEND_DIST is set
+// Production: Serve frontend static files when CHECKSTACK_FRONTEND_DIST is set
 // Must be registered at module load time before Hono's router is built
-const frontendDistPath = process.env.CHECKMATE_FRONTEND_DIST;
+const frontendDistPath = process.env.CHECKSTACK_FRONTEND_DIST;
 if (frontendDistPath && fs.existsSync(frontendDistPath)) {
   rootLogger.info(`📦 Serving frontend from: ${frontendDistPath}`);
 
@@ -146,7 +146,7 @@ if (frontendDistPath && fs.existsSync(frontendDistPath)) {
 }
 
 const init = async () => {
-  rootLogger.info("🚀 Starting Checkmate Core...");
+  rootLogger.info("🚀 Starting Checkstack Core...");
 
   // Register Plugin Installer Service
   const installer = new PluginLocalInstaller(
@@ -264,7 +264,7 @@ const init = async () => {
   // This must happen AFTER plugins load so auth-backend is available
   const rpcClient = await pluginManager.getService(coreServices.rpcClient);
   if (rpcClient) {
-    const { AuthApi } = await import("@checkmate-monitor/auth-common");
+    const { AuthApi } = await import("@checkstack/auth-common");
     const authClient = rpcClient.forPlugin(AuthApi);
     signalService.setAuthClient(authClient);
     rootLogger.debug(
@@ -337,7 +337,7 @@ const init = async () => {
     logger: rootLogger.child({ service: "WebSocket" }),
   });
 
-  rootLogger.info("✅ Checkmate Core initialized.");
+  rootLogger.info("✅ Checkstack Core initialized.");
 };
 
 void init();

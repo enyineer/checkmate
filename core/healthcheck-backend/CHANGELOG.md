@@ -1,4 +1,4 @@
-# @checkmate-monitor/healthcheck-backend
+# @checkstack/healthcheck-backend
 
 ## 0.2.0
 
@@ -27,22 +27,22 @@
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/integration-backend@0.1.0
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/command-backend@0.1.0
-  - @checkmate-monitor/catalog-backend@0.1.0
-  - @checkmate-monitor/queue-api@1.0.1
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/healthcheck-common@0.1.1
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/integration-backend@0.1.0
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/command-backend@0.1.0
+  - @checkstack/catalog-backend@0.1.0
+  - @checkstack/queue-api@1.0.1
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/healthcheck-common@0.1.1
+  - @checkstack/signal-common@0.1.1
 
 ## 0.1.1
 
 ### Patch Changes
 
-- @checkmate-monitor/catalog-common@0.1.1
-- @checkmate-monitor/catalog-backend@0.0.3
+- @checkstack/catalog-common@0.1.1
+- @checkstack/catalog-backend@0.0.3
 
 ## 0.1.0
 
@@ -50,30 +50,30 @@
 
 - ae19ff6: Add configurable state thresholds for health check evaluation
 
-  **@checkmate-monitor/backend-api:**
+  **@checkstack/backend-api:**
 
   - Added `VersionedData<T>` generic interface as base for all versioned data structures
   - `VersionedConfig<T>` now extends `VersionedData<T>` and adds `pluginId`
   - Added `migrateVersionedData()` utility function for running migrations on any `VersionedData` subtype
 
-  **@checkmate-monitor/backend:**
+  **@checkstack/backend:**
 
   - Refactored `ConfigMigrationRunner` to use the new `migrateVersionedData` utility
 
-  **@checkmate-monitor/healthcheck-common:**
+  **@checkstack/healthcheck-common:**
 
   - Added state threshold schemas with two evaluation modes (consecutive, window)
   - Added `stateThresholds` field to `AssociateHealthCheckSchema`
   - Added `getSystemHealthStatus` RPC endpoint contract
 
-  **@checkmate-monitor/healthcheck-backend:**
+  **@checkstack/healthcheck-backend:**
 
   - Added `stateThresholds` column to `system_health_checks` table
   - Added `state-evaluator.ts` with health status evaluation logic
   - Added `state-thresholds-migrations.ts` with migration infrastructure
   - Added `getSystemHealthStatus` RPC handler
 
-  **@checkmate-monitor/healthcheck-frontend:**
+  **@checkstack/healthcheck-frontend:**
 
   - Updated `SystemHealthBadge` to use new backend endpoint
 
@@ -155,11 +155,11 @@
 - Updated dependencies [b354ab3]
 - Updated dependencies [8e889b4]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/queue-api@1.0.0
-  - @checkmate-monitor/healthcheck-common@0.1.0
-  - @checkmate-monitor/signal-common@0.1.0
-  - @checkmate-monitor/catalog-backend@0.0.2
-  - @checkmate-monitor/integration-backend@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/queue-api@1.0.0
+  - @checkstack/healthcheck-common@0.1.0
+  - @checkstack/signal-common@0.1.0
+  - @checkstack/catalog-backend@0.0.2
+  - @checkstack/integration-backend@0.0.2

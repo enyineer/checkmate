@@ -1,8 +1,8 @@
 import {
   createBackendPlugin,
   coreServices,
-} from "@checkmate-monitor/backend-api";
-import { integrationProviderExtensionPoint } from "@checkmate-monitor/integration-backend";
+} from "@checkstack/backend-api";
+import { integrationProviderExtensionPoint } from "@checkstack/integration-backend";
 import { pluginMetadata } from "./plugin-metadata";
 import { webhookProvider } from "./provider";
 

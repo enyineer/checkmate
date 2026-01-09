@@ -9,13 +9,13 @@ import type { ChartField } from "./schema-parser";
 import { extractChartFields, getFieldValue } from "./schema-parser";
 import { useStrategySchemas } from "./useStrategySchemas";
 import type { HealthCheckDiagramSlotContext } from "../slots";
-import type { StoredHealthCheckResult } from "@checkmate-monitor/healthcheck-common";
+import type { StoredHealthCheckResult } from "@checkstack/healthcheck-common";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 
 interface AutoChartGridProps {
   context: HealthCheckDiagramSlotContext;

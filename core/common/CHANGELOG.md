@@ -1,4 +1,4 @@
-# @checkmate-monitor/common
+# @checkstack/common
 
 ## 0.2.0
 
@@ -6,7 +6,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)

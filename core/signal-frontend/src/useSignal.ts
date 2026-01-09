@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import type { Signal } from "@checkmate-monitor/signal-common";
+import type { Signal } from "@checkstack/signal-common";
 import { useSignalContext } from "./SignalProvider";
 
 /**
@@ -10,7 +10,7 @@ import { useSignalContext } from "./SignalProvider";
  *
  * @example
  * ```tsx
- * import { NOTIFICATION_RECEIVED } from "@checkmate-monitor/notification-common";
+ * import { NOTIFICATION_RECEIVED } from "@checkstack/notification-common";
  *
  * function NotificationHandler() {
  *   useSignal(NOTIFICATION_RECEIVED, (payload) => {

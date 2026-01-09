@@ -1,4 +1,4 @@
-import type { PluginMetadata } from "@checkmate-monitor/common";
+import type { PluginMetadata } from "@checkstack/common";
 
 export const pluginMetadata: PluginMetadata = {
   pluginId: "notification-webex",

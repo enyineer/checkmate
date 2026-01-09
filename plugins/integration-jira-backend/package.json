@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/integration-jira-backend",
-  "version": "0.0.3",
+  "name": "@checkstack/integration-jira-backend",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
@@ -9,18 +9,18 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/integration-backend": "workspace:*",
-    "@checkmate-monitor/integration-common": "workspace:*",
-    "@checkmate-monitor/integration-jira-common": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/integration-backend": "workspace:*",
+    "@checkstack/integration-common": "workspace:*",
+    "@checkstack/integration-jira-common": "workspace:*",
+    "@checkstack/common": "workspace:*",
     "@orpc/server": "^1.13.2",
     "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/bun": "^1.0.0",
     "typescript": "^5.0.0",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   }
 }

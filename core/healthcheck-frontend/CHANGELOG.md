@@ -1,4 +1,4 @@
-# @checkmate-monitor/healthcheck-frontend
+# @checkstack/healthcheck-frontend
 
 ## 0.2.0
 
@@ -30,7 +30,7 @@
 
   **Changes:**
 
-  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkmate-monitor/frontend-api`
+  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkstack/frontend-api`
   - `LoginNavbarAction` now pre-fetches all permissions and credential account info before rendering the menu
   - All user menu item components now use the passed context for synchronous permission checks instead of async hooks
   - Uses `qualifyPermissionId` helper for fully-qualified permission IDs
@@ -43,21 +43,21 @@
 - Updated dependencies [a65e002]
 - Updated dependencies [ae33df2]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/ui@0.1.2
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/frontend-api@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/healthcheck-common@0.1.1
-  - @checkmate-monitor/signal-frontend@0.1.1
+  - @checkstack/ui@0.1.2
+  - @checkstack/common@0.2.0
+  - @checkstack/frontend-api@0.1.0
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/healthcheck-common@0.1.1
+  - @checkstack/signal-frontend@0.1.1
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
-  - @checkmate-monitor/catalog-common@0.1.1
-  - @checkmate-monitor/ui@0.1.1
+  - @checkstack/frontend-api@0.0.3
+  - @checkstack/catalog-common@0.1.1
+  - @checkstack/ui@0.1.1
 
 ## 0.1.0
 
@@ -65,30 +65,30 @@
 
 - ae19ff6: Add configurable state thresholds for health check evaluation
 
-  **@checkmate-monitor/backend-api:**
+  **@checkstack/backend-api:**
 
   - Added `VersionedData<T>` generic interface as base for all versioned data structures
   - `VersionedConfig<T>` now extends `VersionedData<T>` and adds `pluginId`
   - Added `migrateVersionedData()` utility function for running migrations on any `VersionedData` subtype
 
-  **@checkmate-monitor/backend:**
+  **@checkstack/backend:**
 
   - Refactored `ConfigMigrationRunner` to use the new `migrateVersionedData` utility
 
-  **@checkmate-monitor/healthcheck-common:**
+  **@checkstack/healthcheck-common:**
 
   - Added state threshold schemas with two evaluation modes (consecutive, window)
   - Added `stateThresholds` field to `AssociateHealthCheckSchema`
   - Added `getSystemHealthStatus` RPC endpoint contract
 
-  **@checkmate-monitor/healthcheck-backend:**
+  **@checkstack/healthcheck-backend:**
 
   - Added `stateThresholds` column to `system_health_checks` table
   - Added `state-evaluator.ts` with health status evaluation logic
   - Added `state-thresholds-migrations.ts` with migration infrastructure
   - Added `getSystemHealthStatus` RPC handler
 
-  **@checkmate-monitor/healthcheck-frontend:**
+  **@checkstack/healthcheck-frontend:**
 
   - Updated `SystemHealthBadge` to use new backend endpoint
 
@@ -114,9 +114,9 @@
 - Updated dependencies [0babb9c]
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
-  - @checkmate-monitor/ui@0.1.0
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/healthcheck-common@0.1.0
-  - @checkmate-monitor/signal-frontend@0.1.0
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/ui@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/healthcheck-common@0.1.0
+  - @checkstack/signal-frontend@0.1.0
+  - @checkstack/frontend-api@0.0.2

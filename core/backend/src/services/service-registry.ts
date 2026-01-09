@@ -1,5 +1,5 @@
-import { ServiceRef } from "@checkmate-monitor/backend-api";
-import type { PluginMetadata } from "@checkmate-monitor/common";
+import { ServiceRef } from "@checkstack/backend-api";
+import type { PluginMetadata } from "@checkstack/common";
 
 type ServiceFactory<T> = (metadata: PluginMetadata) => T | Promise<T>;
 

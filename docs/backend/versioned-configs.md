@@ -32,7 +32,7 @@ The `Versioned<T>` class provides:
 The unified API for handling versioned data:
 
 ```typescript
-import { Versioned, z } from "@checkmate-monitor/backend-api";
+import { Versioned, z } from "@checkstack/backend-api";
 
 // Define your versioned type
 const configType = new Versioned({
@@ -112,7 +112,7 @@ export type HttpCheckConfig = z.infer<typeof httpCheckConfigSchema>;
 ### 2. Create a Versioned Type
 
 ```typescript
-import { Versioned } from "@checkmate-monitor/backend-api";
+import { Versioned } from "@checkstack/backend-api";
 
 export const httpCheckConfig = new Versioned<HttpCheckConfig>({
   version: 1,
@@ -252,7 +252,7 @@ export const httpCheckConfig = new Versioned<ConfigV4>({
 For better type inference:
 
 ```typescript
-import { MigrationBuilder } from "@checkmate-monitor/backend-api";
+import { MigrationBuilder } from "@checkstack/backend-api";
 
 const migrations = new MigrationBuilder<ConfigV1>()
   .addMigration<ConfigV2>({

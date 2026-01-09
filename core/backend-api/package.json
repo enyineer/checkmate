@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/backend-api",
-  "version": "1.1.0",
+  "name": "@checkstack/backend-api",
+  "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
@@ -9,9 +9,9 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/queue-api": "workspace:*",
-    "@checkmate-monitor/signal-common": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/queue-api": "workspace:*",
+    "@checkstack/signal-common": "workspace:*",
     "@orpc/client": "^1.13.2",
     "@orpc/openapi": "^1.13.2",
     "@orpc/server": "^1.13.2",
@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "peerDependencies": {
     "hono": "^4.0.0",

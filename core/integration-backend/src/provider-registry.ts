@@ -1,5 +1,5 @@
-import type { PluginMetadata } from "@checkmate-monitor/common";
-import { toJsonSchema } from "@checkmate-monitor/backend-api";
+import type { PluginMetadata } from "@checkstack/common";
+import { toJsonSchema } from "@checkstack/backend-api";
 import type {
   IntegrationProvider,
   RegisteredIntegrationProvider,

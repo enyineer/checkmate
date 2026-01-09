@@ -4,7 +4,7 @@ import type {
   ConsumeOptions,
   QueueStats,
   RecurringJobDetails,
-} from "@checkmate-monitor/queue-api";
+} from "@checkstack/queue-api";
 import { rootLogger } from "../logger";
 
 /**

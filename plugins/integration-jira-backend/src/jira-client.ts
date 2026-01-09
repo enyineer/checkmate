@@ -1,10 +1,10 @@
-import type { Logger } from "@checkmate-monitor/backend-api";
+import type { Logger } from "@checkstack/backend-api";
 import type {
   JiraProject,
   JiraIssueType,
   JiraField,
   JiraConnection,
-} from "@checkmate-monitor/integration-jira-common";
+} from "@checkstack/integration-jira-common";
 
 /**
  * Connection config for generic connection management.

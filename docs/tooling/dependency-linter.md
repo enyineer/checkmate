@@ -25,11 +25,11 @@ The linter enforces these strict dependency rules:
 
 The script automatically detects package types based on naming conventions:
 
-- **Common**: Packages ending with `-common` or named `@checkmate-monitor/common`
-- **Frontend**: Packages ending with `-frontend`, `-frontend-plugin`, or starting with `@checkmate-monitor/frontend` or `@checkmate-monitor/ui`
-- **Backend**: Packages ending with `-backend`, `-backend-plugin`, or starting with `@checkmate-monitor/backend`
-- **Core**: The `@checkmate-monitor/common` package
-- **External**: Non-`@checkmate-monitor/*` packages (always allowed)
+- **Common**: Packages ending with `-common` or named `@checkstack/common`
+- **Frontend**: Packages ending with `-frontend`, `-frontend-plugin`, or starting with `@checkstack/frontend` or `@checkstack/ui`
+- **Backend**: Packages ending with `-backend`, `-backend-plugin`, or starting with `@checkstack/backend`
+- **Core**: The `@checkstack/common` package
+- **External**: Non-`@checkstack/*` packages (always allowed)
 
 ### Validation Process
 
@@ -73,9 +73,9 @@ bun run scripts/validate-dependencies.ts
 
 ```json
 {
-  "name": "@checkmate-monitor/catalog-common",
+  "name": "@checkstack/catalog-common",
   "dependencies": {
-    "@checkmate-monitor/backend-api": "workspace:*"  // ❌ VIOLATION
+    "@checkstack/backend-api": "workspace:*"  // ❌ VIOLATION
   }
 }
 ```
@@ -84,17 +84,17 @@ bun run scripts/validate-dependencies.ts
 ```
 ❌ Dependency Architecture Violations Found:
 
-  @checkmate-monitor/catalog-common
-    → depends on @checkmate-monitor/backend-api
+  @checkstack/catalog-common
+    → depends on @checkstack/backend-api
     → common packages cannot depend on backend packages
 ```
 
-**Fix:** Depend on `@checkmate-monitor/common` instead:
+**Fix:** Depend on `@checkstack/common` instead:
 ```json
 {
-  "name": "@checkmate-monitor/catalog-common",
+  "name": "@checkstack/catalog-common",
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*"  // ✅ OK
+    "@checkstack/common": "workspace:*"  // ✅ OK
   }
 }
 ```
@@ -103,9 +103,9 @@ bun run scripts/validate-dependencies.ts
 
 ```json
 {
-  "name": "@checkmate-monitor/catalog-frontend-plugin",
+  "name": "@checkstack/catalog-frontend-plugin",
   "dependencies": {
-    "@checkmate-monitor/catalog-backend-plugin": "workspace:*"  // ❌ VIOLATION
+    "@checkstack/catalog-backend-plugin": "workspace:*"  // ❌ VIOLATION
   }
 }
 ```
@@ -114,17 +114,17 @@ bun run scripts/validate-dependencies.ts
 ```
 ❌ Dependency Architecture Violations Found:
 
-  @checkmate-monitor/catalog-frontend-plugin
-    → depends on @checkmate-monitor/catalog-backend-plugin
+  @checkstack/catalog-frontend-plugin
+    → depends on @checkstack/catalog-backend-plugin
     → frontend packages cannot depend on backend packages
 ```
 
 **Fix:** Depend on common package instead:
 ```json
 {
-  "name": "@checkmate-monitor/catalog-frontend-plugin",
+  "name": "@checkstack/catalog-frontend-plugin",
   "dependencies": {
-    "@checkmate-monitor/catalog-common": "workspace:*"  // ✅ OK
+    "@checkstack/catalog-common": "workspace:*"  // ✅ OK
   }
 }
 ```
@@ -134,9 +134,9 @@ bun run scripts/validate-dependencies.ts
 ### ✅ Common → Common
 ```json
 {
-  "name": "@checkmate-monitor/catalog-common",
+  "name": "@checkstack/catalog-common",
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*"
+    "@checkstack/common": "workspace:*"
   }
 }
 ```
@@ -144,11 +144,11 @@ bun run scripts/validate-dependencies.ts
 ### ✅ Frontend → Frontend or Common
 ```json
 {
-  "name": "@checkmate-monitor/catalog-frontend-plugin",
+  "name": "@checkstack/catalog-frontend-plugin",
   "dependencies": {
-    "@checkmate-monitor/frontend-api": "workspace:*",
-    "@checkmate-monitor/catalog-common": "workspace:*",
-    "@checkmate-monitor/ui": "workspace:*"
+    "@checkstack/frontend-api": "workspace:*",
+    "@checkstack/catalog-common": "workspace:*",
+    "@checkstack/ui": "workspace:*"
   }
 }
 ```
@@ -156,20 +156,20 @@ bun run scripts/validate-dependencies.ts
 ### ✅ Backend → Backend or Common
 ```json
 {
-  "name": "@checkmate-monitor/catalog-backend-plugin",
+  "name": "@checkstack/catalog-backend-plugin",
   "dependencies": {
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/catalog-common": "workspace:*"
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/catalog-common": "workspace:*"
   }
 }
 ```
 
 ### ✅ External Dependencies
 
-All packages can depend on external (non-`@checkmate-monitor/*`) packages:
+All packages can depend on external (non-`@checkstack/*`) packages:
 ```json
 {
-  "name": "@checkmate-monitor/catalog-common",
+  "name": "@checkstack/catalog-common",
   "dependencies": {
     "zod": "^4.2.1",
     "react": "^18.2.0"

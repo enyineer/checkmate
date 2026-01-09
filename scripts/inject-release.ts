@@ -2,7 +2,7 @@
  * Preversion hook for Changesets
  *
  * This script runs before `changeset version` and ensures that
- * @checkmate-monitor/release is always included in pending changesets.
+ * @checkstack/release is always included in pending changesets.
  * This keeps the Docker image version in sync with any package changes.
  */
 
@@ -10,7 +10,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const CHANGESET_DIR = path.join(import.meta.dirname, "..", ".changeset");
-const RELEASE_PACKAGE = "@checkmate-monitor/release";
+const RELEASE_PACKAGE = "@checkstack/release";
 
 type BumpType = "major" | "minor" | "patch";
 
@@ -37,7 +37,7 @@ function parseFrontmatter(content: string): ChangesetData {
     }
 
     if (inFrontmatter) {
-      // Parse package entries like: "@checkmate-monitor/backend": minor
+      // Parse package entries like: "@checkstack/backend": minor
       const match = line.match(/^["']?([^"':]+)["']?:\s*(major|minor|patch)$/);
       if (match) {
         packages.push({ name: match[1], type: match[2] as BumpType });

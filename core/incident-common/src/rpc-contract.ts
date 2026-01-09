@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   createClientDefinition,
   type ProcedureMetadata,
-} from "@checkmate-monitor/common";
+} from "@checkstack/common";
 import { permissions } from "./permissions";
 import { pluginMetadata } from "./plugin-metadata";
 import {

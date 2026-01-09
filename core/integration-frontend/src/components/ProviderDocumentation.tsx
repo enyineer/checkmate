@@ -9,9 +9,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { ChevronDown, ChevronUp, ExternalLink, FileJson } from "lucide-react";
-import type { IntegrationProviderInfo } from "@checkmate-monitor/integration-common";
+import type { IntegrationProviderInfo } from "@checkstack/integration-common";
 
 interface ProviderDocumentationProps {
   provider: IntegrationProviderInfo;

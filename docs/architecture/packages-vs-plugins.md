@@ -3,11 +3,11 @@
 
 # Packages vs Plugins Architecture
 
-This document explains the distinction between **packages** and **plugins** in the Checkmate monorepo.
+This document explains the distinction between **packages** and **plugins** in the Checkstack monorepo.
 
 ## Overview
 
-The Checkmate platform uses a two-tier architecture for code organization:
+The Checkstack platform uses a two-tier architecture for code organization:
 
 | Directory | Purpose | Examples |
 |-----------|---------|----------|

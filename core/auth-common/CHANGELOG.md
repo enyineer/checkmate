@@ -1,4 +1,4 @@
-# @checkmate-monitor/auth-common
+# @checkstack/auth-common
 
 ## 0.2.1
 
@@ -6,7 +6,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -15,7 +15,7 @@
   - Fix legacy kebab-case icon names to PascalCase: `mail`→`Mail`, `send`→`Send`, `github`→`Github`, `key-round`→`KeyRound`, `network`→`Network`, `AlertCircle`→`CircleAlert`
 
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/common@0.2.0
+  - @checkstack/common@0.2.0
 
 ## 0.2.0
 
@@ -56,7 +56,7 @@
 
   ## New Telegram Notification Plugin
 
-  Added `@checkmate-monitor/notification-telegram-backend` plugin for sending notifications via Telegram:
+  Added `@checkstack/notification-telegram-backend` plugin for sending notifications via Telegram:
 
   - Uses [grammY](https://grammy.dev/) framework for Telegram Bot API integration
   - Sends messages with MarkdownV2 formatting and inline keyboard buttons for actions
@@ -103,4 +103,4 @@
   - New `PermissionGate` component for conditionally rendering content based on permissions
 
 - Updated dependencies [ffc28f6]
-  - @checkmate-monitor/common@0.1.0
+  - @checkstack/common@0.1.0

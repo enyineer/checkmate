@@ -1,4 +1,4 @@
-# @checkmate-monitor/ui
+# @checkstack/ui
 
 ## 0.1.2
 
@@ -46,7 +46,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -57,15 +57,15 @@
 - Updated dependencies [a65e002]
 - Updated dependencies [ae33df2]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/frontend-api@0.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/frontend-api@0.1.0
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
+  - @checkstack/frontend-api@0.0.3
 
 ## 0.1.0
 
@@ -117,7 +117,7 @@
 
   ## New Telegram Notification Plugin
 
-  Added `@checkmate-monitor/notification-telegram-backend` plugin for sending notifications via Telegram:
+  Added `@checkstack/notification-telegram-backend` plugin for sending notifications via Telegram:
 
   - Uses [grammY](https://grammy.dev/) framework for Telegram Bot API integration
   - Sends messages with MarkdownV2 formatting and inline keyboard buttons for actions
@@ -136,9 +136,9 @@
 
 - eff5b4e: Add standalone maintenance scheduling plugin
 
-  - New `@checkmate-monitor/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
-  - New `@checkmate-monitor/maintenance-backend` package with Drizzle schema, service, and oRPC router
-  - New `@checkmate-monitor/maintenance-frontend` package with admin page and system detail panel
-  - Shared `DateTimePicker` component added to `@checkmate-monitor/ui`
+  - New `@checkstack/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
+  - New `@checkstack/maintenance-backend` package with Drizzle schema, service, and oRPC router
+  - New `@checkstack/maintenance-frontend` package with admin page and system detail panel
+  - Shared `DateTimePicker` component added to `@checkstack/ui`
   - Database migrations for maintenances, maintenance_systems, and maintenance_updates tables
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/frontend-api@0.0.2

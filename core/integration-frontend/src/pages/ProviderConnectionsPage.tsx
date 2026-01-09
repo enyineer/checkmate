@@ -43,15 +43,15 @@ import {
   ConfirmationModal,
   BackLink,
   type LucideIconName,
-} from "@checkmate-monitor/ui";
-import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/ui";
+import { useApi, rpcApiRef } from "@checkstack/frontend-api";
+import { resolveRoute } from "@checkstack/common";
 import {
   IntegrationApi,
   integrationRoutes,
   type IntegrationProviderInfo,
   type ProviderConnectionRedacted,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 
 export const ProviderConnectionsPage = () => {
   const { providerId } = useParams<{ providerId: string }>();

@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/signal-backend",
-  "version": "0.1.1",
+  "name": "@checkstack/signal-backend",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -8,16 +8,16 @@
     }
   },
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/signal-common": "workspace:*",
-    "@checkmate-monitor/backend-api": "workspace:*"
+    "@checkstack/common": "workspace:*",
+    "@checkstack/signal-common": "workspace:*",
+    "@checkstack/backend-api": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5.7.2",
     "zod": "^4.0.0",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

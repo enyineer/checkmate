@@ -4,8 +4,8 @@ import {
   createConnectionStore,
   type ConnectionStore,
 } from "./connection-store";
-import type { ConfigService, Logger } from "@checkmate-monitor/backend-api";
-import { Versioned, configString } from "@checkmate-monitor/backend-api";
+import type { ConfigService, Logger } from "@checkstack/backend-api";
+import { Versioned, configString } from "@checkstack/backend-api";
 import type { IntegrationProviderRegistry } from "./provider-registry";
 
 /**

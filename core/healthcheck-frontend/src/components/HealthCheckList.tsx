@@ -2,7 +2,7 @@ import React from "react";
 import {
   HealthCheckConfiguration,
   HealthCheckStrategyDto,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
   Button,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { Trash2, Edit } from "lucide-react";
 
 interface HealthCheckListProps {

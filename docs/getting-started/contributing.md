@@ -1,8 +1,8 @@
 ---
 ---
-# Contributing to Checkmate
+# Contributing to Checkstack
 
-Thank you for your interest in contributing to Checkmate! This guide will help you get started with contributing plugins or code to the project.
+Thank you for your interest in contributing to Checkstack! This guide will help you get started with contributing plugins or code to the project.
 
 ## Table of Contents
 
@@ -28,8 +28,8 @@ Thank you for your interest in contributing to Checkmate! This guide will help y
 ```bash
 # Fork the repository on GitHub
 # Then clone your fork
-git clone https://github.com/YOUR_USERNAME/checkmate.git
-cd checkmate
+git clone https://github.com/YOUR_USERNAME/checkstack.git
+cd checkstack
 ```
 
 ### Install Dependencies
@@ -50,7 +50,7 @@ bun run core/scripts/src/sync.ts
 
 ```bash
 # Create a PostgreSQL database
-createdb checkmate_dev
+createdb checkstack_dev
 
 # Set environment variables
 cp .env.example .env
@@ -73,7 +73,7 @@ The application will be available at:
 ### Project Structure
 
 ```
-checkmate/
+checkstack/
 ├── core/          # Core packages
 │   ├── backend/      # Backend core
 │   ├── frontend/     # Frontend core
@@ -111,7 +111,7 @@ bun run build:frontend   # Frontend only
 bun test                 # Run all tests
 bun test:watch           # Watch mode
 
-# Tooling (Standardized via @checkmate-monitor/scripts)
+# Tooling (Standardized via @checkstack/scripts)
 bun run sync             # Synchronize project configurations
 bun run lint             # Run all linters
 bun run typecheck        # TypeScript type checking
@@ -201,7 +201,7 @@ API endpoints or components provided.
 ### TypeScript
 
 - Use **TypeScript** for all code
-- Extend shared configurations from `@checkmate-monitor/tsconfig`
+- Extend shared configurations from `@checkstack/tsconfig`
 - Enable **strict mode**
 - Avoid `any` types (use `unknown` if needed)
 - Use **type inference** where possible
@@ -220,7 +220,7 @@ API endpoints or components provided.
 ```typescript
 // 1. Imports (grouped)
 import { z } from "zod";
-import { createBackendPlugin } from "@checkmate-monitor/backend-api";
+import { createBackendPlugin } from "@checkstack/backend-api";
 
 // 2. Types and interfaces
 interface MyData {
@@ -511,8 +511,8 @@ Be responsive to feedback and iterate on your PR.
 
 ## License
 
-By contributing to Checkmate, you agree that your contributions will be licensed under the same license as the project.
+By contributing to Checkstack, you agree that your contributions will be licensed under the same license as the project.
 
 ## Thank You!
 
-Thank you for contributing to Checkmate! Your contributions help make this project better for everyone.
+Thank you for contributing to Checkstack! Your contributions help make this project better for everyone.

@@ -4,18 +4,18 @@ import {
   rpcApiRef,
   type ApiRef,
   UserMenuItemsSlot,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { incidentApiRef, type IncidentApiClient } from "./api";
 import {
   incidentRoutes,
   IncidentApi,
   pluginMetadata,
   permissions,
-} from "@checkmate-monitor/incident-common";
+} from "@checkstack/incident-common";
 import {
   SystemDetailsTopSlot,
   SystemStateBadgesSlot,
-} from "@checkmate-monitor/catalog-common";
+} from "@checkstack/catalog-common";
 import { IncidentConfigPage } from "./pages/IncidentConfigPage";
 import { IncidentDetailPage } from "./pages/IncidentDetailPage";
 import { SystemIncidentHistoryPage } from "./pages/SystemIncidentHistoryPage";

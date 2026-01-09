@@ -1,8 +1,8 @@
 ---
 ---
-# Running Checkmate with Docker
+# Running Checkstack with Docker
 
-This guide walks you through deploying Checkmate using Docker.
+This guide walks you through deploying Checkstack using Docker.
 
 ## Prerequisites
 
@@ -11,14 +11,14 @@ This guide walks you through deploying Checkmate using Docker.
 
 ## Required Environment Variables
 
-Checkmate requires four environment variables to run:
+Checkstack requires four environment variables to run:
 
 | Variable | Description | Requirements |
 |----------|-------------|--------------|
 | `DATABASE_URL` | PostgreSQL connection string | Valid Postgres URI |
 | `ENCRYPTION_MASTER_KEY` | Encrypts secrets in the database | 64 hex characters (32 bytes) |
 | `BETTER_AUTH_SECRET` | Signs session cookies and OAuth states | Minimum 32 characters |
-| `BASE_URL` | Public URL where Checkmate is accessed | Full URL (e.g., `https://status.example.com`) |
+| `BASE_URL` | Public URL where Checkstack is accessed | Full URL (e.g., `https://status.example.com`) |
 
 ## Generating Secrets
 
@@ -52,17 +52,17 @@ openssl rand -base64 32
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/enyineer/checkmate:latest
+docker pull ghcr.io/enyineer/checkstack:latest
 
 # Run with required environment variables
 docker run -d \
-  --name checkmate \
-  -e DATABASE_URL="postgresql://user:password@host:5432/checkmate" \
+  --name checkstack \
+  -e DATABASE_URL="postgresql://user:password@host:5432/checkstack" \
   -e ENCRYPTION_MASTER_KEY="<your-64-char-hex-key>" \
   -e BETTER_AUTH_SECRET="<your-32-char-secret>" \
   -e BASE_URL="http://localhost:3000" \
   -p 3000:3000 \
-  ghcr.io/enyineer/checkmate:latest
+  ghcr.io/enyineer/checkstack:latest
 ```
 
 ## Docker Compose
@@ -73,12 +73,12 @@ For a more robust setup, use Docker Compose:
 version: "3.8"
 
 services:
-  checkmate:
-    image: ghcr.io/enyineer/checkmate:latest
+  checkstack:
+    image: ghcr.io/enyineer/checkstack:latest
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://checkmate:checkmate@postgres:5432/checkmate
+      DATABASE_URL: postgresql://checkstack:checkstack@postgres:5432/checkstack
       ENCRYPTION_MASTER_KEY: ${ENCRYPTION_MASTER_KEY}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
@@ -90,13 +90,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: checkmate
-      POSTGRES_PASSWORD: checkmate
-      POSTGRES_DB: checkmate
+      POSTGRES_USER: checkstack
+      POSTGRES_PASSWORD: checkstack
+      POSTGRES_DB: checkstack
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U checkmate"]
+      test: ["CMD-SHELL", "pg_isready -U checkstack"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -125,13 +125,13 @@ docker compose up -d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LOG_LEVEL` | `info` | Logging level (debug, info, warn, error) |
-| `INTERNAL_URL` | (falls back to `BASE_URL`) | Internal RPC URL for backend-to-backend calls. Set to K8s service name (e.g., `http://checkmate-service:3000`) for multi-pod load balancing. |
+| `INTERNAL_URL` | (falls back to `BASE_URL`) | Internal RPC URL for backend-to-backend calls. Set to K8s service name (e.g., `http://checkstack-service:3000`) for multi-pod load balancing. |
 
 ## Default Admin Credentials
 
-On first startup, Checkmate creates a default admin user:
+On first startup, Checkstack creates a default admin user:
 
-- **Email**: `admin@checkmate-monitor.com`
+- **Email**: `admin@checkstack.com`
 - **Password**: `admin`
 
 > [!CAUTION]
@@ -139,7 +139,7 @@ On first startup, Checkmate creates a default admin user:
 
 ## Health Check
 
-Verify Checkmate is running:
+Verify Checkstack is running:
 
 ```bash
 curl http://localhost:3000/api/health

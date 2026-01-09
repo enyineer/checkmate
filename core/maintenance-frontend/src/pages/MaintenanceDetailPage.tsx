@@ -10,16 +10,16 @@ import {
   rpcApiRef,
   wrapInSuspense,
   permissionApiRef,
-} from "@checkmate-monitor/frontend-api";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/frontend-api";
+import { resolveRoute } from "@checkstack/common";
 import { maintenanceApiRef } from "../api";
-import { maintenanceRoutes } from "@checkmate-monitor/maintenance-common";
-import type { MaintenanceDetail } from "@checkmate-monitor/maintenance-common";
+import { maintenanceRoutes } from "@checkstack/maintenance-common";
+import type { MaintenanceDetail } from "@checkstack/maintenance-common";
 import {
   catalogRoutes,
   CatalogApi,
   type System,
-} from "@checkmate-monitor/catalog-common";
+} from "@checkstack/catalog-common";
 import {
   Card,
   CardHeader,
@@ -33,7 +33,7 @@ import {
   Button,
   StatusUpdateTimeline,
   useToast,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import {
   Calendar,
   Clock,

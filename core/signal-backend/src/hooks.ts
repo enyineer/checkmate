@@ -1,5 +1,5 @@
-import { createHook } from "@checkmate-monitor/backend-api";
-import type { SignalMessage } from "@checkmate-monitor/signal-common";
+import { createHook } from "@checkstack/backend-api";
+import type { SignalMessage } from "@checkstack/signal-common";
 
 /**
  * Internal hook for broadcasting signals across backend instances.

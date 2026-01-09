@@ -1,12 +1,12 @@
-# @checkmate-monitor/integration-common
+# @checkstack/integration-common
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/common@0.2.0
+  - @checkstack/signal-common@0.1.1
 
 ## 0.1.0
 
@@ -33,5 +33,5 @@
 
 - Updated dependencies [ffc28f6]
 - Updated dependencies [b55fae6]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/signal-common@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/signal-common@0.1.0

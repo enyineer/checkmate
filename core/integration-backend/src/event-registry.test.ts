@@ -5,7 +5,7 @@ import {
   type IntegrationEventRegistry,
 } from "./event-registry";
 import type { IntegrationEventDefinition } from "./provider-types";
-import { createHook } from "@checkmate-monitor/backend-api";
+import { createHook } from "@checkstack/backend-api";
 
 /**
  * Unit tests for IntegrationEventRegistry.

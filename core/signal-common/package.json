@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/signal-common",
-  "version": "0.1.1",
+  "name": "@checkstack/signal-common",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -8,13 +8,13 @@
     }
   },
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*",
+    "@checkstack/common": "workspace:*",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

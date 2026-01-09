@@ -7,17 +7,17 @@ import {
   maintenanceContract,
   maintenanceRoutes,
   permissions,
-} from "@checkmate-monitor/maintenance-common";
+} from "@checkstack/maintenance-common";
 import {
   createBackendPlugin,
   coreServices,
-} from "@checkmate-monitor/backend-api";
-import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
+} from "@checkstack/backend-api";
+import { integrationEventExtensionPoint } from "@checkstack/integration-backend";
 import { MaintenanceService } from "./service";
 import { createRouter } from "./router";
-import { CatalogApi } from "@checkmate-monitor/catalog-common";
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { CatalogApi } from "@checkstack/catalog-common";
+import { registerSearchProvider } from "@checkstack/command-backend";
+import { resolveRoute } from "@checkstack/common";
 import { maintenanceHooks } from "./hooks";
 
 // =============================================================================

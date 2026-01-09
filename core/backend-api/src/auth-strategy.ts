@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Migration } from "./config-versioning";
-import type { LucideIconName } from "@checkmate-monitor/common";
+import type { LucideIconName } from "@checkstack/common";
 
 /**
  * Migration chain for auth strategy configurations.

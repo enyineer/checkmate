@@ -22,15 +22,15 @@ import {
   useToast,
   usePagination,
   BackLink,
-} from "@checkmate-monitor/ui";
-import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/ui";
+import { useApi, rpcApiRef } from "@checkstack/frontend-api";
+import { resolveRoute } from "@checkstack/common";
 import {
   IntegrationApi,
   integrationRoutes,
   type DeliveryLog,
   type DeliveryStatus,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 
 const statusConfig: Record<
   DeliveryStatus,

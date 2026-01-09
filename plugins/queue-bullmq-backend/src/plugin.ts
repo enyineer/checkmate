@@ -1,5 +1,5 @@
-import { QueuePlugin, Queue } from "@checkmate-monitor/queue-api";
-import { configString, configNumber } from "@checkmate-monitor/backend-api";
+import { QueuePlugin, Queue } from "@checkstack/queue-api";
+import { configString, configNumber } from "@checkstack/backend-api";
 import { z } from "zod";
 import { BullMQQueue } from "./bullmq-queue";
 
@@ -11,7 +11,7 @@ const configSchema = z.object({
     .optional(),
   db: configNumber({}).min(0).default(0).describe("Redis database number"),
   keyPrefix: configString({})
-    .default("checkmate:")
+    .default("checkstack:")
     .describe("Key prefix for queue names"),
   concurrency: configNumber({})
     .min(1)

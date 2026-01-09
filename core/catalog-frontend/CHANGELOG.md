@@ -1,4 +1,4 @@
-# @checkmate-monitor/catalog-frontend
+# @checkstack/catalog-frontend
 
 ## 0.1.0
 
@@ -40,7 +40,7 @@
 
   **Changes:**
 
-  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkmate-monitor/frontend-api`
+  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkstack/frontend-api`
   - `LoginNavbarAction` now pre-fetches all permissions and credential account info before rendering the menu
   - All user menu item components now use the passed context for synchronous permission checks instead of async hooks
   - Uses `qualifyPermissionId` helper for fully-qualified permission IDs
@@ -54,36 +54,36 @@
 - Updated dependencies [ae33df2]
 - Updated dependencies [a65e002]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/auth-frontend@0.3.0
-  - @checkmate-monitor/ui@0.1.2
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/frontend-api@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/notification-common@0.1.1
+  - @checkstack/auth-frontend@0.3.0
+  - @checkstack/ui@0.1.2
+  - @checkstack/common@0.2.0
+  - @checkstack/frontend-api@0.1.0
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/notification-common@0.1.1
 
 ## 0.0.5
 
 ### Patch Changes
 
 - Updated dependencies [1bf71bb]
-  - @checkmate-monitor/auth-frontend@0.2.1
+  - @checkstack/auth-frontend@0.2.1
 
 ## 0.0.4
 
 ### Patch Changes
 
 - Updated dependencies [e26c08e]
-  - @checkmate-monitor/auth-frontend@0.2.0
+  - @checkstack/auth-frontend@0.2.0
 
 ## 0.0.3
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
-  - @checkmate-monitor/auth-frontend@0.1.1
-  - @checkmate-monitor/catalog-common@0.1.1
-  - @checkmate-monitor/ui@0.1.1
+  - @checkstack/frontend-api@0.0.3
+  - @checkstack/auth-frontend@0.1.1
+  - @checkstack/catalog-common@0.1.1
+  - @checkstack/ui@0.1.1
 
 ## 0.0.2
 
@@ -95,9 +95,9 @@
 - Updated dependencies [32f2535]
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
-  - @checkmate-monitor/ui@0.1.0
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/notification-common@0.1.0
-  - @checkmate-monitor/auth-frontend@0.1.0
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/ui@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/notification-common@0.1.0
+  - @checkstack/auth-frontend@0.1.0
+  - @checkstack/frontend-api@0.0.2

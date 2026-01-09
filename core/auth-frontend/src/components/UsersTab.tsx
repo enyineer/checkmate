@@ -16,11 +16,11 @@ import {
   AlertDescription,
   ConfirmationModal,
   useToast,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { Plus, Trash2 } from "lucide-react";
-import { useApi } from "@checkmate-monitor/frontend-api";
-import { rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { AuthApi } from "@checkmate-monitor/auth-common";
+import { useApi } from "@checkstack/frontend-api";
+import { rpcApiRef } from "@checkstack/frontend-api";
+import { AuthApi } from "@checkstack/auth-common";
 import type { AuthUser, Role, AuthStrategy } from "../api";
 import { CreateUserDialog } from "./CreateUserDialog";
 
@@ -193,7 +193,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                       </TableCell>
                       <TableCell className="text-right">
                         {canManageUsers &&
-                          user.email !== "admin@checkmate-monitor.com" && (
+                          user.email !== "admin@checkstack.com" && (
                             <Button
                               variant="destructive"
                               size="icon"

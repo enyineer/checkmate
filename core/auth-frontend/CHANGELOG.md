@@ -1,4 +1,4 @@
-# @checkmate-monitor/auth-frontend
+# @checkstack/auth-frontend
 
 ## 0.3.0
 
@@ -42,7 +42,7 @@
 
   **Changes:**
 
-  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkmate-monitor/frontend-api`
+  - Added `UserMenuItemsContext` interface with `permissions` and `hasCredentialAccount` to `@checkstack/frontend-api`
   - `LoginNavbarAction` now pre-fetches all permissions and credential account info before rendering the menu
   - All user menu item components now use the passed context for synchronous permission checks instead of async hooks
   - Uses `qualifyPermissionId` helper for fully-qualified permission IDs
@@ -67,7 +67,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -92,10 +92,10 @@
 - Updated dependencies [a65e002]
 - Updated dependencies [ae33df2]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/ui@0.1.2
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/auth-common@0.2.1
-  - @checkmate-monitor/frontend-api@0.1.0
+  - @checkstack/ui@0.1.2
+  - @checkstack/common@0.2.0
+  - @checkstack/auth-common@0.2.1
+  - @checkstack/frontend-api@0.1.0
 
 ## 0.2.1
 
@@ -122,7 +122,7 @@
 ### Patch Changes
 
 - Updated dependencies [e26c08e]
-  - @checkmate-monitor/auth-common@0.2.0
+  - @checkstack/auth-common@0.2.0
 
 ## 0.1.1
 
@@ -138,8 +138,8 @@
   - Auth Frontend: Add `useAuthClient()` hook using runtime config
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
-  - @checkmate-monitor/ui@0.1.1
+  - @checkstack/frontend-api@0.0.3
+  - @checkstack/ui@0.1.1
 
 ## 0.1.0
 
@@ -169,7 +169,7 @@
 
   ## New Telegram Notification Plugin
 
-  Added `@checkmate-monitor/notification-telegram-backend` plugin for sending notifications via Telegram:
+  Added `@checkstack/notification-telegram-backend` plugin for sending notifications via Telegram:
 
   - Uses [grammY](https://grammy.dev/) framework for Telegram Bot API integration
   - Sends messages with MarkdownV2 formatting and inline keyboard buttons for actions
@@ -190,7 +190,7 @@
 - Updated dependencies [ffc28f6]
 - Updated dependencies [32f2535]
 - Updated dependencies [b354ab3]
-  - @checkmate-monitor/ui@0.1.0
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/auth-common@0.1.0
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/ui@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/auth-common@0.1.0
+  - @checkstack/frontend-api@0.0.2

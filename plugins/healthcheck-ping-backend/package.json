@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/healthcheck-ping-backend",
-  "version": "0.0.3",
+  "name": "@checkstack/healthcheck-ping-backend",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
@@ -9,14 +9,14 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/healthcheck-common": "workspace:*"
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/healthcheck-common": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "^1.0.0",
     "typescript": "^5.0.0",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   }
 }

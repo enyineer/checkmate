@@ -1,9 +1,9 @@
 import { icons, type LucideIcon } from "lucide-react";
 import { Settings } from "lucide-react";
-import type { LucideIconName } from "@checkmate-monitor/common";
+import type { LucideIconName } from "@checkstack/common";
 
 // Re-export the type for convenience
-export type { LucideIconName } from "@checkmate-monitor/common";
+export type { LucideIconName } from "@checkstack/common";
 
 /**
  * Props for the DynamicIcon component

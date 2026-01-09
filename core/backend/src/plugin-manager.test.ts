@@ -5,11 +5,11 @@ import {
   createBackendPlugin,
   ServiceRef,
   coreServices,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   createMockLogger,
   createMockQueueManager,
-} from "@checkmate-monitor/test-utils-backend";
+} from "@checkstack/test-utils-backend";
 import { sortPlugins } from "./plugin-manager/dependency-sorter";
 
 // Note: ./db and ./logger are mocked via test-preload.ts (bunfig.toml preload)

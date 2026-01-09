@@ -1,5 +1,5 @@
-import { createBackendPlugin } from "@checkmate-monitor/backend-api";
-import { providerExtensionPoint } from "@checkmate-monitor/integration-backend";
+import { createBackendPlugin } from "@checkstack/backend-api";
+import { providerExtensionPoint } from "@checkstack/integration-backend";
 import { pluginMetadata } from "./plugin-metadata";
 import { webexProvider } from "./provider";
 

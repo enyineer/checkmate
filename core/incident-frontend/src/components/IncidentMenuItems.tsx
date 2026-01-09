@@ -1,14 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
-import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
-import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import type { UserMenuItemsContext } from "@checkstack/frontend-api";
+import { DropdownMenuItem } from "@checkstack/ui";
+import { qualifyPermissionId, resolveRoute } from "@checkstack/common";
 import {
   incidentRoutes,
   permissions,
   pluginMetadata,
-} from "@checkmate-monitor/incident-common";
+} from "@checkstack/incident-common";
 
 export const IncidentMenuItems = ({
   permissions: userPerms,

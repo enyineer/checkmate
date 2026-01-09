@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { configString, Versioned } from "@checkmate-monitor/backend-api";
+import { configString, Versioned } from "@checkstack/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -7,7 +7,7 @@ import type {
   GetConnectionOptionsParams,
   ConnectionOption,
   TestConnectionResult,
-} from "@checkmate-monitor/integration-backend";
+} from "@checkstack/integration-backend";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Resolver Names

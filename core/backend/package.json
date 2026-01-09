@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/backend",
-  "version": "0.1.4",
+  "name": "@checkstack/backend",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "bun --env-file=../../.env --watch src/index.ts",
@@ -10,14 +10,14 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate-monitor/api-docs-common": "workspace:*",
-    "@checkmate-monitor/auth-common": "workspace:*",
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/drizzle-helper": "workspace:*",
-    "@checkmate-monitor/queue-api": "workspace:*",
-    "@checkmate-monitor/signal-backend": "workspace:*",
-    "@checkmate-monitor/signal-common": "workspace:*",
+    "@checkstack/api-docs-common": "workspace:*",
+    "@checkstack/auth-common": "workspace:*",
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/drizzle-helper": "workspace:*",
+    "@checkstack/queue-api": "workspace:*",
+    "@checkstack/signal-backend": "workspace:*",
+    "@checkstack/signal-common": "workspace:*",
     "@hono/zod-validator": "^0.7.6",
     "@orpc/client": "^1.13.2",
     "@orpc/openapi": "^1.13.2",
@@ -35,8 +35,8 @@
     "drizzle-kit": "^0.31.8",
     "@types/pg": "^8.11.0",
     "@types/bun": "latest",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*",
-    "@checkmate-monitor/test-utils-backend": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*",
+    "@checkstack/test-utils-backend": "workspace:*"
   }
 }

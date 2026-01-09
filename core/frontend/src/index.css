@@ -1,4 +1,4 @@
-@import "@checkmate-monitor/ui/src/themes.css";
+@import "@checkstack/ui/src/themes.css";
 
 @tailwind base;
 @tailwind components;

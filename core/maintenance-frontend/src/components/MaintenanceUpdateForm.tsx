@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useApi } from "@checkmate-monitor/frontend-api";
+import { useApi } from "@checkstack/frontend-api";
 import { maintenanceApiRef } from "../api";
-import type { MaintenanceStatus } from "@checkmate-monitor/maintenance-common";
+import type { MaintenanceStatus } from "@checkstack/maintenance-common";
 import {
   Button,
   Textarea,
@@ -12,7 +12,7 @@ import {
   SelectContent,
   SelectItem,
   useToast,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { Loader2 } from "lucide-react";
 
 interface MaintenanceUpdateFormProps {

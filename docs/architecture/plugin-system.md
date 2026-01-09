@@ -8,7 +8,7 @@ nav_order: 1
 
 ## Introduction
 
-Checkmate is built on a **pluggable architecture** that enables extensibility, modularity, and flexible deployment options. Everything beyond the core framework is implemented as a plugin, allowing the system to scale from monolithic deployments to distributed microservices.
+Checkstack is built on a **pluggable architecture** that enables extensibility, modularity, and flexible deployment options. Everything beyond the core framework is implemented as a plugin, allowing the system to scale from monolithic deployments to distributed microservices.
 
 ## Core Principles
 
@@ -47,7 +47,7 @@ Each plugin is a standalone npm package that can:
 ## Project Structure
 
 ```
-checkmate/
+checkstack/
 ├── core/
 │   ├── backend/           # Core backend framework
 │   ├── frontend/          # Core frontend framework
@@ -76,7 +76,7 @@ checkmate/
 
 ## Package Types
 
-Checkmate uses a strict package type system to maintain clean architecture:
+Checkstack uses a strict package type system to maintain clean architecture:
 
 | Package Type | Suffix/Pattern | Purpose | Can Depend On |
 |--------------|---------------|---------|---------------|
@@ -151,7 +151,7 @@ graph TD
 Each backend plugin gets its own **isolated PostgreSQL schema**:
 
 ```
-Database: checkmate
+Database: checkstack
 ├── Schema: public (core only)
 ├── Schema: plugin_catalog-backend
 ├── Schema: plugin_auth-backend

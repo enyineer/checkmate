@@ -1,4 +1,4 @@
-# @checkmate-monitor/incident-common
+# @checkstack/incident-common
 
 ## 0.1.2
 
@@ -7,16 +7,16 @@
 - Updated dependencies [a65e002]
 - Updated dependencies [ae33df2]
 - Updated dependencies [32ea706]
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/frontend-api@0.1.0
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/common@0.2.0
+  - @checkstack/frontend-api@0.1.0
+  - @checkstack/signal-common@0.1.1
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies [0f8cc7d]
-  - @checkmate-monitor/frontend-api@0.0.3
+  - @checkstack/frontend-api@0.0.3
 
 ## 0.1.0
 
@@ -43,6 +43,6 @@
 
 - Updated dependencies [ffc28f6]
 - Updated dependencies [b55fae6]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/signal-common@0.1.0
-  - @checkmate-monitor/frontend-api@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/signal-common@0.1.0
+  - @checkstack/frontend-api@0.0.2

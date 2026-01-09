@@ -1,4 +1,4 @@
-# @checkmate-monitor/queue-api
+# @checkstack/queue-api
 
 ## 1.0.1
 
@@ -6,7 +6,7 @@
 
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/backend-api@1.1.0
+  - @checkstack/backend-api@1.1.0
 
 ## 1.0.0
 
@@ -77,4 +77,4 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/backend-api@1.0.0
+  - @checkstack/backend-api@1.0.0

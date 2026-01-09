@@ -2,11 +2,11 @@
 ---
 # Changesets Workflow
 
-This document describes the Changesets workflow used in the Checkmate monorepo for managing package versions and changelogs.
+This document describes the Changesets workflow used in the Checkstack monorepo for managing package versions and changelogs.
 
 ## Overview
 
-Checkmate uses [Changesets](https://github.com/changesets/changesets) to manage versioning and changelog generation across all packages and plugins in the monorepo. This ensures that:
+Checkstack uses [Changesets](https://github.com/changesets/changesets) to manage versioning and changelog generation across all packages and plugins in the monorepo. This ensures that:
 
 - All changes are properly documented
 - Versions follow semantic versioning (semver)
@@ -40,8 +40,8 @@ A new markdown file will be created in `.changeset/` with a random name. The fil
 
 ```markdown
 ---
-"@checkmate-monitor/auth-backend": patch
-"@checkmate-monitor/auth-frontend": patch
+"@checkstack/auth-backend": patch
+"@checkstack/auth-frontend": patch
 ---
 
 Fixed authentication token refresh bug that caused users to be logged out unexpectedly
@@ -129,10 +129,10 @@ Changesets follow [semantic versioning (semver)](https://semver.org/):
 ```bash
 $ bun changeset
 🦋  Which packages would you like to include?
-◉ @checkmate-monitor/healthcheck-backend
+◉ @checkstack/healthcheck-backend
 
 🦋  Which packages should have a patch bump?
-◉ @checkmate-monitor/healthcheck-backend
+◉ @checkstack/healthcheck-backend
 
 🦋  Please enter a summary for this change:
 Fixed health check timeout handling to prevent false negatives
@@ -143,12 +143,12 @@ Fixed health check timeout handling to prevent false negatives
 ```bash
 $ bun changeset
 🦋  Which packages would you like to include?
-◉ @checkmate-monitor/catalog-frontend
-◉ @checkmate-monitor/catalog-backend
+◉ @checkstack/catalog-frontend
+◉ @checkstack/catalog-backend
 
 🦋  Which packages should have a minor bump?
-◉ @checkmate-monitor/catalog-frontend
-◉ @checkmate-monitor/catalog-backend
+◉ @checkstack/catalog-frontend
+◉ @checkstack/catalog-backend
 
 🦋  Please enter a summary for this change:
 Added ability to archive systems and groups in the catalog
@@ -159,10 +159,10 @@ Added ability to archive systems and groups in the catalog
 ```bash
 $ bun changeset
 🦋  Which packages would you like to include?
-◉ @checkmate-monitor/backend-api
+◉ @checkstack/backend-api
 
 🦋  Which packages should have a major bump?
-◉ @checkmate-monitor/backend-api
+◉ @checkstack/backend-api
 
 🦋  Please enter a summary for this change:
 BREAKING: Changed PluginContext interface to require logger instance

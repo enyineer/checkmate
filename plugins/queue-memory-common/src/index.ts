@@ -1,4 +1,4 @@
-import { Permission } from "@checkmate-monitor/common";
+import { Permission } from "@checkstack/common";
 
 export const permissions = {
   queueRead: {

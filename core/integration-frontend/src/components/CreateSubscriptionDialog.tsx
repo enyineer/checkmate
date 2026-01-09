@@ -21,9 +21,9 @@ import {
   Label,
   ConfirmationModal,
   type LucideIconName,
-} from "@checkmate-monitor/ui";
-import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/ui";
+import { useApi, rpcApiRef } from "@checkstack/frontend-api";
+import { resolveRoute } from "@checkstack/common";
 import {
   IntegrationApi,
   integrationRoutes,
@@ -32,7 +32,7 @@ import {
   type IntegrationEventInfo,
   type ProviderConnectionRedacted,
   type PayloadProperty,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 import { ProviderDocumentation } from "./ProviderDocumentation";
 import { getProviderConfigExtension } from "../provider-config-registry";
 

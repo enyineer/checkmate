@@ -31,7 +31,7 @@ RUN test -d core/backend/node_modules/hono && test -d core/backend/node_modules/
   (echo "ERROR: Core packages missing! Check bun install output above." && exit 1)
 
 # Build frontend
-RUN bun run --filter '@checkmate-monitor/frontend' build
+RUN bun run --filter '@checkstack/frontend' build
 
 # Stage 2: Production Runtime
 FROM oven/bun:1-slim AS runtime
@@ -50,9 +50,9 @@ COPY package.json bun.lock ./
 RUN mkdir -p /app/runtime_plugins /app/data
 
 ENV NODE_ENV=production
-ENV CHECKMATE_DATA_DIR=/app/data
-ENV CHECKMATE_PLUGINS_DIR=/app/runtime_plugins
-ENV CHECKMATE_FRONTEND_DIST=/app/core/frontend/dist
+ENV CHECKSTACK_DATA_DIR=/app/data
+ENV CHECKSTACK_PLUGINS_DIR=/app/runtime_plugins
+ENV CHECKSTACK_FRONTEND_DIST=/app/core/frontend/dist
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/

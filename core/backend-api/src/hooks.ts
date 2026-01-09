@@ -1,4 +1,4 @@
-import type { Permission } from "@checkmate-monitor/common";
+import type { Permission } from "@checkstack/common";
 
 /**
  * Hook definition for type-safe event emission and subscription

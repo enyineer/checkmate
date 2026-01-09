@@ -2,7 +2,7 @@
 ---
 # Queue System
 
-The Checkmate Queue system provides a pluggable, type-safe infrastructure for managing asynchronous tasks and distributed events. It is designed to scale from simple in-memory development environments to multi-node production clusters.
+The Checkstack Queue system provides a pluggable, type-safe infrastructure for managing asynchronous tasks and distributed events. It is designed to scale from simple in-memory development environments to multi-node production clusters.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ The Checkmate Queue system provides a pluggable, type-safe infrastructure for ma
 
 ### What is the Queue System?
 
-The Queue system is Checkmate's abstraction for asynchronous task processing. It provides:
+The Queue system is Checkstack's abstraction for asynchronous task processing. It provides:
 
 - **Reliable job execution** with automatic retries and exponential backoff
 - **Flexible message routing** via consumer groups (work queue or broadcast patterns)
@@ -399,7 +399,7 @@ export type RedisQueueConfig = z.infer<typeof redisConfigSchema>;
 Create a class that implements the `Queue<T>` interface:
 
 ```typescript
-import { Queue, QueueJob, QueueConsumer, ConsumeOptions, QueueStats } from '@checkmate-monitor/queue-api';
+import { Queue, QueueJob, QueueConsumer, ConsumeOptions, QueueStats } from '@checkstack/queue-api';
 
 export class RedisQueue<T> implements Queue<T> {
   private redis: Redis;
@@ -475,7 +475,7 @@ export class RedisQueue<T> implements Queue<T> {
 Create the plugin class:
 
 ```typescript
-import { QueuePlugin } from '@checkmate-monitor/queue-api';
+import { QueuePlugin } from '@checkstack/queue-api';
 
 export class RedisQueuePlugin implements QueuePlugin<RedisQueueConfig> {
   id = 'redis';
@@ -495,7 +495,7 @@ export class RedisQueuePlugin implements QueuePlugin<RedisQueueConfig> {
 In your backend plugin's `register` lifecycle:
 
 ```typescript
-import { createBackendPlugin, coreServices } from '@checkmate-monitor/backend-api';
+import { createBackendPlugin, coreServices } from '@checkstack/backend-api';
 import { RedisQueuePlugin } from './redis-queue-plugin';
 import { pluginMetadata } from './plugin-metadata';
 
@@ -881,7 +881,7 @@ await queue.enqueue(
 
 ## Summary
 
-The Checkmate Queue system provides a powerful, flexible foundation for asynchronous task processing:
+The Checkstack Queue system provides a powerful, flexible foundation for asynchronous task processing:
 
 - **Pluggable architecture** allows swapping backends without code changes
 - **Consumer groups** enable both work-queue and broadcast patterns

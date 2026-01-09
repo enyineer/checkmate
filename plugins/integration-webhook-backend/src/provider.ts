@@ -3,12 +3,12 @@ import {
   Versioned,
   configNumber,
   configString,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
   IntegrationDeliveryResult,
-} from "@checkmate-monitor/integration-backend";
+} from "@checkstack/integration-backend";
 
 // =============================================================================
 // Template Expansion Helper
@@ -179,7 +179,7 @@ Configure your server to:
         name: "X-Event-Type",
         description: "The event type (e.g., incident.created)",
       },
-      { name: "User-Agent", description: "Checkmate-Integration/1.0" },
+      { name: "User-Agent", description: "Checkstack-Integration/1.0" },
     ],
   },
 
@@ -208,7 +208,7 @@ Configure your server to:
     // Build headers
     const headers: Record<string, string> = {
       "Content-Type": config.contentType,
-      "User-Agent": "Checkmate-Integration/1.0",
+      "User-Agent": "Checkstack-Integration/1.0",
       "X-Delivery-Id": event.deliveryId,
       "X-Event-Type": event.eventId,
     };

@@ -5,7 +5,7 @@ import path from "node:path";
 const command = process.argv[2];
 
 if (!command) {
-  console.log("Usage: checkmate-scripts <command>");
+  console.log("Usage: checkstack-scripts <command>");
   console.log("\nCommands:");
   console.log("  create      - Create a new plugin interactively");
   console.log("  sync        - Synchronize package configurations");

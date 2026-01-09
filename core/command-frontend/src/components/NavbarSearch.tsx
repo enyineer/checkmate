@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { cn } from "@checkmate-monitor/ui";
+import { cn } from "@checkstack/ui";
 import { Search, Command } from "lucide-react";
 import { SearchDialog } from "./SearchDialog";
 

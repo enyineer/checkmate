@@ -4,23 +4,23 @@ import {
   useApi,
   rpcApiRef,
   ExtensionSlot,
-} from "@checkmate-monitor/frontend-api";
-import { catalogApiRef } from "@checkmate-monitor/catalog-frontend";
+} from "@checkstack/frontend-api";
+import { catalogApiRef } from "@checkstack/catalog-frontend";
 import {
   catalogRoutes,
   SystemStateBadgesSlot,
   System,
   Group,
-} from "@checkmate-monitor/catalog-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/catalog-common";
+import { resolveRoute } from "@checkstack/common";
 import {
   NotificationApi,
   type EnrichedSubscription,
-} from "@checkmate-monitor/notification-common";
-import { IncidentApi } from "@checkmate-monitor/incident-common";
-import { MaintenanceApi } from "@checkmate-monitor/maintenance-common";
-import { HEALTH_CHECK_RUN_COMPLETED } from "@checkmate-monitor/healthcheck-common";
-import { useSignal } from "@checkmate-monitor/signal-frontend";
+} from "@checkstack/notification-common";
+import { IncidentApi } from "@checkstack/incident-common";
+import { MaintenanceApi } from "@checkstack/maintenance-common";
+import { HEALTH_CHECK_RUN_COMPLETED } from "@checkstack/healthcheck-common";
+import { useSignal } from "@checkstack/signal-frontend";
 import {
   Card,
   CardHeader,
@@ -35,7 +35,7 @@ import {
   AnimatedCounter,
   TerminalFeed,
   type TerminalEntry,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import {
   LayoutGrid,
   Server,
@@ -45,7 +45,7 @@ import {
   Wrench,
   Terminal,
 } from "lucide-react";
-import { authApiRef } from "@checkmate-monitor/auth-frontend/api";
+import { authApiRef } from "@checkstack/auth-frontend/api";
 
 const CATALOG_PLUGIN_ID = "catalog";
 const MAX_TERMINAL_ENTRIES = 8;
@@ -370,7 +370,7 @@ export const Dashboard: React.FC = () => {
               entries={terminalEntries}
               maxEntries={MAX_TERMINAL_ENTRIES}
               maxHeight="350px"
-              title="checkmate status --watch"
+              title="checkstack status --watch"
             />
           </section>
 

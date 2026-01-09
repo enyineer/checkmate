@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { Webhook } from "lucide-react";
-import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
-import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import { DropdownMenuItem } from "@checkstack/ui";
+import type { UserMenuItemsContext } from "@checkstack/frontend-api";
+import { qualifyPermissionId, resolveRoute } from "@checkstack/common";
 import {
   integrationRoutes,
   permissions,
   pluginMetadata,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 import React from "react";
 
 export const IntegrationMenuItem = ({

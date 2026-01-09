@@ -1,5 +1,5 @@
 {
-  "extends": "@checkmate-monitor/tsconfig/frontend.json",
+  "extends": "@checkstack/tsconfig/frontend.json",
   "include": [
     "src"
   ]

@@ -1,5 +1,5 @@
 import { mock } from "bun:test";
-import type { Fetch } from "@checkmate-monitor/backend-api";
+import type { Fetch } from "@checkstack/backend-api";
 
 /**
  * Creates a mock Fetch instance suitable for unit testing.

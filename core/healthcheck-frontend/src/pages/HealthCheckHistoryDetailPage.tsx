@@ -3,10 +3,10 @@ import {
   useApi,
   wrapInSuspense,
   permissionApiRef,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { healthCheckApiRef } from "../api";
-import { healthcheckRoutes } from "@checkmate-monitor/healthcheck-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { healthcheckRoutes } from "@checkstack/healthcheck-common";
+import { resolveRoute } from "@checkstack/common";
 import {
   PageLayout,
   usePagination,
@@ -18,7 +18,7 @@ import {
   DateRangeFilter,
   getDefaultDateRange,
   type DateRange,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { useParams } from "react-router-dom";
 import {
   HealthCheckRunsTable,

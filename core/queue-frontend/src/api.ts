@@ -1,13 +1,13 @@
-import { createApiRef } from "@checkmate-monitor/frontend-api";
-import { QueueApi } from "@checkmate-monitor/queue-common";
-import type { InferClient } from "@checkmate-monitor/common";
+import { createApiRef } from "@checkstack/frontend-api";
+import { QueueApi } from "@checkstack/queue-common";
+import type { InferClient } from "@checkstack/common";
 
 // Re-export types for convenience
 export type {
   QueuePluginDto,
   QueueConfigurationDto,
   UpdateQueueConfiguration,
-} from "@checkmate-monitor/queue-common";
+} from "@checkstack/queue-common";
 
 // QueueApiClient type inferred from the client definition
 export type QueueApiClient = InferClient<typeof QueueApi>;

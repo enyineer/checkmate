@@ -50,7 +50,7 @@ export type InferClient<T extends ClientDefinition> =
  *
  * @example
  * ```typescript
- * // In @checkmate-monitor/auth-common
+ * // In @checkstack/auth-common
  * import { authContract } from "./rpc-contract";
  * import { pluginMetadata } from "./plugin-metadata";
  *

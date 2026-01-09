@@ -5,8 +5,8 @@
  * All backend-only types live here - frontend uses Zod schemas from integration-common.
  */
 import { z } from "zod";
-import type { Versioned, Logger, Hook } from "@checkmate-monitor/backend-api";
-import type { LucideIconName } from "@checkmate-monitor/common";
+import type { Versioned, Logger, Hook } from "@checkstack/backend-api";
+import type { LucideIconName } from "@checkstack/common";
 
 // =============================================================================
 // Integration Event Definition Types

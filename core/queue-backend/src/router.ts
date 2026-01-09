@@ -3,8 +3,8 @@ import {
   ConfigService,
   RpcContext,
   autoAuthMiddleware,
-} from "@checkmate-monitor/backend-api";
-import { queueContract } from "@checkmate-monitor/queue-common";
+} from "@checkstack/backend-api";
+import { queueContract } from "@checkstack/queue-common";
 import { implement, ORPCError } from "@orpc/server";
 
 const os = implement(queueContract)

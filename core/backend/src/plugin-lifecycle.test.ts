@@ -5,8 +5,8 @@ import {
   createMockQueueManager,
   type MockEventBus,
   type MockPluginInstaller,
-} from "@checkmate-monitor/test-utils-backend";
-import { coreServices, coreHooks } from "@checkmate-monitor/backend-api";
+} from "@checkstack/test-utils-backend";
+import { coreServices, coreHooks } from "@checkstack/backend-api";
 
 // Note: ./db and ./logger are mocked via test-preload.ts (bunfig.toml preload)
 // This ensures mocks are in place BEFORE any module imports them

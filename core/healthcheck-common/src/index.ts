@@ -39,7 +39,7 @@ export { healthcheckRoutes } from "./routes";
 // REALTIME SIGNALS
 // =============================================================================
 
-import { createSignal } from "@checkmate-monitor/signal-common";
+import { createSignal } from "@checkstack/signal-common";
 import { z } from "zod";
 
 /**

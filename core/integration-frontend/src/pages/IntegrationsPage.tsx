@@ -18,15 +18,15 @@ import {
   TableRow,
   useToast,
   type LucideIconName,
-} from "@checkmate-monitor/ui";
-import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/ui";
+import { useApi, rpcApiRef } from "@checkstack/frontend-api";
+import { resolveRoute } from "@checkstack/common";
 import {
   IntegrationApi,
   integrationRoutes,
   type WebhookSubscription,
   type IntegrationProviderInfo,
-} from "@checkmate-monitor/integration-common";
+} from "@checkstack/integration-common";
 import { SubscriptionDialog } from "../components/CreateSubscriptionDialog";
 
 export const IntegrationsPage = () => {

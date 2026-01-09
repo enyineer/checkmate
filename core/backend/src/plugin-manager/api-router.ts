@@ -10,14 +10,14 @@ import {
   HealthCheckRegistry,
   type EmitHookFn,
   type Hook,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import type {
   QueuePluginRegistry,
   QueueManager,
-} from "@checkmate-monitor/queue-api";
+} from "@checkstack/queue-api";
 import type { ServiceRegistry } from "../services/service-registry";
-import type { EventBus } from "@checkmate-monitor/backend-api";
-import type { PluginMetadata } from "@checkmate-monitor/common";
+import type { EventBus } from "@checkstack/backend-api";
+import type { PluginMetadata } from "@checkstack/common";
 
 /**
  * Creates the API route handler for Hono.

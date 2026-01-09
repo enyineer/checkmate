@@ -41,7 +41,7 @@ Use ConfigService when storing:
 ### Example: Queue Configuration
 
 ```typescript
-import { coreServices, type ConfigService } from "@checkmate-monitor/backend-api";
+import { coreServices, type ConfigService } from "@checkstack/backend-api";
 import { z } from "zod";
 
 // Schema for queue config
@@ -144,7 +144,7 @@ const configs = await config.list();
 ConfigService automatically encrypts/decrypts secrets marked with `configString({ "x-secret": true })`:
 
 ```typescript
-import { configString, configBoolean, configNumber } from "@checkmate-monitor/backend-api";
+import { configString, configBoolean, configNumber } from "@checkstack/backend-api";
 
 const githubStrategySchema = z.object({
   clientId: configString({}),
@@ -250,7 +250,7 @@ But entities need:
 
 **Auth Backend** - Strategy configurations:
 ```typescript
-import { configString } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkstack/backend-api";
 
 // Stores: "Which auth strategies are enabled?"
 await config.set("github", githubSchema, 1, {
@@ -322,7 +322,7 @@ export const authStrategy = pgTable("auth_strategy", {
 
 ### After (ConfigService):
 ```typescript
-import { configString } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkstack/backend-api";
 
 // ✅ New: Use ConfigService
 await config.set("github", schema, 1, {
@@ -354,7 +354,7 @@ await db.insert(healthChecks).values({
 
 ### 3. Mark Secrets in Schemas
 ```typescript
-import { configString } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkstack/backend-api";
 
 // ✅ Good: Explicit secret marking
 const schema = z.object({

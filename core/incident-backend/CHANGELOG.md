@@ -1,4 +1,4 @@
-# @checkmate-monitor/incident-backend
+# @checkstack/incident-backend
 
 ## 0.0.4
 
@@ -6,7 +6,7 @@
 
 - a65e002: Add compile-time type safety for Lucide icon names
 
-  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkmate-monitor/common`
+  - Add `LucideIconName` type and `lucideIconSchema` Zod schema to `@checkstack/common`
   - Update backend interfaces (`AuthStrategy`, `NotificationStrategy`, `IntegrationProvider`, `CommandDefinition`) to use `LucideIconName`
   - Update RPC contracts to use `lucideIconSchema` for proper type inference across RPC boundaries
   - Simplify `SocialProviderButton` to use `DynamicIcon` directly (removes 30+ lines of pascalCase conversion)
@@ -18,23 +18,23 @@
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/integration-backend@0.1.0
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/command-backend@0.1.0
-  - @checkmate-monitor/catalog-backend@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/incident-common@0.1.2
-  - @checkmate-monitor/integration-common@0.1.1
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/integration-backend@0.1.0
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/command-backend@0.1.0
+  - @checkstack/catalog-backend@0.1.0
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/incident-common@0.1.2
+  - @checkstack/integration-common@0.1.1
+  - @checkstack/signal-common@0.1.1
 
 ## 0.0.3
 
 ### Patch Changes
 
-- @checkmate-monitor/catalog-common@0.1.1
-- @checkmate-monitor/incident-common@0.1.1
-- @checkmate-monitor/catalog-backend@0.0.3
+- @checkstack/catalog-common@0.1.1
+- @checkstack/incident-common@0.1.1
+- @checkstack/catalog-backend@0.0.3
 
 ## 0.0.2
 
@@ -47,12 +47,12 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/incident-common@0.1.0
-  - @checkmate-monitor/integration-common@0.1.0
-  - @checkmate-monitor/signal-common@0.1.0
-  - @checkmate-monitor/catalog-backend@0.0.2
-  - @checkmate-monitor/command-backend@0.0.2
-  - @checkmate-monitor/integration-backend@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/incident-common@0.1.0
+  - @checkstack/integration-common@0.1.0
+  - @checkstack/signal-common@0.1.0
+  - @checkstack/catalog-backend@0.0.2
+  - @checkstack/command-backend@0.0.2
+  - @checkstack/integration-backend@0.0.2

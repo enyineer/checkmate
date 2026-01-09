@@ -1,4 +1,4 @@
-# @checkmate-monitor/maintenance-backend
+# @checkstack/maintenance-backend
 
 ## 0.1.2
 
@@ -8,22 +8,22 @@
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/integration-backend@0.1.0
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/command-backend@0.1.0
-  - @checkmate-monitor/catalog-common@0.1.2
-  - @checkmate-monitor/integration-common@0.1.1
-  - @checkmate-monitor/maintenance-common@0.1.2
-  - @checkmate-monitor/notification-common@0.1.1
-  - @checkmate-monitor/signal-common@0.1.1
+  - @checkstack/integration-backend@0.1.0
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/command-backend@0.1.0
+  - @checkstack/catalog-common@0.1.2
+  - @checkstack/integration-common@0.1.1
+  - @checkstack/maintenance-common@0.1.2
+  - @checkstack/notification-common@0.1.1
+  - @checkstack/signal-common@0.1.1
 
 ## 0.1.1
 
 ### Patch Changes
 
-- @checkmate-monitor/catalog-common@0.1.1
-- @checkmate-monitor/maintenance-common@0.1.1
+- @checkstack/catalog-common@0.1.1
+- @checkstack/maintenance-common@0.1.1
 
 ## 0.1.0
 
@@ -31,10 +31,10 @@
 
 - eff5b4e: Add standalone maintenance scheduling plugin
 
-  - New `@checkmate-monitor/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
-  - New `@checkmate-monitor/maintenance-backend` package with Drizzle schema, service, and oRPC router
-  - New `@checkmate-monitor/maintenance-frontend` package with admin page and system detail panel
-  - Shared `DateTimePicker` component added to `@checkmate-monitor/ui`
+  - New `@checkstack/maintenance-common` package with Zod schemas, permissions, oRPC contract, and extension slots
+  - New `@checkstack/maintenance-backend` package with Drizzle schema, service, and oRPC router
+  - New `@checkstack/maintenance-frontend` package with admin page and system detail panel
+  - Shared `DateTimePicker` component added to `@checkstack/ui`
   - Database migrations for maintenances, maintenance_systems, and maintenance_updates tables
 
 ### Patch Changes
@@ -47,12 +47,12 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/maintenance-common@0.1.0
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/catalog-common@0.1.0
-  - @checkmate-monitor/notification-common@0.1.0
-  - @checkmate-monitor/integration-common@0.1.0
-  - @checkmate-monitor/signal-common@0.1.0
-  - @checkmate-monitor/command-backend@0.0.2
-  - @checkmate-monitor/integration-backend@0.0.2
+  - @checkstack/maintenance-common@0.1.0
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/catalog-common@0.1.0
+  - @checkstack/notification-common@0.1.0
+  - @checkstack/integration-common@0.1.0
+  - @checkstack/signal-common@0.1.0
+  - @checkstack/command-backend@0.0.2
+  - @checkstack/integration-backend@0.0.2

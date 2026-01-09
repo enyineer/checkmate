@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/signal-frontend",
-  "version": "0.1.1",
+  "name": "@checkstack/signal-frontend",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -11,13 +11,13 @@
     "react": "^18.0.0"
   },
   "dependencies": {
-    "@checkmate-monitor/signal-common": "workspace:*"
+    "@checkstack/signal-common": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^18.0.0",
     "typescript": "^5.7.2",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

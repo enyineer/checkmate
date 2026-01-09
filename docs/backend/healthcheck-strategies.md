@@ -42,7 +42,7 @@ const myHealthCheckConfigSchema = z.object({
 
 ### Using Shared Assertion Factories
 
-The platform provides assertion factories in `@checkmate-monitor/backend-api` for common patterns:
+The platform provides assertion factories in `@checkstack/backend-api` for common patterns:
 
 ```typescript
 import {
@@ -52,7 +52,7 @@ import {
   booleanField,      // True/false checks
   enumField,         // Fixed set of values
   jsonPathField,     // JSON body validation
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 ```
 
 ### Creating a Discriminated Union
@@ -112,7 +112,7 @@ const myAssertionSchema = z.discriminatedUnion("field", [
 Use the `evaluateAssertions` utility for standard field-based assertions:
 
 ```typescript
-import { evaluateAssertions } from "@checkmate-monitor/backend-api";
+import { evaluateAssertions } from "@checkstack/backend-api";
 
 async execute(config: MyConfig): Promise<HealthCheckResult<MyMetadata>> {
   const response = await this.performCheck(config);
@@ -185,7 +185,7 @@ import {
   timeThresholdField,
   stringField,
   evaluateAssertions,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 
 // Assertion schema using discriminated union
 const httpAssertionSchema = z.discriminatedUnion("field", [
@@ -283,14 +283,14 @@ Health check strategies can automatically generate chart visualizations by annot
 
 ### Overview
 
-Use factory functions from `@checkmate-monitor/healthcheck-common` to create schema fields with chart annotations. These annotations flow through the health result registry and are used by the frontend to render appropriate visualizations.
+Use factory functions from `@checkstack/healthcheck-common` to create schema fields with chart annotations. These annotations flow through the health result registry and are used by the frontend to render appropriate visualizations.
 
 ```typescript
 import {
   healthResultNumber,
   healthResultString,
   healthResultBoolean,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 const myResultSchema = z.object({
   responseTimeMs: healthResultNumber({
@@ -346,7 +346,7 @@ import {
   healthResultNumber,
   healthResultString,
   healthResultBoolean,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 const myResultSchema = z.object({
   connected: healthResultBoolean({
@@ -404,12 +404,12 @@ import {
   HealthCheckStrategy,
   Versioned,
   z,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   healthResultBoolean,
   healthResultNumber,
   healthResultString,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 // Per-run result with chart annotations
 const redisResultSchema = z.object({

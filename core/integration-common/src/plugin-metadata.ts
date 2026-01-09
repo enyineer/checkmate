@@ -1,4 +1,4 @@
-import { definePluginMetadata } from "@checkmate-monitor/common";
+import { definePluginMetadata } from "@checkstack/common";
 
 /**
  * Plugin metadata for the integration plugin.

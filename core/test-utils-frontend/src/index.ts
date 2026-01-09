@@ -1,7 +1,7 @@
 /**
- * @checkmate-monitor/test-utils-frontend
+ * @checkstack/test-utils-frontend
  *
- * Centralized testing utilities for frontend packages in Checkmate.
+ * Centralized testing utilities for frontend packages in Checkstack.
  * Provides Happy DOM and Testing Library integration for Bun tests.
  *
  * ## Quick Setup (Unit Tests)
@@ -9,23 +9,23 @@
  * 1. Add as devDependency:
  *    ```json
  *    "devDependencies": {
- *      "@checkmate-monitor/test-utils-frontend": "workspace:*"
+ *      "@checkstack/test-utils-frontend": "workspace:*"
  *    }
  *    ```
  *
  * 2. Create bunfig.toml:
  *    ```toml
  *    [test]
- *    preload = ["@checkmate-monitor/test-utils-frontend/setup"]
+ *    preload = ["@checkstack/test-utils-frontend/setup"]
  *    ```
  *
  * 3. Write tests using @testing-library/react
  *
  * ## E2E Testing with Playwright
  *
- * Import from "@checkmate-monitor/test-utils-frontend/playwright":
+ * Import from "@checkstack/test-utils-frontend/playwright":
  *    ```typescript
- *    import { createPlaywrightConfig, test, expect } from "@checkmate-monitor/test-utils-frontend/playwright";
+ *    import { createPlaywrightConfig, test, expect } from "@checkstack/test-utils-frontend/playwright";
  *    ```
  */
 

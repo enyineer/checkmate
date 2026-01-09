@@ -7,8 +7,8 @@ import {
   type NotificationStrategy,
   type NotificationSendContext,
   type NotificationDeliveryResult,
-} from "@checkmate-monitor/backend-api";
-import { notificationStrategyExtensionPoint } from "@checkmate-monitor/notification-backend";
+} from "@checkstack/backend-api";
+import { notificationStrategyExtensionPoint } from "@checkstack/notification-backend";
 import { pluginMetadata } from "./plugin-metadata";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -47,7 +47,7 @@ const adminInstructions = `
 3. Copy the **Bot Token** (format: \`123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11\`)
 4. Send \`/setdomain\` to BotFather and set your domain (e.g., \`yourdomain.com\`)
 
-> **Note**: The domain must match where Checkmate is hosted for the Login Widget to work.
+> **Note**: The domain must match where Checkstack is hosted for the Login Widget to work.
 `.trim();
 
 const userInstructions = `

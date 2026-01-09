@@ -66,15 +66,15 @@ mkdir -p plugins/integration-myservice-backend/src
 **package.json**:
 ```json
 {
-  "name": "@checkmate-monitor/integration-myservice-backend",
+  "name": "@checkstack/integration-myservice-backend",
   "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/integration-backend": "workspace:*",
-    "@checkmate-monitor/integration-common": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/integration-backend": "workspace:*",
+    "@checkstack/integration-common": "workspace:*",
+    "@checkstack/common": "workspace:*",
     "zod": "^4.2.1"
   }
 }
@@ -87,7 +87,7 @@ Use Zod to define the provider's configuration. Use `configString({ "x-secret": 
 ```typescript
 // src/provider.ts
 import { z } from "zod";
-import { Versioned, configString, configNumber } from "@checkmate-monitor/backend-api";
+import { Versioned, configString, configNumber } from "@checkstack/backend-api";
 
 export const myServiceConfigSchemaV1 = z.object({
   // Required fields
@@ -121,7 +121,7 @@ import type {
   IntegrationDeliveryContext,
   IntegrationDeliveryResult,
   TestConnectionResult,
-} from "@checkmate-monitor/integration-backend";
+} from "@checkstack/integration-backend";
 
 export const myServiceProvider: IntegrationProvider<MyServiceConfig> = {
   id: "myservice",
@@ -232,9 +232,9 @@ export const myServiceProvider: IntegrationProvider<MyServiceConfig> = {
 
 ```typescript
 // src/index.ts
-import { createBackendPlugin, coreServices } from "@checkmate-monitor/backend-api";
-import { integrationProviderExtensionPoint } from "@checkmate-monitor/integration-backend";
-import { definePluginMetadata } from "@checkmate-monitor/common";
+import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
+import { integrationProviderExtensionPoint } from "@checkstack/integration-backend";
+import { definePluginMetadata } from "@checkstack/common";
 import { myServiceProvider } from "./provider";
 
 const pluginMetadata = definePluginMetadata({
@@ -338,7 +338,7 @@ export const slackProvider: IntegrationProvider<SlackConfig> = {
     schema: z.object({
       webhookUrl: configString({ "x-secret": true }).describe("Slack Incoming Webhook URL"),
       channel: configString({}).optional().describe("Override channel (optional)"),
-      username: configString({}).default("Checkmate").describe("Bot username"),
+      username: configString({}).default("Checkstack").describe("Bot username"),
       iconEmoji: configString({}).default(":robot_face:").describe("Bot icon emoji"),
     }),
   }),
@@ -417,7 +417,7 @@ Define a connection schema for storing API credentials:
 
 ```typescript
 import { z } from "zod";
-import { configString } from "@checkmate-monitor/backend-api";
+import { configString } from "@checkstack/backend-api";
 
 export const MyServiceConnectionConfigSchema = z.object({
   baseUrl: configString({}).url().describe("Service API URL"),
@@ -473,7 +473,7 @@ import type {
   IntegrationProvider,
   ConnectionOption,
   GetConnectionOptionsParams,
-} from "@checkmate-monitor/integration-backend";
+} from "@checkstack/integration-backend";
 
 export const myServiceProvider: IntegrationProvider<MyServiceConfig> = {
   id: "myservice",

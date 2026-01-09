@@ -3,16 +3,16 @@ import {
   coreServices,
   createExtensionPoint,
   createServiceRef,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   permissionList,
   pluginMetadata,
   integrationContract,
   integrationRoutes,
   permissions,
-} from "@checkmate-monitor/integration-common";
-import { resolveRoute } from "@checkmate-monitor/common";
-import type { PluginMetadata } from "@checkmate-monitor/common";
+} from "@checkstack/integration-common";
+import { resolveRoute } from "@checkstack/common";
+import type { PluginMetadata } from "@checkstack/common";
 import type {
   IntegrationEventDefinition,
   IntegrationProvider,
@@ -34,7 +34,7 @@ import {
 } from "./connection-store";
 import { subscribeToRegisteredEvents } from "./hook-subscriber";
 import { createIntegrationRouter } from "./router";
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
+import { registerSearchProvider } from "@checkstack/command-backend";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Service References

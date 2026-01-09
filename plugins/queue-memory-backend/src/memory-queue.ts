@@ -5,7 +5,7 @@ import {
   QueueStats,
   ConsumeOptions,
   RecurringJobDetails,
-} from "@checkmate-monitor/queue-api";
+} from "@checkstack/queue-api";
 import { InMemoryQueueConfig } from "./plugin";
 
 /**

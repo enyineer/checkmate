@@ -9,7 +9,7 @@ import { OpenAPIGenerator } from "@orpc/openapi";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { AnyContractRouter } from "@orpc/contract";
 import type { PluginManager } from "./plugin-manager";
-import type { AuthService } from "@checkmate-monitor/backend-api";
+import type { AuthService } from "@checkstack/backend-api";
 
 /**
  * Check if a user has a specific permission.
@@ -95,9 +95,9 @@ export async function generateOpenApiSpec({
   // Generate spec for all endpoints
   const spec = (await generator.generate(aggregatedContract, {
     info: {
-      title: "Checkmate API",
+      title: "Checkstack API",
       version: "1.0.0",
-      description: "API documentation for Checkmate platform endpoints.",
+      description: "API documentation for Checkstack platform endpoints.",
     },
     servers: [{ url: baseUrl }],
   })) as {

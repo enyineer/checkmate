@@ -1,14 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Activity } from "lucide-react";
-import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
-import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import type { UserMenuItemsContext } from "@checkstack/frontend-api";
+import { DropdownMenuItem } from "@checkstack/ui";
+import { qualifyPermissionId, resolveRoute } from "@checkstack/common";
 import {
   healthcheckRoutes,
   permissions,
   pluginMetadata,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 export const HealthCheckMenuItems = ({
   permissions: userPerms,

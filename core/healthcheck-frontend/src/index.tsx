@@ -4,7 +4,7 @@ import {
   rpcApiRef,
   type ApiRef,
   UserMenuItemsSlot,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import { healthCheckApiRef, type HealthCheckApiClient } from "./api";
 import { HealthCheckConfigPage } from "./pages/HealthCheckConfigPage";
 import { HealthCheckHistoryPage } from "./pages/HealthCheckHistoryPage";
@@ -13,19 +13,19 @@ import { HealthCheckMenuItems } from "./components/HealthCheckMenuItems";
 import { HealthCheckSystemOverview } from "./components/HealthCheckSystemOverview";
 import { SystemHealthCheckAssignment } from "./components/SystemHealthCheckAssignment";
 import { SystemHealthBadge } from "./components/SystemHealthBadge";
-import { permissions } from "@checkmate-monitor/healthcheck-common";
+import { permissions } from "@checkstack/healthcheck-common";
 import { autoChartExtension } from "./auto-charts";
 
 import {
   SystemDetailsSlot,
   CatalogSystemActionsSlot,
   SystemStateBadgesSlot,
-} from "@checkmate-monitor/catalog-common";
+} from "@checkstack/catalog-common";
 import {
   healthcheckRoutes,
   HealthCheckApi,
   pluginMetadata,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 // Export slot definitions for other plugins to use
 export {

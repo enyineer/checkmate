@@ -1,6 +1,6 @@
 import { describe, it, expect, mock } from "bun:test";
 import { createHealthCheckRouter } from "./router";
-import { createMockRpcContext } from "@checkmate-monitor/backend-api";
+import { createMockRpcContext } from "@checkstack/backend-api";
 import { call } from "@orpc/server";
 import { z } from "zod";
 

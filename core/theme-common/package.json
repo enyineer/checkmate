@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/theme-common",
-  "version": "0.0.3",
+  "name": "@checkstack/theme-common",
+  "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": {
@@ -9,14 +9,14 @@
     }
   },
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*",
+    "@checkstack/common": "workspace:*",
     "@orpc/contract": "^1.13.2",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@checkmate-monitor/tsconfig": "workspace:*",
+    "@checkstack/tsconfig": "workspace:*",
     "typescript": "^5.7.2",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

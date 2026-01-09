@@ -9,9 +9,9 @@ import {
   UserMenuItemsSlot,
   UserMenuItemsBottomSlot,
   UserMenuItemsContext,
-} from "@checkmate-monitor/frontend-api";
-import { AuthApi, authRoutes } from "@checkmate-monitor/auth-common";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/frontend-api";
+import { AuthApi, authRoutes } from "@checkstack/auth-common";
+import { resolveRoute } from "@checkstack/common";
 import {
   Button,
   Input,
@@ -35,7 +35,7 @@ import {
   InfoBannerContent,
   InfoBannerTitle,
   InfoBannerDescription,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { authApiRef } from "../api";
 import { useEnabledStrategies } from "../hooks/useEnabledStrategies";
 import { usePermissions } from "../hooks/usePermissions";

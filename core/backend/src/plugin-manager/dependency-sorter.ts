@@ -1,6 +1,6 @@
-import type { ServiceRef, Logger } from "@checkmate-monitor/backend-api";
-import type { PluginMetadata } from "@checkmate-monitor/common";
-import { coreServices } from "@checkmate-monitor/backend-api";
+import type { ServiceRef, Logger } from "@checkstack/backend-api";
+import type { PluginMetadata } from "@checkstack/common";
+import { coreServices } from "@checkstack/backend-api";
 
 /**
  * Topologically sorts plugins based on their dependencies.

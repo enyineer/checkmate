@@ -5,7 +5,7 @@ import { HealthCheckRegistry } from "./health-check";
 import {
   QueuePluginRegistry,
   QueueManager,
-} from "@checkmate-monitor/queue-api";
+} from "@checkstack/queue-api";
 
 /**
  * Creates a mocked oRPC context for testing.

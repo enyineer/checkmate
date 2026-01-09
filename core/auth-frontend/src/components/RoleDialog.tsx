@@ -16,7 +16,7 @@ import {
   Badge,
   Alert,
   AlertDescription,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { Check } from "lucide-react";
 import type { Role, Permission } from "../api";
 

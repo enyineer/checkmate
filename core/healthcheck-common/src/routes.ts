@@ -1,4 +1,4 @@
-import { createRoutes } from "@checkmate-monitor/common";
+import { createRoutes } from "@checkstack/common";
 
 /**
  * Route definitions for the healthcheck plugin.

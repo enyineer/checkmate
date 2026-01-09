@@ -8,7 +8,7 @@ Common patterns for managing plugin configuration. See [Versioned Configs](../ba
 
 ```typescript
 import { z } from "zod";
-import { configString, configNumber, configBoolean } from "@checkmate-monitor/backend-api";
+import { configString, configNumber, configBoolean } from "@checkstack/backend-api";
 
 const configSchema = z.object({
   // Simple fields using factory functions

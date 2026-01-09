@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, ArrowLeft, CheckCircle, AlertCircle, Key } from "lucide-react";
-import { passwordSchema } from "@checkmate-monitor/auth-common";
+import { passwordSchema } from "@checkstack/auth-common";
 import {
   Button,
   Input,
@@ -18,7 +18,7 @@ import {
   AlertTitle,
   AlertDescription,
   Checkbox,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { useAuthClient } from "../lib/auth-client";
 
 export const ChangePasswordPage = () => {

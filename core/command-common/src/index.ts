@@ -4,7 +4,7 @@ import {
   createClientDefinition,
   definePluginMetadata,
   type ProcedureMetadata,
-} from "@checkmate-monitor/common";
+} from "@checkstack/common";
 
 // =============================================================================
 // PLUGIN METADATA

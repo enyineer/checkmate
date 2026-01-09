@@ -5,7 +5,7 @@ import { pluginMetadata } from "./plugin-metadata";
 import {
   createClientDefinition,
   type ProcedureMetadata,
-} from "@checkmate-monitor/common";
+} from "@checkstack/common";
 import {
   WebhookSubscriptionSchema,
   CreateSubscriptionInputSchema,

@@ -4,15 +4,15 @@ import {
   useApi,
   rpcApiRef,
   wrapInSuspense,
-} from "@checkmate-monitor/frontend-api";
-import { resolveRoute } from "@checkmate-monitor/common";
+} from "@checkstack/frontend-api";
+import { resolveRoute } from "@checkstack/common";
 import { maintenanceApiRef } from "../api";
-import { maintenanceRoutes } from "@checkmate-monitor/maintenance-common";
+import { maintenanceRoutes } from "@checkstack/maintenance-common";
 import type {
   MaintenanceWithSystems,
   MaintenanceStatus,
-} from "@checkmate-monitor/maintenance-common";
-import { catalogRoutes, CatalogApi } from "@checkmate-monitor/catalog-common";
+} from "@checkstack/maintenance-common";
+import { catalogRoutes, CatalogApi } from "@checkstack/catalog-common";
 import {
   Card,
   CardHeader,
@@ -29,7 +29,7 @@ import {
   TableCell,
   PageLayout,
   BackLink,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { Calendar, Clock, History } from "lucide-react";
 import { format } from "date-fns";
 

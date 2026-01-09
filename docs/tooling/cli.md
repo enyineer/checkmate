@@ -2,20 +2,20 @@
 ---
 # Monorepo Tooling
 
-Checkmate uses a set of shared configurations and scripts to maintain consistency and reduce boilerplate across all packages and plugins.
+Checkstack uses a set of shared configurations and scripts to maintain consistency and reduce boilerplate across all packages and plugins.
 
 ## 1. Shared TypeScript Configurations
 
-Instead of defining full TypeScript configurations in every package, we use `@checkmate-monitor/tsconfig`, which exports specialized base configurations.
+Instead of defining full TypeScript configurations in every package, we use `@checkstack/tsconfig`, which exports specialized base configurations.
 
 ### Available Configurations
 
 | Config | Path | Usage |
 |--------|------|-------|
-| **Base** | `@checkmate-monitor/tsconfig/base.json` | Common settings for all packages |
-| **Backend** | `@checkmate-monitor/tsconfig/backend.json` | For backend plugins and core (includes Bun types) |
-| **Frontend** | `@checkmate-monitor/tsconfig/frontend.json` | For React-based frontend plugins (React, Vite) |
-| **Common** | `@checkmate-monitor/tsconfig/common.json` | For platform-agnostic common packages |
+| **Base** | `@checkstack/tsconfig/base.json` | Common settings for all packages |
+| **Backend** | `@checkstack/tsconfig/backend.json` | For backend plugins and core (includes Bun types) |
+| **Frontend** | `@checkstack/tsconfig/frontend.json` | For React-based frontend plugins (React, Vite) |
+| **Common** | `@checkstack/tsconfig/common.json` | For platform-agnostic common packages |
 
 ### Usage
 
@@ -23,14 +23,14 @@ In your package's `tsconfig.json`, simply extend the appropriate configuration:
 
 ```json
 {
-  "extends": "@checkmate-monitor/tsconfig/backend.json",
+  "extends": "@checkstack/tsconfig/backend.json",
   "include": ["src"]
 }
 ```
 
 ## 2. Shared Scripts and Synchronization
 
-To avoid redundant script definitions in `package.json`, we use the `@checkmate-monitor/scripts` package along with a synchronization tool.
+To avoid redundant script definitions in `package.json`, we use the `@checkstack/scripts` package along with a synchronization tool.
 
 ### Standard Scripts
 
@@ -52,7 +52,7 @@ bun run core/scripts/src/sync.ts
 ```
 
 This tool will:
-1. Add `@checkmate-monitor/scripts` to `devDependencies` if missing.
+1. Add `@checkstack/scripts` to `devDependencies` if missing.
 2. Standardize `typecheck` and `lint` scripts.
 3. Ensure the correct `tsconfig.extends` is used based on the package type.
 4. Auto-repair common configuration issues.
@@ -94,4 +94,4 @@ If the CLI doesn't work in your environment:
    ```
 4. Run `bun install` to link the new dependencies.
 
-This ensures your new package immediately follows all Checkmate architecture and code style rules.
+This ensures your new package immediately follows all Checkstack architecture and code style rules.

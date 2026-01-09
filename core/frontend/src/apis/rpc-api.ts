@@ -1,7 +1,7 @@
-import { RpcApi } from "@checkmate-monitor/frontend-api";
+import { RpcApi } from "@checkstack/frontend-api";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
-import type { ClientDefinition, InferClient } from "@checkmate-monitor/common";
+import type { ClientDefinition, InferClient } from "@checkstack/common";
 
 export class CoreRpcApi implements RpcApi {
   public client: unknown;

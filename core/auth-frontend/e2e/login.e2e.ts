@@ -1,7 +1,7 @@
 import {
   test,
   expect,
-} from "@checkmate-monitor/test-utils-frontend/playwright";
+} from "@checkstack/test-utils-frontend/playwright";
 
 /**
  * Sample E2E test for auth-frontend login page.

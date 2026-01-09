@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/queue-memory-backend",
-  "version": "1.0.1",
+  "name": "@checkstack/queue-memory-backend",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
@@ -9,15 +9,15 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate-monitor/backend-api": "workspace:*",
-    "@checkmate-monitor/queue-api": "workspace:*",
-    "@checkmate-monitor/queue-memory-common": "workspace:*",
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/queue-api": "workspace:*",
+    "@checkstack/queue-memory-common": "workspace:*",
     "zod": "^4.2.1",
-    "@checkmate-monitor/common": "workspace:*"
+    "@checkstack/common": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   }
 }

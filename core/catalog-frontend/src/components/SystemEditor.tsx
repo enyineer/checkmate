@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
   useToast,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 
 interface SystemEditorProps {
   open: boolean;

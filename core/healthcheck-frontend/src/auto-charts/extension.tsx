@@ -5,7 +5,7 @@
  * for all strategies that have schema metadata.
  */
 
-import { createSlotExtension } from "@checkmate-monitor/frontend-api";
+import { createSlotExtension } from "@checkstack/frontend-api";
 import {
   HealthCheckDiagramSlot,
   type HealthCheckDiagramSlotContext,

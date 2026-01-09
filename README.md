@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">🏁 Checkmate</h1>
+  <h1 align="center">🏁 Checkstack</h1>
   <p align="center">
     <strong>The Modern Status Page & Monitoring Platform</strong>
   </p>
@@ -8,7 +8,7 @@
   </p>
 </p>
 
-![Checkmate Logo](assets/logo/checkmate-logo.jpg)
+![Checkstack Logo](assets/logo/checkstack-logo.jpg)
 
 ---
 
@@ -23,7 +23,7 @@
 ---
 
 > [!WARNING]
-> Checkmate is currently in **alpha** and is not ready for production use.
+> Checkstack is currently in **alpha** and is not ready for production use.
 >
 > Breaking changes are to be expected regularly in this development phase. We're still happy if you try it out and give us feedback!
 
@@ -122,9 +122,9 @@
 
 ---
 
-## ✨ What is Checkmate?
+## ✨ What is Checkstack?
 
-**Checkmate** is a self-hosted, open-source status page and monitoring platform that helps you:
+**Checkstack** is a self-hosted, open-source status page and monitoring platform that helps you:
 
 - 📊 **Monitor** your services with automated health checks
 - 📢 **Communicate** incidents and maintenance to your users
@@ -220,7 +220,7 @@ Event-driven architecture means you can react to health changes, incidents, and 
 ### API & Automation
 > *Integrate programmatically with your infrastructure*
 
-Checkmate exposes a comprehensive REST API that enables external systems to interact with the platform programmatically via **API keys** (service accounts):
+Checkstack exposes a comprehensive REST API that enables external systems to interact with the platform programmatically via **API keys** (service accounts):
 
 | Use Case | Description |
 |----------|-------------|
@@ -232,7 +232,7 @@ Checkmate exposes a comprehensive REST API that enables external systems to inte
 
 **Example: Create an incident from an external alerting system**
 ```bash
-curl -X POST https://checkmate.local/api/incident/createIncident \
+curl -X POST https://checkstack.local/api/incident/createIncident \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ck_<appId>_<secret>" \
   -d '{"title": "High CPU Alert", "status": "investigating", "systemIds": ["..."]}'
@@ -256,7 +256,7 @@ API keys are managed via **Settings → External Applications** with full RBAC p
 ### Plugin Architecture
 > *Extend everything*
 
-Checkmate is built from the ground up as a **modular plugin system**:
+Checkstack is built from the ground up as a **modular plugin system**:
 
 - 🧩 **Backend Plugins** - Add new APIs, services, database schemas
 - 🎨 **Frontend Plugins** - Extend UI with new pages, components, themes
@@ -279,53 +279,53 @@ Checkmate is built from the ground up as a **modular plugin system**:
 
 ### Docker
 
-The easiest way to run Checkmate — works for both **production deployment** and **local testing**.
+The easiest way to run Checkstack — works for both **production deployment** and **local testing**.
 
 **👉 [Full Docker Getting Started Guide](./docs/getting-started/docker.md)**
 
-Checkmate requires four environment variables:
+Checkstack requires four environment variables:
 
 | Variable | Description | How to Generate |
 |----------|-------------|-----------------|
 | `DATABASE_URL` | PostgreSQL connection string | Your database provider |
 | `ENCRYPTION_MASTER_KEY` | 64 hex chars (32 bytes) | `openssl rand -hex 32` |
 | `BETTER_AUTH_SECRET` | Min 32 characters | `openssl rand -base64 32` |
-| `BASE_URL` | Public URL for Checkmate | Your domain (e.g., `https://status.example.com`) |
+| `BASE_URL` | Public URL for Checkstack | Your domain (e.g., `https://status.example.com`) |
 
 ```bash
 # Pull and run the latest version
-docker pull ghcr.io/enyineer/checkmate:latest
+docker pull ghcr.io/enyineer/checkstack:latest
 docker run -d \
-  -e DATABASE_URL=postgresql://user:pass@host:5432/checkmate \
+  -e DATABASE_URL=postgresql://user:pass@host:5432/checkstack \
   -e ENCRYPTION_MASTER_KEY=$(openssl rand -hex 32) \
   -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
   -e BASE_URL=http://localhost:3000 \
   -p 3000:3000 \
-  ghcr.io/enyineer/checkmate:latest
+  ghcr.io/enyineer/checkstack:latest
 ```
 
 > [!TIP]
 > After first start, your database is seeded with a default user.
 >
-> Username: admin@checkmate-monitor.com
+> Username: admin@checkstack.com
 > Password: admin
 >
 > You should change this password as soon as possible using the "change password" function in the user-menu.
 
 ### NPM Packages
 
-All `@checkmate-monitor/*` packages are published to npm for plugin developers.
+All `@checkstack/*` packages are published to npm for plugin developers.
 
 > ⚠️ **Bun Required**: These packages publish TypeScript source directly and require [Bun](https://bun.sh) runtime. They are **not compatible with Node.js**.
 
 ```bash
 # Example: Install packages for a custom plugin
-bun add @checkmate-monitor/backend-api @checkmate-monitor/common
+bun add @checkstack/backend-api @checkstack/common
 ```
 
 ## 🏃 Development Setup
 
-> For **contributors** and **plugin developers**. For just running Checkmate, use [Docker](#docker) instead.
+> For **contributors** and **plugin developers**. For just running Checkstack, use [Docker](#docker) instead.
 
 ### Prerequisites
 
@@ -336,8 +336,8 @@ bun add @checkmate-monitor/backend-api @checkmate-monitor/common
 
 ```bash
 # Clone the repository
-git clone https://github.com/enyineer/checkmate.git
-cd checkmate
+git clone https://github.com/enyineer/checkstack.git
+cd checkstack
 
 # Install dependencies
 bun install
@@ -354,7 +354,7 @@ This command will automatically:
 > [!TIP]
 > After first start, your database is seeded with a default user.
 >
-> Username: admin@checkmate-monitor.com
+> Username: admin@checkstack.com
 > Password: admin
 >
 > You should change this password as soon as possible using the "change password" function in the user-menu.
@@ -365,8 +365,8 @@ This command will automatically:
 |---------|-----|-------------|
 | **Frontend** | `http://localhost:5173` | - |
 | **Backend API** | `http://localhost:3000` | - |
-| **PgAdmin** | `http://localhost:5050` | `admin@checkmate-monitor.com` / `admin` |
-| **PostgreSQL** | `localhost:5432` | `checkmate` / `checkmate` |
+| **PgAdmin** | `http://localhost:5050` | `admin@checkstack.com` / `admin` |
+| **PostgreSQL** | `localhost:5432` | `checkstack` / `checkstack` |
 
 ```bash
 # Stop Docker containers

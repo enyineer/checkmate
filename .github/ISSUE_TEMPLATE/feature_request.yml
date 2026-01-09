@@ -1,5 +1,5 @@
 name: "🚀 Feature Request"
-description: Request a new feature or enhancement for Checkmate
+description: Request a new feature or enhancement for Checkstack
 title: "[Feature]: "
 labels: ["feature-request", "needs-review"]
 body:

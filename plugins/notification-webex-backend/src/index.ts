@@ -6,8 +6,8 @@ import {
   type NotificationStrategy,
   type NotificationSendContext,
   type NotificationDeliveryResult,
-} from "@checkmate-monitor/backend-api";
-import { notificationStrategyExtensionPoint } from "@checkmate-monitor/notification-backend";
+} from "@checkstack/backend-api";
+import { notificationStrategyExtensionPoint } from "@checkstack/notification-backend";
 import { pluginMetadata } from "./plugin-metadata";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -45,7 +45,7 @@ const adminInstructions = `
 1. Go to [developer.webex.com](https://developer.webex.com/) and sign in
 2. Navigate to **My Webex Apps** → **Create a New App** → **Create a Bot**
 3. Fill in the bot details:
-   - **Bot Name**: Your notification bot name (e.g., "Checkmate Alerts")
+   - **Bot Name**: Your notification bot name (e.g., "Checkstack Alerts")
    - **Bot Username**: A unique username
    - **Icon**: Upload an icon or use default
    - **Description**: Brief description of the bot

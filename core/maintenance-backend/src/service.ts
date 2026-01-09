@@ -10,7 +10,7 @@ import type {
   UpdateMaintenanceInput,
   AddMaintenanceUpdateInput,
   MaintenanceStatus,
-} from "@checkmate-monitor/maintenance-common";
+} from "@checkstack/maintenance-common";
 
 type Db = NodePgDatabase<typeof schema>;
 

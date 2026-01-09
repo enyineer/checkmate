@@ -9,8 +9,8 @@ import {
   Button,
   Input,
   Label,
-} from "@checkmate-monitor/ui";
-import { passwordSchema } from "@checkmate-monitor/auth-common";
+} from "@checkstack/ui";
+import { passwordSchema } from "@checkstack/auth-common";
 
 interface CreateUserDialogProps {
   open: boolean;

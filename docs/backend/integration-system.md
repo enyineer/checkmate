@@ -84,7 +84,7 @@ Each delivery attempt is logged with status (success/failed/retrying), response 
 
 ```typescript
 // In your plugin's index.ts
-import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
+import { integrationEventExtensionPoint } from "@checkstack/integration-backend";
 import { myPluginHooks } from "./hooks";
 import { z } from "zod";
 

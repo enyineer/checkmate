@@ -1,6 +1,6 @@
 {
-  "name": "@checkmate-monitor/dashboard-frontend",
-  "version": "0.1.0",
+  "name": "@checkstack/dashboard-frontend",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.tsx",
   "scripts": {
@@ -9,19 +9,19 @@
     "lint:code": "eslint . --max-warnings 0"
   },
   "dependencies": {
-    "@checkmate-monitor/frontend-api": "workspace:*",
-    "@checkmate-monitor/auth-frontend": "workspace:*",
-    "@checkmate-monitor/common": "workspace:*",
-    "@checkmate-monitor/command-frontend": "workspace:*",
-    "@checkmate-monitor/command-common": "workspace:*",
-    "@checkmate-monitor/notification-common": "workspace:*",
-    "@checkmate-monitor/catalog-common": "workspace:*",
-    "@checkmate-monitor/incident-common": "workspace:*",
-    "@checkmate-monitor/maintenance-common": "workspace:*",
-    "@checkmate-monitor/healthcheck-common": "workspace:*",
-    "@checkmate-monitor/signal-frontend": "workspace:*",
-    "@checkmate-monitor/ui": "workspace:*",
-    "@checkmate-monitor/catalog-frontend": "workspace:*",
+    "@checkstack/frontend-api": "workspace:*",
+    "@checkstack/auth-frontend": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/command-frontend": "workspace:*",
+    "@checkstack/command-common": "workspace:*",
+    "@checkstack/notification-common": "workspace:*",
+    "@checkstack/catalog-common": "workspace:*",
+    "@checkstack/incident-common": "workspace:*",
+    "@checkstack/maintenance-common": "workspace:*",
+    "@checkstack/healthcheck-common": "workspace:*",
+    "@checkstack/signal-frontend": "workspace:*",
+    "@checkstack/ui": "workspace:*",
+    "@checkstack/catalog-frontend": "workspace:*",
     "react": "^18.2.0",
     "react-router-dom": "^6.22.0",
     "lucide-react": "^0.344.0"
@@ -29,7 +29,7 @@
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/react": "^18.2.0",
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   }
 }

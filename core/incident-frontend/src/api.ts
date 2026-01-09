@@ -1,6 +1,6 @@
-import { createApiRef } from "@checkmate-monitor/frontend-api";
-import { IncidentApi } from "@checkmate-monitor/incident-common";
-import type { InferClient } from "@checkmate-monitor/common";
+import { createApiRef } from "@checkstack/frontend-api";
+import { IncidentApi } from "@checkstack/incident-common";
+import type { InferClient } from "@checkstack/common";
 
 // IncidentApiClient type inferred from the client definition
 export type IncidentApiClient = InferClient<typeof IncidentApi>;

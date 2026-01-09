@@ -1,6 +1,6 @@
 # Individual Contributor License Agreement (CLA)
 
-Thank you for your interest in contributing to Checkmate ("We" or "Us").
+Thank you for your interest in contributing to Checkstack ("We" or "Us").
 
 This Contributor License Agreement ("Agreement") creates a legal record of the terms under which you contribute code, documentation, or other material ("Contribution") to the project.
 
@@ -30,7 +30,7 @@ You provide Your Contribution on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITI
 
 ## Creating a Changeset
 
-When contributing code changes to Checkmate, you'll need to create a **changeset** to document your changes. Changesets help us manage versioning and generate changelogs automatically.
+When contributing code changes to Checkstack, you'll need to create a **changeset** to document your changes. Changesets help us manage versioning and generate changelogs automatically.
 
 ### When to Create a Changeset
 
@@ -63,10 +63,10 @@ You typically **don't need** a changeset for:
 ```bash
 $ bun changeset
 🦋  Which packages would you like to include?
-◉ @checkmate-monitor/auth-backend
+◉ @checkstack/auth-backend
 
 🦋  Which packages should have a patch bump?
-◉ @checkmate-monitor/auth-backend
+◉ @checkstack/auth-backend
 
 🦋  Please enter a summary for this change:
 Fixed session timeout handling in authentication middleware

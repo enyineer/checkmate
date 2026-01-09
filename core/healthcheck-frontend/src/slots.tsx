@@ -1,12 +1,12 @@
 import {
   createSlot,
   createSlotExtension,
-} from "@checkmate-monitor/frontend-api";
-import type { PluginMetadata } from "@checkmate-monitor/common";
+} from "@checkstack/frontend-api";
+import type { PluginMetadata } from "@checkstack/common";
 import type {
   HealthCheckRun,
   AggregatedBucket,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -98,13 +98,13 @@ function AggregatedFallback() {
  *
  * @example
  * ```tsx
- * // In @checkmate-monitor/healthcheck-http-common
+ * // In @checkstack/healthcheck-http-common
  * export const createHttpDiagramExtension = createDiagramExtensionFactory<
  *   HttpResult,
  *   HttpAggregatedResult
  * >(httpCheckMetadata);
  *
- * // In @checkmate-monitor/healthcheck-http-frontend
+ * // In @checkstack/healthcheck-http-frontend
  * createHttpDiagramExtension({
  *   id: "http-check.response-chart",
  *   rawComponent: HttpRunsChart,

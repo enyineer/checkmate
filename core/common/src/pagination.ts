@@ -7,7 +7,7 @@ import { z } from "zod";
  * @example
  * ```typescript
  * // In your contract:
- * import { PaginationInputSchema, paginatedOutput } from "@checkmate-monitor/common";
+ * import { PaginationInputSchema, paginatedOutput } from "@checkstack/common";
  *
  * const contract = {
  *   getItems: _base

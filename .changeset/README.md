@@ -1,6 +1,6 @@
 # Changesets
 
-This folder contains [Changesets](https://github.com/changesets/changesets) for the Checkmate monorepo.
+This folder contains [Changesets](https://github.com/changesets/changesets) for the Checkstack monorepo.
 
 ## What are Changesets?
 

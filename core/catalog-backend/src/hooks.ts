@@ -1,4 +1,4 @@
-import { createHook } from "@checkmate-monitor/backend-api";
+import { createHook } from "@checkstack/backend-api";
 
 /**
  * Catalog hooks for cross-plugin communication

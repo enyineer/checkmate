@@ -1,8 +1,8 @@
 {
-  "name": "@checkmate-monitor/scripts",
-  "version": "1.0.0",
+  "name": "@checkstack/scripts",
+  "version": "0.0.1",
   "bin": {
-    "checkmate-scripts": "./src/cli.ts"
+    "checkstack-scripts": "./src/cli.ts"
   },
   "scripts": {
     "sync": "bun run src/sync.ts",
@@ -13,7 +13,7 @@
     "handlebars": "^4.7.8"
   },
   "devDependencies": {
-    "@checkmate-monitor/tsconfig": "workspace:*",
+    "@checkstack/tsconfig": "workspace:*",
     "@types/inquirer": "^8.2.10",
     "@types/handlebars": "^4.1.0",
     "typescript": "^5.0.0"

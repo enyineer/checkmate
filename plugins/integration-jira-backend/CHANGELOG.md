@@ -1,4 +1,4 @@
-# @checkmate-monitor/integration-jira-backend
+# @checkstack/integration-jira-backend
 
 ## 0.0.3
 
@@ -17,11 +17,11 @@
 - Updated dependencies [b4eb432]
 - Updated dependencies [a65e002]
 - Updated dependencies [a65e002]
-  - @checkmate-monitor/integration-backend@0.1.0
-  - @checkmate-monitor/backend-api@1.1.0
-  - @checkmate-monitor/common@0.2.0
-  - @checkmate-monitor/integration-common@0.1.1
-  - @checkmate-monitor/integration-jira-common@0.0.3
+  - @checkstack/integration-backend@0.1.0
+  - @checkstack/backend-api@1.1.0
+  - @checkstack/common@0.2.0
+  - @checkstack/integration-common@0.1.1
+  - @checkstack/integration-jira-common@0.0.3
 
 ## 0.0.2
 
@@ -34,8 +34,8 @@
 - Updated dependencies [b55fae6]
 - Updated dependencies [b354ab3]
 - Updated dependencies [81f3f85]
-  - @checkmate-monitor/common@0.1.0
-  - @checkmate-monitor/backend-api@1.0.0
-  - @checkmate-monitor/integration-common@0.1.0
-  - @checkmate-monitor/integration-backend@0.0.2
-  - @checkmate-monitor/integration-jira-common@0.0.2
+  - @checkstack/common@0.1.0
+  - @checkstack/backend-api@1.0.0
+  - @checkstack/integration-common@0.1.0
+  - @checkstack/integration-backend@0.0.2
+  - @checkstack/integration-jira-common@0.0.2

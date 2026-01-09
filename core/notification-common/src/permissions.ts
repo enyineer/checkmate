@@ -1,4 +1,4 @@
-import { createPermission } from "@checkmate-monitor/common";
+import { createPermission } from "@checkstack/common";
 
 export const permissions = {
   /** Configure retention policy and send broadcasts */

@@ -7,21 +7,21 @@ import {
   coreHooks,
   authenticationStrategyServiceRef,
   type AuthStrategy,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   pluginMetadata,
   permissionList,
   authContract,
   authRoutes,
   permissions,
-} from "@checkmate-monitor/auth-common";
-import { NotificationApi } from "@checkmate-monitor/notification-common";
+} from "@checkstack/auth-common";
+import { NotificationApi } from "@checkstack/notification-common";
 import * as schema from "./schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { User } from "better-auth/types";
 import { hashPassword, verifyPassword } from "better-auth/crypto";
-import { createExtensionPoint } from "@checkmate-monitor/backend-api";
+import { createExtensionPoint } from "@checkstack/backend-api";
 import { enrichUser } from "./utils/user";
 import { createAuthRouter } from "./router";
 import { validateStrategySchema } from "./utils/validate-schema";
@@ -34,8 +34,8 @@ import {
   PLATFORM_REGISTRATION_CONFIG_VERSION,
   PLATFORM_REGISTRATION_CONFIG_ID,
 } from "./platform-registration-config";
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { registerSearchProvider } from "@checkstack/command-backend";
+import { resolveRoute } from "@checkstack/common";
 
 export interface BetterAuthExtensionPoint {
   addStrategy(strategy: AuthStrategy<unknown>): void;
@@ -704,17 +704,23 @@ export default createBackendPlugin({
         // All auth management endpoints are now via oRPC (see ./router.ts)
 
         // 5. Idempotent Admin User Seeding (roles already seeded above)
-        const adminUser = await database
+        const adminId = "initial-admin-id";
+        const existingAdmin = await database
           .select()
           .from(schema.user)
-          .where(eq(schema.user.email, "admin@checkmate-monitor.com"));
+          .where(
+            or(
+              eq(schema.user.email, "admin@checkstack.dev"),
+              eq(schema.user.id, adminId)
+            )
+          );
 
-        if (adminUser.length === 0) {
-          const adminId = "initial-admin-id";
+        // Skip seeding if user exists by either email or ID
+        if (existingAdmin.length === 0) {
           await database.insert(schema.user).values({
             id: adminId,
             name: "Admin",
-            email: "admin@checkmate-monitor.com",
+            email: "admin@checkstack.dev",
             emailVerified: true,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -723,7 +729,7 @@ export default createBackendPlugin({
           const hashedAdminPassword = await hashPassword("admin");
           await database.insert(schema.account).values({
             id: "initial-admin-account-id",
-            accountId: "admin@checkmate-monitor.com",
+            accountId: "admin@checkstack.dev",
             providerId: "credential",
             userId: adminId,
             password: hashedAdminPassword,
@@ -737,7 +743,7 @@ export default createBackendPlugin({
           });
 
           logger.info(
-            "   -> Created initial admin user (admin@checkmate-monitor.com : admin)"
+            "   -> Created initial admin user (admin@checkstack.dev : admin)"
           );
         }
 

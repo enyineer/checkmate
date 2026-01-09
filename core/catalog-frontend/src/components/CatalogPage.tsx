@@ -1,5 +1,5 @@
 import React from "react";
-import { useApi, loggerApiRef } from "@checkmate-monitor/frontend-api";
+import { useApi, loggerApiRef } from "@checkstack/frontend-api";
 import { catalogApiRef } from "../api";
 
 export const CatalogPage = () => {

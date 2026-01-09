@@ -10,21 +10,21 @@ import {
   healthCheckContract,
   healthcheckRoutes,
   permissions,
-} from "@checkmate-monitor/healthcheck-common";
+} from "@checkstack/healthcheck-common";
 import {
   createBackendPlugin,
   coreServices,
   type EmitHookFn,
-} from "@checkmate-monitor/backend-api";
-import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
+} from "@checkstack/backend-api";
+import { integrationEventExtensionPoint } from "@checkstack/integration-backend";
 import { z } from "zod";
 import { createHealthCheckRouter } from "./router";
 import { HealthCheckService } from "./service";
-import { catalogHooks } from "@checkmate-monitor/catalog-backend";
-import { CatalogApi } from "@checkmate-monitor/catalog-common";
+import { catalogHooks } from "@checkstack/catalog-backend";
+import { CatalogApi } from "@checkstack/catalog-common";
 import { healthCheckHooks } from "./hooks";
-import { registerSearchProvider } from "@checkmate-monitor/command-backend";
-import { resolveRoute } from "@checkmate-monitor/common";
+import { registerSearchProvider } from "@checkstack/command-backend";
+import { resolveRoute } from "@checkstack/common";
 
 // =============================================================================
 // Integration Event Payload Schemas

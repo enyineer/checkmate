@@ -75,7 +75,7 @@ interface HealthCheckResult {
 
 ```typescript
 import { z } from "zod";
-import { HealthCheckStrategy } from "@checkmate-monitor/backend-api";
+import { HealthCheckStrategy } from "@checkstack/backend-api";
 
 const httpCheckConfig = z.object({
   url: z.string().url().describe("URL to check"),
@@ -133,7 +133,7 @@ export const httpHealthCheckStrategy: HealthCheckStrategy<HttpCheckConfig> = {
 #### Registering a Health Check Strategy
 
 ```typescript
-import { healthCheckExtensionPoint } from "@checkmate-monitor/backend-api";
+import { healthCheckExtensionPoint } from "@checkstack/backend-api";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,
@@ -271,7 +271,7 @@ interface Notification {
 const slackConfig = z.object({
   webhookUrl: z.string().url(),
   channel: z.string().optional(),
-  username: z.string().default("Checkmate"),
+  username: z.string().default("Checkstack"),
   iconEmoji: z.string().default(":robot_face:"),
 });
 
@@ -425,8 +425,8 @@ export const oauthStrategy: AuthenticationStrategy<OAuthConfig> = {
 >
 > **Example:**
 > ```typescript
-> import { coreServices } from "@checkmate-monitor/backend-api";
-> import { AuthApi } from "@checkmate-monitor/auth-common";
+> import { coreServices } from "@checkstack/backend-api";
+> import { AuthApi } from "@checkstack/auth-common";
 >
 > env.registerInit({
 >   deps: {
@@ -461,10 +461,10 @@ export const oauthStrategy: AuthenticationStrategy<OAuthConfig> = {
 ### Slots
 
 Slots allow plugins to inject UI components into predefined locations. Plugins can either:
-1. Register extensions to **core slots** defined in `@checkmate-monitor/frontend-api`
+1. Register extensions to **core slots** defined in `@checkstack/frontend-api`
 2. Register extensions to **plugin-defined slots** exported from plugin common packages
 
-#### Core Slots (from `@checkmate-monitor/frontend-api`)
+#### Core Slots (from `@checkstack/frontend-api`)
 
 Core slots are defined using the `createSlot` utility and exported as `SlotDefinition` objects:
 
@@ -475,17 +475,17 @@ import {
   NavbarLeftSlot,
   UserMenuItemsSlot,
   UserMenuItemsBottomSlot,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 ```
 
 #### Plugin-Defined Slots
 
-Plugins can expose their own slots using the `createSlot` utility from `@checkmate-monitor/frontend-api`. This allows other plugins to extend specific areas of your plugin's UI.
+Plugins can expose their own slots using the `createSlot` utility from `@checkstack/frontend-api`. This allows other plugins to extend specific areas of your plugin's UI.
 
-**Example: Catalog plugin exposing slots (from `@checkmate-monitor/catalog-common`)**
+**Example: Catalog plugin exposing slots (from `@checkstack/catalog-common`)**
 
 ```typescript
-import { createSlot } from "@checkmate-monitor/frontend-api";
+import { createSlot } from "@checkstack/frontend-api";
 import type { System } from "./types";
 
 // Slot for extending the System Details page
@@ -506,7 +506,7 @@ Extensions use the `slot:` property with a `SlotDefinition` object:
 
 **To a core slot:**
 ```typescript
-import { UserMenuItemsSlot } from "@checkmate-monitor/frontend-api";
+import { UserMenuItemsSlot } from "@checkstack/frontend-api";
 
 export const myPlugin = createFrontendPlugin({
   name: "myplugin-frontend",
@@ -522,7 +522,7 @@ export const myPlugin = createFrontendPlugin({
 
 **To a plugin-defined slot:**
 ```typescript
-import { SystemDetailsSlot } from "@checkmate-monitor/catalog-common";
+import { SystemDetailsSlot } from "@checkstack/catalog-common";
 
 export const myPlugin = createFrontendPlugin({
   name: "myplugin-frontend",
@@ -542,8 +542,8 @@ For strict typing that infers component props directly from the slot definition,
 
 **Using `createSlotExtension` for registration:**
 ```typescript
-import { createFrontendPlugin, createSlotExtension } from "@checkmate-monitor/frontend-api";
-import { SystemDetailsSlot, CatalogSystemActionsSlot } from "@checkmate-monitor/catalog-common";
+import { createFrontendPlugin, createSlotExtension } from "@checkstack/frontend-api";
+import { SystemDetailsSlot, CatalogSystemActionsSlot } from "@checkstack/catalog-common";
 
 export default createFrontendPlugin({
   name: "myplugin-frontend",
@@ -563,8 +563,8 @@ export default createFrontendPlugin({
 
 **Using `SlotContext` for component typing:**
 ```typescript
-import type { SlotContext } from "@checkmate-monitor/frontend-api";
-import { CatalogSystemActionsSlot } from "@checkmate-monitor/catalog-common";
+import type { SlotContext } from "@checkstack/frontend-api";
+import { CatalogSystemActionsSlot } from "@checkstack/catalog-common";
 
 // Props inferred directly from the slot definition - no manual interface needed!
 type Props = SlotContext<typeof CatalogSystemActionsSlot>;
@@ -592,10 +592,10 @@ interface UserMenuItemsContext {
 
 **Permission-gated menu item:**
 ```typescript
-import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
-import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
-import { permissions, pluginMetadata, myRoutes } from "@checkmate-monitor/myplugin-common";
-import { DropdownMenuItem } from "@checkmate-monitor/ui";
+import type { UserMenuItemsContext } from "@checkstack/frontend-api";
+import { qualifyPermissionId, resolveRoute } from "@checkstack/common";
+import { permissions, pluginMetadata, myRoutes } from "@checkstack/myplugin-common";
+import { DropdownMenuItem } from "@checkstack/ui";
 import { Link } from "react-router-dom";
 import { Settings } from "lucide-react";
 
@@ -619,7 +619,7 @@ export const MyPluginMenuItems = ({
 
 **Registration with `createSlotExtension`:**
 ```typescript
-import { createSlotExtension, UserMenuItemsSlot } from "@checkmate-monitor/frontend-api";
+import { createSlotExtension, UserMenuItemsSlot } from "@checkstack/frontend-api";
 
 export default createFrontendPlugin({
   metadata: pluginMetadata,
@@ -663,7 +663,7 @@ export interface CustomStrategy<Config = unknown> {
 }
 
 // 2. Create the extension point
-import { createExtensionPoint } from "@checkmate-monitor/backend-api";
+import { createExtensionPoint } from "@checkstack/backend-api";
 
 export const customExtensionPoint = createExtensionPoint<CustomStrategy[]>(
   "custom-extension"
@@ -710,8 +710,8 @@ To expose a slot from your plugin that other plugins can extend:
 
 ```typescript
 // 1. Define the slot in your plugin's -common package
-// e.g., in @checkmate-monitor/myplugin-common/src/slots.ts
-import { createSlot } from "@checkmate-monitor/frontend-api";
+// e.g., in @checkstack/myplugin-common/src/slots.ts
+import { createSlot } from "@checkstack/frontend-api";
 
 // Define with typed context that extensions will receive
 export const MyPluginCustomSlot = createSlot<{ itemId: string }>(
@@ -722,8 +722,8 @@ export const MyPluginCustomSlot = createSlot<{ itemId: string }>(
 export * from "./slots";
 
 // 3. Use the slot in your plugin's frontend component
-import { ExtensionSlot } from "@checkmate-monitor/frontend-api";
-import { MyPluginCustomSlot } from "@checkmate-monitor/myplugin-common";
+import { ExtensionSlot } from "@checkstack/frontend-api";
+import { MyPluginCustomSlot } from "@checkstack/myplugin-common";
 
 export const MyComponent = ({ itemId }: { itemId: string }) => {
   return (
@@ -741,8 +741,8 @@ export const MyComponent = ({ itemId }: { itemId: string }) => {
 };
 
 // 4. Other plugins can now register extensions
-// e.g., in @checkmate-monitor/other-plugin-frontend
-import { MyPluginCustomSlot } from "@checkmate-monitor/myplugin-common";
+// e.g., in @checkstack/other-plugin-frontend
+import { MyPluginCustomSlot } from "@checkstack/myplugin-common";
 
 export default createFrontendPlugin({
   name: "other-plugin-frontend",

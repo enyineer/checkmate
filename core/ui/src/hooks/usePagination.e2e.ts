@@ -1,5 +1,5 @@
 import { describe, it, expect, mock } from "bun:test";
-import { renderHook, act } from "@checkmate-monitor/test-utils-frontend";
+import { renderHook, act } from "@checkstack/test-utils-frontend";
 import { usePagination } from "./usePagination";
 
 describe("usePagination", () => {

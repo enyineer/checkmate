@@ -1,14 +1,14 @@
 {
-  "name": "@checkmate-monitor/queue-memory-common",
-  "version": "0.1.2",
+  "name": "@checkstack/queue-memory-common",
+  "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "@checkmate-monitor/common": "workspace:*"
+    "@checkstack/common": "workspace:*"
   },
   "devDependencies": {
-    "@checkmate-monitor/tsconfig": "workspace:*",
-    "@checkmate-monitor/scripts": "workspace:*"
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

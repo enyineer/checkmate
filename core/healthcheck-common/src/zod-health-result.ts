@@ -55,7 +55,7 @@ export const healthResultRegistry = z.registry<HealthResultMeta>();
  *
  * @example
  * ```typescript
- * import { healthResultString } from "@checkmate-monitor/healthcheck-common";
+ * import { healthResultString } from "@checkstack/healthcheck-common";
  *
  * const resultSchema = z.object({
  *   role: healthResultString({ "x-chart-type": "text", "x-chart-label": "Role" }),

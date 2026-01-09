@@ -49,7 +49,7 @@ Hooks are defined in your plugin's `hooks.ts`:
 
 ```typescript
 // src/hooks.ts
-import { createHook } from "@checkmate-monitor/backend-api";
+import { createHook } from "@checkstack/backend-api";
 
 export const incidentHooks = {
   incidentCreated: createHook<{
@@ -101,8 +101,8 @@ In your plugin's `index.ts`, register the hook with the integration extension po
 
 ```typescript
 // src/index.ts
-import { createBackendPlugin, coreServices } from "@checkmate-monitor/backend-api";
-import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
+import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
+import { integrationEventExtensionPoint } from "@checkstack/integration-backend";
 import { z } from "zod";
 import { incidentHooks } from "./hooks";
 import { pluginMetadata } from "./plugin-metadata";
@@ -251,8 +251,8 @@ Add the integration packages to your plugin's `package.json`:
 ```json
 {
   "dependencies": {
-    "@checkmate-monitor/integration-backend": "workspace:*",
-    "@checkmate-monitor/integration-common": "workspace:*"
+    "@checkstack/integration-backend": "workspace:*",
+    "@checkstack/integration-common": "workspace:*"
   }
 }
 ```
@@ -275,9 +275,9 @@ Categories group events in the UI. Use consistent naming:
 // incident-backend/src/index.ts
 import * as schema from "./schema";
 import { z } from "zod";
-import { createBackendPlugin, coreServices } from "@checkmate-monitor/backend-api";
-import { integrationEventExtensionPoint } from "@checkmate-monitor/integration-backend";
-import { pluginMetadata, incidentContract } from "@checkmate-monitor/incident-common";
+import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
+import { integrationEventExtensionPoint } from "@checkstack/integration-backend";
+import { pluginMetadata, incidentContract } from "@checkstack/incident-common";
 import { incidentHooks } from "./hooks";
 import { createRouter } from "./router";
 

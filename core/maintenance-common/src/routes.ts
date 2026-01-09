@@ -1,4 +1,4 @@
-import { createRoutes } from "@checkmate-monitor/common";
+import { createRoutes } from "@checkstack/common";
 
 /**
  * Route definitions for the maintenance plugin.
@@ -6,7 +6,7 @@ import { createRoutes } from "@checkmate-monitor/common";
  *
  * @example Frontend plugin usage
  * ```tsx
- * import { maintenanceRoutes } from "@checkmate-monitor/maintenance-common";
+ * import { maintenanceRoutes } from "@checkstack/maintenance-common";
  *
  * createFrontendPlugin({
  *   routes: [
@@ -17,8 +17,8 @@ import { createRoutes } from "@checkmate-monitor/common";
  *
  * @example Link generation
  * ```tsx
- * import { maintenanceRoutes } from "@checkmate-monitor/maintenance-common";
- * import { usePluginRoute } from "@checkmate-monitor/frontend-api";
+ * import { maintenanceRoutes } from "@checkstack/maintenance-common";
+ * import { usePluginRoute } from "@checkstack/frontend-api";
  *
  * const getRoute = usePluginRoute();
  * <Link to={getRoute(maintenanceRoutes.routes.config)}>Maintenances</Link>

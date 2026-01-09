@@ -22,11 +22,11 @@ import {
   DialogTitle,
   DialogFooter,
   useToast,
-} from "@checkmate-monitor/ui";
+} from "@checkstack/ui";
 import { Plus, Trash2, RotateCcw, Copy } from "lucide-react";
-import { useApi } from "@checkmate-monitor/frontend-api";
-import { rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { AuthApi } from "@checkmate-monitor/auth-common";
+import { useApi } from "@checkstack/frontend-api";
+import { rpcApiRef } from "@checkstack/frontend-api";
+import { AuthApi } from "@checkstack/auth-common";
 import type { Role } from "../api";
 
 export interface Application {
@@ -189,7 +189,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
           <Alert variant="info" className="mb-4">
             <AlertDescription>
               External applications use API keys to authenticate with the
-              Checkmate API. The secret is only shown once when created—store it
+              Checkstack API. The secret is only shown once when created—store it
               securely.
             </AlertDescription>
           </Alert>

@@ -1,5 +1,5 @@
-import { createApiRef } from "@checkmate-monitor/frontend-api";
-import type { LucideIconName } from "@checkmate-monitor/common";
+import { createApiRef } from "@checkstack/frontend-api";
+import type { LucideIconName } from "@checkstack/common";
 
 // Types for better-auth entities
 export interface AuthUser {

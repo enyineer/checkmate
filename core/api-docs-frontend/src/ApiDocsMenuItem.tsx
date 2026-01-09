@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { FileCode2 } from "lucide-react";
-import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
-import { resolveRoute, qualifyPermissionId } from "@checkmate-monitor/common";
+import { DropdownMenuItem } from "@checkstack/ui";
+import type { UserMenuItemsContext } from "@checkstack/frontend-api";
+import { resolveRoute, qualifyPermissionId } from "@checkstack/common";
 import {
   pluginMetadata,
   permissions,
-} from "@checkmate-monitor/api-docs-common";
+} from "@checkstack/api-docs-common";
 import { apiDocsRoutes } from "./index";
 import React from "react";
 

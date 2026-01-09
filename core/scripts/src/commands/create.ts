@@ -70,7 +70,7 @@ const PLUGIN_TYPES: PluginTypeChoice[] = [
 ];
 
 export async function createCommand() {
-  console.log("\n🚀 Checkmate Package Generator\n");
+  console.log("\n🚀 Checkstack Package Generator\n");
 
   // Register Handlebars helpers
   registerHelpers();

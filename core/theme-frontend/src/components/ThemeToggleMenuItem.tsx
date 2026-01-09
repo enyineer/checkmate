@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { Toggle, useTheme, useToast } from "@checkmate-monitor/ui";
-import { useApi, rpcApiRef } from "@checkmate-monitor/frontend-api";
-import { ThemeApi } from "@checkmate-monitor/theme-common";
+import { Toggle, useTheme, useToast } from "@checkstack/ui";
+import { useApi, rpcApiRef } from "@checkstack/frontend-api";
+import { ThemeApi } from "@checkstack/theme-common";
 
 /**
  * Theme toggle menu item for logged-in users (displayed in UserMenu).

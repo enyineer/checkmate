@@ -5,13 +5,13 @@ import {
   createApiRef,
   createFrontendPlugin,
   NavbarCenterSlot,
-} from "@checkmate-monitor/frontend-api";
+} from "@checkstack/frontend-api";
 import {
   CommandApi,
   pluginMetadata,
   type SearchResult,
-} from "@checkmate-monitor/command-common";
-import type { InferClient } from "@checkmate-monitor/common";
+} from "@checkstack/command-common";
+import type { InferClient } from "@checkstack/common";
 import { NavbarSearch } from "./components/NavbarSearch";
 
 // =============================================================================
@@ -340,7 +340,7 @@ export function useCommands(): {
  *
  * @example
  * ```tsx
- * import { GlobalShortcuts } from "@checkmate-monitor/command-frontend";
+ * import { GlobalShortcuts } from "@checkstack/command-frontend";
  *
  * function App() {
  *   return (

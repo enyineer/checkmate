@@ -6,18 +6,18 @@ import {
   type NotificationStrategy,
   type RegisteredNotificationStrategy,
   type NotificationStrategyRegistry,
-} from "@checkmate-monitor/backend-api";
+} from "@checkstack/backend-api";
 import {
   permissionList,
   pluginMetadata,
   notificationContract,
-} from "@checkmate-monitor/notification-common";
-import type { PluginMetadata } from "@checkmate-monitor/common";
+} from "@checkstack/notification-common";
+import type { PluginMetadata } from "@checkstack/common";
 import { eq } from "drizzle-orm";
 
 import * as schema from "./schema";
 import { createNotificationRouter } from "./router";
-import { authHooks } from "@checkmate-monitor/auth-backend";
+import { authHooks } from "@checkstack/auth-backend";
 import { createOAuthCallbackHandler } from "./oauth-callback-handler";
 import { createStrategyService } from "./strategy-service";
 
