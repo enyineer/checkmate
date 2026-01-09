@@ -67,7 +67,49 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     return { startDate: start, endDate: end };
   });
 
-  // usePagination now uses refs internally - no memoization needed
+  // Chart data - fetches all runs for the time range (unpaginated)
+  const [chartData, setChartData] = useState<
+    Array<{
+      id: string;
+      status: HealthCheckStatus;
+      timestamp: Date;
+      latencyMs?: number;
+    }>
+  >([]);
+  const [chartLoading, setChartLoading] = useState(true);
+
+  const fetchChartData = useCallback(() => {
+    setChartLoading(true);
+    api
+      .getHistory({
+        systemId,
+        configurationId: item.configurationId,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+        // Fetch up to 1000 data points for charts - enough for most time ranges
+        limit: 1000,
+        offset: 0,
+      })
+      .then((response) => {
+        setChartData(response.runs);
+      })
+      .finally(() => {
+        setChartLoading(false);
+      });
+  }, [
+    api,
+    systemId,
+    item.configurationId,
+    dateRange.startDate,
+    dateRange.endDate,
+  ]);
+
+  // Fetch chart data when date range changes
+  useEffect(() => {
+    fetchChartData();
+  }, [fetchChartData]);
+
+  // Paginated history for the table
   const {
     items: runs,
     loading,
@@ -100,6 +142,14 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     defaultLimit: 10,
   });
 
+  // Listen for realtime health check updates to refresh charts and history
+  useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
+    if (changedId === systemId) {
+      fetchChartData();
+      pagination.refetch();
+    }
+  });
+
   const thresholdDescription = item.stateThresholds
     ? item.stateThresholds.mode === "consecutive"
       ? `Consecutive mode: Healthy after ${item.stateThresholds.healthy.minSuccessCount} success(es), Degraded after ${item.stateThresholds.degraded.minFailureCount} failure(s), Unhealthy after ${item.stateThresholds.unhealthy.minFailureCount} failure(s)`
@@ -129,15 +179,17 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
-      {/* Charts Section - always render if we have run data */}
-      {runs.length > 0 && (
+      {/* Charts Section - uses full date range data, not paginated */}
+      {chartLoading ? (
+        <LoadingSpinner />
+      ) : chartData.length > 0 ? (
         <div className="space-y-4">
           {/* Status Timeline */}
           <div>
             <h4 className="text-sm font-medium mb-2">Status Timeline</h4>
             <HealthCheckStatusTimeline
               type="raw"
-              data={runs.map((r) => ({
+              data={chartData.map((r) => ({
                 timestamp: new Date(r.timestamp),
                 status: r.status,
               }))}
@@ -146,12 +198,12 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
           </div>
 
           {/* Latency Chart - only if any run has latency data */}
-          {runs.some((r) => r.latencyMs !== undefined) && (
+          {chartData.some((r) => r.latencyMs !== undefined) && (
             <div>
               <h4 className="text-sm font-medium mb-2">Response Latency</h4>
               <HealthCheckLatencyChart
                 type="raw"
-                data={runs
+                data={chartData
                   .filter((r) => r.latencyMs !== undefined)
                   .map((r) => ({
                     timestamp: new Date(r.timestamp),
@@ -170,11 +222,11 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
             configurationId={item.configurationId}
             strategyId={item.strategyId}
             dateRange={dateRange}
-            limit={pagination.limit}
-            offset={pagination.page * pagination.limit - pagination.limit}
+            limit={1000}
+            offset={0}
           />
         </div>
-      )}
+      ) : undefined}
 
       {loading ? (
         <LoadingSpinner />
