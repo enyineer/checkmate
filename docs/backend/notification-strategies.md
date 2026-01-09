@@ -297,7 +297,7 @@ const html = wrapInEmailLayout({
 ## Strategy Interface
 
 ```typescript
-interface NotificationStrategy<TConfig = unknown, TUserConfig = undefined> {
+interface NotificationStrategy<TConfig = unknown, TUserConfig = undefined, TLayoutConfig = undefined> {
   /** Strategy ID (namespace-qualified at runtime) */
   id: string;
 
@@ -307,8 +307,8 @@ interface NotificationStrategy<TConfig = unknown, TUserConfig = undefined> {
   /** Description */
   description?: string;
 
-  /** Lucide icon name */
-  icon?: string;
+  /** Lucide icon name in PascalCase */
+  icon?: LucideIconName;
 
   /** Admin configuration schema */
   config: Versioned<TConfig>;
@@ -316,22 +316,19 @@ interface NotificationStrategy<TConfig = unknown, TUserConfig = undefined> {
   /** Per-user configuration schema (optional) */
   userConfig?: Versioned<TUserConfig>;
 
+  /** Admin layout configuration schema (optional, for rich strategies like email) */
+  layoutConfig?: Versioned<TLayoutConfig>;
+
   /** How contact info is resolved */
   contactResolution: NotificationContactResolution;
 
   /** Send a notification */
   send(
-    context: NotificationSendContext<TConfig, TUserConfig>
+    context: NotificationSendContext<TConfig, TUserConfig, TLayoutConfig>
   ): Promise<NotificationDeliveryResult>;
 
-  /** Optional: OAuth linking URL */
-  getOAuthLinkUrl?(userId: string, returnUrl: string): Promise<string | undefined>;
-
-  /** Optional: Handle OAuth callback */
-  handleOAuthCallback?(
-    userId: string,
-    params: Record<string, string>
-  ): Promise<{ success: boolean; error?: string }>;
+  /** Declarative OAuth configuration (see "OAuth Integration" section) */
+  oauth?: StrategyOAuthConfig<TConfig>;
 
   /** Markdown instructions for admins (displayed in config UI) */
   adminInstructions?: string;
@@ -339,6 +336,177 @@ interface NotificationStrategy<TConfig = unknown, TUserConfig = undefined> {
   /** Markdown instructions for users (displayed when linking) */
   userInstructions?: string;
 }
+```
+
+## OAuth Integration
+
+Strategies that require OAuth linking (Slack, Discord, Microsoft Teams, etc.) can use the declarative `oauth` property. When provided, the notification-backend automatically registers all required HTTP endpoints and handles the complete OAuth flow.
+
+### Automatic Endpoints
+
+The platform registers these endpoints when a strategy has an `oauth` property:
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/notification/oauth/{strategyId}/auth` | GET | Initiate OAuth flow (redirect to provider) |
+| `/api/notification/oauth/{strategyId}/callback` | GET | Handle OAuth callback from provider |
+| `/api/notification/oauth/{strategyId}/refresh` | POST | Refresh expired tokens |
+| `/api/notification/oauth/{strategyId}/unlink` | DELETE | Unlink user's account |
+
+### StrategyOAuthConfig Interface
+
+```typescript
+interface StrategyOAuthConfig<TConfig = unknown> {
+  /**
+   * OAuth client ID.
+   * Receives the strategy config so credentials can be extracted from admin settings.
+   */
+  clientId: (config: TConfig) => string;
+
+  /**
+   * OAuth client secret.
+   * Receives the strategy config so credentials can be extracted from admin settings.
+   */
+  clientSecret: (config: TConfig) => string;
+
+  /** Scopes to request from the OAuth provider */
+  scopes: string[];
+
+  /**
+   * Authorization URL (where users are redirected to consent).
+   * Receives config for tenant-specific URLs.
+   */
+  authorizationUrl: (config: TConfig) => string;
+
+  /**
+   * Token exchange URL.
+   * Receives config for tenant-specific URLs.
+   */
+  tokenUrl: (config: TConfig) => string;
+
+  /**
+   * Extract the user's external ID from the token response.
+   * This ID identifies the user on the external platform.
+   */
+  extractExternalId: (tokenResponse: Record<string, unknown>) => string;
+
+  // Optional extractors (with sensible defaults)
+  extractAccessToken?: (response: Record<string, unknown>) => string;
+  extractRefreshToken?: (response: Record<string, unknown>) => string | undefined;
+  extractExpiresIn?: (response: Record<string, unknown>) => number | undefined;
+
+  // Optional customization
+  encodeState?: (userId: string, returnUrl: string) => string;
+  decodeState?: (state: string) => { userId: string; returnUrl: string };
+  buildAuthUrl?: (params: { clientId: string; redirectUri: string; scopes: string[]; state: string }) => string;
+  refreshToken?: (refreshToken: string) => Promise<{ accessToken: string; refreshToken?: string; expiresIn?: number }>;
+}
+```
+
+### Example: Microsoft Teams Strategy
+
+```typescript
+import { z } from "zod";
+import {
+  NotificationStrategy,
+  configString,
+  Versioned,
+  type StrategyOAuthConfig,
+} from "@checkmate-monitor/backend-api";
+
+const teamsConfigSchema = z.object({
+  tenantId: configString({}).describe("Azure AD Tenant ID"),
+  clientId: configString({}).describe("Azure AD Application (Client) ID"),
+  clientSecret: configString({ "x-secret": true }).describe("Azure AD Client Secret"),
+});
+
+type TeamsConfig = z.infer<typeof teamsConfigSchema>;
+
+const teamsStrategy: NotificationStrategy<TeamsConfig> = {
+  id: "teams",
+  displayName: "Microsoft Teams",
+  description: "Send notifications via Microsoft Teams personal chat",
+  icon: "MessageSquareMore",
+
+  config: new Versioned({ version: 1, schema: teamsConfigSchema }),
+  contactResolution: { type: "oauth-link" },
+
+  // Declarative OAuth configuration
+  oauth: {
+    // Credentials extracted from admin-configured strategy config
+    clientId: (config) => config.clientId ?? "",
+    clientSecret: (config) => config.clientSecret ?? "",
+    scopes: ["Chat.ReadWrite", "User.Read", "offline_access"],
+
+    // Tenant-specific URLs
+    authorizationUrl: (config) => {
+      const tenantId = config.tenantId ?? "common";
+      return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`;
+    },
+    tokenUrl: (config) => {
+      const tenantId = config.tenantId ?? "common";
+      return `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+    },
+
+    // Extract user's Microsoft object ID from the ID token
+    extractExternalId: (response) => {
+      const idToken = response.id_token as string | undefined;
+      if (idToken) {
+        const parts = idToken.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+          if (payload.oid) return payload.oid;
+        }
+      }
+      return (response.sub as string) ?? "";
+    },
+  } satisfies StrategyOAuthConfig<TeamsConfig>,
+
+  async send(context) {
+    // Access token is automatically provided via context for oauth-link strategies
+    const { accessToken, externalId } = context as unknown as {
+      accessToken?: string;
+      externalId?: string;
+    };
+
+    // Use Microsoft Graph API to send notification...
+    return { success: true };
+  },
+};
+```
+
+### Key Benefits
+
+1. **No manual endpoint registration**: The platform handles `/auth`, `/callback`, `/refresh`, and `/unlink` endpoints automatically.
+
+2. **Config-aware functions**: OAuth properties receive the strategy config, so credentials can be stored in admin settings rather than module-scoped variables.
+
+3. **Tenant-specific URLs**: Functions like `authorizationUrl` and `tokenUrl` can dynamically construct URLs based on configuration (e.g., Azure AD tenant ID).
+
+4. **Token management**: The platform stores tokens securely, handles refresh automatically, and provides them to `send()` via context.
+
+5. **Type safety**: Using `satisfies StrategyOAuthConfig<TConfig>` ensures type-safe access to your config schema within OAuth functions.
+
+### OAuth Flow Sequence
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Platform as Notification Backend
+    participant Provider as OAuth Provider
+
+    User->>Frontend: Click "Connect"
+    Frontend->>Platform: GET /oauth/{strategyId}/auth
+    Note over Platform: Build auth URL using strategy.oauth
+    Platform->>Provider: Redirect to authorizationUrl
+    Provider->>User: Show consent screen
+    User->>Provider: Grant permissions
+    Provider->>Platform: GET /oauth/{strategyId}/callback?code=...&state=...
+    Note over Platform: Exchange code for tokens
+    Platform->>Platform: Store tokens + externalId
+    Platform->>Frontend: Redirect with success
+    Frontend->>User: Show "Connected"
 ```
 
 ## Strategy Instructions
