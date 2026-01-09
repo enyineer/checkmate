@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   ApiRef,
   permissionApiRef,
@@ -18,7 +19,7 @@ import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { ChangePasswordPage } from "./components/ChangePasswordPage";
 import { authApiRef, AuthApi, AuthSession } from "./api";
-import { getAuthClientLazy } from "./lib/auth-client";
+import { getAuthClientLazy, useAuthClient } from "./lib/auth-client";
 
 import { usePermissions } from "./hooks/usePermissions";
 
@@ -242,8 +243,28 @@ export const authPlugin = createFrontendPlugin({
       slot: UserMenuItemsSlot,
       component: () => {
         const navigate = useNavigate();
+        const authClient = useAuthClient();
+        const [hasCredential, setHasCredential] = useState<
+          boolean | undefined
+        >();
+
+        useEffect(() => {
+          authClient.listAccounts().then((result) => {
+            if (result.data) {
+              const hasCredentialAccount = result.data.some(
+                (account) => account.providerId === "credential"
+              );
+              setHasCredential(hasCredentialAccount);
+            } else {
+              setHasCredential(undefined);
+            }
+          });
+        }, [authClient]);
+
         // Only show for credential-authenticated users
         // The changePassword API requires current password, so only credential users can use it
+        if (!hasCredential) return;
+
         return (
           <DropdownMenuItem
             onClick={() =>
