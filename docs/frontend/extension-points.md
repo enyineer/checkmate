@@ -581,22 +581,55 @@ export const MySystemAction: React.FC<Props> = ({ systemId, systemName }) => {
 
 #### Example: User Menu Extension
 
+User menu slots (`UserMenuItemsSlot`, `UserMenuItemsBottomSlot`) receive a `UserMenuItemsContext` with pre-fetched user data for synchronous rendering:
+
 ```typescript
+interface UserMenuItemsContext {
+  permissions: string[];      // Pre-fetched user permissions
+  hasCredentialAccount: boolean;  // Whether user has credential auth
+}
+```
+
+**Permission-gated menu item:**
+```typescript
+import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
+import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import { permissions, pluginMetadata, myRoutes } from "@checkmate-monitor/myplugin-common";
 import { DropdownMenuItem } from "@checkmate-monitor/ui";
 import { Link } from "react-router-dom";
+import { Settings } from "lucide-react";
 
-export const MyUserMenuItems = () => {
+export const MyPluginMenuItems = ({
+  permissions: userPerms,
+}: UserMenuItemsContext) => {
+  const qualifiedId = qualifyPermissionId(pluginMetadata, permissions.myPermission);
+  const canAccess = userPerms.includes("*") || userPerms.includes(qualifiedId);
+
+  if (!canAccess) return null;
+
   return (
-    <>
-      <DropdownMenuItem asChild>
-        <Link to="/my-settings">My Settings</Link>
+    <Link to={resolveRoute(myRoutes.routes.settings)}>
+      <DropdownMenuItem icon={<Settings className="h-4 w-4" />}>
+        My Settings
       </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link to="/my-profile">My Profile</Link>
-      </DropdownMenuItem>
-    </>
+    </Link>
   );
 };
+```
+
+**Registration with `createSlotExtension`:**
+```typescript
+import { createSlotExtension, UserMenuItemsSlot } from "@checkmate-monitor/frontend-api";
+
+export default createFrontendPlugin({
+  metadata: pluginMetadata,
+  extensions: [
+    createSlotExtension(UserMenuItemsSlot, {
+      id: "myplugin.user-menu.items",
+      component: MyPluginMenuItems,
+    }),
+  ],
+});
 ```
 
 #### Example: Dashboard Widget

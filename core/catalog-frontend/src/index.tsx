@@ -2,9 +2,10 @@ import {
   rpcApiRef,
   ApiRef,
   UserMenuItemsSlot,
+  createSlotExtension,
+  createFrontendPlugin,
 } from "@checkmate-monitor/frontend-api";
 import { catalogApiRef, type CatalogApiClient } from "./api";
-import { createFrontendPlugin } from "@checkmate-monitor/frontend-api";
 import {
   catalogRoutes,
   CatalogApi,
@@ -45,11 +46,10 @@ export const catalogPlugin = createFrontendPlugin({
     },
   ],
   extensions: [
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "catalog.user-menu.items",
-      slot: UserMenuItemsSlot,
       component: CatalogUserMenuItems,
-    },
+    }),
   ],
 });
 

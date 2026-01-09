@@ -40,9 +40,19 @@ export function createSlot<TContext = undefined>(
 export const DashboardSlot = createSlot("dashboard");
 export const NavbarSlot = createSlot("core.layout.navbar");
 export const NavbarMainSlot = createSlot("core.layout.navbar.main");
-export const UserMenuItemsSlot = createSlot(
+
+/**
+ * Context for user menu item slots.
+ * Provides the user's permissions array and authentication info for synchronous checks.
+ */
+export interface UserMenuItemsContext {
+  permissions: string[];
+  hasCredentialAccount: boolean;
+}
+
+export const UserMenuItemsSlot = createSlot<UserMenuItemsContext>(
   "core.layout.navbar.user-menu.items"
 );
-export const UserMenuItemsBottomSlot = createSlot(
+export const UserMenuItemsBottomSlot = createSlot<UserMenuItemsContext>(
   "core.layout.navbar.user-menu.items.bottom"
 );

@@ -2,9 +2,10 @@ import {
   rpcApiRef,
   ApiRef,
   UserMenuItemsSlot,
+  createSlotExtension,
+  createFrontendPlugin,
 } from "@checkmate-monitor/frontend-api";
 import { queueApiRef, type QueueApiClient } from "./api";
-import { createFrontendPlugin } from "@checkmate-monitor/frontend-api";
 import { QueueConfigPage } from "./pages/QueueConfigPage";
 import { QueueUserMenuItems } from "./components/UserMenuItems";
 import {
@@ -33,11 +34,10 @@ export const queuePlugin = createFrontendPlugin({
     },
   ],
   extensions: [
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "queue.user-menu.items",
-      slot: UserMenuItemsSlot,
       component: QueueUserMenuItems,
-    },
+    }),
   ],
 });
 

@@ -1,25 +1,28 @@
 import { useNavigate } from "react-router-dom";
 import { FileCode2 } from "lucide-react";
 import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { useApi, permissionApiRef } from "@checkmate-monitor/frontend-api";
+import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
 import { resolveRoute, qualifyPermissionId } from "@checkmate-monitor/common";
 import {
   pluginMetadata,
   permissions,
 } from "@checkmate-monitor/api-docs-common";
 import { apiDocsRoutes } from "./index";
+import React from "react";
 
 const REQUIRED_PERMISSION = qualifyPermissionId(
   pluginMetadata,
   permissions.apiDocsView
 );
 
-export function ApiDocsMenuItem() {
+export function ApiDocsMenuItem({
+  permissions: userPerms,
+}: UserMenuItemsContext) {
   const navigate = useNavigate();
-  const permissionApi = useApi(permissionApiRef);
-  const canView = permissionApi.usePermission(REQUIRED_PERMISSION);
+  const canView =
+    userPerms.includes("*") || userPerms.includes(REQUIRED_PERMISSION);
 
-  if (canView.loading || !canView.allowed) return;
+  if (!canView) return <React.Fragment />;
 
   return (
     <DropdownMenuItem

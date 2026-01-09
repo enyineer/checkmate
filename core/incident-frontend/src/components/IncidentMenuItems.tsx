@@ -1,19 +1,25 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
-import { useApi, permissionApiRef } from "@checkmate-monitor/frontend-api";
+import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
 import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { resolveRoute } from "@checkmate-monitor/common";
-import { incidentRoutes } from "@checkmate-monitor/incident-common";
+import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import {
+  incidentRoutes,
+  permissions,
+  pluginMetadata,
+} from "@checkmate-monitor/incident-common";
 
-export const IncidentMenuItems = () => {
-  const permissionApi = useApi(permissionApiRef);
-  const { allowed: canManage, loading } = permissionApi.useResourcePermission(
-    "incident",
-    "manage"
+export const IncidentMenuItems = ({
+  permissions: userPerms,
+}: UserMenuItemsContext) => {
+  const qualifiedId = qualifyPermissionId(
+    pluginMetadata,
+    permissions.incidentManage
   );
+  const canManage = userPerms.includes("*") || userPerms.includes(qualifiedId);
 
-  if (loading || !canManage) {
+  if (!canManage) {
     return <React.Fragment />;
   }
 

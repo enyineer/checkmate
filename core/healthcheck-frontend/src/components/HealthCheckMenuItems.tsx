@@ -1,19 +1,25 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Activity } from "lucide-react";
-import { useApi, permissionApiRef } from "@checkmate-monitor/frontend-api";
+import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
 import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { resolveRoute } from "@checkmate-monitor/common";
-import { healthcheckRoutes } from "@checkmate-monitor/healthcheck-common";
+import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import {
+  healthcheckRoutes,
+  permissions,
+  pluginMetadata,
+} from "@checkmate-monitor/healthcheck-common";
 
-export const HealthCheckMenuItems = () => {
-  const permissionApi = useApi(permissionApiRef);
-  const { allowed: canRead, loading } = permissionApi.useResourcePermission(
-    "healthcheck",
-    "read"
+export const HealthCheckMenuItems = ({
+  permissions: userPerms,
+}: UserMenuItemsContext) => {
+  const qualifiedId = qualifyPermissionId(
+    pluginMetadata,
+    permissions.healthCheckRead
   );
+  const canRead = userPerms.includes("*") || userPerms.includes(qualifiedId);
 
-  if (loading || !canRead) {
+  if (!canRead) {
     return <React.Fragment />;
   }
 

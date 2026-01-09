@@ -1,5 +1,6 @@
 import {
   createFrontendPlugin,
+  createSlotExtension,
   UserMenuItemsSlot,
 } from "@checkmate-monitor/frontend-api";
 import { createRoutes } from "@checkmate-monitor/common";
@@ -24,11 +25,10 @@ export const apiDocsPlugin = createFrontendPlugin({
     },
   ],
   extensions: [
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "api-docs.user-menu.link",
-      slot: UserMenuItemsSlot,
       component: ApiDocsMenuItem,
-    },
+    }),
   ],
 });
 

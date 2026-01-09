@@ -55,11 +55,10 @@ export default createFrontendPlugin({
     },
   ],
   extensions: [
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "maintenance.user-menu.items",
-      slot: UserMenuItemsSlot,
       component: MaintenanceMenuItems,
-    },
+    }),
     createSlotExtension(SystemStateBadgesSlot, {
       id: "maintenance.system-maintenance-badge",
       component: SystemMaintenanceBadge,

@@ -1,5 +1,6 @@
 import {
   createFrontendPlugin,
+  createSlotExtension,
   UserMenuItemsSlot,
 } from "@checkmate-monitor/frontend-api";
 import {
@@ -37,11 +38,10 @@ export const integrationPlugin = createFrontendPlugin({
     },
   ],
   extensions: [
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "integration.user-menu.link",
-      slot: UserMenuItemsSlot,
       component: IntegrationMenuItem,
-    },
+    }),
   ],
 });
 

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import React from "react";
 import {
   ApiRef,
   permissionApiRef,
   PermissionApi,
   createFrontendPlugin,
+  createSlotExtension,
   NavbarSlot,
   UserMenuItemsSlot,
   UserMenuItemsBottomSlot,
@@ -19,15 +20,18 @@ import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { ChangePasswordPage } from "./components/ChangePasswordPage";
 import { authApiRef, AuthApi, AuthSession } from "./api";
-import { getAuthClientLazy, useAuthClient } from "./lib/auth-client";
+import { getAuthClientLazy } from "./lib/auth-client";
 
 import { usePermissions } from "./hooks/usePermissions";
 
-import { PermissionAction } from "@checkmate-monitor/common";
+import {
+  PermissionAction,
+  qualifyPermissionId,
+} from "@checkmate-monitor/common";
 import { useNavigate } from "react-router-dom";
 import { Settings2, Key } from "lucide-react";
 import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { useApi } from "@checkmate-monitor/frontend-api";
+import { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
 import { AuthSettingsPage } from "./components/AuthSettingsPage";
 import {
   permissions as authPermissions,
@@ -215,18 +219,18 @@ export const authPlugin = createFrontendPlugin({
       slot: NavbarSlot,
       component: LoginNavbarAction,
     },
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "auth.user-menu.settings",
-      slot: UserMenuItemsSlot,
-      component: () => {
-        // Use a wrapper component to use hooks
+      component: ({ permissions: userPerms }: UserMenuItemsContext) => {
         const navigate = useNavigate();
-        const permissionApi = useApi(permissionApiRef);
-        const canManage = permissionApi.usePermission(
-          authPermissions.strategiesManage.id
+        const qualifiedId = qualifyPermissionId(
+          pluginMetadata,
+          authPermissions.strategiesManage
         );
+        const canManage =
+          userPerms.includes("*") || userPerms.includes(qualifiedId);
 
-        if (!canManage.allowed) return;
+        if (!canManage) return <React.Fragment />;
 
         return (
           <DropdownMenuItem
@@ -237,33 +241,15 @@ export const authPlugin = createFrontendPlugin({
           </DropdownMenuItem>
         );
       },
-    },
-    {
+    }),
+    createSlotExtension(UserMenuItemsSlot, {
       id: "auth.user-menu.change-password",
-      slot: UserMenuItemsSlot,
-      component: () => {
+      component: ({ hasCredentialAccount }: UserMenuItemsContext) => {
         const navigate = useNavigate();
-        const authClient = useAuthClient();
-        const [hasCredential, setHasCredential] = useState<
-          boolean | undefined
-        >();
-
-        useEffect(() => {
-          authClient.listAccounts().then((result) => {
-            if (result.data) {
-              const hasCredentialAccount = result.data.some(
-                (account) => account.providerId === "credential"
-              );
-              setHasCredential(hasCredentialAccount);
-            } else {
-              setHasCredential(undefined);
-            }
-          });
-        }, [authClient]);
 
         // Only show for credential-authenticated users
         // The changePassword API requires current password, so only credential users can use it
-        if (!hasCredential) return;
+        if (!hasCredentialAccount) return <React.Fragment />;
 
         return (
           <DropdownMenuItem
@@ -276,11 +262,10 @@ export const authPlugin = createFrontendPlugin({
           </DropdownMenuItem>
         );
       },
-    },
-    {
+    }),
+    createSlotExtension(UserMenuItemsBottomSlot, {
       id: "auth.user-menu.logout",
-      slot: UserMenuItemsBottomSlot,
       component: LogoutMenuItem,
-    },
+    }),
   ],
 });

@@ -1,19 +1,25 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ListOrdered } from "lucide-react";
-import { useApi, permissionApiRef } from "@checkmate-monitor/frontend-api";
+import type { UserMenuItemsContext } from "@checkmate-monitor/frontend-api";
 import { DropdownMenuItem } from "@checkmate-monitor/ui";
-import { resolveRoute } from "@checkmate-monitor/common";
-import { queueRoutes } from "@checkmate-monitor/queue-common";
+import { qualifyPermissionId, resolveRoute } from "@checkmate-monitor/common";
+import {
+  queueRoutes,
+  permissions,
+  pluginMetadata,
+} from "@checkmate-monitor/queue-common";
 
-export const QueueUserMenuItems = () => {
-  const permissionApi = useApi(permissionApiRef);
-  const { allowed: canRead, loading } = permissionApi.useResourcePermission(
-    "queue",
-    "read"
+export const QueueUserMenuItems = ({
+  permissions: userPerms,
+}: UserMenuItemsContext) => {
+  const qualifiedId = qualifyPermissionId(
+    pluginMetadata,
+    permissions.queueRead
   );
+  const canRead = userPerms.includes("*") || userPerms.includes(qualifiedId);
 
-  if (loading || !canRead) {
+  if (!canRead) {
     return <React.Fragment />;
   }
 

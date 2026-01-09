@@ -8,6 +8,7 @@ import {
   rpcApiRef,
   UserMenuItemsSlot,
   UserMenuItemsBottomSlot,
+  UserMenuItemsContext,
 } from "@checkmate-monitor/frontend-api";
 import { AuthApi, authRoutes } from "@checkmate-monitor/auth-common";
 import { resolveRoute } from "@checkmate-monitor/common";
@@ -37,6 +38,8 @@ import {
 } from "@checkmate-monitor/ui";
 import { authApiRef } from "../api";
 import { useEnabledStrategies } from "../hooks/useEnabledStrategies";
+import { usePermissions } from "../hooks/usePermissions";
+import { useAuthClient } from "../lib/auth-client";
 import { SocialProviderButton } from "./SocialProviderButton";
 import { useEffect } from "react";
 
@@ -254,7 +257,7 @@ export const LoginPage = () => {
   );
 };
 
-export const LogoutMenuItem = () => {
+export const LogoutMenuItem = (_props: UserMenuItemsContext) => {
   const authApi = useApi(authApiRef);
 
   return (
@@ -270,8 +273,29 @@ export const LogoutMenuItem = () => {
 export const LoginNavbarAction = () => {
   const authApi = useApi(authApiRef);
   const { data: session, isPending } = authApi.useSession();
+  const { permissions, loading: permissionsLoading } = usePermissions();
+  const authClient = useAuthClient();
+  const [hasCredentialAccount, setHasCredentialAccount] =
+    useState<boolean>(false);
+  const [credentialLoading, setCredentialLoading] = useState(true);
 
-  if (isPending) {
+  useEffect(() => {
+    if (!session?.user) {
+      setCredentialLoading(false);
+      return;
+    }
+    authClient.listAccounts().then((result) => {
+      if (result.data) {
+        const hasCredential = result.data.some(
+          (account) => account.providerId === "credential"
+        );
+        setHasCredentialAccount(hasCredential);
+      }
+      setCredentialLoading(false);
+    });
+  }, [session?.user, authClient]);
+
+  if (isPending || permissionsLoading || credentialLoading) {
     return <div className="w-20 h-9 bg-muted animate-pulse rounded-full" />;
   }
 
@@ -281,12 +305,16 @@ export const LoginNavbarAction = () => {
       UserMenuItemsBottomSlot.id
     );
     const hasBottomItems = bottomExtensions.length > 0;
+    const menuContext: UserMenuItemsContext = {
+      permissions,
+      hasCredentialAccount,
+    };
 
     return (
       <UserMenu user={session.user}>
-        <ExtensionSlot slot={UserMenuItemsSlot} />
+        <ExtensionSlot slot={UserMenuItemsSlot} context={menuContext} />
         {hasBottomItems && <DropdownMenuSeparator />}
-        <ExtensionSlot slot={UserMenuItemsBottomSlot} />
+        <ExtensionSlot slot={UserMenuItemsBottomSlot} context={menuContext} />
       </UserMenu>
     );
   }

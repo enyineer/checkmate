@@ -1,5 +1,6 @@
 import {
   createFrontendPlugin,
+  createSlotExtension,
   NavbarSlot,
   UserMenuItemsSlot,
 } from "@checkmate-monitor/frontend-api";
@@ -30,10 +31,9 @@ export const notificationPlugin = createFrontendPlugin({
       slot: NavbarSlot,
       component: NotificationBell,
     },
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "notification.user.setting",
-      slot: UserMenuItemsSlot,
       component: NotificationUserMenuItems,
-    },
+    }),
   ],
 });

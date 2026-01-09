@@ -53,11 +53,10 @@ export default createFrontendPlugin({
     },
   ],
   extensions: [
-    {
+    createSlotExtension(UserMenuItemsSlot, {
       id: "incident.user-menu.items",
-      slot: UserMenuItemsSlot,
       component: IncidentMenuItems,
-    },
+    }),
     createSlotExtension(SystemStateBadgesSlot, {
       id: "incident.system-incident-badge",
       component: SystemIncidentBadge,
