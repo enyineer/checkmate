@@ -60,7 +60,7 @@ export const Tabs: React.FC<TabsProps> = ({
   return (
     <div className={`relative ${className}`}>
       <div
-        className="flex gap-1 p-1 bg-muted/30 rounded-lg"
+        className="flex flex-col md:flex-row gap-1 p-1 bg-muted/30 rounded-lg"
         role="tablist"
         aria-label="Tabs"
       >
@@ -79,7 +79,7 @@ export const Tabs: React.FC<TabsProps> = ({
               onClick={() => onTabChange(item.id)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               className={`
-                relative px-4 py-2.5 flex items-center gap-2 rounded-md
+                relative px-4 py-2.5 flex items-center justify-center md:justify-start gap-2 rounded-md
                 text-sm font-medium transition-all duration-200
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0
                 ${

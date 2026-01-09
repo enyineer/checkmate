@@ -1,0 +1,219 @@
+import React, { useState } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Button,
+  Badge,
+  ConfirmationModal,
+  useToast,
+} from "@checkmate-monitor/ui";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { useApi } from "@checkmate-monitor/frontend-api";
+import { rpcApiRef } from "@checkmate-monitor/frontend-api";
+import { AuthApi } from "@checkmate-monitor/auth-common";
+import type { Role, Permission } from "../api";
+import { RoleDialog } from "./RoleDialog";
+
+export interface RolesTabProps {
+  roles: Role[];
+  permissions: Permission[];
+  userRoleIds: string[];
+  canReadRoles: boolean;
+  canCreateRoles: boolean;
+  canUpdateRoles: boolean;
+  canDeleteRoles: boolean;
+  onDataChange: () => Promise<void>;
+}
+
+export const RolesTab: React.FC<RolesTabProps> = ({
+  roles,
+  permissions,
+  userRoleIds,
+  canReadRoles,
+  canCreateRoles,
+  canUpdateRoles,
+  canDeleteRoles,
+  onDataChange,
+}) => {
+  const rpcApi = useApi(rpcApiRef);
+  const authClient = rpcApi.forPlugin(AuthApi);
+  const toast = useToast();
+
+  const [roleToDelete, setRoleToDelete] = useState<string>();
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | undefined>();
+
+  const handleCreateRole = () => {
+    setEditingRole(undefined);
+    setRoleDialogOpen(true);
+  };
+
+  const handleEditRole = (role: Role) => {
+    setEditingRole(role);
+    setRoleDialogOpen(true);
+  };
+
+  const handleSaveRole = async (params: {
+    id?: string;
+    name: string;
+    description?: string;
+    permissions: string[];
+  }) => {
+    try {
+      if (params.id) {
+        await authClient.updateRole({
+          id: params.id,
+          name: params.name,
+          description: params.description,
+          permissions: params.permissions,
+        });
+        toast.success("Role updated successfully");
+      } else {
+        await authClient.createRole({
+          name: params.name,
+          description: params.description,
+          permissions: params.permissions,
+        });
+        toast.success("Role created successfully");
+      }
+      await onDataChange();
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save role"
+      );
+      throw error;
+    }
+  };
+
+  const handleDeleteRole = async () => {
+    if (!roleToDelete) return;
+    try {
+      await authClient.deleteRole(roleToDelete);
+      toast.success("Role deleted successfully");
+      setRoleToDelete(undefined);
+      await onDataChange();
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete role"
+      );
+    }
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Role Management</CardTitle>
+          {canCreateRoles && (
+            <Button onClick={handleCreateRole} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Role
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {canReadRoles ? (
+            roles.length === 0 ? (
+              <p className="text-muted-foreground">No roles found.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Permissions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {roles.map((role) => {
+                    const isUserRole = userRoleIds.includes(role.id);
+                    const isSystem = role.isSystem;
+
+                    return (
+                      <TableRow key={role.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{role.name}</span>
+                            {role.description && (
+                              <span className="text-sm text-muted-foreground">
+                                {role.description}
+                              </span>
+                            )}
+                            <div className="flex gap-2 mt-1">
+                              {isSystem && (
+                                <Badge variant="outline">System</Badge>
+                              )}
+                              {isUserRole && (
+                                <Badge variant="secondary">Your Role</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {role.permissions?.length || 0} permissions
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditRole(role)}
+                              disabled={!canUpdateRoles}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setRoleToDelete(role.id)}
+                              disabled={
+                                isSystem || isUserRole || !canDeleteRoles
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )
+          ) : (
+            <p className="text-muted-foreground">
+              You don't have permission to view roles.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <RoleDialog
+        open={roleDialogOpen}
+        onOpenChange={setRoleDialogOpen}
+        role={editingRole}
+        permissions={permissions}
+        isUserRole={editingRole ? userRoleIds.includes(editingRole.id) : false}
+        onSave={handleSaveRole}
+      />
+
+      <ConfirmationModal
+        isOpen={!!roleToDelete}
+        onClose={() => setRoleToDelete(undefined)}
+        onConfirm={handleDeleteRole}
+        title="Delete Role"
+        message="Are you sure you want to delete this role? This action cannot be undone."
+      />
+    </>
+  );
+};
