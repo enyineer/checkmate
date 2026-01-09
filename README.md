@@ -307,7 +307,8 @@ docker run -d \
 > [!TIP]
 > After first start, your database is seeded with a default user.
 >
-> Username: admin@checkstack.com
+> Username: admin@checkstack.dev
+> 
 > Password: admin
 >
 > You should change this password as soon as possible using the "change password" function in the user-menu.
@@ -354,7 +355,8 @@ This command will automatically:
 > [!TIP]
 > After first start, your database is seeded with a default user.
 >
-> Username: admin@checkstack.com
+> Username: admin@checkstack.dev
+> 
 > Password: admin
 >
 > You should change this password as soon as possible using the "change password" function in the user-menu.
