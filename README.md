@@ -8,6 +8,8 @@
   </p>
 </p>
 
+![Checkmate Logo](assets/logo/checkmate-logo.jpg)
+
 ---
 
 <p align="center">
@@ -31,10 +33,10 @@
 <summary><strong>🏠 Dashboard & Navigation</strong></summary>
 
 ### Dashboard Overview
-![Dashboard Overview](screenshots/dashboard-overview.png)
+![Dashboard Overview](assets/screenshots/dashboard-overview.png)
 
 ### Command Palette
-![Command Palette](screenshots/command-palette.png)
+![Command Palette](assets/screenshots/command-palette.png)
 
 </details>
 
@@ -42,14 +44,14 @@
 <summary><strong>✅ Health Checks</strong></summary>
 
 ### Health Check Configuration
-![Health Check Configuration](screenshots/health-check-configuration.png)
+![Health Check Configuration](assets/screenshots/health-check-configuration.png)
 
 ### Health Check Details
-![Health Check Details 1](screenshots/health-check-configuration-details-1.png)
-![Health Check Details 2](screenshots/health-check-configuration-details-2.png)
+![Health Check Details 1](assets/screenshots/health-check-configuration-details-1.png)
+![Health Check Details 2](assets/screenshots/health-check-configuration-details-2.png)
 
 ### System Details with Health Status
-![System Details](screenshots/system-details.png)
+![System Details](assets/screenshots/system-details.png)
 
 </details>
 
@@ -57,12 +59,12 @@
 <summary><strong>🚨 Incidents & Maintenance</strong></summary>
 
 ### Incident Management
-![Incident Configuration](screenshots/incident-configuration.png)
-![Incident Details](screenshots/incident-details.png)
+![Incident Configuration](assets/screenshots/incident-configuration.png)
+![Incident Details](assets/screenshots/incident-details.png)
 
 ### Maintenance Windows
-![Maintenance Configuration](screenshots/maintenance-configuration.png)
-![Maintenance Details](screenshots/maintenance-details.png)
+![Maintenance Configuration](assets/screenshots/maintenance-configuration.png)
+![Maintenance Details](assets/screenshots/maintenance-details.png)
 
 </details>
 
@@ -70,14 +72,14 @@
 <summary><strong>📋 Catalog & Notifications</strong></summary>
 
 ### System Catalog
-![Catalog Configuration](screenshots/catalog-configuration.png)
+![Catalog Configuration](assets/screenshots/catalog-configuration.png)
 
 ### Notification Center
-![Notification Overview](screenshots/notification-overview.png)
-![Notifications Configuration](screenshots/notifications-configuration.png)
+![Notification Overview](assets/screenshots/notification-overview.png)
+![Notifications Configuration](assets/screenshots/notifications-configuration.png)
 
 ### Telegram Integration Example
-![Telegram Notification](screenshots/telegram-notification-example.png)
+![Telegram Notification](assets/screenshots/telegram-notification-example.png)
 
 </details>
 
@@ -85,11 +87,11 @@
 <summary><strong>🔌 Integrations & Queues</strong></summary>
 
 ### External Integrations
-![Integrations Configuration](screenshots/integrations-configuration.png)
-![Integration Connection Details](screenshots/integrations-connection-details.png)
+![Integrations Configuration](assets/screenshots/integrations-configuration.png)
+![Integration Connection Details](assets/screenshots/integrations-connection-details.png)
 
 ### Queue Management
-![Queue Configuration](screenshots/queue-configuration.png)
+![Queue Configuration](assets/screenshots/queue-configuration.png)
 
 </details>
 
@@ -97,16 +99,16 @@
 <summary><strong>🔐 Authentication & Security</strong></summary>
 
 ### User Management
-![Users Configuration](screenshots/auth-configuration-users.png)
+![Users Configuration](assets/screenshots/auth-configuration-users.png)
 
 ### Role-Based Access Control
-![Roles Configuration](screenshots/auth-configuration-roles.png)
+![Roles Configuration](assets/screenshots/auth-configuration-roles.png)
 
 ### Authentication Strategies
-![Strategies Configuration](screenshots/auth-configuration-strategies.png)
+![Strategies Configuration](assets/screenshots/auth-configuration-strategies.png)
 
 ### External Applications
-![Applications Configuration](screenshots/auth-configuration-applications.png)
+![Applications Configuration](assets/screenshots/auth-configuration-applications.png)
 
 </details>
 
@@ -114,7 +116,7 @@
 <summary><strong>📖 API Documentation</strong></summary>
 
 ### Built-in API Docs
-![API Documentation](screenshots/api-docuementation.png)
+![API Documentation](assets/screenshots/api-docuementation.png)
 
 </details>
 

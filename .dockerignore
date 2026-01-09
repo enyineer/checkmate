@@ -20,7 +20,7 @@ dist/
 
 # Documentation (not needed for runtime)
 docs/
-screenshots/
+assets/
 *.md
 !README.md
 

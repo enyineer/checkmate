@@ -401,7 +401,7 @@ Adds a new HTTP health check plugin that supports custom headers and retry logic
 
 ## Screenshots
 
-![Health check configuration](./screenshots/config.png)
+![Health check configuration](./assets/screenshots/config.png)
 
 ## Breaking Changes
 
