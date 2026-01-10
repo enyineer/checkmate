@@ -893,7 +893,10 @@ If TypeScript complains about handler types:
 ## Next Steps
 
 - [Configuration Storage](./config-service.md) - When to use ConfigService vs custom schemas
+- [Health Check Strategies](./healthcheck-strategies.md) - Transport strategy development
+- [Collector Plugins](./collectors.md) - Extend strategies with diagnostic collectors
 - [Frontend Plugin Development](../frontend/plugins.md)
 - [Common Plugin Guidelines](../common/plugins.md)
 - [Extension Points](../frontend/extension-points.md)
 - [Versioned Configurations](./versioned-configs.md)
+

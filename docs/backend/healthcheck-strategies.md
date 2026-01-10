@@ -4,496 +4,427 @@
 
 ## Overview
 
-Health check strategies define how to monitor specific types of services. Each strategy consists of a **configuration schema** (how to run the check) and **assertions** (what to validate in the result).
+Health check strategies define **transport-level connectivity** to services. Each strategy establishes a connection and provides a transport client that collectors use to gather metrics.
 
-## Architectural Principles
+**Key Concepts:**
 
-### Separation of Concerns
+| Component | Responsibility | Example |
+|-----------|----------------|---------|
+| **Strategy** | Establish connection, provide transport client | SSH strategy connects to server |
+| **Collector** | Use transport client to gather metrics | CPU collector runs commands via SSH |
 
-A well-designed strategy separates two distinct concerns:
+Strategies focus on **how to connect**; collectors define **what to collect**.
 
-| Concern | Schema Field | Purpose | Examples |
-|---------|--------------|---------|----------|
-| **Configuration** | `config` | How to connect and run the check | URLs, ports, credentials, timeouts |
-| **Assertions** | `assertions` | What conditions must pass | Status codes, response times, content checks |
+## The CreateClient Pattern
+
+Strategies implement the `createClient()` method which:
+1. Validates configuration
+2. Establishes a connection to the target service
+3. Returns a `ConnectedClient<TClient>` with a close method
+
+The platform executor handles:
+- Calling `createClient()` and measuring connection latency
+- Passing the transport client to registered collectors
+- Ensuring `close()` is called in a `finally` block
 
 ```typescript
-const myHealthCheckConfigSchema = z.object({
-  // Configuration: HOW to run the check
-  url: z.string().url().describe("Target endpoint"),
-  timeout: z.number().default(5000).describe("Timeout in milliseconds"),
-  
-  // Assertions: WHAT to validate in the result
-  assertions: z.array(myAssertionSchema).optional().describe("Validation conditions"),
+export interface HealthCheckStrategy<
+  TConfig,
+  TClient extends TransportClient<unknown, unknown>,
+  TResult,
+  TAggregatedResult
+> {
+  id: string;
+  displayName: string;
+  description?: string;
+
+  /** Configuration schema with versioning */
+  config: Versioned<TConfig>;
+
+  /** Optional per-run result schema */
+  result?: Versioned<TResult>;
+
+  /** Aggregated result schema for bucket storage */
+  aggregatedResult: Versioned<TAggregatedResult>;
+
+  /** Create a connected transport client */
+  createClient(config: TConfig): Promise<ConnectedClient<TClient>>;
+
+  /** Aggregate results from multiple runs */
+  aggregateResult(runs: HealthCheckRunForAggregation<TResult>[]): TAggregatedResult;
+}
+```
+
+## Transport Clients
+
+Each strategy provides a specific transport client interface:
+
+| Strategy | Client Type | Command/Request | Result |
+|----------|-------------|-----------------|--------|
+| **SSH** | `SshTransportClient` | `string` (shell command) | `SshCommandResult` |
+| **HTTP** | `HttpTransportClient` | `HttpRequest` | `HttpResponse` |
+| **PostgreSQL** | `SqlTransportClient` | `SqlQueryRequest` | `SqlQueryResult` |
+| **Redis** | `RedisTransportClient` | `RedisCommand` | `RedisCommandResult` |
+| **DNS** | `DnsTransportClient` | `DnsRequest` | `DnsResult` |
+
+All transport clients implement the base interface:
+
+```typescript
+interface TransportClient<TCommand, TResult> {
+  exec(command: TCommand): Promise<TResult>;
+}
+```
+
+## Configuration Schema
+
+Define connection parameters in the config schema. Use `configString` and `configNumber` from `@checkstack/backend-api` for special field types:
+
+```typescript
+import { z, configString, configNumber } from "@checkstack/backend-api";
+
+export const sshConfigSchema = z.object({
+  host: z.string().describe("SSH server hostname"),
+  port: z.number().int().min(1).max(65535).default(22).describe("SSH port"),
+  username: z.string().describe("SSH username"),
+  password: configString({ "x-secret": true })
+    .describe("Password for authentication")
+    .optional(),
+  privateKey: configString({ "x-secret": true })
+    .describe("Private key for authentication")
+    .optional(),
+  timeout: configNumber({})
+    .min(100)
+    .default(10_000)
+    .describe("Connection timeout in milliseconds"),
 });
 ```
 
-> [!IMPORTANT]
-> **Do NOT include expected values in configuration.** For example, avoid `expectedStatus: 200`. Instead, use an assertion: `{ field: "statusCode", operator: "equals", value: 200 }`.
+### Secret Fields
 
-### Why Assertions?
+Fields marked with `"x-secret": true` are:
+- Encrypted at rest in the database
+- Masked in the UI
+- Never logged
 
-1. **Flexibility**: Multiple conditions with different operators (equals, lessThan, contains, etc.)
-2. **Composability**: Combine multiple assertions for comprehensive validation
-3. **Transparency**: Users see exactly what's being checked in the UI
-4. **Extensibility**: New assertion types can be added without changing the core config
+## Result Schemas with Chart Metadata
 
-## Assertion Patterns
-
-### Using Shared Assertion Factories
-
-The platform provides assertion factories in `@checkstack/backend-api` for common patterns:
+Use `healthResultNumber`, `healthResultString`, etc. from `@checkstack/healthcheck-common` to annotate fields for auto-chart generation:
 
 ```typescript
 import {
-  numericField,      // Numbers with comparison operators
-  timeThresholdField, // Response time checks
-  stringField,       // String pattern matching
-  booleanField,      // True/false checks
-  enumField,         // Fixed set of values
-  jsonPathField,     // JSON body validation
-} from "@checkstack/backend-api";
-```
+  healthResultBoolean,
+  healthResultNumber,
+  healthResultString,
+} from "@checkstack/healthcheck-common";
 
-### Creating a Discriminated Union
-
-Use Zod's `discriminatedUnion` to combine multiple assertion types, where `field` is the discriminator:
-
-```typescript
-const myAssertionSchema = z.discriminatedUnion("field", [
-  // Numeric assertions
-  numericField("statusCode", { min: 100, max: 599 }),
-  
-  // Time threshold assertions  
-  timeThresholdField("responseTime"),
-  
-  // String assertions
-  stringField("contentType"),
-  
-  // Enum assertions (fixed values as dropdown)
-  enumField("status", ["SERVING", "NOT_SERVING", "UNKNOWN"]),
-]);
-```
-
-### Factory Reference
-
-| Factory | Use Case | Generated Schema | UI Rendering |
-|---------|----------|------------------|--------------|
-| `numericField(name, opts)` | Numeric comparisons | `{ field, operator: NumericOps, value: number }` | Number input + operator select |
-| `timeThresholdField(name)` | Latency checks | `{ field, operator: 'lessThan'|'lessThanOrEqual', value }` | Number input with ms label |
-| `stringField(name)` | Text matching | `{ field, operator: StringOps, value?: string }` | Text input + operator select |
-| `booleanField(name)` | True/false checks | `{ field, operator: 'isTrue'|'isFalse' }` | Operator select only |
-| `enumField(name, values)` | Fixed value set | `{ field, operator: 'equals', value: enum }` | Value dropdown |
-| `jsonPathField()` | JSON body paths | `{ path, operator, value? }` | Path input + operator + value |
-
-### Custom Assertion Types
-
-For complex assertions that don't fit the factories, create a custom schema:
-
-```typescript
-const headerAssertionSchema = z.object({
-  field: z.literal("header"),
-  headerName: z.string().describe("Response header name"),
-  operator: z.enum(["equals", "contains", "exists"]),
-  value: z.string().optional(),
+const sshResultSchema = z.object({
+  connected: healthResultBoolean({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: healthResultNumber({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  error: healthResultString({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }).optional(),
 });
-
-const myAssertionSchema = z.discriminatedUnion("field", [
-  // Factory-based assertions
-  numericField("statusCode"),
-  
-  // Custom assertion
-  headerAssertionSchema,
-]);
 ```
 
-## Evaluating Assertions
+### Chart Types
 
-Use the `evaluateAssertions` utility for standard field-based assertions:
+| Type | Use Case | Best For |
+|------|----------|----------|
+| `line` | Time series data | Latencies, response times |
+| `bar` | Distributions | Status code counts |
+| `counter` | Single numeric values | Counts, totals |
+| `gauge` | Percentages (0-100) | Success rates |
+| `boolean` | True/false indicators | Connected state |
+| `text` | String display | Version info |
+| `status` | Error/warning badges | Error messages |
+| `pie` | Category distribution | Status code breakdown |
 
-```typescript
-import { evaluateAssertions } from "@checkstack/backend-api";
+## Aggregated Result Schema
 
-async execute(config: MyConfig): Promise<HealthCheckResult<MyMetadata>> {
-  const response = await this.performCheck(config);
-  
-  // Build values object with all assertable fields
-  const values = {
-    statusCode: response.status,
-    responseTime: response.latencyMs,
-    contentType: response.headers.get("content-type") || "",
-  };
-  
-  // Evaluate standard assertions
-  const failedAssertion = evaluateAssertions(config.assertions, values);
-  
-  if (failedAssertion) {
-    return {
-      status: "unhealthy",
-      latencyMs: response.latencyMs,
-      message: `Assertion failed: ${failedAssertion.field} ${failedAssertion.operator}`,
-      metadata: { failedAssertion },
-    };
-  }
-  
-  return {
-    status: "healthy",
-    latencyMs: response.latencyMs,
-    message: "All assertions passed",
-  };
-}
-```
-
-For custom assertion types, evaluate them separately:
+For bucket-level summaries during retention processing:
 
 ```typescript
-// Separate assertions by type
-const standardAssertions = [];
-const customAssertions = [];
-
-for (const assertion of config.assertions || []) {
-  if (assertion.field === "header") {
-    customAssertions.push(assertion);
-  } else {
-    standardAssertions.push(assertion);
-  }
-}
-
-// Evaluate standard assertions
-const failedStandard = evaluateAssertions(standardAssertions, values);
-if (failedStandard) return unhealthyResult(failedStandard);
-
-// Evaluate custom assertions
-for (const custom of customAssertions) {
-  if (!this.evaluateCustomAssertion(custom, response)) {
-    return unhealthyResult(custom);
-  }
-}
+const sshAggregatedSchema = z.object({
+  avgConnectionTime: healthResultNumber({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: healthResultNumber({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: healthResultNumber({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
+});
 ```
 
 ## Complete Example
 
-Here's a complete example of a health check strategy with proper config/assertion separation:
-
 ```typescript
+import { Client } from "ssh2";
 import {
   HealthCheckStrategy,
-  HealthCheckResult,
+  HealthCheckRunForAggregation,
   Versioned,
   z,
-  numericField,
-  timeThresholdField,
-  stringField,
-  evaluateAssertions,
+  configString,
+  configNumber,
+  type ConnectedClient,
 } from "@checkstack/backend-api";
+import {
+  healthResultBoolean,
+  healthResultNumber,
+  healthResultString,
+} from "@checkstack/healthcheck-common";
 
-// Assertion schema using discriminated union
-const httpAssertionSchema = z.discriminatedUnion("field", [
-  numericField("statusCode", { min: 100, max: 599 }),
-  timeThresholdField("responseTime"),
-  stringField("contentType"),
-]);
-
-// Config schema: HOW to run the check
-const httpConfigSchema = z.object({
-  url: z.string().url().describe("Target URL"),
-  method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("GET"),
-  timeout: z.number().min(100).default(5000).describe("Timeout in ms"),
-  assertions: z.array(httpAssertionSchema).optional().describe("Validation conditions"),
+// Configuration schema
+export const sshConfigSchema = z.object({
+  host: z.string().describe("SSH server hostname"),
+  port: z.number().int().min(1).max(65535).default(22),
+  username: z.string().describe("SSH username"),
+  password: configString({ "x-secret": true }).optional(),
+  privateKey: configString({ "x-secret": true }).optional(),
+  timeout: configNumber({}).min(100).default(10_000),
 });
 
-export class HttpHealthCheckStrategy implements HealthCheckStrategy<...> {
-  id = "http";
-  displayName = "HTTP Health Check";
-  
-  config = new Versioned({ version: 1, schema: httpConfigSchema });
-  
-  async execute(config: HttpConfig): Promise<HealthCheckResult<HttpMetadata>> {
-    const validated = this.config.validate(config);
-    const start = performance.now();
-    
-    const response = await fetch(validated.url, {
-      method: validated.method,
-      signal: AbortSignal.timeout(validated.timeout),
-    });
-    
-    const latencyMs = Math.round(performance.now() - start);
-    
-    // Evaluate assertions
-    const failed = evaluateAssertions(validated.assertions, {
-      statusCode: response.status,
-      responseTime: latencyMs,
-      contentType: response.headers.get("content-type") || "",
-    });
-    
-    if (failed) {
-      return {
-        status: "unhealthy",
-        latencyMs,
-        message: `Assertion failed: ${failed.field}`,
-        metadata: { statusCode: response.status, failedAssertion: failed },
-      };
-    }
-    
+type SshConfig = z.infer<typeof sshConfigSchema>;
+
+// Transport client interface
+interface SshTransportClient {
+  exec(command: string): Promise<{ exitCode: number; stdout: string; stderr: string }>;
+}
+
+// Per-run result
+const sshResultSchema = z.object({
+  connected: healthResultBoolean({
+    "x-chart-type": "boolean",
+    "x-chart-label": "Connected",
+  }),
+  connectionTimeMs: healthResultNumber({
+    "x-chart-type": "line",
+    "x-chart-label": "Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  error: healthResultString({
+    "x-chart-type": "status",
+    "x-chart-label": "Error",
+  }).optional(),
+});
+
+type SshResult = z.infer<typeof sshResultSchema>;
+
+// Aggregated result
+const sshAggregatedSchema = z.object({
+  avgConnectionTime: healthResultNumber({
+    "x-chart-type": "line",
+    "x-chart-label": "Avg Connection Time",
+    "x-chart-unit": "ms",
+  }),
+  successRate: healthResultNumber({
+    "x-chart-type": "gauge",
+    "x-chart-label": "Success Rate",
+    "x-chart-unit": "%",
+  }),
+  errorCount: healthResultNumber({
+    "x-chart-type": "counter",
+    "x-chart-label": "Errors",
+  }),
+});
+
+type SshAggregatedResult = z.infer<typeof sshAggregatedSchema>;
+
+// Strategy implementation
+export class SshHealthCheckStrategy
+  implements HealthCheckStrategy<SshConfig, SshTransportClient, SshResult, SshAggregatedResult>
+{
+  id = "ssh";
+  displayName = "SSH Health Check";
+  description = "SSH server connectivity";
+
+  config = new Versioned({ version: 1, schema: sshConfigSchema });
+  result = new Versioned({ version: 1, schema: sshResultSchema });
+  aggregatedResult = new Versioned({ version: 1, schema: sshAggregatedSchema });
+
+  /**
+   * Create a connected SSH transport client.
+   */
+  async createClient(config: SshConfig): Promise<ConnectedClient<SshTransportClient>> {
+    const validatedConfig = this.config.validate(config);
+
+    // Connect to SSH server
+    const connection = await this.connect(validatedConfig);
+
     return {
-      status: "healthy",
-      latencyMs,
-      message: `HTTP ${response.status}`,
-      metadata: { statusCode: response.status },
+      client: {
+        exec: (command: string) => connection.exec(command),
+      },
+      close: () => connection.end(),
     };
   }
+
+  aggregateResult(runs: HealthCheckRunForAggregation<SshResult>[]): SshAggregatedResult {
+    const validRuns = runs.filter((r) => r.metadata);
+
+    if (validRuns.length === 0) {
+      return { avgConnectionTime: 0, successRate: 0, errorCount: 0 };
+    }
+
+    const connectionTimes = validRuns
+      .map((r) => r.metadata?.connectionTimeMs)
+      .filter((t): t is number => typeof t === "number");
+
+    const successCount = validRuns.filter((r) => r.metadata?.connected).length;
+    const errorCount = validRuns.filter((r) => r.metadata?.error).length;
+
+    return {
+      avgConnectionTime:
+        connectionTimes.length > 0
+          ? Math.round(connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length)
+          : 0,
+      successRate: Math.round((successCount / validRuns.length) * 100),
+      errorCount,
+    };
+  }
+
+  private connect(config: SshConfig): Promise<SshConnection> {
+    return new Promise((resolve, reject) => {
+      const client = new Client();
+
+      client.on("ready", () => {
+        resolve({
+          exec(command: string) {
+            return new Promise((execResolve, execReject) => {
+              client.exec(command, (err, stream) => {
+                if (err) return execReject(err);
+
+                let stdout = "";
+                let stderr = "";
+
+                stream.on("data", (data: Buffer) => (stdout += data.toString()));
+                stream.stderr.on("data", (data: Buffer) => (stderr += data.toString()));
+                stream.on("close", (code: number | null) => {
+                  execResolve({ exitCode: code ?? 0, stdout: stdout.trim(), stderr: stderr.trim() });
+                });
+              });
+            });
+          },
+          end() {
+            client.end();
+          },
+        });
+      });
+
+      client.on("error", reject);
+      client.connect({
+        host: config.host,
+        port: config.port,
+        username: config.username,
+        password: config.password,
+        privateKey: config.privateKey,
+        readyTimeout: config.timeout,
+      });
+    });
+  }
+}
+
+interface SshConnection {
+  exec(command: string): Promise<{ exitCode: number; stdout: string; stderr: string }>;
+  end(): void;
 }
 ```
 
-## Migration Guide
+## Plugin Registration
 
-If your strategy uses config fields like `expectedStatus` or `expectedValue`, migrate to assertions:
-
-### Before (Anti-pattern)
+Register strategies in your plugin's `init` phase:
 
 ```typescript
-const configSchema = z.object({
-  url: z.string().url(),
-  expectedStatus: z.number().default(200),  // ❌ Don't embed expectations in config
+import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
+import { SshHealthCheckStrategy } from "./strategy";
+import { pluginMetadata } from "./plugin-metadata";
+
+export default createBackendPlugin({
+  metadata: pluginMetadata,
+  register(env) {
+    env.registerInit({
+      deps: {
+        healthCheckRegistry: coreServices.healthCheckRegistry,
+        logger: coreServices.logger,
+      },
+      init: async ({ healthCheckRegistry, logger }) => {
+        healthCheckRegistry.register(new SshHealthCheckStrategy());
+        logger.info("✅ SSH health check strategy registered");
+      },
+    });
+  },
 });
 ```
 
-### After (Recommended)
+> [!IMPORTANT]
+> Strategy IDs are automatically qualified with the owning plugin ID.
+> A strategy with `id = "ssh"` registered by `healthcheck-ssh-backend` becomes `healthcheck-ssh-backend.ssh`.
+
+## Extending with Collectors
+
+Strategies provide the transport layer. To add domain-specific metrics collection, create **collectors** that receive the connected transport client.
+
+For example, the SSH strategy provides an `SshTransportClient`. Collectors like CPU, Memory, and Disk use this client to run shell commands and parse results.
+
+See [Collector Plugin Development](./collectors.md) for details on creating collectors.
+
+## Testing
+
+Use dependency injection to mock the underlying client library:
 
 ```typescript
-const assertionSchema = z.discriminatedUnion("field", [
-  numericField("statusCode"),
-  timeThresholdField("responseTime"),
-]);
+import { describe, it, expect, mock } from "bun:test";
+import { SshHealthCheckStrategy, type SshClient } from "./strategy";
 
-const configSchema = z.object({
-  url: z.string().url(),
-  assertions: z.array(assertionSchema).optional(),  // ✅ Flexible validation
+describe("SshHealthCheckStrategy", () => {
+  it("should create client and allow command execution", async () => {
+    // Mock SSH client
+    const mockSshClient: SshClient = {
+      connect: mock().mockResolvedValue({
+        exec: mock().mockResolvedValue({
+          exitCode: 0,
+          stdout: "hello",
+          stderr: "",
+        }),
+        end: mock(),
+      }),
+    };
+
+    const strategy = new SshHealthCheckStrategy(mockSshClient);
+    const { client, close } = await strategy.createClient({
+      host: "test.example.com",
+      port: 22,
+      username: "testuser",
+      password: "testpass",
+      timeout: 10000,
+    });
+
+    const result = await client.exec("echo hello");
+    expect(result.stdout).toBe("hello");
+
+    close();
+    expect(mockSshClient.connect).toHaveBeenCalled();
+  });
 });
 ```
-
-This gives users the flexibility to:
-- Check for exact status: `{ field: "statusCode", operator: "equals", value: 200 }`
-- Check for ranges: `{ field: "statusCode", operator: "lessThan", value: 300 }`
-- Combine multiple checks: status code AND response time AND content type
-
-## Auto-Generated Charts
-
-Health check strategies can automatically generate chart visualizations by annotating schema fields with chart metadata. This eliminates the need to write custom chart components for standard metrics.
-
-### Overview
-
-Use factory functions from `@checkstack/healthcheck-common` to create schema fields with chart annotations. These annotations flow through the health result registry and are used by the frontend to render appropriate visualizations.
-
-```typescript
-import {
-  healthResultNumber,
-  healthResultString,
-  healthResultBoolean,
-} from "@checkstack/healthcheck-common";
-
-const myResultSchema = z.object({
-  responseTimeMs: healthResultNumber({
-    "x-chart-type": "line",
-    "x-chart-label": "Response Time",
-    "x-chart-unit": "ms",
-  }),
-  successRate: healthResultNumber({
-    "x-chart-type": "gauge",
-    "x-chart-label": "Success Rate",
-    "x-chart-unit": "%",
-  }),
-});
-```
-
-### Chart Metadata Keys
-
-| Key | Required | Description |
-|-----|----------|-------------|
-| `x-chart-type` | ✅ | The chart type to render (see available types below) |
-| `x-chart-label` | Optional | Human-readable label (defaults to field name) |
-| `x-chart-unit` | Optional | Unit suffix for values (e.g., `ms`, `%`, `days`) |
-
-### Available Chart Types
-
-#### Numeric Types
-
-| Type | Use Case | Best For |
-|------|----------|----------|
-| `line` | Time series data | Latencies, response times, durations |
-| `bar` | Distributions | Status code counts, category breakdowns |
-| `counter` | Single numeric values | Counts, totals, exit codes |
-| `gauge` | Percentages (0-100) | Success rates, packet loss |
-
-#### Non-Numeric Types
-
-| Type | Use Case | Best For |
-|------|----------|----------|
-| `boolean` | True/false indicators | Connected state, success flags |
-| `text` | String display | Version info, status messages |
-| `status` | Error/warning badges | Error messages |
-
-> [!TIP]
-> Fields without chart annotations simply won't render - no explicit "hidden" type is needed.
-
-
-### Per-Run Result Schema
-
-Annotate per-run result fields to show metrics for individual check executions:
-
-```typescript
-import {
-  healthResultNumber,
-  healthResultString,
-  healthResultBoolean,
-} from "@checkstack/healthcheck-common";
-
-const myResultSchema = z.object({
-  connected: healthResultBoolean({
-    "x-chart-type": "boolean",
-    "x-chart-label": "Connected",
-  }),
-  connectionTimeMs: healthResultNumber({
-    "x-chart-type": "line",
-    "x-chart-label": "Connection Time",
-    "x-chart-unit": "ms",
-  }),
-  serverVersion: healthResultString({
-    "x-chart-type": "text",
-    "x-chart-label": "Server Version",
-  }).optional(),
-  failedAssertion: myAssertionSchema.optional(), // No annotation = not rendered
-  error: healthResultString({
-    "x-chart-type": "status",
-    "x-chart-label": "Error",
-  }).optional(),
-});
-```
-
-### Aggregated Result Schema
-
-Annotate aggregated result fields for bucket-level visualizations:
-
-```typescript
-const myAggregatedSchema = z.object({
-  avgConnectionTime: healthResultNumber({
-    "x-chart-type": "line",
-    "x-chart-label": "Avg Connection Time",
-    "x-chart-unit": "ms",
-  }),
-  successRate: healthResultNumber({
-    "x-chart-type": "gauge",
-    "x-chart-label": "Success Rate",
-    "x-chart-unit": "%",
-  }),
-  statusCodeCounts: z.record(z.string(), z.number()).meta({
-    "x-chart-type": "bar",
-    "x-chart-label": "Status Code Distribution",
-  }),
-  errorCount: healthResultNumber({
-    "x-chart-type": "counter",
-    "x-chart-label": "Errors",
-  }),
-});
-```
-
-### Complete Example
-
-```typescript
-import {
-  HealthCheckStrategy,
-  Versioned,
-  z,
-} from "@checkstack/backend-api";
-import {
-  healthResultBoolean,
-  healthResultNumber,
-  healthResultString,
-} from "@checkstack/healthcheck-common";
-
-// Per-run result with chart annotations
-const redisResultSchema = z.object({
-  connected: healthResultBoolean({
-    "x-chart-type": "boolean",
-    "x-chart-label": "Connected",
-  }),
-  connectionTimeMs: healthResultNumber({
-    "x-chart-type": "line",
-    "x-chart-label": "Connection Time",
-    "x-chart-unit": "ms",
-  }),
-  pingTimeMs: healthResultNumber({
-    "x-chart-type": "line",
-    "x-chart-label": "Ping Time",
-    "x-chart-unit": "ms",
-  }).optional(),
-  pingSuccess: healthResultBoolean({
-    "x-chart-type": "boolean",
-    "x-chart-label": "Ping Success",
-  }),
-  role: healthResultString({
-    "x-chart-type": "text",
-    "x-chart-label": "Role",
-  }).optional(),
-  redisVersion: healthResultString({
-    "x-chart-type": "text",
-    "x-chart-label": "Redis Version",
-  }).optional(),
-  failedAssertion: redisAssertionSchema.optional(),
-  error: healthResultString({
-    "x-chart-type": "status",
-    "x-chart-label": "Error",
-  }).optional(),
-});
-
-// Aggregated result with chart annotations
-const redisAggregatedSchema = z.object({
-  avgConnectionTime: healthResultNumber({
-    "x-chart-type": "line",
-    "x-chart-label": "Avg Connection Time",
-    "x-chart-unit": "ms",
-  }),
-  avgPingTime: healthResultNumber({
-    "x-chart-type": "line",
-    "x-chart-label": "Avg Ping Time",
-    "x-chart-unit": "ms",
-  }),
-  successRate: healthResultNumber({
-    "x-chart-type": "gauge",
-    "x-chart-label": "Success Rate",
-    "x-chart-unit": "%",
-  }),
-  errorCount: healthResultNumber({
-    "x-chart-type": "counter",
-    "x-chart-label": "Errors",
-  }),
-});
-
-export class RedisHealthCheckStrategy implements HealthCheckStrategy<...> {
-  id = "redis";
-  displayName = "Redis Health Check";
-  
-  result = new Versioned({ version: 1, schema: redisResultSchema });
-  aggregatedResult = new Versioned({ version: 1, schema: redisAggregatedSchema });
-  
-  // ... rest of implementation
-}
-```
-
-### Custom Charts vs Auto-Charts
-
-Auto-generated charts work well for standard metrics. For complex visualizations, use [custom chart components](../frontend/healthcheck-charts.md):
-
-| Feature | Auto-Charts | Custom Charts |
-|---------|-------------|---------------|
-| Setup effort | Schema annotations only | Full React component |
-| Customization | Limited to chart types | Full control |
-| Best for | Standard metrics | Complex visualizations |
-
-Auto-charts render alongside custom chart extensions - they complement rather than replace custom visualizations.
 
 ## Next Steps
 
-- [Health Check Data Management](./healthcheck-data-management.md) - Storage and aggregation
-- [Custom Chart Components](../frontend/healthcheck-charts.md) - Strategy-specific visualizations
-- [Plugin Development Guide](./plugins.md) - General plugin development
+- [Collector Plugin Development](./collectors.md) - Extend strategies with collectors
+- [Versioned Configurations](./versioned-configs.md) - Schema versioning and migrations
+- [Plugin Development Guide](./plugins.md) - General plugin patterns
