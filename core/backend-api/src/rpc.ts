@@ -286,10 +286,23 @@ export const autoAuthMiddleware = os.middleware(
           });
         }
 
-        // If no user (anonymous), return empty list for team-filtered resources
+        // If no user (anonymous), check if they have global access via anonymous role
         if (!userId || !userType) {
-          mutableOutput[outputKey] = [];
-          continue;
+          // Anonymous users can't have team grants, but may have global access
+          const anonymousAccessRules =
+            await context.auth.getAnonymousAccessRules();
+          const hasGlobalAccess =
+            anonymousAccessRules.includes("*") ||
+            anonymousAccessRules.includes(rule.qualifiedId);
+
+          if (hasGlobalAccess) {
+            // Anonymous user has global access - return all items
+            continue;
+          } else {
+            // No global access and can't have team grants - return empty
+            mutableOutput[outputKey] = [];
+            continue;
+          }
         }
 
         const resourceIds = items
