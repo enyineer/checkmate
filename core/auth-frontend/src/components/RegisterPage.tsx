@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { useApi, rpcApiRef } from "@checkstack/frontend-api";
 import { authApiRef } from "../api";
-import {
-  AuthApi,
-  authRoutes,
-  passwordSchema,
-} from "@checkstack/auth-common";
+import { AuthApi, authRoutes, passwordSchema } from "@checkstack/auth-common";
 import { resolveRoute } from "@checkstack/common";
 import {
   Button,
@@ -35,7 +31,7 @@ export const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const navigate = useNavigate();
+
   const authApi = useApi(authApiRef);
   const rpcApi = useApi(rpcApiRef);
   const authRpcClient = rpcApi.forPlugin(AuthApi);
@@ -87,7 +83,8 @@ export const RegisterPage = () => {
       if (res.error) {
         console.error("Registration failed:", res.error);
       } else {
-        navigate("/");
+        // Use full page navigation to ensure session state refreshes in navbar
+        globalThis.location.href = "/";
       }
     } catch (error) {
       console.error("Registration failed:", error);

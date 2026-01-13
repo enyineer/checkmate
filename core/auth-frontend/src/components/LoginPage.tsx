@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { LogIn, LogOut, AlertCircle } from "lucide-react";
 import {
   useApi,
@@ -47,7 +47,7 @@ export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+
   const authApi = useApi(authApiRef);
   const rpcApi = useApi(rpcApiRef);
   const authRpcClient = rpcApi.forPlugin(AuthApi);
@@ -74,7 +74,8 @@ export const LoginPage = () => {
       if (error) {
         console.error("Login failed:", error);
       } else {
-        navigate("/");
+        // Use full page navigation to ensure session/permissions state refreshes
+        globalThis.location.href = "/";
       }
     } finally {
       setLoading(false);

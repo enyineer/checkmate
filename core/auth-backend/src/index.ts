@@ -552,6 +552,7 @@ export default createBackendPlugin({
             }),
             emailAndPassword: {
               enabled: credentialEnabled,
+              autoSignIn: true, // Log in user immediately after successful registration
               disableSignUp: !registrationAllowed,
               minPasswordLength: 8,
               maxPasswordLength: 128,
