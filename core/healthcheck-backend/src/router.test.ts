@@ -88,6 +88,7 @@ describe("HealthCheck Router", () => {
 
   it("getCollectors returns collectors for strategy", async () => {
     const mockCollector = {
+      qualifiedId: "collector-hardware.cpu",
       collector: {
         id: "cpu",
         displayName: "CPU Metrics",
