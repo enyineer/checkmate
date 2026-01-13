@@ -68,9 +68,8 @@ export const createHealthCheckRouter = (
           pluginId,
         });
 
-      return registeredCollectors.map(({ collector, ownerPlugin }) => ({
-        // Fully-qualified ID: ownerPluginId.collectorId
-        id: `${ownerPlugin.pluginId}.${collector.id}`,
+      return registeredCollectors.map(({ qualifiedId, collector }) => ({
+        id: qualifiedId,
         displayName: collector.displayName,
         description: collector.description,
         configSchema: toJsonSchema(collector.config.schema),

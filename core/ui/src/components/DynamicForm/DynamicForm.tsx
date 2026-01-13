@@ -109,7 +109,9 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
           return (
             <FormField
               key={key}
-              id={key}
+              // Prefix with 'field-' to prevent DOM clobbering when field names
+              // match native DOM properties (e.g., nodeName, tagName, innerHTML)
+              id={`field-${key}`}
               label={label}
               propSchema={propSchema}
               value={value[key]}

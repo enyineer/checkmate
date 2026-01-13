@@ -48,14 +48,6 @@ interface HttpConfigV2 extends HttpConfigV1 {
 
 /** Per-run result metadata */
 const httpResultMetadataSchema = z.object({
-  statusCode: healthResultNumber({
-    "x-chart-type": "pie",
-    "x-chart-label": "Status Code",
-  }).optional(),
-  contentType: healthResultString({
-    "x-chart-type": "counter",
-    "x-chart-label": "Content Type",
-  }).optional(),
   error: healthResultString({
     "x-chart-type": "status",
     "x-chart-label": "Error",
@@ -66,14 +58,6 @@ type HttpResultMetadata = z.infer<typeof httpResultMetadataSchema>;
 
 /** Aggregated metadata for buckets */
 const httpAggregatedMetadataSchema = z.object({
-  statusCodeCounts: z.record(z.string(), z.number()).meta({
-    "x-chart-type": "pie",
-    "x-chart-label": "Status Code Distribution",
-  }),
-  successRate: healthResultNumber({
-    "x-chart-type": "gauge",
-    "x-chart-label": "Success Rate (%)",
-  }),
   errorCount: healthResultNumber({
     "x-chart-type": "counter",
     "x-chart-label": "Errors",
@@ -137,26 +121,15 @@ export class HttpHealthCheckStrategy
   aggregateResult(
     runs: HealthCheckRunForAggregation<HttpResultMetadata>[]
   ): HttpAggregatedMetadata {
-    const statusCodeCounts: Record<string, number> = {};
     let errorCount = 0;
-    let successCount = 0;
 
     for (const run of runs) {
       if (run.metadata?.error) {
         errorCount++;
-      } else {
-        successCount++;
-      }
-
-      if (run.metadata?.statusCode !== undefined) {
-        const key = String(run.metadata.statusCode);
-        statusCodeCounts[key] = (statusCodeCounts[key] || 0) + 1;
       }
     }
-    const successRate =
-      runs.length > 0 ? Math.round((successCount / runs.length) * 100) : 0;
 
-    return { statusCodeCounts, successRate, errorCount };
+    return { errorCount };
   }
 
   /**

@@ -300,7 +300,7 @@ function CollectorResultCard({
 function formatKey(key: string): string {
   return key
     .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
-    .replaceAll(/^./, (c) => c.toUpperCase());
+    .replace(/^./, (c) => c.toUpperCase());
 }
 
 /**

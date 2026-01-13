@@ -9,6 +9,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -741,6 +742,9 @@ export const SystemHealthCheckAssignment: React.FC<Props> = ({
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Health Check Assignments</DialogTitle>
+            <DialogDescription className="sr-only">
+              Manage health check assignments for this system
+            </DialogDescription>
           </DialogHeader>
 
           {loading ? (

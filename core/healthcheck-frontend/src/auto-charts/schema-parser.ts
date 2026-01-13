@@ -34,7 +34,7 @@ export type ResultSchema = JsonSchemaBase<ResultSchemaProperty>;
  * Chart field information extracted from JSON Schema.
  */
 export interface ChartField {
-  /** Field path (supports dot notation for nested fields like "collectors.request.responseTimeMs") */
+  /** Field name (simple name for collector fields, path for others) */
   name: string;
   /** Chart type to render */
   chartType: ChartType;
@@ -44,7 +44,7 @@ export interface ChartField {
   unit?: string;
   /** JSON Schema type (number, string, boolean, etc.) */
   schemaType: string;
-  /** Collector ID if this field is from a collector */
+  /** Collector ID if this field is from a collector (used for data lookup) */
   collectorId?: string;
 }
 
@@ -78,7 +78,6 @@ export function extractChartFields(
           // Extract fields from the collector's result schema
           const collectorFields = extractFieldsFromProperties(
             collectorProp.properties,
-            `collectors.${collectorId}`,
             collectorId
           );
           fields.push(...collectorFields);
@@ -101,7 +100,6 @@ export function extractChartFields(
  */
 function extractFieldsFromProperties(
   properties: Record<string, ResultSchemaProperty>,
-  pathPrefix: string,
   collectorId: string
 ): ChartField[] {
   const fields: ChartField[] = [];
@@ -110,8 +108,8 @@ function extractFieldsFromProperties(
     const chartType = prop["x-chart-type"];
     if (!chartType) continue;
 
-    const fullPath = `${pathPrefix}.${fieldName}`;
-    const field = extractSingleField(fullPath, prop);
+    // Use just field name - collectorId is stored separately for data lookup
+    const field = extractSingleField(fieldName, prop);
     field.collectorId = collectorId;
     // Prefix label with collector ID for clarity
     if (!prop["x-chart-label"]?.includes(collectorId)) {
@@ -165,28 +163,53 @@ function formatFieldName(name: string): string {
 
 /**
  * Get the value for a field from a data object.
- * Supports dot-notation paths like "collectors.request.responseTimeMs".
+ * For strategy-level fields, also searches inside collectors as fallback.
+ *
+ * @param data - The metadata object
+ * @param fieldName - Simple field name (no dot notation for collector fields)
+ * @param collectorInstanceId - Optional: if provided, looks in collectors[collectorInstanceId]
  */
 export function getFieldValue(
   data: Record<string, unknown> | undefined,
-  fieldName: string
+  fieldName: string,
+  collectorInstanceId?: string
 ): unknown {
   if (!data) return undefined;
 
-  // Simple case: no dot notation
-  if (!fieldName.includes(".")) {
-    return data[fieldName];
+  // If collectorInstanceId is provided, look in that specific collector's data
+  if (collectorInstanceId) {
+    const collectors = data.collectors as
+      | Record<string, Record<string, unknown>>
+      | undefined;
+    if (collectors && typeof collectors === "object") {
+      const collectorData = collectors[collectorInstanceId];
+      if (collectorData && typeof collectorData === "object") {
+        return collectorData[fieldName];
+      }
+    }
+    return undefined;
   }
 
-  // Dot notation: traverse the path
-  const parts = fieldName.split(".");
-  let current: unknown = data;
-
-  for (const part of parts) {
-    if (current === null || current === undefined) return undefined;
-    if (typeof current !== "object") return undefined;
-    current = (current as Record<string, unknown>)[part];
+  // For non-collector fields, try direct lookup first
+  const directValue = data[fieldName];
+  if (directValue !== undefined) {
+    return directValue;
   }
 
-  return current;
+  // Fallback: search all collectors for the field (for strategy schema fields)
+  const collectors = data.collectors as
+    | Record<string, Record<string, unknown>>
+    | undefined;
+  if (collectors && typeof collectors === "object") {
+    for (const collectorData of Object.values(collectors)) {
+      if (collectorData && typeof collectorData === "object") {
+        const value = collectorData[fieldName];
+        if (value !== undefined) {
+          return value;
+        }
+      }
+    }
+  }
+
+  return undefined;
 }

@@ -17,15 +17,15 @@ export class CoreCollectorRegistry {
     collector: CollectorStrategy<TransportClient<unknown, unknown>>,
     ownerPlugin: PluginMetadata
   ): void {
-    if (this.collectors.has(collector.id)) {
+    // Use fully-qualified ID: ownerPluginId.collectorId
+    const qualifiedId = `${ownerPlugin.pluginId}.${collector.id}`;
+    if (this.collectors.has(qualifiedId)) {
       rootLogger.warn(
-        `CollectorStrategy '${collector.id}' is already registered. Overwriting.`
+        `CollectorStrategy '${qualifiedId}' is already registered. Overwriting.`
       );
     }
-    this.collectors.set(collector.id, { collector, ownerPlugin });
-    rootLogger.debug(
-      `✅ Registered CollectorStrategy: ${ownerPlugin.pluginId}.${collector.id}`
-    );
+    this.collectors.set(qualifiedId, { qualifiedId, collector, ownerPlugin });
+    rootLogger.debug(`✅ Registered CollectorStrategy: ${qualifiedId}`);
   }
 
   /**

@@ -18,6 +18,7 @@ import {
   ConfirmationModal,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -189,8 +190,8 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
           <Alert variant="info" className="mb-4">
             <AlertDescription>
               External applications use API keys to authenticate with the
-              Checkstack API. The secret is only shown once when created—store it
-              securely.
+              Checkstack API. The secret is only shown once when created—store
+              it securely.
             </AlertDescription>
           </Alert>
 
@@ -346,6 +347,9 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
             <DialogTitle>
               Application Secret: {newSecretDialog.applicationName}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Copy your application secret - it will only be shown once
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Alert variant="warning">
@@ -399,6 +403,9 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Application</DialogTitle>
+            <DialogDescription className="sr-only">
+              Create a new external application with API key access
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>

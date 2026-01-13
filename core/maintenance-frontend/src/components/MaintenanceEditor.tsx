@@ -9,6 +9,7 @@ import type { System } from "@checkstack/catalog-common";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -173,6 +174,11 @@ export const MaintenanceEditor: React.FC<Props> = ({
           <DialogTitle>
             {maintenance ? "Edit Maintenance" : "Create Maintenance"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {maintenance
+              ? "Modify the settings for this scheduled maintenance"
+              : "Schedule a new maintenance window for your systems"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto">

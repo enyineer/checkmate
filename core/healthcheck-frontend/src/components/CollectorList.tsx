@@ -100,6 +100,7 @@ export const CollectorList: React.FC<CollectorListProps> = ({
     if (!collector) return;
 
     const newEntry: CollectorConfigEntry = {
+      id: crypto.randomUUID(),
       collectorId,
       config: {},
       assertions: [],
@@ -111,6 +112,11 @@ export const CollectorList: React.FC<CollectorListProps> = ({
   const handleRemove = (index: number) => {
     const updated = [...configuredCollectors];
     updated.splice(index, 1);
+
+    // Reset validity map to prevent stale entries after index shift
+    // The DynamicForm components will re-report their validity on next render
+    setValidityMap({});
+
     onChange(updated);
   };
 

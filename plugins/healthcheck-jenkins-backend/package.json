@@ -1,0 +1,23 @@
+{
+  "name": "@checkstack/healthcheck-jenkins-backend",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "bun run lint:code",
+    "lint:code": "eslint . --max-warnings 0",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "@checkstack/healthcheck-common": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.0.0",
+    "typescript": "^5.0.0",
+    "@checkstack/tsconfig": "workspace:*",
+    "@checkstack/scripts": "workspace:*"
+  }
+}

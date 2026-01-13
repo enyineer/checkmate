@@ -6,6 +6,8 @@ import type { TransportClient } from "./transport-client";
  * A registered collector with its owning plugin metadata.
  */
 export interface RegisteredCollector {
+  /** The fully-qualified collector ID (ownerPluginId.collectorId) */
+  qualifiedId: string;
   /** The collector strategy */
   collector: CollectorStrategy<TransportClient<unknown, unknown>>;
   /** The plugin that registered this collector */

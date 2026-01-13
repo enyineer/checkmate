@@ -64,7 +64,7 @@ const requestResultSchema = z.object({
   }),
   success: healthResultBoolean({
     "x-chart-type": "boolean",
-    "x-chart-label": "Success",
+    "x-chart-label": "HTTP Success",
   }),
 });
 

@@ -10,6 +10,7 @@ import type { System } from "@checkstack/catalog-common";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -165,6 +166,11 @@ export const IncidentEditor: React.FC<Props> = ({
           <DialogTitle>
             {incident ? "Edit Incident" : "Create Incident"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {incident
+              ? "Modify the details for this incident report"
+              : "Report a new incident affecting your systems"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto">

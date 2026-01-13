@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -111,6 +112,11 @@ export const RoleDialog: React.FC<RoleDialogProps> = ({
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Role" : "Create Role"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {isEditing
+              ? "Modify the settings and permissions for this role"
+              : "Create a new role with specific permissions"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

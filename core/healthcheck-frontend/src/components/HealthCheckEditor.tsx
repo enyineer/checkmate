@@ -13,6 +13,7 @@ import {
   useToast,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -82,7 +83,7 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
         strategyId,
         intervalSeconds: Number.parseInt(interval, 10),
         config,
-        collectors: collectors.length > 0 ? collectors : undefined,
+        collectors, // Always send the array, even if empty, to allow clearing
       });
     } catch (error) {
       const message =
@@ -102,6 +103,11 @@ export const HealthCheckEditor: React.FC<HealthCheckEditorProps> = ({
             <DialogTitle>
               {initialData ? "Edit Health Check" : "Create Health Check"}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {initialData
+                ? "Modify the settings for this health check configuration"
+                : "Configure a new health check to monitor your services"}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto">

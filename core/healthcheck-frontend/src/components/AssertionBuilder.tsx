@@ -302,15 +302,22 @@ export const AssertionBuilder: React.FC<AssertionBuilderProps> = ({
     <div className="space-y-4">
       {assertions.map((assertion, index) => {
         const field = getFieldByPath(assertion.field);
-        const operators = field ? OPERATORS[field.type] : [];
+        // Safely get operators with fallback to empty array
+        const operators = field ? OPERATORS[field.type] ?? [] : [];
         const needsValue = !VALUE_LESS_OPERATORS.has(assertion.operator);
+
+        // Check if current values match available options (prevents Radix UI crash)
+        const fieldValueValid = fields.some((f) => f.path === assertion.field);
+        const operatorValueValid = operators.some(
+          (op) => op.value === assertion.operator
+        );
 
         return (
           <div key={index} className="flex items-start gap-2 flex-wrap">
             {/* Field selector */}
             <div className="flex-1 min-w-[120px]">
               <Select
-                value={assertion.field}
+                value={fieldValueValid ? assertion.field : undefined}
                 onValueChange={(v) => handleFieldChange(index, v)}
               >
                 <SelectTrigger>
@@ -340,7 +347,7 @@ export const AssertionBuilder: React.FC<AssertionBuilderProps> = ({
             {/* Operator selector */}
             <div className="flex-1 min-w-[100px]">
               <Select
-                value={assertion.operator}
+                value={operatorValueValid ? assertion.operator : undefined}
                 onValueChange={(v) => handleOperatorChange(index, v)}
               >
                 <SelectTrigger>

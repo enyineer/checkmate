@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
   Input,
   DynamicIcon,
   type LucideIconName,
@@ -163,6 +165,11 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
         className="p-0 gap-0 overflow-hidden"
         onKeyDown={handleKeyDown}
       >
+        {/* Visually hidden but accessible title and description */}
+        <DialogTitle className="sr-only">Search</DialogTitle>
+        <DialogDescription className="sr-only">
+          Search commands and systems using the input below
+        </DialogDescription>
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
           <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />

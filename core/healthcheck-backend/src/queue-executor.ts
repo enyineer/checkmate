@@ -316,15 +316,15 @@ async function executeHealthCheckJob(props: {
           continue;
         }
 
+        // Use the collector's UUID as the storage key
+        const storageKey = collectorEntry.id;
+
         try {
           const collectorResult = await registered.collector.execute({
             config: collectorEntry.config,
             client: connectedClient.client,
             pluginId: configRow.strategyId,
           });
-
-          // Store result under collector ID
-          collectorResults[collectorEntry.collectorId] = collectorResult.result;
 
           // Check for collector-level error
           if (collectorResult.error) {
@@ -333,6 +333,7 @@ async function executeHealthCheckJob(props: {
           }
 
           // Evaluate per-collector assertions
+          let assertionFailed: string | undefined;
           if (
             collectorEntry.assertions &&
             collectorEntry.assertions.length > 0 &&
@@ -345,23 +346,31 @@ async function executeHealthCheckJob(props: {
             );
             if (failedAssertion) {
               hasCollectorError = true;
-              errorMessage = `Assertion failed: ${failedAssertion.field} ${
+              assertionFailed = `${failedAssertion.field} ${
                 failedAssertion.operator
               } ${failedAssertion.value ?? ""}`;
+              errorMessage = `Assertion failed: ${assertionFailed}`;
               logger.debug(
-                `Collector ${collectorEntry.collectorId} assertion failed: ${errorMessage}`
+                `Collector ${storageKey} assertion failed: ${errorMessage}`
               );
             }
           }
+
+          // Store result under the collector's UUID, with collector type and assertion metadata
+          collectorResults[storageKey] = {
+            _collectorId: collectorEntry.collectorId, // Store the type for frontend schema linking
+            _assertionFailed: assertionFailed, // null if no assertion failed
+            ...collectorResult.result,
+          };
         } catch (error) {
           hasCollectorError = true;
           errorMessage = error instanceof Error ? error.message : String(error);
-          collectorResults[collectorEntry.collectorId] = {
+          collectorResults[storageKey] = {
+            _collectorId: collectorEntry.collectorId,
+            _assertionFailed: undefined,
             error: errorMessage,
           };
-          logger.debug(
-            `Collector ${collectorEntry.collectorId} failed: ${errorMessage}`
-          );
+          logger.debug(`Collector ${storageKey} failed: ${errorMessage}`);
         }
       }
     } finally {

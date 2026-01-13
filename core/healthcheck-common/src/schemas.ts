@@ -56,9 +56,11 @@ export type CollectorAssertion = z.infer<typeof CollectorAssertionSchema>;
 
 /**
  * A collector configuration entry within a health check.
- * Each entry includes the collector ID, its config, and per-collector assertions.
+ * Each entry includes a unique ID, the collector type ID, its config, and per-collector assertions.
  */
 export const CollectorConfigEntrySchema = z.object({
+  /** Unique ID for this collector instance (UUID) */
+  id: z.string(),
   /** Fully-qualified collector ID (e.g., collector-hardware.cpu) */
   collectorId: z.string(),
   /** Collector-specific configuration */

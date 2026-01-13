@@ -5,6 +5,7 @@ import {
   Label,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -67,6 +68,11 @@ export const SystemEditor: React.FC<SystemEditorProps> = ({
             <DialogTitle>
               {initialData ? "Edit System" : "Create System"}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {initialData
+                ? "Modify the settings for this system"
+                : "Create a new system to monitor"}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">

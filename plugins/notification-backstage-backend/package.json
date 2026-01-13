@@ -1,0 +1,22 @@
+{
+  "name": "@checkstack/notification-backstage-backend",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@checkstack/backend-api": "workspace:*",
+    "@checkstack/notification-backend": "workspace:*",
+    "@checkstack/common": "workspace:*",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@checkstack/tsconfig": "workspace:*",
+    "typescript": "^5.9.3"
+  }
+}

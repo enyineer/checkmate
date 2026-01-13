@@ -181,48 +181,7 @@ describe("HttpHealthCheckStrategy", () => {
   });
 
   describe("aggregateResult", () => {
-    it("should calculate status code counts correctly", () => {
-      const runs = [
-        {
-          id: "1",
-          status: "healthy" as const,
-          latencyMs: 100,
-          checkId: "c1",
-          timestamp: new Date(),
-          metadata: {
-            statusCode: 200,
-          },
-        },
-        {
-          id: "2",
-          status: "healthy" as const,
-          latencyMs: 150,
-          checkId: "c1",
-          timestamp: new Date(),
-          metadata: {
-            statusCode: 200,
-          },
-        },
-        {
-          id: "3",
-          status: "healthy" as const,
-          latencyMs: 120,
-          checkId: "c1",
-          timestamp: new Date(),
-          metadata: {
-            statusCode: 404,
-          },
-        },
-      ];
-
-      const aggregated = strategy.aggregateResult(runs);
-
-      expect(aggregated.statusCodeCounts["200"]).toBe(2);
-      expect(aggregated.statusCodeCounts["404"]).toBe(1);
-      expect(aggregated.successRate).toBe(100);
-    });
-
-    it("should count errors", () => {
+    it("should count errors correctly", () => {
       const runs = [
         {
           id: "1",
@@ -240,17 +199,48 @@ describe("HttpHealthCheckStrategy", () => {
           latencyMs: 150,
           checkId: "c1",
           timestamp: new Date(),
+          metadata: {},
+        },
+        {
+          id: "3",
+          status: "unhealthy" as const,
+          latencyMs: 120,
+          checkId: "c1",
+          timestamp: new Date(),
           metadata: {
-            statusCode: 200,
-            responseTime: 100,
+            error: "Timeout",
           },
         },
       ];
 
       const aggregated = strategy.aggregateResult(runs);
 
-      expect(aggregated.errorCount).toBe(1);
-      expect(aggregated.successRate).toBe(50);
+      expect(aggregated.errorCount).toBe(2);
+    });
+
+    it("should return zero errors when all runs succeed", () => {
+      const runs = [
+        {
+          id: "1",
+          status: "healthy" as const,
+          latencyMs: 100,
+          checkId: "c1",
+          timestamp: new Date(),
+          metadata: {},
+        },
+        {
+          id: "2",
+          status: "healthy" as const,
+          latencyMs: 150,
+          checkId: "c1",
+          timestamp: new Date(),
+          metadata: {},
+        },
+      ];
+
+      const aggregated = strategy.aggregateResult(runs);
+
+      expect(aggregated.errorCount).toBe(0);
     });
   });
 });

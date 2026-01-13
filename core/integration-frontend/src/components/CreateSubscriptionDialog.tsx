@@ -4,6 +4,7 @@ import { Trash2, ScrollText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -371,6 +372,13 @@ export const SubscriptionDialog = ({
                     selectedProvider?.displayName ?? "Subscription"
                   }`}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {isEditMode
+                ? "Edit the settings for this integration subscription"
+                : step === "provider"
+                ? "Choose a provider for your integration subscription"
+                : "Configure the subscription settings"}
+            </DialogDescription>
           </DialogHeader>
 
           {step === "provider" ? (

@@ -5,6 +5,7 @@ import {
   Label,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -60,6 +61,11 @@ export const GroupEditor: React.FC<GroupEditorProps> = ({
             <DialogTitle>
               {initialData ? "Edit Group" : "Create Group"}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {initialData
+                ? "Modify the settings for this group"
+                : "Create a new group to organize your systems"}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">

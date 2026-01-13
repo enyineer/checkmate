@@ -29,7 +29,29 @@ flowchart LR
 
 1. **Platform Executor** calls the strategy's `createClient()` to establish a connection
 2. **Collectors** receive the connected `TransportClient` via their `execute()` method
-3. **Results** are stored in `metadata.collectors.[collectorId]`
+3. **Results** are stored in `metadata.collectors.[instanceUUID]` with `_collectorId` metadata
+
+### Collector Instance Identification
+
+Each collector instance in a health check configuration has a unique UUID. When results are stored:
+
+```typescript
+// In metadata.collectors:
+{
+  "550e8400-e29b-41d4-a716-446655440000": {
+    "_collectorId": "healthcheck-ssh.cpu",  // Type identifier for schema linking
+    "usagePercent": 45.2,
+    "loadAvg1m": 0.15
+  },
+  "6ba7b810-9dad-11d1-80b4-00c04fd430c8": {
+    "_collectorId": "healthcheck-ssh.cpu",  // Same type, different instance
+    "usagePercent": 32.8,
+    "loadAvg1m": 0.08
+  }
+}
+```
+
+This allows multiple collectors of the same type to coexist without data collision.
 
 ## CollectorStrategy Interface
 
