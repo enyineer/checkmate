@@ -111,11 +111,14 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Check if @checkstack/release was published
+      - name: Check if packages were published
         id: check-release
         run: |
+          # Since @checkstack/release is a private stub package, it won't appear in publishedPackages.
+          # However, inject-release.ts ensures @checkstack/release is always bumped alongside other changes.
+          # So if ANY packages were published, we should trigger Docker/GitHub release.
           PACKAGES='${{ steps.changesets.outputs.publishedPackages }}'
-          if echo "$PACKAGES" | jq -e '.[] | select(.name == "@checkstack/release")' > /dev/null 2>&1; then
+          if echo "$PACKAGES" | jq -e 'length > 0' > /dev/null 2>&1; then
             echo "releasePublished=true" >> $GITHUB_OUTPUT
           else
             echo "releasePublished=false" >> $GITHUB_OUTPUT
