@@ -178,29 +178,46 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Extract version from package.json
         id: version
         run: |
           VERSION=$(node -p "require('./core/release/package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Generate release notes
+        run: |
+          # Start with Docker and NPM info
+          cat > /tmp/changelog.md << EOF
+          ## Docker Image
+
+          \`\`\`bash
+          docker pull ghcr.io/${{ github.repository_owner }}/checkstack:${{ steps.version.outputs.version }}
+          \`\`\`
+
+          ## NPM Packages
+
+          All \`@checkstack/*\` packages have been published to npm.
+
+          > ⚠️ **Note**: NPM packages require [Bun](https://bun.sh) runtime (not compatible with Node.js).
+
+          EOF
+
+          # Generate aggregated changelog from all packages
+          echo "" >> /tmp/changelog.md
+          bun run scripts/aggregate-changelog.ts >> /tmp/changelog.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Checkstack v${{ steps.version.outputs.version }}
-          body: |
-            ## Docker Image
-
-            ```bash
-            docker pull ghcr.io/${{ github.repository_owner }}/checkstack:${{ steps.version.outputs.version }}
-            ```
-
-            ## NPM Packages
-
-            All `@checkstack/*` packages have been published to npm.
-
-            > ⚠️ **Note**: NPM packages require [Bun](https://bun.sh) runtime (not compatible with Node.js).
-          generate_release_notes: true
+          body_path: /tmp/changelog.md
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
