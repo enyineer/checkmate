@@ -9,6 +9,19 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT_DIR = path.join(import.meta.dirname, "..");
+
+/**
+ * GitHub API limit for release body is 65536 characters.
+ * We use a buffer to account for any additional content added by the workflow.
+ */
+const MAX_BODY_LENGTH = 60_000;
+const TRUNCATION_NOTICE = `
+
+---
+
+> ⚠️ **Release notes truncated** due to GitHub's character limit.
+> See individual package \`CHANGELOG.md\` files for complete details.
+`;
 const RELEASE_PACKAGE_PATH = path.join(ROOT_DIR, "core", "release");
 const PACKAGE_DIRS = [
   path.join(ROOT_DIR, "core"),
@@ -290,6 +303,54 @@ function generateMarkdown(
   return lines.join("\n");
 }
 
+/**
+ * Truncate the markdown output to fit within GitHub's character limit.
+ * Truncates at package boundaries (### headers) to avoid cutting mid-content.
+ */
+function truncateToLimit(markdown: string): string {
+  if (markdown.length <= MAX_BODY_LENGTH) {
+    return markdown;
+  }
+
+  const reservedLength = TRUNCATION_NOTICE.length;
+  const targetLength = MAX_BODY_LENGTH - reservedLength;
+
+  // Find a safe truncation point at a package boundary (### header)
+  // We look backwards from the target length to find the last complete package section
+  const lines = markdown.split("\n");
+  let currentLength = 0;
+  let lastPackageBoundaryIndex = 0;
+
+  for (const [index, line] of lines.entries()) {
+    const lineLength = line.length + 1; // +1 for newline
+
+    // Check if this is a package boundary (### header)
+    if (line.startsWith("### ")) {
+      if (currentLength + lineLength > targetLength) {
+        // This package section would exceed the limit, stop before it
+        break;
+      }
+      lastPackageBoundaryIndex = index;
+    }
+
+    currentLength += lineLength;
+
+    if (currentLength > targetLength && lastPackageBoundaryIndex > 0) {
+      // We've exceeded the limit, truncate at the last safe boundary
+      break;
+    }
+  }
+
+  // If we found a safe boundary, truncate there
+  if (lastPackageBoundaryIndex > 0) {
+    const truncatedLines = lines.slice(0, lastPackageBoundaryIndex);
+    return truncatedLines.join("\n") + TRUNCATION_NOTICE;
+  }
+
+  // Fallback: hard truncate if no safe boundary found
+  return markdown.slice(0, targetLength) + TRUNCATION_NOTICE;
+}
+
 async function main() {
   const version = await getReleaseVersion();
   console.error(`Aggregating changelogs for Checkstack v${version}`);
@@ -298,7 +359,15 @@ async function main() {
   console.error(`Found ${changelogs.length} packages with changes`);
 
   const markdown = generateMarkdown(version, changelogs);
-  console.log(markdown);
+  const output = truncateToLimit(markdown);
+
+  if (output.length < markdown.length) {
+    console.error(
+      `⚠️ Output truncated from ${markdown.length} to ${output.length} characters`
+    );
+  }
+
+  console.log(output);
 }
 
 await main();
