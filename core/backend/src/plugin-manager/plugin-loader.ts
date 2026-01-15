@@ -1,6 +1,4 @@
-import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
 import path from "node:path";
 import fs from "node:fs";
 import type { Hono } from "hono";
@@ -35,6 +33,7 @@ import type { ExtensionPointManager } from "./extension-points";
 import { Router } from "@orpc/server";
 import { AnyContractRouter } from "@orpc/contract";
 import type { PluginMetadata } from "@checkstack/common";
+import { createScopedDb } from "../utils/scoped-db";
 
 export interface PluginLoaderDeps {
   registry: ServiceRegistry;
@@ -321,11 +320,8 @@ export async function loadPlugins({
 
       // Inject Schema-aware Database if schema is provided
       if (p.schema) {
-        const baseUrl = process.env.DATABASE_URL;
         const assignedSchema = getPluginSchemaName(p.metadata.pluginId);
-        const scopedUrl = `${baseUrl}?options=-c%20search_path%3D${assignedSchema}`;
-        const pluginPool = new Pool({ connectionString: scopedUrl });
-        resolvedDeps["database"] = drizzle(pluginPool, { schema: p.schema });
+        resolvedDeps["database"] = createScopedDb(deps.db, assignedSchema);
       }
 
       try {
@@ -406,11 +402,8 @@ export async function loadPlugins({
         }
 
         if (p.schema) {
-          const baseUrl = process.env.DATABASE_URL;
           const assignedSchema = getPluginSchemaName(p.metadata.pluginId);
-          const scopedUrl = `${baseUrl}?options=-c%20search_path%3D${assignedSchema}`;
-          const pluginPool = new Pool({ connectionString: scopedUrl });
-          resolvedDeps["database"] = drizzle(pluginPool, { schema: p.schema });
+          resolvedDeps["database"] = createScopedDb(deps.db, assignedSchema);
         }
 
         const eventBus = await deps.registry.get(coreServices.eventBus, {

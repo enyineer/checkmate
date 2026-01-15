@@ -1,5 +1,4 @@
 import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import {
@@ -26,6 +25,7 @@ import {
 } from "../services/collector-registry";
 import { EventBus } from "../services/event-bus.js";
 import { getPluginSchemaName } from "@checkstack/drizzle-helper";
+import { createScopedDb } from "../utils/scoped-db.js";
 
 /**
  * Check if a PostgreSQL schema exists.
@@ -83,15 +83,8 @@ export function registerCoreServices({
     // Ensure Schema Exists (creates if not already renamed/created)
     await adminPool.query(`CREATE SCHEMA IF NOT EXISTS "${assignedSchema}"`);
 
-    // Create Scoped Connection
-    const baseUrl = process.env.DATABASE_URL;
-    if (!baseUrl) throw new Error("DATABASE_URL is not defined");
-
-    const connector = baseUrl.includes("?") ? "&" : "?";
-    const scopedUrl = `${baseUrl}${connector}options=-c%20search_path%3D${assignedSchema}`;
-
-    const pluginPool = new Pool({ connectionString: scopedUrl });
-    return drizzle(pluginPool);
+    // Create scoped proxy on shared pool (no new connections)
+    return createScopedDb(db, assignedSchema);
   });
 
   // 2. Logger Factory
