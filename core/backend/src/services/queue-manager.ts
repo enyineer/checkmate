@@ -109,7 +109,7 @@ export class QueueManagerImpl implements QueueManager {
       return;
     }
 
-    const queue = plugin.createQueue<T>(name, this.activeConfig);
+    const queue = plugin.createQueue<T>(name, this.activeConfig, this.logger);
     proxy.switchDelegate(queue).catch((error) => {
       this.logger.error(`Failed to initialize queue '${name}'`, error);
     });
@@ -141,7 +141,11 @@ export class QueueManagerImpl implements QueueManager {
     // 3. Test connection
     this.logger.info("🔍 Testing queue connection...");
     try {
-      const testQueue = newPlugin.createQueue("__connection_test__", config);
+      const testQueue = newPlugin.createQueue(
+        "__connection_test__",
+        config,
+        this.logger
+      );
       await testQueue.testConnection();
       await testQueue.stop();
       this.logger.info("✅ Connection test successful");
@@ -185,7 +189,7 @@ export class QueueManagerImpl implements QueueManager {
     // 8. Create new queues and switch delegates
     this.logger.info("🔄 Switching to new backend...");
     for (const [name, proxy] of this.queueProxies.entries()) {
-      const newQueue = newPlugin.createQueue(name, config);
+      const newQueue = newPlugin.createQueue(name, config, this.logger);
       await proxy.switchDelegate(newQueue);
     }
 
@@ -342,7 +346,7 @@ export class QueueManagerImpl implements QueueManager {
     // Stop and switch all queues
     for (const [name, proxy] of this.queueProxies.entries()) {
       try {
-        const newQueue = plugin.createQueue(name, config);
+        const newQueue = plugin.createQueue(name, config, this.logger);
         await proxy.switchDelegate(newQueue);
       } catch (error) {
         this.logger.error(`Failed to switch queue '${name}'`, error);

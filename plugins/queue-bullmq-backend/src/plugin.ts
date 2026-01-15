@@ -1,5 +1,9 @@
 import { QueuePlugin, Queue } from "@checkstack/queue-api";
-import { configString, configNumber } from "@checkstack/backend-api";
+import {
+  configString,
+  configNumber,
+  type Logger,
+} from "@checkstack/backend-api";
 import { z } from "zod";
 import { BullMQQueue } from "./bullmq-queue";
 
@@ -30,7 +34,12 @@ export class BullMQPlugin implements QueuePlugin<BullMQConfig> {
   configVersion = 1;
   configSchema = configSchema;
 
-  createQueue<T>(name: string, config: BullMQConfig): Queue<T> {
+  createQueue<T>(
+    name: string,
+    config: BullMQConfig,
+    _logger: Logger
+  ): Queue<T> {
+    // Note: BullMQ has its own logging via Redis events
     return new BullMQQueue<T>(name, config);
   }
 }

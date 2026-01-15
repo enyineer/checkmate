@@ -6,6 +6,7 @@ import {
   ConsumeOptions,
   RecurringJobDetails,
 } from "@checkstack/queue-api";
+import type { Logger } from "@checkstack/backend-api";
 import { InMemoryQueueConfig } from "./plugin";
 
 /**
@@ -86,8 +87,40 @@ export class InMemoryQueue<T> implements Queue<T> {
     failed: 0,
   };
 
-  constructor(private name: string, private config: InMemoryQueueConfig) {
+  private logger: Logger;
+  private heartbeatInterval: ReturnType<typeof setInterval> | undefined;
+
+  constructor(
+    private name: string,
+    private config: InMemoryQueueConfig,
+    logger: Logger
+  ) {
     this.semaphore = new Semaphore(config.concurrency);
+    this.logger = logger;
+
+    // Start heartbeat for resilient job processing (e.g., after system sleep)
+    if (config.heartbeatIntervalMs > 0) {
+      this.heartbeatInterval = setInterval(() => {
+        if (
+          !this.stopped &&
+          this.jobs.length > 0 &&
+          this.consumerGroups.size > 0
+        ) {
+          void this.processNext();
+        }
+      }, config.heartbeatIntervalMs);
+    }
+  }
+
+  /**
+   * Schedule a callback after a delay.
+   */
+  private scheduleDelayed(ms: number, callback: () => void): void {
+    setTimeout(() => {
+      if (!this.stopped) {
+        callback();
+      }
+    }, ms);
   }
 
   async enqueue(
@@ -141,11 +174,9 @@ export class InMemoryQueue<T> implements Queue<T> {
         // Schedule processing when the job becomes available
         const scheduledDelayMs =
           options.startDelay * 1000 * (this.config.delayMultiplier ?? 1);
-        setTimeout(() => {
-          if (!this.stopped) {
-            void this.processNext();
-          }
-        }, scheduledDelayMs);
+        this.scheduleDelayed(scheduledDelayMs, () => {
+          void this.processNext();
+        });
       } else {
         void this.processNext();
       }
@@ -328,22 +359,8 @@ export class InMemoryQueue<T> implements Queue<T> {
     try {
       await consumer.handler(job);
       this.stats.completed++;
-
-      // After successful execution, check for recurring job and reschedule
-      const recurringJobId = this.findRecurringJobId(job.id);
-      if (recurringJobId) {
-        const metadata = this.recurringJobs.get(recurringJobId);
-        if (metadata?.enabled) {
-          // Reschedule for next interval
-          void this.enqueue(metadata.payload, {
-            jobId: `${recurringJobId}:${Date.now()}`,
-            startDelay: metadata.intervalSeconds,
-            priority: metadata.priority,
-          });
-        }
-      }
     } catch (error) {
-      console.error(
+      this.logger.error(
         `Job ${job.id} failed in group ${groupId} (attempt ${job.attempts}):`,
         error
       );
@@ -371,11 +388,9 @@ export class InMemoryQueue<T> implements Queue<T> {
           Math.pow(2, job.attempts!) *
           1000 *
           (this.config.delayMultiplier ?? 1);
-        setTimeout(() => {
-          if (!this.stopped) {
-            void this.processNext();
-          }
-        }, delay);
+        this.scheduleDelayed(delay, () => {
+          void this.processNext();
+        });
       } else {
         this.stats.failed++;
       }
@@ -383,8 +398,40 @@ export class InMemoryQueue<T> implements Queue<T> {
       this.processing--;
       this.semaphore.release();
 
-      // Process next job if available (but not if we're retrying - setTimeout will handle it)
-      if (!isRetrying && this.jobs.length > 0 && !this.stopped) {
+      // ALWAYS reschedule recurring jobs after execution (unless retrying)
+      // This ensures the recurring job chain is never broken, even if the handler throws
+      let didRescheduleRecurring = false;
+      if (!isRetrying) {
+        const recurringJobId = this.findRecurringJobId(job.id);
+        if (recurringJobId) {
+          const metadata = this.recurringJobs.get(recurringJobId);
+          if (metadata?.enabled) {
+            // Add random suffix to prevent ID collision when rescheduling
+            // within the same millisecond
+            const uniqueId = `${recurringJobId}:${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2, 8)}`;
+            void this.enqueue(metadata.payload, {
+              jobId: uniqueId,
+              startDelay: metadata.intervalSeconds,
+              priority: metadata.priority,
+            });
+            // Mark that we rescheduled - don't call processNext below as
+            // enqueue's scheduleDelayed handles it. This prevents a race
+            // condition where processNext consumes the job before the
+            // scheduled delay has properly elapsed.
+            didRescheduleRecurring = true;
+          }
+        }
+      }
+
+      // Process next job if available (but not if we're retrying or just rescheduled recurring)
+      if (
+        !isRetrying &&
+        !didRescheduleRecurring &&
+        this.jobs.length > 0 &&
+        !this.stopped
+      ) {
         void this.processNext();
       }
     }
@@ -406,6 +453,12 @@ export class InMemoryQueue<T> implements Queue<T> {
 
   async stop(): Promise<void> {
     this.stopped = true;
+
+    // Clear heartbeat interval
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = undefined;
+    }
 
     // Wait for all processing jobs to complete
     while (this.processing > 0) {

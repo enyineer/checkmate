@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Queue } from "./queue";
-import type { Migration } from "@checkstack/backend-api";
+import type { Migration, Logger } from "@checkstack/backend-api";
 
 export interface QueuePlugin<Config = unknown> {
   id: string;
@@ -16,7 +16,7 @@ export interface QueuePlugin<Config = unknown> {
   /** Optional migrations for backward compatibility */
   migrations?: Migration<unknown, unknown>[];
 
-  createQueue<T>(name: string, config: Config): Queue<T>;
+  createQueue<T>(name: string, config: Config, logger: Logger): Queue<T>;
 }
 
 export interface QueuePluginRegistry {

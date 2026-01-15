@@ -1,4 +1,5 @@
 import { QueuePlugin, Queue } from "@checkstack/queue-api";
+import type { Logger } from "@checkstack/backend-api";
 import { z } from "zod";
 import { InMemoryQueue } from "./memory-queue";
 
@@ -26,6 +27,18 @@ const configSchema = z.object({
     .describe(
       "Delay multiplier (default: 1). Only change for testing purposes - set to 0.01 for 100x faster test execution."
     ),
+  /**
+   * Interval in milliseconds for the heartbeat that checks for ready jobs.
+   * This ensures jobs are processed even if setTimeout fails (e.g., after system sleep).
+   * Set to 0 to disable.
+   */
+  heartbeatIntervalMs: z
+    .number()
+    .min(0)
+    .default(5000)
+    .describe(
+      "Heartbeat interval in ms to check for ready jobs (default: 5000). Set to 0 to disable."
+    ),
 });
 
 export type InMemoryQueueConfig = z.infer<typeof configSchema>;
@@ -38,7 +51,11 @@ export class InMemoryQueuePlugin implements QueuePlugin<InMemoryQueueConfig> {
   configVersion = 1; // Initial version
   configSchema = configSchema;
 
-  createQueue<T>(name: string, config: InMemoryQueueConfig): Queue<T> {
-    return new InMemoryQueue<T>(name, config);
+  createQueue<T>(
+    name: string,
+    config: InMemoryQueueConfig,
+    logger: Logger
+  ): Queue<T> {
+    return new InMemoryQueue<T>(name, config, logger);
   }
 }

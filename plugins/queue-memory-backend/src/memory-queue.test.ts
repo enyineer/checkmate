@@ -1,16 +1,34 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { InMemoryQueue } from "./memory-queue";
 import type { QueueJob } from "@checkstack/queue-api";
+import type { Logger } from "@checkstack/backend-api";
+
+// Suppress console.error output during tests for failed jobs
+const testLogger: Logger = {
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
 
 describe("InMemoryQueue Consumer Groups", () => {
   let queue: InMemoryQueue<string>;
 
   beforeEach(() => {
-    queue = new InMemoryQueue("test-queue", {
-      concurrency: 10,
-      maxQueueSize: 100,
-      delayMultiplier: 0.01, // 100x faster delays for testing
-    });
+    queue = new InMemoryQueue(
+      "test-queue",
+      {
+        concurrency: 10,
+        maxQueueSize: 100,
+        delayMultiplier: 0.01, // 100x faster delays for testing
+        heartbeatIntervalMs: 0, // Disable heartbeat during tests
+      },
+      testLogger
+    );
+  });
+
+  afterEach(async () => {
+    await queue.stop();
   });
 
   describe("Broadcast Pattern (Unique Consumer Groups)", () => {
@@ -468,4 +486,6 @@ describe("InMemoryQueue Consumer Groups", () => {
       expect(processed).toContain("job3");
     });
   });
+
+  // NOTE: Recurring job tests are in recurring-jobs.test.ts
 });
