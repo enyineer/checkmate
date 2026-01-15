@@ -36,3 +36,50 @@ export const UpdateQueueConfigurationSchema = z.object({
 export type UpdateQueueConfiguration = z.infer<
   typeof UpdateQueueConfigurationSchema
 >;
+
+/**
+ * Queue statistics DTO
+ */
+export const QueueStatsDtoSchema = z.object({
+  pending: z.number(),
+  processing: z.number(),
+  completed: z.number(),
+  failed: z.number(),
+});
+
+export type QueueStatsDto = z.infer<typeof QueueStatsDtoSchema>;
+
+/**
+ * Lag severity levels
+ */
+export const LagSeveritySchema = z.enum(["none", "warning", "critical"]);
+export type LagSeverity = z.infer<typeof LagSeveritySchema>;
+
+/**
+ * Queue lag thresholds configuration
+ */
+export const QueueLagThresholdsSchema = z.object({
+  warningThreshold: z
+    .number()
+    .min(1)
+    .default(100)
+    .describe("Pending job count to trigger warning"),
+  criticalThreshold: z
+    .number()
+    .min(1)
+    .default(500)
+    .describe("Pending job count to trigger critical alert"),
+});
+
+export type QueueLagThresholds = z.infer<typeof QueueLagThresholdsSchema>;
+
+/**
+ * Queue lag status response
+ */
+export const QueueLagStatusSchema = z.object({
+  pending: z.number(),
+  severity: LagSeveritySchema,
+  thresholds: QueueLagThresholdsSchema,
+});
+
+export type QueueLagStatus = z.infer<typeof QueueLagStatusSchema>;

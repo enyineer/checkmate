@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Queue } from "./queue";
+import type { Queue, QueueStats } from "./queue";
 import type { Migration, Logger } from "@checkstack/backend-api";
 
 export interface QueuePlugin<Config = unknown> {
@@ -83,6 +83,12 @@ export interface QueueManager {
    * Used to warn users before switching backends.
    */
   getInFlightJobCount(): Promise<number>;
+
+  /**
+   * Get aggregated statistics across all queues.
+   * Used for monitoring and lag detection.
+   */
+  getAggregatedStats(): Promise<QueueStats>;
 
   /**
    * List all recurring jobs across all queues.

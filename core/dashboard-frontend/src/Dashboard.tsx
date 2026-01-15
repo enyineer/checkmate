@@ -42,6 +42,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { authApiRef } from "@checkstack/auth-frontend/api";
+import { QueueLagAlert } from "@checkstack/queue-frontend";
 
 const CATALOG_PLUGIN_ID = "catalog";
 const MAX_TERMINAL_ENTRIES = 8;
@@ -303,6 +304,9 @@ export const Dashboard: React.FC = () => {
   return (
     <>
       <div className="space-y-8 animate-in fade-in duration-500">
+        {/* Queue Lag Warning */}
+        <QueueLagAlert />
+
         {/* Overview Section */}
         <section>
           <SectionHeader

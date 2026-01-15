@@ -123,6 +123,13 @@ export function createMockQueueManager(): QueueManager {
       return { success: true, migratedRecurringJobs: 0, warnings: [] };
     },
     getInFlightJobCount: async () => 0,
+    getAggregatedStats: async () => ({
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      failed: 0,
+      consumerGroups: 0,
+    }),
     listAllRecurringJobs: async (): Promise<RecurringJobInfo[]> => [],
     startPolling: () => {},
     shutdown: async () => {

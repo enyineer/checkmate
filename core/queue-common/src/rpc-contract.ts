@@ -10,6 +10,9 @@ import {
   QueuePluginDtoSchema,
   QueueConfigurationDtoSchema,
   UpdateQueueConfigurationSchema,
+  QueueStatsDtoSchema,
+  QueueLagStatusSchema,
+  QueueLagThresholdsSchema,
 } from "./schemas";
 
 // Base builder with metadata support
@@ -40,6 +43,31 @@ export const queueContract = {
     })
     .input(UpdateQueueConfigurationSchema)
     .output(QueueConfigurationDtoSchema),
+
+  // Queue statistics - Read access
+  getStats: _base
+    .meta({
+      userType: "authenticated",
+      access: [queueAccess.settings.read],
+    })
+    .output(QueueStatsDtoSchema),
+
+  // Queue lag status (includes thresholds) - Read access
+  getLagStatus: _base
+    .meta({
+      userType: "authenticated",
+      access: [queueAccess.settings.read],
+    })
+    .output(QueueLagStatusSchema),
+
+  // Update lag thresholds - Manage access
+  updateLagThresholds: _base
+    .meta({
+      userType: "authenticated",
+      access: [queueAccess.settings.manage],
+    })
+    .input(QueueLagThresholdsSchema)
+    .output(QueueLagThresholdsSchema),
 };
 
 // Export contract type

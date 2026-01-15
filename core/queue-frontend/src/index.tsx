@@ -42,3 +42,4 @@ export const queuePlugin = createFrontendPlugin({
 });
 
 export * from "./api";
+export { QueueLagAlert } from "./components/QueueLagAlert";

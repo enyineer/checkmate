@@ -4,12 +4,42 @@ import {
   RpcContext,
   autoAuthMiddleware,
 } from "@checkstack/backend-api";
-import { queueContract } from "@checkstack/queue-common";
+import {
+  queueContract,
+  QueueLagThresholdsSchema,
+  type QueueLagThresholds,
+  type LagSeverity,
+} from "@checkstack/queue-common";
 import { implement, ORPCError } from "@orpc/server";
 
 const os = implement(queueContract)
   .$context<RpcContext>()
   .use(autoAuthMiddleware);
+
+// Config key for lag thresholds
+const LAG_THRESHOLDS_KEY = "queue:lag-thresholds";
+
+// Default thresholds
+const DEFAULT_THRESHOLDS: QueueLagThresholds = {
+  warningThreshold: 100,
+  criticalThreshold: 500,
+};
+
+/**
+ * Calculate lag severity based on pending count and thresholds
+ */
+function calculateSeverity(
+  pending: number,
+  thresholds: QueueLagThresholds
+): LagSeverity {
+  if (pending >= thresholds.criticalThreshold) {
+    return "critical";
+  }
+  if (pending >= thresholds.warningThreshold) {
+    return "warning";
+  }
+  return "none";
+}
 
 export const createQueueRouter = (configService: ConfigService) => {
   return os.router({
@@ -65,6 +95,55 @@ export const createQueueRouter = (configService: ConfigService) => {
           pluginId,
           config,
         };
+      }
+    ),
+
+    getStats: os.getStats.handler(async ({ context }) => {
+      const stats = await context.queueManager.getAggregatedStats();
+      return stats;
+    }),
+
+    getLagStatus: os.getLagStatus.handler(async ({ context }) => {
+      const stats = await context.queueManager.getAggregatedStats();
+
+      // Load thresholds from config
+      const thresholds =
+        (await configService.get<QueueLagThresholds>(
+          LAG_THRESHOLDS_KEY,
+          QueueLagThresholdsSchema,
+          1
+        )) ?? DEFAULT_THRESHOLDS;
+
+      const severity = calculateSeverity(stats.pending, thresholds);
+
+      return {
+        pending: stats.pending,
+        severity,
+        thresholds,
+      };
+    }),
+
+    updateLagThresholds: os.updateLagThresholds.handler(
+      async ({ input, context }) => {
+        // Validate that warning < critical
+        if (input.warningThreshold >= input.criticalThreshold) {
+          throw new ORPCError("BAD_REQUEST", {
+            message: "Warning threshold must be less than critical threshold",
+          });
+        }
+
+        await configService.set(
+          LAG_THRESHOLDS_KEY,
+          QueueLagThresholdsSchema,
+          1,
+          input
+        );
+
+        context.logger.info(
+          `Queue lag thresholds updated: warning=${input.warningThreshold}, critical=${input.criticalThreshold}`
+        );
+
+        return input;
       }
     ),
   });

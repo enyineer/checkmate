@@ -4,6 +4,11 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.tsx"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -15,6 +20,7 @@
     "@checkstack/common": "workspace:*",
     "@checkstack/frontend-api": "workspace:*",
     "@checkstack/queue-common": "workspace:*",
+    "@checkstack/signal-frontend": "workspace:*",
     "@checkstack/ui": "workspace:*",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",

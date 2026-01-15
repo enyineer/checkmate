@@ -3,3 +3,4 @@ export * from "./access";
 export { queueContract, QueueApi, type QueueContract } from "./rpc-contract";
 export * from "./plugin-metadata";
 export { queueRoutes } from "./routes";
+export * from "./signals";

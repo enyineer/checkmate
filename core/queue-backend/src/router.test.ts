@@ -31,10 +31,21 @@ describe("Queue Router", () => {
     setActiveBackend: mock(() =>
       Promise.resolve({ success: true, migratedRecurringJobs: 0, warnings: [] })
     ),
+    getAggregatedStats: mock(() =>
+      Promise.resolve({
+        pending: 50,
+        processing: 5,
+        completed: 100,
+        failed: 2,
+        consumerGroups: 3,
+      })
+    ),
   };
 
   const mockConfigService: any = {
     getRedacted: mock(() => Promise.resolve({ concurrency: 10 })),
+    get: mock(() => Promise.resolve(undefined)),
+    set: mock(() => Promise.resolve()),
   };
 
   const router = createQueueRouter(mockConfigService);
@@ -80,5 +91,132 @@ describe("Queue Router", () => {
     );
     expect(result.pluginId).toBe("memory");
     expect(mockManager.setActiveBackend).toHaveBeenCalled();
+  });
+
+  describe("Queue Stats", () => {
+    it("getStats returns aggregated stats from QueueManager", async () => {
+      const context = createMockRpcContext({
+        user: mockUser,
+        queueManager: mockManager,
+      });
+
+      const result = await call(router.getStats, undefined, { context });
+      expect(result.pending).toBe(50);
+      expect(result.processing).toBe(5);
+      expect(result.completed).toBe(100);
+      expect(result.failed).toBe(2);
+      expect(mockManager.getAggregatedStats).toHaveBeenCalled();
+    });
+  });
+
+  describe("Queue Lag Status", () => {
+    it("getLagStatus returns 'none' severity when pending is below warning threshold", async () => {
+      const lowPendingManager = {
+        ...mockManager,
+        getAggregatedStats: mock(() => Promise.resolve({ pending: 50 })),
+      };
+      const context = createMockRpcContext({
+        user: mockUser,
+        queueManager: lowPendingManager,
+      });
+
+      const result = await call(router.getLagStatus, undefined, { context });
+      expect(result.severity).toBe("none");
+      expect(result.pending).toBe(50);
+      expect(result.thresholds.warningThreshold).toBe(100);
+      expect(result.thresholds.criticalThreshold).toBe(500);
+    });
+
+    it("getLagStatus returns 'warning' severity when pending exceeds warning threshold", async () => {
+      const warningPendingManager = {
+        ...mockManager,
+        getAggregatedStats: mock(() => Promise.resolve({ pending: 150 })),
+      };
+      const context = createMockRpcContext({
+        user: mockUser,
+        queueManager: warningPendingManager,
+      });
+
+      const result = await call(router.getLagStatus, undefined, { context });
+      expect(result.severity).toBe("warning");
+      expect(result.pending).toBe(150);
+    });
+
+    it("getLagStatus returns 'critical' severity when pending exceeds critical threshold", async () => {
+      const criticalPendingManager = {
+        ...mockManager,
+        getAggregatedStats: mock(() => Promise.resolve({ pending: 600 })),
+      };
+      const context = createMockRpcContext({
+        user: mockUser,
+        queueManager: criticalPendingManager,
+      });
+
+      const result = await call(router.getLagStatus, undefined, { context });
+      expect(result.severity).toBe("critical");
+      expect(result.pending).toBe(600);
+    });
+
+    it("getLagStatus uses custom thresholds from config", async () => {
+      const customConfigService = {
+        ...mockConfigService,
+        get: mock(() =>
+          Promise.resolve({
+            warningThreshold: 20,
+            criticalThreshold: 50,
+          })
+        ),
+      };
+      const customRouter = createQueueRouter(customConfigService);
+      const pendingManager = {
+        ...mockManager,
+        getAggregatedStats: mock(() => Promise.resolve({ pending: 30 })),
+      };
+      const context = createMockRpcContext({
+        user: mockUser,
+        queueManager: pendingManager,
+      });
+
+      const result = await call(customRouter.getLagStatus, undefined, {
+        context,
+      });
+      expect(result.severity).toBe("warning");
+      expect(result.thresholds.warningThreshold).toBe(20);
+      expect(result.thresholds.criticalThreshold).toBe(50);
+    });
+  });
+
+  describe("Update Lag Thresholds", () => {
+    it("updateLagThresholds stores new thresholds", async () => {
+      const context = createMockRpcContext({
+        user: mockUser,
+      });
+
+      const result = await call(
+        router.updateLagThresholds,
+        { warningThreshold: 200, criticalThreshold: 1000 },
+        { context }
+      );
+
+      expect(result.warningThreshold).toBe(200);
+      expect(result.criticalThreshold).toBe(1000);
+      expect(mockConfigService.set).toHaveBeenCalled();
+    });
+
+    it("updateLagThresholds rejects if warning >= critical", async () => {
+      const context = createMockRpcContext({
+        user: mockUser,
+      });
+
+      await expect(
+        call(
+          router.updateLagThresholds,
+          { warningThreshold: 500, criticalThreshold: 100 },
+          { context }
+        )
+      ).rejects.toThrow(
+        "Warning threshold must be less than critical threshold"
+      );
+    });
   });
 });

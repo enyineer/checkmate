@@ -3,6 +3,7 @@ import type {
   QueueManager,
   SwitchResult,
   RecurringJobInfo,
+  QueueStats,
 } from "@checkstack/queue-api";
 import type { QueuePluginRegistryImpl } from "./queue-plugin-registry";
 import type { Logger, ConfigService } from "@checkstack/backend-api";
@@ -261,6 +262,34 @@ export class QueueManagerImpl implements QueueManager {
       }
     }
     return total;
+  }
+
+  async getAggregatedStats(): Promise<QueueStats> {
+    const aggregated: QueueStats = {
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      failed: 0,
+      consumerGroups: 0,
+    };
+
+    for (const proxy of this.queueProxies.values()) {
+      try {
+        const delegate = proxy.getDelegate();
+        if (delegate) {
+          const stats = await delegate.getStats();
+          aggregated.pending += stats.pending;
+          aggregated.processing += stats.processing;
+          aggregated.completed += stats.completed;
+          aggregated.failed += stats.failed;
+          aggregated.consumerGroups += stats.consumerGroups;
+        }
+      } catch {
+        // Queue may not be initialized yet
+      }
+    }
+
+    return aggregated;
   }
 
   async listAllRecurringJobs(): Promise<RecurringJobInfo[]> {
