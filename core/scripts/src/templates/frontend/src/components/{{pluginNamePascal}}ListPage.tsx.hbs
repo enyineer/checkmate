@@ -1,5 +1,4 @@
 import { usePluginClient } from "@checkstack/frontend-api";
-import { useQueryClient } from "@tanstack/react-query";
 import { {{pluginNamePascal}}Api } from "@checkstack/{{pluginBaseName}}-common";
 import type { {{pluginNamePascal}}Item } from "../api";
 import { Button, Card } from "@checkstack/ui";
@@ -7,16 +6,15 @@ import { useNavigate } from "react-router-dom";
 
 export const {{pluginNamePascal}}ListPage = () => {
   const client = usePluginClient({{pluginNamePascal}}Api);
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   // Query for items - automatic loading and error states
-  const { data: items = [], isLoading, error } = client.getItems.useQuery({});
+  const { data: items = [], isLoading, error, refetch } = client.getItems.useQuery({});
 
-  // Delete mutation with cache invalidation
+  // Delete mutation with refetch on success
   const deleteMutation = client.deleteItem.useMutation({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["{{pluginBaseName}}"] });
+      void refetch();
     },
   });
 

@@ -28,7 +28,7 @@ export function create{{pluginNamePascal}}Router({
     }),
 
     getItem: os.getItem.handler(async ({ input }) => {
-      return await service.getItem(input);
+      return await service.getItem(input.id);
     }),
 
     createItem: os.createItem.handler(async ({ input }) => {
@@ -40,7 +40,7 @@ export function create{{pluginNamePascal}}Router({
     }),
 
     deleteItem: os.deleteItem.handler(async ({ input }) => {
-      await service.deleteItem(input);
+      await service.deleteItem(input.id);
     }),
   });
 }

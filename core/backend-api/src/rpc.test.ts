@@ -234,13 +234,24 @@ describe("autoAuthMiddleware", () => {
     });
 
     it("should allow anonymous users for public endpoints with correct access", async () => {
+      // Mock anonymous access rules to include the required access
+      const contextWithAnonymousAccess = {
+        ...mockContext,
+        user: undefined,
+        auth: {
+          ...mockContext.auth,
+          getAnonymousAccessRules: () =>
+            Promise.resolve(["test-plugin.resource.read"]),
+        },
+      };
+
       const procedure = implement(testContracts.publicGlobalEndpoint)
         .$context<RpcContext>()
         .use(autoAuthMiddleware)
         .handler(() => ({ message: "success" }));
 
       const result = await call(procedure, undefined, {
-        context: { ...mockContext, user: undefined },
+        context: contextWithAnonymousAccess,
       });
 
       expect(result).toEqual({ message: "success" });
@@ -306,7 +317,7 @@ describe("autoAuthMiddleware", () => {
             user: { type: "service" as const, pluginId: "test-service" },
           },
         })
-      ).rejects.toThrow("User access required");
+      ).rejects.toThrow("This endpoint is for users only");
     });
   });
 
@@ -339,7 +350,7 @@ describe("autoAuthMiddleware", () => {
 
       expect(
         call(procedure, undefined, { context: mockContext })
-      ).rejects.toThrow("Service access required");
+      ).rejects.toThrow("This endpoint is for services only");
     });
   });
 
@@ -364,10 +375,14 @@ describe("autoAuthMiddleware", () => {
     });
 
     it("should deny access when instance check fails", async () => {
-      // Set user with no access rules to simulate denied access
+      // Set user with no access rules AND mock auth to deny team access
       const contextWithNoAccess = {
         ...mockContext,
         user: { type: "user" as const, id: "user-1", accessRules: [] },
+        auth: {
+          ...mockContext.auth,
+          checkResourceTeamAccess: () => Promise.resolve({ hasAccess: false }),
+        },
       };
 
       const procedure = implement(testContracts.singleResourceEndpoint)

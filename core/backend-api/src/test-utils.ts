@@ -7,6 +7,7 @@ import { QueuePluginRegistry, QueueManager } from "@checkstack/queue-api";
 
 /**
  * Creates a mocked oRPC context for testing.
+ * By default provides an authenticated user with wildcard access.
  */
 export function createMockRpcContext(
   overrides: Partial<RpcContext> = {}
@@ -68,7 +69,8 @@ export function createMockRpcContext(
       startPolling: mock(),
       shutdown: mock(),
     } as unknown as QueueManager,
-    user: undefined,
+    // Default: authenticated user with wildcard access for testing
+    user: { type: "user" as const, id: "test-user", accessRules: ["*"] },
     emitHook: mock() as unknown as EmitHookFn,
     ...overrides,
   };
