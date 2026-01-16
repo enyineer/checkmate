@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, jest } from "bun:test";
 import { InMemoryQueue } from "./memory-queue";
 import type { QueueJob } from "@checkstack/queue-api";
 import type { Logger } from "@checkstack/backend-api";
@@ -345,12 +345,14 @@ describe("InMemoryQueue Consumer Groups", () => {
 
   describe("Delayed Jobs", () => {
     it("should not process job until delay expires", async () => {
-      const processedTimes: number[] = [];
-      const enqueueTime = Date.now();
+      // Use fake timers for deterministic behavior
+      jest.useFakeTimers();
+
+      let processed = false;
 
       await queue.consume(
-        async (job) => {
-          processedTimes.push(Date.now());
+        async () => {
+          processed = true;
         },
         { consumerGroup: "delay-group", maxRetries: 0 }
       );
@@ -358,21 +360,23 @@ describe("InMemoryQueue Consumer Groups", () => {
       // Enqueue with 2-second delay (becomes 20ms with delayMultiplier=0.01)
       await queue.enqueue("delayed-job", { startDelay: 2 });
 
-      // Check immediately - should not be processed yet
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      expect(processedTimes.length).toBe(0);
+      // Advance time but NOT past the delay (20ms)
+      jest.advanceTimersByTime(15);
+      await Promise.resolve();
+      expect(processed).toBe(false);
 
-      // Wait for delay to expire (20ms + generous buffer for CI)
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      expect(processedTimes.length).toBe(1);
+      // Advance past the delay
+      jest.advanceTimersByTime(10);
+      await Promise.resolve();
+      expect(processed).toBe(true);
 
-      // Verify it was processed after the delay
-      const actualDelay = processedTimes[0] - enqueueTime;
-      expect(actualDelay).toBeGreaterThanOrEqual(15); // Allow tolerance
-      expect(actualDelay).toBeLessThanOrEqual(200); // Allow more tolerance for CI
+      jest.useRealTimers();
     });
 
     it("should process non-delayed jobs immediately while delayed jobs wait", async () => {
+      // Use fake timers to make this test completely deterministic
+      jest.useFakeTimers();
+
       const processed: string[] = [];
 
       await queue.consume(
@@ -382,23 +386,33 @@ describe("InMemoryQueue Consumer Groups", () => {
         { consumerGroup: "mixed-delay-group", maxRetries: 0 }
       );
 
-      // Enqueue delayed job first (10s delay = 100ms with multiplier)
+      // Enqueue delayed job first (10s delay = 100ms with 0.01 multiplier)
       await queue.enqueue("delayed", { startDelay: 10 });
 
       // Enqueue immediate job
       await queue.enqueue("immediate");
 
-      // Wait for immediate job to be processed (should be done quickly)
-      // The delayed job should NOT be processed yet (100ms delay)
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Advance timers just enough for immediate job to process, but NOT the delayed job
+      jest.advanceTimersByTime(10);
+      // Flush the promise queue to let the async handler complete
+      await Promise.resolve();
+
       expect(processed).toEqual(["immediate"]);
 
-      // Wait for delayed job (100ms + generous buffer for CI)
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Advance past the delay (100ms total needed)
+      jest.advanceTimersByTime(100);
+      await Promise.resolve();
+
       expect(processed).toEqual(["immediate", "delayed"]);
+
+      // Restore real timers
+      jest.useRealTimers();
     });
 
     it("should respect priority with delayed jobs", async () => {
+      // Use fake timers for deterministic behavior
+      jest.useFakeTimers();
+
       const processed: string[] = [];
 
       await queue.consume(
@@ -423,8 +437,9 @@ describe("InMemoryQueue Consumer Groups", () => {
         priority: 5,
       });
 
-      // Wait for delay to expire (10ms + buffer)
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Advance past the delay (10ms)
+      jest.advanceTimersByTime(15);
+      await Promise.resolve();
 
       // Should process in priority order (highest first)
       expect(processed).toEqual([
@@ -432,6 +447,8 @@ describe("InMemoryQueue Consumer Groups", () => {
         "medium-priority",
         "low-priority",
       ]);
+
+      jest.useRealTimers();
     });
   });
 
