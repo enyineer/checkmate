@@ -1,5 +1,11 @@
 # @checkstack/healthcheck-frontend
 
+## 0.4.3
+
+### Patch Changes
+
+- dd07c14: Fix collector add button failing in HTTP contexts by replacing `crypto.randomUUID()` with the `uuid` package
+
 ## 0.4.2
 
 ### Patch Changes
