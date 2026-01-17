@@ -64,6 +64,9 @@ function addSchemaMetadata(
       if (meta["x-secret"]) jsonField["x-secret"] = true;
       if (meta["x-color"]) jsonField["x-color"] = true;
       if (meta["x-hidden"]) jsonField["x-hidden"] = true;
+      if (meta["x-editor-types"]) {
+        jsonField["x-editor-types"] = meta["x-editor-types"];
+      }
       if (meta["x-options-resolver"]) {
         jsonField["x-options-resolver"] = meta["x-options-resolver"];
         if (meta["x-depends-on"])

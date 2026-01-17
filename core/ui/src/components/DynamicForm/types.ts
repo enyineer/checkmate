@@ -1,4 +1,8 @@
-import type { TemplateProperty } from "../TemplateEditor";
+import type { TemplateProperty } from "../CodeEditor";
+import type { EditorType } from "@checkstack/common";
+
+// Re-export types used by multi-type editor
+export type { EditorType } from "./utils";
 import type {
   JsonSchemaPropertyCore,
   JsonSchemaBase,
@@ -16,6 +20,7 @@ export interface JsonSchemaProperty extends JsonSchemaPropertyCore<JsonSchemaPro
   "x-depends-on"?: string[]; // Field names this field depends on (triggers refetch)
   "x-hidden"?: boolean; // Field should be hidden in form (auto-populated)
   "x-searchable"?: boolean; // Shows search input for filtering dropdown options
+  "x-editor-types"?: EditorType[]; // Available editor types for multi-type input
 }
 
 /** Option returned by an options resolver */
@@ -49,8 +54,8 @@ export interface DynamicFormProps {
    */
   optionsResolvers?: Record<string, OptionsResolver>;
   /**
-   * Optional list of available template properties for template fields.
-   * Passed to TemplateEditor for autocompletion hints.
+   * Optional list of available template properties for multi-type editor fields.
+   * When provided, fields with x-editor-types get {{ autocomplete suggestions.
    */
   templateProperties?: TemplateProperty[];
 }

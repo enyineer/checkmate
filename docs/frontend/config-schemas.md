@@ -237,6 +237,75 @@ const schema = z.object({
 - Value is typically set programmatically
 - Useful for connection IDs or other auto-populated values
 
+### `configString({ "x-editor-types": [...] })` - Multi-Type Editor
+
+Use for string fields that support multiple input formats with dynamic editing modes:
+
+```typescript
+import { configString } from "@checkstack/backend-api";
+
+const schema = z.object({
+  // HTTP request body with multiple format options
+  body: configString({
+    "x-editor-types": ["none", "raw", "json", "yaml", "xml", "formdata"],
+  }).optional().describe("Request body"),
+
+  // Template field with structured data support
+  template: configString({
+    "x-editor-types": ["json", "yaml", "xml"],
+  }).describe("Template content"),
+
+  // Simple template with just raw text
+  bodyTemplate: configString({
+    "x-editor-types": ["raw"],
+  }).optional().describe("Custom body template"),
+
+  // Documentation with markdown support
+  notes: configString({
+    "x-editor-types": ["raw", "markdown"],
+  }).optional().describe("Notes or documentation"),
+});
+```
+
+**Available Editor Types:**
+- `"none"`: Disabled input (value is cleared/undefined)
+- `"raw"`: Plain text textarea
+- `"json"`: JSON code editor with syntax highlighting and auto-indentation
+- `"yaml"`: YAML code editor with syntax highlighting and auto-indentation
+- `"xml"`: XML/HTML code editor with tag highlighting and smart tag splitting
+- `"markdown"`: Markdown editor with syntax highlighting
+- `"formdata"`: Key-value pair editor (URL-encoded format)
+
+**CodeEditor Features:**
+- **Syntax Highlighting**: Language-specific colors for keys, values, tags, and templates
+- **Smart Indentation**: Custom Enter key behavior with proper indentation for each language
+- **Bracket/Tag Splitting**: Pressing Enter between `{}`, `[]`, or `<tag></tag>` properly splits them
+- **Template Support**: Mustache-style `{{variable}}` syntax with autocomplete
+- **Line Numbers**: Visible with proper gutter styling
+- **Full Click Area**: Entire editor area is clickable (per official CodeMirror best practices)
+
+**Features:**
+- Dropdown selector when multiple types are available
+- Auto-detects initial editor type from existing value
+- Automatic format conversion when switching between types
+- Template autocomplete (`{{` syntax) when `templateProperties` are provided to `DynamicForm`
+- All formats serialize to a single string for storage
+
+**Template Autocomplete:**
+When the parent `DynamicForm` receives `templateProperties`, all applicable editor types (raw, json, yaml, xml, markdown) will show autocomplete suggestions when typing `{{`:
+
+```tsx
+<DynamicForm
+  schema={configSchema}
+  value={formValue}
+  onChange={setFormValue}
+  templateProperties={[
+    { path: "payload.incident.title", type: "string" },
+    { path: "payload.incident.severity", type: "string" },
+  ]}
+/>
+```
+
 
 ## Secret Handling Best Practices
 

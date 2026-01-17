@@ -13,13 +13,13 @@ import {
   Textarea,
   Toggle,
   ColorPicker,
-  TemplateEditor,
 } from "../../index";
 
 import type { FormFieldProps, JsonSchemaProperty } from "./types";
 import { getCleanDescription, NONE_SENTINEL } from "./utils";
 import { DynamicOptionsField } from "./DynamicOptionsField";
 import { JsonField } from "./JsonField";
+import { MultiTypeEditorField } from "./MultiTypeEditorField";
 
 /**
  * Recursive field renderer that handles all supported JSON Schema types.
@@ -114,46 +114,34 @@ export const FormField: React.FC<FormFieldProps> = ({
 
   // String
   if (propSchema.type === "string") {
+    const cleanDesc = getCleanDescription(description);
+
+    // Multi-type editor field (x-editor-types)
+    const editorTypes = propSchema["x-editor-types"];
+    if (editorTypes && editorTypes.length > 0) {
+      return (
+        <MultiTypeEditorField
+          id={id}
+          label={label}
+          description={cleanDesc}
+          value={value as string | undefined}
+          isRequired={isRequired}
+          editorTypes={editorTypes}
+          templateProperties={templateProperties}
+          onChange={onChange as (val: string | undefined) => void}
+        />
+      );
+    }
+
     const isTextarea =
       propSchema.format === "textarea" ||
       propSchema.description?.includes("[textarea]");
     const isSecret = (
       propSchema as JsonSchemaProperty & { "x-secret"?: boolean }
     )["x-secret"];
-    const cleanDesc = getCleanDescription(description);
 
-    // Textarea fields - use TemplateEditor if templateProperties available
+    // Textarea fields
     if (isTextarea) {
-      // If we have template properties, use TemplateEditor
-      if (templateProperties && templateProperties.length > 0) {
-        return (
-          <div className="space-y-2">
-            <div>
-              <Label htmlFor={id}>
-                {label} {isRequired && "*"}
-              </Label>
-              {cleanDesc && (
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {cleanDesc}
-                </p>
-              )}
-            </div>
-            <TemplateEditor
-              value={(value as string) || ""}
-              onChange={(val) => onChange(val)}
-              availableProperties={templateProperties}
-              placeholder={
-                propSchema.default
-                  ? `Default: ${String(propSchema.default)}`
-                  : "Enter template..."
-              }
-              rows={5}
-            />
-          </div>
-        );
-      }
-
-      // No template properties, fall back to regular textarea
       return (
         <div className="space-y-2">
           <div>
@@ -223,37 +211,7 @@ export const FormField: React.FC<FormFieldProps> = ({
       );
     }
 
-    // Default string input - use TemplateEditor if templateProperties available
-    // If we have template properties, use TemplateEditor with smaller rows
-    if (templateProperties && templateProperties.length > 0) {
-      return (
-        <div className="space-y-2">
-          <div>
-            <Label htmlFor={id}>
-              {label} {isRequired && "*"}
-            </Label>
-            {cleanDesc && (
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {cleanDesc}
-              </p>
-            )}
-          </div>
-          <TemplateEditor
-            value={(value as string) || ""}
-            onChange={(val) => onChange(val)}
-            availableProperties={templateProperties}
-            placeholder={
-              propSchema.default
-                ? `Default: ${String(propSchema.default)}`
-                : undefined
-            }
-            rows={2}
-          />
-        </div>
-      );
-    }
-
-    // No template properties - fallback to regular Input
+    // Default string input
     return (
       <div className="space-y-2">
         <div>

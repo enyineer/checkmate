@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  Versioned,
-  configNumber,
-  configString,
-} from "@checkstack/backend-api";
+import { Versioned, configNumber, configString } from "@checkstack/backend-api";
 import type {
   IntegrationProvider,
   IntegrationDeliveryContext,
@@ -20,7 +16,7 @@ import type {
  */
 function expandTemplate(
   template: string,
-  context: Record<string, unknown>
+  context: Record<string, unknown>,
 ): string {
   return template.replaceAll(/\{\{([^}]+)\}\}/g, (_match, path: string) => {
     const trimmedPath = path.trim();
@@ -102,10 +98,12 @@ export const webhookConfigSchemaV1 = z.object({
     .describe("Additional custom headers to include"),
 
   /** Custom body template. Use {{payload.field}} syntax for templating. */
-  bodyTemplate: configString({})
+  bodyTemplate: configString({
+    "x-editor-types": ["raw", "json", "yaml", "xml", "formdata"],
+  })
     .optional()
     .describe(
-      "Custom request body template. Use {{payload.field}} syntax to include event data. Leave empty for default JSON payload."
+      "Custom request body template. Use {{payload.field}} syntax to include event data. Leave empty for default JSON payload.",
     ),
 
   timeout: configNumber({})
@@ -164,7 +162,7 @@ Configure your server to:
       },
       // eslint-disable-next-line unicorn/no-null
       null,
-      2
+      2,
     ),
     headers: [
       {
@@ -184,7 +182,7 @@ Configure your server to:
   },
 
   async deliver(
-    context: IntegrationDeliveryContext<WebhookConfig>
+    context: IntegrationDeliveryContext<WebhookConfig>,
   ): Promise<IntegrationDeliveryResult> {
     const { event, subscription, providerConfig, logger } = context;
 
@@ -224,7 +222,7 @@ Configure your server to:
       case "basic": {
         if (config.basicUsername && config.basicPassword) {
           const credentials = Buffer.from(
-            `${config.basicUsername}:${config.basicPassword}`
+            `${config.basicUsername}:${config.basicPassword}`,
           ).toString("base64");
           headers["Authorization"] = `Basic ${credentials}`;
         }

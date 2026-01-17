@@ -1,6 +1,7 @@
 import {
   Versioned,
   z,
+  configString,
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
@@ -29,7 +30,11 @@ const requestConfigSchema = z.object({
     .array(z.object({ name: z.string(), value: z.string() }))
     .optional()
     .describe("Request headers"),
-  body: z.string().optional().describe("Request body"),
+  body: configString({
+    "x-editor-types": ["none", "raw", "json", "yaml", "xml", "formdata"],
+  })
+    .optional()
+    .describe("Request body"),
   timeout: z
     .number()
     .min(100)
@@ -94,15 +99,12 @@ export type RequestAggregatedResult = z.infer<typeof requestAggregatedSchema>;
  * Built-in HTTP request collector.
  * Allows users to make HTTP requests and check responses.
  */
-export class RequestCollector
-  implements
-    CollectorStrategy<
-      HttpTransportClient,
-      RequestConfig,
-      RequestResult,
-      RequestAggregatedResult
-    >
-{
+export class RequestCollector implements CollectorStrategy<
+  HttpTransportClient,
+  RequestConfig,
+  RequestResult,
+  RequestAggregatedResult
+> {
   id = "request";
   displayName = "HTTP Request";
   description = "Make an HTTP request and check the response";
@@ -161,7 +163,7 @@ export class RequestCollector
   }
 
   aggregateResult(
-    runs: HealthCheckRunForAggregation<RequestResult>[]
+    runs: HealthCheckRunForAggregation<RequestResult>[],
   ): RequestAggregatedResult {
     const times = runs
       .map((r) => r.metadata?.responseTimeMs)

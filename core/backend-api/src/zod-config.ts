@@ -1,8 +1,9 @@
 import { z } from "zod";
 
-// ============================================================================
-// CONFIG REGISTRY - Typed metadata for configuration schemas
-// ============================================================================
+import type { EditorType } from "@checkstack/common";
+
+// Re-export for local consumers
+export type { EditorType } from "@checkstack/common";
 
 /**
  * Metadata type for configuration schemas.
@@ -21,6 +22,15 @@ export interface ConfigMeta {
   "x-depends-on"?: string[];
   /** If true, renders a searchable/filterable dropdown */
   "x-searchable"?: boolean;
+  /**
+   * Available editor types for this field. Renders a dropdown to select editor mode.
+   * When templateProperties are provided to DynamicForm, autocomplete works in all types.
+   * - "none": Field is disabled/empty
+   * - "raw": Multi-line textarea
+   * - "json": CodeEditor with JSON syntax highlighting
+   * - "formdata": Key/value pair editor (URL-encoded)
+   */
+  "x-editor-types"?: EditorType[];
 }
 
 /**
@@ -90,7 +100,7 @@ export function isHiddenSchema(schema: z.ZodTypeAny): boolean {
  * Get options resolver metadata for a schema.
  */
 export function getOptionsResolverMetadata(
-  schema: z.ZodTypeAny
+  schema: z.ZodTypeAny,
 ):
   | { resolver: string; dependsOn?: string[]; searchable?: boolean }
   | undefined {

@@ -4,6 +4,31 @@
 
 import type { AccessRule } from "./access-utils";
 
+// =============================================================================
+// EDITOR TYPES - Used for multi-type editor fields
+// =============================================================================
+
+/**
+ * Available editor types for multi-type editor fields.
+ * Used with x-editor-types to define which editor modes are available in DynamicForm.
+ *
+ * - "none": Field is disabled/empty
+ * - "raw": Multi-line textarea (plain text)
+ * - "json": CodeEditor with JSON syntax highlighting
+ * - "yaml": CodeEditor with YAML syntax highlighting
+ * - "xml": CodeEditor with XML syntax highlighting
+ * - "markdown": CodeEditor with Markdown syntax highlighting
+ * - "formdata": Key/value pair editor (URL-encoded)
+ */
+export type EditorType =
+  | "none"
+  | "raw"
+  | "json"
+  | "yaml"
+  | "xml"
+  | "markdown"
+  | "formdata";
+
 /**
  * Qualifies a resource type with the plugin namespace.
  * @param pluginId - The plugin identifier
@@ -12,7 +37,7 @@ import type { AccessRule } from "./access-utils";
  */
 export function qualifyResourceType(
   pluginId: string,
-  resourceType: string
+  resourceType: string,
 ): string {
   // If already qualified (contains a dot), return as-is
   if (resourceType.includes(".")) return resourceType;

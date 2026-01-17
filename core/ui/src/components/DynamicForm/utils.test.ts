@@ -7,6 +7,10 @@ import {
   isValueEmpty,
   NONE_SENTINEL,
   parseSelectValue,
+  serializeFormData,
+  parseFormData,
+  detectEditorType,
+  type EditorType,
 } from "./utils";
 
 describe("getCleanDescription", () => {
@@ -211,5 +215,176 @@ describe("parseSelectValue", () => {
 
   it("returns whitespace as-is", () => {
     expect(parseSelectValue("  ")).toBe("  ");
+  });
+});
+
+// =============================================================================
+// Multi-Type Editor Utility Tests
+// =============================================================================
+
+describe("serializeFormData", () => {
+  it("should serialize empty array to empty string", () => {
+    expect(serializeFormData([])).toBe("");
+  });
+
+  it("should serialize single key-value pair", () => {
+    expect(serializeFormData([{ key: "name", value: "John" }])).toBe(
+      "name=John",
+    );
+  });
+
+  it("should serialize multiple key-value pairs", () => {
+    expect(
+      serializeFormData([
+        { key: "name", value: "John" },
+        { key: "age", value: "30" },
+      ]),
+    ).toBe("name=John&age=30");
+  });
+
+  it("should URL-encode special characters", () => {
+    expect(serializeFormData([{ key: "message", value: "Hello World!" }])).toBe(
+      "message=Hello%20World!",
+    );
+  });
+
+  it("should handle empty values", () => {
+    expect(serializeFormData([{ key: "empty", value: "" }])).toBe("empty=");
+  });
+
+  it("should filter out entries with empty keys", () => {
+    expect(
+      serializeFormData([
+        { key: "", value: "ignored" },
+        { key: "valid", value: "kept" },
+      ]),
+    ).toBe("valid=kept");
+  });
+
+  it("should handle values with equals sign", () => {
+    expect(serializeFormData([{ key: "expr", value: "a=b" }])).toBe(
+      "expr=a%3Db",
+    );
+  });
+});
+
+describe("parseFormData", () => {
+  it("should parse empty string to empty array", () => {
+    expect(parseFormData("")).toEqual([]);
+  });
+
+  it("should parse whitespace-only string to empty array", () => {
+    expect(parseFormData("   ")).toEqual([]);
+  });
+
+  it("should parse single key-value pair", () => {
+    expect(parseFormData("name=John")).toEqual([
+      { key: "name", value: "John" },
+    ]);
+  });
+
+  it("should parse multiple key-value pairs", () => {
+    expect(parseFormData("name=John&age=30")).toEqual([
+      { key: "name", value: "John" },
+      { key: "age", value: "30" },
+    ]);
+  });
+
+  it("should URL-decode special characters", () => {
+    expect(parseFormData("message=Hello%20World!")).toEqual([
+      { key: "message", value: "Hello World!" },
+    ]);
+  });
+
+  it("should handle empty values", () => {
+    expect(parseFormData("empty=")).toEqual([{ key: "empty", value: "" }]);
+  });
+
+  it("should handle values with equals sign", () => {
+    expect(parseFormData("expr=a%3Db")).toEqual([
+      { key: "expr", value: "a=b" },
+    ]);
+  });
+
+  it("should handle value containing literal equals", () => {
+    expect(parseFormData("expr=a=b")).toEqual([{ key: "expr", value: "a=b" }]);
+  });
+});
+
+describe("detectEditorType", () => {
+  const allTypes: EditorType[] = ["none", "raw", "json", "formdata"];
+  const withoutNone: EditorType[] = ["raw", "json", "formdata"];
+
+  describe("empty/undefined values", () => {
+    it("should return 'none' for undefined when available", () => {
+      expect(detectEditorType(undefined, allTypes)).toBe("none");
+    });
+
+    it("should return 'raw' for undefined when 'none' not available", () => {
+      expect(detectEditorType(undefined, withoutNone)).toBe("raw");
+    });
+
+    it("should return 'none' for empty string when available", () => {
+      expect(detectEditorType("", allTypes)).toBe("none");
+    });
+
+    it("should return 'raw' for whitespace-only when 'none' not available", () => {
+      expect(detectEditorType("   ", withoutNone)).toBe("raw");
+    });
+  });
+
+  describe("JSON detection", () => {
+    it("should detect valid JSON object", () => {
+      expect(detectEditorType('{"key": "value"}', allTypes)).toBe("json");
+    });
+
+    it("should detect valid JSON array", () => {
+      expect(detectEditorType("[1, 2, 3]", allTypes)).toBe("json");
+    });
+
+    it("should not detect invalid JSON", () => {
+      expect(detectEditorType("{invalid json}", allTypes)).toBe("raw");
+    });
+
+    it("should not detect JSON when json type not available", () => {
+      expect(detectEditorType('{"key": "value"}', ["raw", "formdata"])).toBe(
+        "raw",
+      );
+    });
+  });
+
+  describe("formdata detection", () => {
+    it("should detect key=value format", () => {
+      expect(detectEditorType("name=John", allTypes)).toBe("formdata");
+    });
+
+    it("should detect multiple pairs", () => {
+      expect(detectEditorType("name=John&age=30", allTypes)).toBe("formdata");
+    });
+
+    it("should not detect formdata with newlines", () => {
+      expect(detectEditorType("name=John\nage=30", allTypes)).toBe("raw");
+    });
+
+    it("should not detect formdata when formdata type not available", () => {
+      expect(detectEditorType("name=John", ["raw", "json"])).toBe("raw");
+    });
+
+    it("should prefer json over formdata for ambiguous content", () => {
+      const jsonLikeFormdata = '{"name":"John"}';
+      expect(detectEditorType(jsonLikeFormdata, allTypes)).toBe("json");
+    });
+  });
+
+  describe("fallback behavior", () => {
+    it("should fall back to raw for plain text", () => {
+      expect(detectEditorType("Hello, world!", allTypes)).toBe("raw");
+    });
+
+    it("should fall back to first available type when raw not available", () => {
+      expect(detectEditorType("Hello, world!", ["json", "formdata"])).toBe(
+        "json",
+      );
+    });
   });
 });
