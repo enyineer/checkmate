@@ -21,7 +21,7 @@ const loggerPath = path.join(backendSrcDir, "logger");
 const coreServicesPath = path.join(
   backendSrcDir,
   "plugin-manager",
-  "core-services"
+  "core-services",
 );
 
 // Mock database module with absolute path
@@ -49,8 +49,13 @@ mock.module(coreServicesPath, () => ({
       register: (ref: { id: string }, impl: unknown) => void;
     };
   }) => {
-    // Register mock database factory - returns empty object, no DATABASE_URL check
-    registry.registerFactory(coreServices.database, () => ({}));
+    // Register mock database factory - includes dialect.migrate for migration tests
+    registry.registerFactory(coreServices.database, () => ({
+      dialect: {
+        migrate: async () => {}, // Mock migrate function
+      },
+      session: {},
+    }));
 
     // Register mock logger factory
     registry.registerFactory(coreServices.logger, () => createMockLogger());

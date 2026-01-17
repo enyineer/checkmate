@@ -1,0 +1,5 @@
+# Bun test configuration for core/backend
+# This ensures tests work when run from this subdirectory
+[test]
+# Preload mocks before any test file runs
+preload = ["./src/test-preload.ts"]
