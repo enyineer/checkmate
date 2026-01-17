@@ -6,9 +6,17 @@ COPY package.json bun.lock ./
 COPY core ./core
 COPY plugins ./plugins
 
-# Install all dependencies
+# Install all dependencies with timeout to prevent CI stalls
 #
-# WORKAROUND: Using "|| true" because Bun exits with code 1 when optional
+# OPTIMIZATION: BuildKit cache mount persists ~/.bun/install/cache across builds.
+# Packages are only downloaded once, even when bun.lock changes.
+#
+# WORKAROUND 1: Using `timeout` to kill stalled installs. Multi-platform builds
+# (arm64 + amd64 in parallel) can rarely cause bun install to hang indefinitely,
+# wasting runner minutes. A 300s (5 min) timeout per attempt, with 3 retries,
+# ensures the build either succeeds or fails fast.
+#
+# WORKAROUND 2: Using "|| true" because Bun exits with code 1 when optional
 # dependencies fail to install, even though they're truly optional.
 #
 # Affected packages:
@@ -23,7 +31,12 @@ COPY plugins ./plugins
 # by exiting 0 when only optional deps fail. Until then, we verify core packages
 # are installed correctly in the next step.
 #
-RUN bun install --frozen-lockfile || true
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+  for i in 1 2 3; do \
+  echo "Attempt $i: Installing dependencies..." && \
+  timeout 300 bun install --frozen-lockfile && break || \
+  { echo "Attempt $i failed (timeout or error), retrying in 5s..."; sleep 5; }; \
+  done || true
 
 # Verify core packages installed correctly (catches real failures vs optional)
 RUN test -d core/backend/node_modules/hono && test -d core/backend/node_modules/drizzle-orm && \
