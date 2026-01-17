@@ -26,13 +26,14 @@
     "react-router-dom": "^6.20.0",
     "react-simple-code-editor": "^0.14.1",
     "recharts": "^3.6.0",
+    "uuid": "^13.0.0",
     "zod": "^4.2.1"
   },
   "devDependencies": {
-    "@types/prismjs": "^1.26.5",
-    "typescript": "^5.0.0",
-    "@types/react": "^18.2.0",
+    "@checkstack/scripts": "workspace:*",
     "@checkstack/tsconfig": "workspace:*",
-    "@checkstack/scripts": "workspace:*"
+    "@types/prismjs": "^1.26.5",
+    "@types/react": "^18.2.0",
+    "typescript": "^5.0.0"
   }
 }

@@ -22,6 +22,7 @@ import {
   Badge,
 } from "@checkstack/ui";
 import { Plus, Trash2 } from "lucide-react";
+import { v4 as generateId } from "uuid";
 import { isBuiltInCollector } from "../hooks/useCollectors";
 import { AssertionBuilder, type Assertion } from "./AssertionBuilder";
 
@@ -67,20 +68,20 @@ export const CollectorList: React.FC<CollectorListProps> = ({
     (index: number, isValid: boolean) => {
       setValidityMap((prev) => ({ ...prev, [index]: isValid }));
     },
-    []
+    [],
   );
   // Separate built-in and external collectors
   const builtInCollectors = availableCollectors.filter((c) =>
-    isBuiltInCollector(c.id, strategyId)
+    isBuiltInCollector(c.id, strategyId),
   );
   const externalCollectors = availableCollectors.filter(
-    (c) => !isBuiltInCollector(c.id, strategyId)
+    (c) => !isBuiltInCollector(c.id, strategyId),
   );
 
   // Get collectors that can still be added
   const getAddableCollectors = () => {
     const configuredIds = new Set(
-      configuredCollectors.map((c) => c.collectorId)
+      configuredCollectors.map((c) => c.collectorId),
     );
 
     return availableCollectors.filter((c) => {
@@ -100,7 +101,7 @@ export const CollectorList: React.FC<CollectorListProps> = ({
     if (!collector) return;
 
     const newEntry: CollectorConfigEntry = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       collectorId,
       config: {},
       assertions: [],
@@ -122,7 +123,7 @@ export const CollectorList: React.FC<CollectorListProps> = ({
 
   const handleConfigChange = (
     index: number,
-    config: Record<string, unknown>
+    config: Record<string, unknown>,
   ) => {
     const updated = [...configuredCollectors];
     updated[index] = { ...updated[index], config };
@@ -224,7 +225,7 @@ export const CollectorList: React.FC<CollectorListProps> = ({
               const collector = getCollectorDetails(entry.collectorId);
               const isBuiltIn = isBuiltInCollector(
                 entry.collectorId,
-                strategyId
+                strategyId,
               );
 
               return (
