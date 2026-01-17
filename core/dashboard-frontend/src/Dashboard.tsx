@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   useApi,
   usePluginClient,
-  useQueryClient,
   ExtensionSlot,
 } from "@checkstack/frontend-api";
 import {
@@ -87,7 +86,6 @@ export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const authApi = useApi(authApiRef);
-  const queryClient = useQueryClient();
   const { data: session } = authApi.useSession();
 
   // Terminal feed entries from real healthcheck signals
@@ -125,7 +123,7 @@ export const Dashboard: React.FC = () => {
   const maintenances = maintenancesData?.maintenances ?? [];
 
   // Fetch subscriptions (only when logged in)
-  const { data: subscriptions = [] } =
+  const { data: subscriptions = [], refetch: refetchSubscriptions } =
     notificationClient.getSubscriptions.useQuery(
       {},
       { enabled: !!session, staleTime: 60_000 },
@@ -141,8 +139,7 @@ export const Dashboard: React.FC = () => {
   const subscribeMutation = notificationClient.subscribe.useMutation({
     onSuccess: () => {
       toast.success("Subscribed to group notifications");
-      // Invalidate subscriptions query to refetch
-      queryClient.invalidateQueries({ queryKey: ["notification"] });
+      void refetchSubscriptions();
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to subscribe");
@@ -152,7 +149,7 @@ export const Dashboard: React.FC = () => {
   const unsubscribeMutation = notificationClient.unsubscribe.useMutation({
     onSuccess: () => {
       toast.success("Unsubscribed from group notifications");
-      queryClient.invalidateQueries({ queryKey: ["notification"] });
+      void refetchSubscriptions();
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to unsubscribe");

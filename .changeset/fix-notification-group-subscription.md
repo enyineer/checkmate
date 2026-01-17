@@ -2,4 +2,6 @@
 "@checkstack/dashboard-frontend": patch
 ---
 
-Fixed notification group subscription failing for catalog groups. The group ID format was using a colon separator and missing the entity type prefix, causing subscriptions to fail with "Notification group does not exist" error.
+Fixed notification group subscription for catalog groups:
+- Fixed group ID format using colon separator instead of dots and missing entity type prefix
+- Fixed subscription button state not updating after subscribe/unsubscribe by using refetch instead of invalidateQueries
