@@ -183,7 +183,7 @@ export type ScopedDatabase<TSchema extends Record<string, unknown>> = Omit<
  */
 export function createScopedDb<TSchema extends Record<string, unknown>>(
   baseDb: NodePgDatabase<Record<string, unknown>>,
-  schemaName: string
+  schemaName: string,
 ): ScopedDatabase<TSchema> {
   const wrappedDb = baseDb as NodePgDatabase<TSchema>;
 
@@ -225,7 +225,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
     builder: T,
     initialMethod: string,
     initialArgs: unknown[],
-    chain: Array<{ method: string; args: unknown[] }> = []
+    chain: Array<{ method: string; args: unknown[] }> = [],
   ): T {
     // Store chain info for this builder instance
     pendingChains.set(builder, {
@@ -253,7 +253,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
         if (prop === "then" && typeof value === "function") {
           return (
             onFulfilled?: (value: unknown) => unknown,
-            onRejected?: (reason: unknown) => unknown
+            onRejected?: (reason: unknown) => unknown,
           ) => {
             const chainInfo = pendingChains.get(builder);
             if (!chainInfo) {
@@ -262,7 +262,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
               return (value as Function).call(
                 builderTarget,
                 onFulfilled,
-                onRejected
+                onRejected,
               );
             }
 
@@ -271,7 +271,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
               // Set the schema search_path for this transaction
               // SET LOCAL ensures it only affects this transaction
               await tx.execute(
-                sql.raw(`SET LOCAL search_path = "${schemaName}", public`)
+                sql.raw(`SET LOCAL search_path = "${schemaName}", public`),
               );
 
               // Rebuild the query on the transaction connection
@@ -284,7 +284,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
               // Replay all the chained method calls (from, where, orderBy, etc.)
               for (const call of chainInfo.chain) {
                 txQuery = (txQuery as Record<string, TxMethod>)[call.method](
-                  ...call.args
+                  ...call.args,
                 );
               }
 
@@ -310,13 +310,13 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
             if (!chainInfo) {
               return (value as (...a: unknown[]) => Promise<unknown>).apply(
                 builderTarget,
-                args
+                args,
               );
             }
 
             return baseDb.transaction(async (tx) => {
               await tx.execute(
-                sql.raw(`SET LOCAL search_path = "${schemaName}", public`)
+                sql.raw(`SET LOCAL search_path = "${schemaName}", public`),
               );
 
               type TxMethod = (...args: unknown[]) => unknown;
@@ -326,7 +326,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
 
               for (const call of chainInfo.chain) {
                 txQuery = (txQuery as Record<string, TxMethod>)[call.method](
-                  ...call.args
+                  ...call.args,
                 );
               }
 
@@ -352,7 +352,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
             // Call the original method
             const result = (value as (...a: unknown[]) => unknown).apply(
               builderTarget,
-              args
+              args,
             );
 
             // If it returns an object (likely another builder), wrap it
@@ -367,7 +367,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
                 result as object,
                 chainInfo?.method || initialMethod,
                 chainInfo?.args || initialArgs,
-                newChain
+                newChain,
               );
             }
             return result;
@@ -410,7 +410,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
             `isolation. Use the standard query builder API instead:\n` +
             `  - db.select().from(table) instead of db.query.table.findMany()\n` +
             `  - db.select().from(table).where(...).limit(1) instead of db.query.table.findFirst()\n` +
-            `Current schema: "${schemaName}"`
+            `Current schema: "${schemaName}"`,
         );
       }
 
@@ -424,12 +424,12 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
        */
       if (prop === "transaction") {
         return async <T>(
-          callback: (tx: ScopedDatabase<TSchema>) => Promise<T>
+          callback: (tx: ScopedDatabase<TSchema>) => Promise<T>,
         ): Promise<T> => {
           return target.transaction(async (tx) => {
             // Set search_path once at transaction start
             await tx.execute(
-              sql.raw(`SET LOCAL search_path = "${schemaName}", public`)
+              sql.raw(`SET LOCAL search_path = "${schemaName}", public`),
             );
             // User's callback runs with the correct schema
             return callback(tx as ScopedDatabase<TSchema>);
@@ -446,11 +446,33 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
         return async (...args: unknown[]) => {
           return target.transaction(async (tx) => {
             await tx.execute(
-              sql.raw(`SET LOCAL search_path = "${schemaName}", public`)
+              sql.raw(`SET LOCAL search_path = "${schemaName}", public`),
             );
             return (tx.execute as (...a: unknown[]) => Promise<unknown>).apply(
               tx,
-              args
+              args,
+            );
+          });
+        };
+      }
+
+      /**
+       * Handle db.$count() calls.
+       *
+       * The $count utility is a newer Drizzle method that returns a Promise
+       * directly (not a query builder), so it's not caught by the entityKind
+       * detection for query builders. We need to explicitly wrap it in a
+       * transaction with the search_path set.
+       */
+      if (prop === "$count" && typeof value === "function") {
+        return async (...args: unknown[]) => {
+          return target.transaction(async (tx) => {
+            await tx.execute(
+              sql.raw(`SET LOCAL search_path = "${schemaName}", public`),
+            );
+            return (tx.$count as (...a: unknown[]) => Promise<unknown>).apply(
+              tx,
+              args,
             );
           });
         };
@@ -470,7 +492,7 @@ export function createScopedDb<TSchema extends Record<string, unknown>>(
         return (...args: unknown[]) => {
           const result = (value as (...a: unknown[]) => unknown).apply(
             target,
-            args
+            args,
           );
 
           // Check if the result is a query builder that needs wrapping
