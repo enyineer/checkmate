@@ -1,5 +1,13 @@
 # @checkstack/healthcheck-common
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [83557c7]
+  - @checkstack/common@0.4.0
+  - @checkstack/signal-common@0.1.2
+
 ## 0.4.0
 
 ### Minor Changes

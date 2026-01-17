@@ -1,5 +1,13 @@
 # @checkstack/catalog-common
 
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [83557c7]
+  - @checkstack/common@0.4.0
+  - @checkstack/frontend-api@0.3.1
+
 ## 1.2.1
 
 ### Patch Changes

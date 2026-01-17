@@ -1,5 +1,35 @@
 # @checkstack/ui
 
+## 0.3.0
+
+### Minor Changes
+
+- 83557c7: ## CodeEditor Multi-Language Support
+
+  - **Refactored CodeEditor** into modular architecture with language-specific support
+  - **Added language modes**: JSON, YAML, XML, and Markdown with custom indentation and syntax highlighting
+  - **Smart Enter key behavior**: Bracket/tag splitting (e.g., `<div></div>` → proper split on Enter)
+  - **Autocomplete fix**: Enter key now correctly selects completions instead of inserting newlines
+  - **Click area fix**: Entire editor area is now clickable (per official CodeMirror minHeight docs)
+  - **Line numbers**: Now visible with proper gutter styling
+  - **185 comprehensive tests** for all language indentation and template position validation
+
+- 6dbfab8: Replace react-simple-code-editor with @uiw/react-codemirror for better maintenance and features. Added new `CodeEditor` component as a reusable abstraction for code editing with syntax highlighting.
+
+### Patch Changes
+
+- d316128: Add "None" option to optional Select fields in DynamicForm
+
+  **Bug Fix:**
+
+  - Optional select fields (using `x-options-resolver` or enums) now display a "None" option at the top of the dropdown
+  - Selecting "None" clears the field value, allowing users to unset previously selected values
+  - This fixes the issue where optional fields like `defaultRole` in authentication strategies could not be cleared after selection
+
+- Updated dependencies [83557c7]
+  - @checkstack/common@0.4.0
+  - @checkstack/frontend-api@0.3.1
+
 ## 0.2.4
 
 ### Patch Changes

@@ -1,5 +1,21 @@
 # @checkstack/healthcheck-backend
 
+## 0.3.5
+
+### Patch Changes
+
+- Updated dependencies [83557c7]
+- Updated dependencies [83557c7]
+  - @checkstack/backend-api@0.4.0
+  - @checkstack/common@0.4.0
+  - @checkstack/catalog-backend@0.2.5
+  - @checkstack/command-backend@0.1.4
+  - @checkstack/integration-backend@0.1.4
+  - @checkstack/queue-api@0.1.2
+  - @checkstack/catalog-common@1.2.2
+  - @checkstack/healthcheck-common@0.4.1
+  - @checkstack/signal-common@0.1.2
+
 ## 0.3.4
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @checkstack/release
 
+## 0.15.0
+
+### Minor Changes
+
+- 83557c7: ## Multi-Type Editor Support for Webhooks
+
+  - Updated webhook provider to use new multi-type editor field for body templates
+
 ## 0.14.0
 
 ### Minor Changes
