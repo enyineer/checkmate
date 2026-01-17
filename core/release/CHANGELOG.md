@@ -1,5 +1,11 @@
 # @checkstack/release
 
+## 0.10.0
+
+### Minor Changes
+
+- dd07c14: Fix collector add button failing in HTTP contexts by replacing `crypto.randomUUID()` with the `uuid` package
+
 ## 0.9.0
 
 ### Minor Changes
