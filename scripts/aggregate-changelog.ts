@@ -91,7 +91,7 @@ function normalizeHeadings(content: string): string {
  */
 function extractVersionChangelog(
   content: string,
-  version: string
+  version: string,
 ): string | undefined {
   const lines = content.split("\n");
   const versionHeader = `## ${version}`;
@@ -122,10 +122,38 @@ function extractVersionChangelog(
 }
 
 /**
+ * Check if a changelog entry only contains dependency updates
+ * (i.e., no actual code changes in this package)
+ *
+ * These entries look like:
+ * ```
+ * ### Patch Changes
+ *
+ * - Updated dependencies [abc1234]
+ *   - @checkstack/some-package@1.0.0
+ * ```
+ */
+export function isDependencyOnlyChangelog(changes: string): boolean {
+  const lines = changes.split("\n");
+
+  // Find all TOP-LEVEL bullet point entries (lines starting with "- " without indentation)
+  // Sub-bullets like "  - @checkstack/some-package@1.0.0" should not be counted
+  const bulletLines = lines.filter((line) => line.startsWith("- "));
+
+  if (bulletLines.length === 0) {
+    // No bullet points at all - treat as dependency-only (empty changelog)
+    return true;
+  }
+
+  // Check if every top-level bullet point is an "Updated dependencies" entry
+  return bulletLines.every((line) => line.startsWith("- Updated dependencies"));
+}
+
+/**
  * Recursively find all package directories with CHANGELOG.md files
  */
 async function findPackagesWithChangelogs(
-  baseDir: string
+  baseDir: string,
 ): Promise<Array<{ dir: string; packageJson: { name: string } }>> {
   const packages: Array<{ dir: string; packageJson: { name: string } }> = [];
 
@@ -195,7 +223,7 @@ async function aggregateChangelogs(): Promise<PackageChangelog[]> {
         // The version might be different from the release version
         const packageJsonContent = await readFile(
           path.join(pkg.dir, "package.json"),
-          "utf8"
+          "utf8",
         );
         const packageJson = JSON.parse(packageJsonContent) as {
           version: string;
@@ -204,7 +232,7 @@ async function aggregateChangelogs(): Promise<PackageChangelog[]> {
 
         const changes = extractVersionChangelog(content, packageVersion);
 
-        if (changes) {
+        if (changes && !isDependencyOnlyChangelog(changes)) {
           changelogs.push({
             packageName: pkg.packageJson.name,
             version: packageVersion,
@@ -219,7 +247,7 @@ async function aggregateChangelogs(): Promise<PackageChangelog[]> {
 
   // Sort by package name for consistent output
   return changelogs.toSorted((a, b) =>
-    a.packageName.localeCompare(b.packageName)
+    a.packageName.localeCompare(b.packageName),
   );
 }
 
@@ -241,7 +269,7 @@ function getChangeType(changes: string): "major" | "minor" | "patch" {
  */
 function generateMarkdown(
   version: string,
-  changelogs: PackageChangelog[]
+  changelogs: PackageChangelog[],
 ): string {
   const lines: string[] = [`# Checkstack v${version} Changelog`, ""];
 
@@ -252,13 +280,13 @@ function generateMarkdown(
 
   // Group by change type
   const majorChanges = changelogs.filter(
-    (c) => getChangeType(c.changes) === "major"
+    (c) => getChangeType(c.changes) === "major",
   );
   const minorChanges = changelogs.filter(
-    (c) => getChangeType(c.changes) === "minor"
+    (c) => getChangeType(c.changes) === "minor",
   );
   const patchChanges = changelogs.filter(
-    (c) => getChangeType(c.changes) === "patch"
+    (c) => getChangeType(c.changes) === "patch",
   );
 
   if (majorChanges.length > 0) {
@@ -270,7 +298,7 @@ function generateMarkdown(
         "",
         normalizeHeadings(changelog.changes),
         "",
-      ])
+      ]),
     );
   }
 
@@ -283,7 +311,7 @@ function generateMarkdown(
         "",
         normalizeHeadings(changelog.changes),
         "",
-      ])
+      ]),
     );
   }
 
@@ -296,7 +324,7 @@ function generateMarkdown(
         "",
         normalizeHeadings(changelog.changes),
         "",
-      ])
+      ]),
     );
   }
 
@@ -363,7 +391,7 @@ async function main() {
 
   if (output.length < markdown.length) {
     console.error(
-      `⚠️ Output truncated from ${markdown.length} to ${output.length} characters`
+      `⚠️ Output truncated from ${markdown.length} to ${output.length} characters`,
     );
   }
 
