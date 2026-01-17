@@ -53,7 +53,7 @@ export const NotificationBell = () => {
       {
         enabled: !!session && isOpen,
         staleTime: 30_000,
-      }
+      },
     );
 
   // Mark all as read mutation
@@ -88,7 +88,7 @@ export const NotificationBell = () => {
         },
         ...(prev ?? []).slice(0, 4), // Keep only 5 items
       ]);
-    }, [])
+    }, []),
   );
 
   // Handle count changes from other sources
@@ -96,25 +96,31 @@ export const NotificationBell = () => {
     NOTIFICATION_COUNT_CHANGED,
     useCallback((payload) => {
       setSignalUnreadCount(payload.unreadCount);
-    }, [])
+    }, []),
   );
 
   // Handle notification marked as read
   useSignal(
     NOTIFICATION_READ,
-    useCallback((payload) => {
-      if (payload.notificationId) {
-        // Single notification marked as read - remove from list
-        setSignalNotifications((prev) =>
-          (prev ?? []).filter((n) => n.id !== payload.notificationId)
-        );
-        setSignalUnreadCount((prev) => Math.max(0, (prev ?? 1) - 1));
-      } else {
-        // All marked as read - clear the list
-        setSignalNotifications([]);
-        setSignalUnreadCount(0);
-      }
-    }, [])
+    useCallback(
+      (payload) => {
+        if (payload.notificationId) {
+          // Single notification marked as read - remove from list
+          setSignalNotifications((prev) =>
+            (prev ?? []).filter((n) => n.id !== payload.notificationId),
+          );
+          // Use unreadData?.count as fallback when signalUnreadCount hasn't been set yet
+          setSignalUnreadCount((prev) =>
+            Math.max(0, (prev ?? unreadData?.count ?? 1) - 1),
+          );
+        } else {
+          // All marked as read - clear the list
+          setSignalNotifications([]);
+          setSignalUnreadCount(0);
+        }
+      },
+      [unreadData?.count],
+    ),
   );
 
   // ==========================================================================
@@ -208,8 +214,8 @@ export const NotificationBell = () => {
                     notification.importance === "critical"
                       ? "border-l-2 border-l-destructive"
                       : notification.importance === "warning"
-                      ? "border-l-2 border-l-warning"
-                      : ""
+                        ? "border-l-2 border-l-warning"
+                        : ""
                   }`}
                 >
                   <div
@@ -217,8 +223,8 @@ export const NotificationBell = () => {
                       notification.importance === "critical"
                         ? "text-destructive"
                         : notification.importance === "warning"
-                        ? "text-warning"
-                        : "text-foreground"
+                          ? "text-warning"
+                          : "text-foreground"
                     }`}
                   >
                     {notification.title}
