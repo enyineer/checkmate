@@ -794,7 +794,7 @@
     },
     "core/release": {
       "name": "@checkstack/release",
-      "version": "0.12.0",
+      "version": "0.13.0",
     },
     "core/scripts": {
       "name": "@checkstack/scripts",
@@ -1400,7 +1400,7 @@
     },
     "plugins/notification-discord-backend": {
       "name": "@checkstack/notification-discord-backend",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@checkstack/backend-api": "workspace:*",
         "@checkstack/common": "workspace:*",
@@ -1414,7 +1414,7 @@
     },
     "plugins/notification-gotify-backend": {
       "name": "@checkstack/notification-gotify-backend",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@checkstack/backend-api": "workspace:*",
         "@checkstack/common": "workspace:*",
@@ -1428,7 +1428,7 @@
     },
     "plugins/notification-pushover-backend": {
       "name": "@checkstack/notification-pushover-backend",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@checkstack/backend-api": "workspace:*",
         "@checkstack/common": "workspace:*",
@@ -1442,7 +1442,7 @@
     },
     "plugins/notification-slack-backend": {
       "name": "@checkstack/notification-slack-backend",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@checkstack/backend-api": "workspace:*",
         "@checkstack/common": "workspace:*",
