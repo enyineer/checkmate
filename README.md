@@ -198,6 +198,10 @@ Organize your infrastructure into **Systems** and **Groups**. Track dependencies
 | 💬 **Telegram** | Instant messaging with rich formatting |
 | 💼 **Microsoft Teams** | Personal chat messages via Microsoft Graph API |
 | 🌐 **Webex** | Direct messages through Cisco Webex |
+| 🎮 **Discord** | Webhook notifications with rich embeds |
+| 💬 **Slack** | Incoming webhooks with Block Kit formatting |
+| 🔔 **Gotify** | Self-hosted push notifications |
+| 📱 **Pushover** | Mobile push notifications with priority levels |
 | 🔔 **In-App** | Realtime notification center with read/unread tracking |
 
 Subscribe users to systems and automatically notify them on status changes.
