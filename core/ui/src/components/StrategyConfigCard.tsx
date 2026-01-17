@@ -5,6 +5,7 @@ import { Button } from "./Button";
 import { Badge, type BadgeProps } from "./Badge";
 import { Toggle } from "./Toggle";
 import { DynamicForm } from "./DynamicForm";
+import type { OptionsResolver } from "./DynamicForm/types";
 import { DynamicIcon, type LucideIconName } from "./DynamicIcon";
 import { MarkdownBlock } from "./Markdown";
 import { cn } from "../utils";
@@ -23,6 +24,8 @@ export interface ConfigSection {
   value?: Record<string, unknown>;
   /** Called when configuration is saved */
   onSave?: (config: Record<string, unknown>) => Promise<void>;
+  /** Optional resolvers for dynamic dropdown fields (x-options-resolver) */
+  optionsResolvers?: Record<string, OptionsResolver>;
 }
 
 /**
@@ -130,7 +133,7 @@ export function StrategyConfigCard({
         initial[section.id] = true;
       }
       return initial;
-    }
+    },
   );
 
   // Determine if we're in controlled or uncontrolled mode
@@ -167,7 +170,7 @@ export function StrategyConfigCard({
 
   const handleSectionValueChange = (
     sectionId: string,
-    value: Record<string, unknown>
+    value: Record<string, unknown>,
   ) => {
     setSectionValues((prev) => ({ ...prev, [sectionId]: value }));
   };
@@ -186,7 +189,7 @@ export function StrategyConfigCard({
     <Card
       className={cn(
         "overflow-hidden transition-all",
-        localEnabled ? "border-primary/30" : "opacity-80"
+        localEnabled ? "border-primary/30" : "opacity-80",
       )}
     >
       <CardHeader className="p-4">
@@ -257,7 +260,7 @@ export function StrategyConfigCard({
                 <Power
                   className={cn(
                     "h-4 w-4 mr-1",
-                    localEnabled ? "text-green-300" : "text-muted-foreground"
+                    localEnabled ? "text-green-300" : "text-muted-foreground",
                   )}
                 />
                 {localEnabled ? "Enabled" : "Disabled"}
@@ -311,6 +314,7 @@ export function StrategyConfigCard({
                   onValidChange={(isValid) =>
                     handleSectionValidChange(section.id, isValid)
                   }
+                  optionsResolvers={section.optionsResolvers}
                 />
 
                 {section.onSave && (

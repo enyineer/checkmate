@@ -253,8 +253,15 @@ API keys are managed via **Settings → External Applications** with full RBAC p
 **Authentication Methods:**
 - **Credential Login** - Built-in username/password with secure password reset
 - **GitHub OAuth** - Single sign-on with GitHub
-- **LDAP/AD** - Enterprise directory integration
+- **SAML 2.0** - Enterprise SSO with identity providers (Okta, Azure AD, OneLogin, etc.)
+- **LDAP/AD** - Enterprise directory integration with Active Directory
 - **API Tokens** - Service accounts for machine-to-machine access
+
+**Directory Group-to-Role Mapping:**
+- Automatically assign Checkstack roles based on directory group memberships
+- Configure mappings in SAML/LDAP strategy settings with dynamic role dropdowns
+- Additive sync: directory roles are added without removing manually-assigned roles
+- Optional default role for all users from a specific directory
 
 **Role-Based Access Control (RBAC):**
 - Define custom roles with specific permissions

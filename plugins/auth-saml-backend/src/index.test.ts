@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { z } from "zod";
 import { configString, configBoolean } from "@checkstack/backend-api";
+import { extractAttribute, extractGroups } from "./helpers";
 
 // Re-create the config schema for testing
 const samlConfigV1 = z.object({
@@ -34,20 +35,6 @@ const samlConfigV1 = z.object({
   signAuthnRequest: configBoolean({}).default(false),
 });
 
-// Helper function to test
-const extractAttribute = ({
-  attributes,
-  attributeName,
-}: {
-  attributes: Record<string, unknown>;
-  attributeName: string;
-}): string | undefined => {
-  const value = attributes[attributeName];
-  if (typeof value === "string") return value;
-  if (Array.isArray(value) && value.length > 0) return String(value[0]);
-  return undefined;
-};
-
 describe("SAML Configuration Schema", () => {
   describe("validation", () => {
     it("should accept valid config with metadata URL", () => {
@@ -70,7 +57,7 @@ describe("SAML Configuration Schema", () => {
       const config = {
         idpSingleSignOnUrl: "https://idp.example.com/sso",
         idpCertificate:
-          "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
+          "-----BEGIN CERTIFICATE-----\\nMIIC...\\n-----END CERTIFICATE-----",
         idpEntityId: "https://idp.example.com",
         spEntityId: "my-app",
       };
@@ -183,5 +170,94 @@ describe("extractAttribute helper", () => {
       attributeName: "id",
     });
     expect(result).toBe("12345");
+  });
+});
+
+describe("extractGroups helper", () => {
+  it("should extract single group as array", () => {
+    const attributes = {
+      "http://schemas.xmlsoap.org/claims/Group": "Developers",
+    };
+    const result = extractGroups({
+      attributes,
+      groupAttribute: "http://schemas.xmlsoap.org/claims/Group",
+    });
+    expect(result).toEqual(["Developers"]);
+  });
+
+  it("should extract multiple groups from array", () => {
+    const attributes = {
+      "http://schemas.xmlsoap.org/claims/Group": [
+        "Developers",
+        "Admins",
+        "Users",
+      ],
+    };
+    const result = extractGroups({
+      attributes,
+      groupAttribute: "http://schemas.xmlsoap.org/claims/Group",
+    });
+    expect(result).toEqual(["Developers", "Admins", "Users"]);
+  });
+
+  it("should return empty array for missing group attribute", () => {
+    const attributes = {
+      email: "user@example.com",
+    };
+    const result = extractGroups({
+      attributes,
+      groupAttribute: "http://schemas.xmlsoap.org/claims/Group",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("should return empty array for empty group array", () => {
+    const attributes = {
+      "http://schemas.xmlsoap.org/claims/Group": [],
+    };
+    const result = extractGroups({
+      attributes,
+      groupAttribute: "http://schemas.xmlsoap.org/claims/Group",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("should convert non-string group values to strings", () => {
+    const attributes = {
+      groups: [123, "Developers", true],
+    };
+    const result = extractGroups({
+      attributes,
+      groupAttribute: "groups",
+    });
+    expect(result).toEqual(["123", "Developers", "true"]);
+  });
+
+  it("should handle undefined/null values gracefully", () => {
+    const attributes = {
+      groups: undefined,
+    };
+    const result = extractGroups({
+      attributes,
+      groupAttribute: "groups",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("should handle complex group DNs from AD/LDAP", () => {
+    const attributes = {
+      memberOf: [
+        "CN=Developers,OU=Groups,DC=example,DC=com",
+        "CN=All-Users,OU=Groups,DC=example,DC=com",
+      ],
+    };
+    const result = extractGroups({
+      attributes,
+      groupAttribute: "memberOf",
+    });
+    expect(result).toEqual([
+      "CN=Developers,OU=Groups,DC=example,DC=com",
+      "CN=All-Users,OU=Groups,DC=example,DC=com",
+    ]);
   });
 });

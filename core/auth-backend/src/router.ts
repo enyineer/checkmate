@@ -856,8 +856,16 @@ export const createAuthRouter = (
 
   const upsertExternalUser = os.upsertExternalUser.handler(
     async ({ input, context }) => {
-      const { email, name, providerId, accountId, password, autoUpdateUser } =
-        input;
+      const {
+        email,
+        name,
+        providerId,
+        accountId,
+        password,
+        autoUpdateUser,
+        syncRoles,
+        managedRoleIds,
+      } = input;
 
       // Check if user exists
       const existingUsers = await internalDb
@@ -866,9 +874,12 @@ export const createAuthRouter = (
         .where(eq(schema.user.email, email))
         .limit(1);
 
+      let userId: string;
+      let created = false;
+
       if (existingUsers.length > 0) {
         // User exists - update if autoUpdateUser is enabled
-        const userId = existingUsers[0].id;
+        userId = existingUsers[0].id;
 
         if (autoUpdateUser) {
           await internalDb
@@ -876,49 +887,106 @@ export const createAuthRouter = (
             .set({ name, updatedAt: new Date() })
             .where(eq(schema.user.id, userId));
         }
+      } else {
+        // Check if registration is allowed before creating new user
+        const registrationAllowed = await isRegistrationAllowed(configService);
+        if (!registrationAllowed) {
+          throw new ORPCError("FORBIDDEN", {
+            message:
+              "Registration is disabled. Please contact an administrator.",
+          });
+        }
 
-        return { userId, created: false };
+        // Create new user and account in a transaction
+        userId = crypto.randomUUID();
+        const accountEntryId = crypto.randomUUID();
+        const now = new Date();
+
+        await internalDb.transaction(async (tx) => {
+          // Create user
+          await tx.insert(schema.user).values({
+            id: userId,
+            email,
+            name,
+            emailVerified: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+
+          // Create account
+          await tx.insert(schema.account).values({
+            id: accountEntryId,
+            accountId,
+            providerId,
+            userId,
+            password,
+            createdAt: now,
+            updatedAt: now,
+          });
+        });
+
+        context.logger.info(`Created new user from ${providerId}: ${email}`);
+        created = true;
       }
 
-      // Check if registration is allowed before creating new user
-      const registrationAllowed = await isRegistrationAllowed(configService);
-      if (!registrationAllowed) {
-        throw new ORPCError("FORBIDDEN", {
-          message: "Registration is disabled. Please contact an administrator.",
-        });
+      // Handle role sync if syncRoles is provided
+      // Uses managedRoleIds to determine which roles are controlled by directory
+      if (syncRoles) {
+        const syncRoleSet = new Set(syncRoles);
+
+        // Validate which sync roles actually exist in the database
+        const validSyncRoles =
+          syncRoles.length > 0
+            ? await internalDb
+                .select({ id: schema.role.id })
+                .from(schema.role)
+                .where(inArray(schema.role.id, syncRoles))
+            : [];
+        const validSyncRoleIds = new Set(validSyncRoles.map((r) => r.id));
+
+        // Get current user roles
+        const currentRoles = await internalDb
+          .select({ roleId: schema.userRole.roleId })
+          .from(schema.userRole)
+          .where(eq(schema.userRole.userId, userId));
+        const currentRoleIds = new Set(currentRoles.map((r) => r.roleId));
+
+        // Add new roles that user should have
+        const rolesToAdd = [...validSyncRoleIds].filter(
+          (id) => !currentRoleIds.has(id),
+        );
+        if (rolesToAdd.length > 0) {
+          await internalDb
+            .insert(schema.userRole)
+            .values(rolesToAdd.map((roleId) => ({ userId, roleId })));
+          context.logger.info(
+            `Added ${rolesToAdd.length} roles for external user: ${email}`,
+          );
+        }
+
+        // Remove roles that are managed but user no longer has in directory
+        if (managedRoleIds && managedRoleIds.length > 0) {
+          // Roles to remove: currently has + is managed + NOT in sync roles
+          const rolesToRemove = [...currentRoleIds].filter(
+            (id) => managedRoleIds.includes(id) && !syncRoleSet.has(id),
+          );
+          if (rolesToRemove.length > 0) {
+            await internalDb
+              .delete(schema.userRole)
+              .where(
+                and(
+                  eq(schema.userRole.userId, userId),
+                  inArray(schema.userRole.roleId, rolesToRemove),
+                ),
+              );
+            context.logger.info(
+              `Removed ${rolesToRemove.length} managed roles for external user: ${email}`,
+            );
+          }
+        }
       }
 
-      // Create new user and account in a transaction
-      const userId = crypto.randomUUID();
-      const accountEntryId = crypto.randomUUID();
-      const now = new Date();
-
-      await internalDb.transaction(async (tx) => {
-        // Create user
-        await tx.insert(schema.user).values({
-          id: userId,
-          email,
-          name,
-          emailVerified: false,
-          createdAt: now,
-          updatedAt: now,
-        });
-
-        // Create account
-        await tx.insert(schema.account).values({
-          id: accountEntryId,
-          accountId,
-          providerId,
-          userId,
-          password,
-          createdAt: now,
-          updatedAt: now,
-        });
-      });
-
-      context.logger.info(`Created new user from ${providerId}: ${email}`);
-
-      return { userId, created: true };
+      return { userId, created };
     },
   );
 

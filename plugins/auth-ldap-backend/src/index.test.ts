@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, mock } from "bun:test";
 import type { Client as LdapClient } from "ldapts";
+import { extractGroups } from "./helpers";
 
 describe("LDAP Authentication Strategy", () => {
   // Mock LDAP client
@@ -24,7 +25,7 @@ describe("LDAP Authentication Strategy", () => {
               sn: "User",
             },
           ],
-        })
+        }),
       ),
       unbind: mock(() => Promise.resolve()),
     };
@@ -38,7 +39,7 @@ describe("LDAP Authentication Strategy", () => {
       await mockLdapClient.bind("cn=admin,dc=example,dc=com", "adminPassword");
       expect(mockLdapClient.bind).toHaveBeenCalledWith(
         "cn=admin,dc=example,dc=com",
-        "adminPassword"
+        "adminPassword",
       );
     });
 
@@ -47,7 +48,7 @@ describe("LDAP Authentication Strategy", () => {
       mockLdapClient.bind.mockRejectedValue(new Error("Invalid credentials"));
 
       await expect(
-        mockLdapClient.bind("uid=testuser,ou=users,dc=example,dc=com", "wrong")
+        mockLdapClient.bind("uid=testuser,ou=users,dc=example,dc=com", "wrong"),
       ).rejects.toThrow("Invalid credentials");
     });
 
@@ -268,5 +269,110 @@ describe("LDAP Authentication Strategy", () => {
       expect(uid).toBe("testuser");
       expect(mail).toBe("test@example.com");
     });
+  });
+});
+
+describe("extractGroups helper for LDAP", () => {
+  it("should extract single group as array", () => {
+    const ldapEntry = {
+      memberOf: "CN=Developers,OU=Groups,DC=example,DC=com",
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "memberOf",
+    });
+    expect(result).toEqual(["CN=Developers,OU=Groups,DC=example,DC=com"]);
+  });
+
+  it("should extract multiple groups from array", () => {
+    const ldapEntry = {
+      memberOf: [
+        "CN=Developers,OU=Groups,DC=example,DC=com",
+        "CN=All-Users,OU=Groups,DC=example,DC=com",
+        "CN=Admins,OU=Groups,DC=example,DC=com",
+      ],
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "memberOf",
+    });
+    expect(result).toEqual([
+      "CN=Developers,OU=Groups,DC=example,DC=com",
+      "CN=All-Users,OU=Groups,DC=example,DC=com",
+      "CN=Admins,OU=Groups,DC=example,DC=com",
+    ]);
+  });
+
+  it("should return empty array for missing memberOf attribute", () => {
+    const ldapEntry = {
+      uid: "testuser",
+      mail: "test@example.com",
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "memberOf",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("should return empty array for empty memberOf array", () => {
+    const ldapEntry = {
+      memberOf: [],
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "memberOf",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("should handle custom memberOf attribute names", () => {
+    const ldapEntry = {
+      isMemberOf: ["group1", "group2"],
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "isMemberOf",
+    });
+    expect(result).toEqual(["group1", "group2"]);
+  });
+
+  it("should handle undefined/null values gracefully", () => {
+    const ldapEntry = {
+      memberOf: undefined,
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "memberOf",
+    });
+    expect(result).toEqual([]);
+  });
+
+  it("should convert non-string group values to strings", () => {
+    const ldapEntry = {
+      memberOf: [123, "CN=Group,DC=test", true],
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "memberOf",
+    });
+    expect(result).toEqual(["123", "CN=Group,DC=test", "true"]);
+  });
+
+  it("should handle Active Directory group DNs", () => {
+    const ldapEntry = {
+      memberOf: [
+        "CN=Domain Users,CN=Users,DC=corp,DC=example,DC=com",
+        "CN=Engineering,OU=Security Groups,DC=corp,DC=example,DC=com",
+      ],
+    };
+    const result = extractGroups({
+      ldapEntry,
+      memberOfAttribute: "memberOf",
+    });
+    expect(result).toEqual([
+      "CN=Domain Users,CN=Users,DC=corp,DC=example,DC=com",
+      "CN=Engineering,OU=Security Groups,DC=corp,DC=example,DC=com",
+    ]);
   });
 });

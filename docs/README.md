@@ -56,6 +56,7 @@ Sharing code between frontend and backend:
 
 Authentication and secrets management:
 
+- **[Authentication & SSO](./security/authentication.md)** - SAML, LDAP, group-to-role mapping
 - **[Secrets Encryption](./security/secrets.md)** - Secret storage and encryption
 - **[Auth Error Handling](./security/auth-error-handling.md)** - Custom authentication error patterns
 - **[External Applications](./security/external-applications.md)** - Service accounts and API access

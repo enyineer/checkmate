@@ -68,6 +68,10 @@ const UpsertExternalUserInputSchema = z.object({
   accountId: z.string(),
   password: z.string(),
   autoUpdateUser: z.boolean().optional(),
+  /** Role IDs to assign based on current directory group membership */
+  syncRoles: z.array(z.string()).optional(),
+  /** All role IDs that are managed by directory mappings (used to remove roles when user leaves groups) */
+  managedRoleIds: z.array(z.string()).optional(),
 });
 
 const UpsertExternalUserOutputSchema = z.object({

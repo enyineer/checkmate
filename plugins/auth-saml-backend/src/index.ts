@@ -14,9 +14,10 @@ import { AuthApi } from "@checkstack/auth-common";
 import { z } from "zod";
 import { hashPassword } from "better-auth/crypto";
 import * as samlify from "samlify";
+import { extractAttribute, extractGroups } from "./helpers";
 
 // SAML Configuration Schema V1
-const samlConfigV1 = z.object({
+const _samlConfigV1 = z.object({
   // Identity Provider configuration
   idpMetadataUrl: configString({})
     .url()
@@ -89,7 +90,116 @@ const samlConfigV1 = z.object({
     .describe("Sign authentication requests sent to IdP"),
 });
 
-type SamlConfig = z.infer<typeof samlConfigV1>;
+// SAML Configuration Schema V2 - Adds group-to-role mapping
+const samlConfigV2 = z.object({
+  // Identity Provider configuration
+  idpMetadataUrl: configString({})
+    .url()
+    .optional()
+    .describe(
+      "URL to fetch IdP metadata XML (optional if providing metadata directly)",
+    ),
+  idpMetadata: configString({})
+    .optional()
+    .describe("IdP metadata XML content (used if URL is not provided)"),
+  idpEntityId: configString({})
+    .optional()
+    .describe("IdP Entity ID (extracted from metadata if not provided)"),
+  idpSingleSignOnUrl: configString({})
+    .url()
+    .optional()
+    .describe("IdP SSO URL (extracted from metadata if not provided)"),
+  idpCertificate: configString({ "x-secret": true })
+    .optional()
+    .describe("IdP X.509 certificate for signature validation (PEM format)"),
+
+  // Service Provider configuration
+  spEntityId: configString({})
+    .default("checkstack")
+    .describe("Service Provider Entity ID (your application identifier)"),
+  spPrivateKey: configString({ "x-secret": true })
+    .optional()
+    .describe("SP private key for signing requests (PEM format)"),
+  spCertificate: configString({})
+    .optional()
+    .describe("SP public certificate (PEM format)"),
+
+  // Attribute mapping
+  attributeMapping: z
+    .object({
+      email: configString({})
+        .default(
+          "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+        )
+        .describe("SAML attribute for email address"),
+      name: configString({})
+        .default("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
+        .describe("SAML attribute for display name"),
+      firstName: configString({})
+        .default(
+          "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",
+        )
+        .describe("SAML attribute for first name")
+        .optional(),
+      lastName: configString({})
+        .default(
+          "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname",
+        )
+        .describe("SAML attribute for last name")
+        .optional(),
+    })
+    .default({
+      email:
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+      name: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+    })
+    .describe("Map SAML attributes to user fields"),
+
+  // Group to Role Mapping
+  groupMapping: z
+    .object({
+      enabled: configBoolean({})
+        .default(false)
+        .describe("Enable group-to-role mapping"),
+      groupAttribute: configString({})
+        .default("http://schemas.xmlsoap.org/claims/Group")
+        .describe("SAML attribute containing group memberships"),
+      mappings: z
+        .array(
+          z.object({
+            directoryGroup: configString({}).describe(
+              "Directory group name or DN",
+            ),
+            checkstackRole: configString({
+              "x-options-resolver": "roleOptions",
+            }).describe("Checkstack role ID to assign"),
+          }),
+        )
+        .default([])
+        .describe("Map directory groups to Checkstack roles"),
+      defaultRole: configString({
+        "x-options-resolver": "roleOptions",
+      })
+        .optional()
+        .describe("Default role assigned to all SAML users (optional)"),
+    })
+    .default({
+      enabled: false,
+      groupAttribute: "http://schemas.xmlsoap.org/claims/Group",
+      mappings: [],
+    })
+    .describe("Map SAML groups to Checkstack roles"),
+
+  // Security options
+  wantAssertionsSigned: configBoolean({})
+    .default(true)
+    .describe("Require signed SAML assertions"),
+  signAuthnRequest: configBoolean({})
+    .default(false)
+    .describe("Sign authentication requests sent to IdP"),
+});
+
+type SamlConfig = z.infer<typeof samlConfigV2>;
 
 // SAML Strategy Definition
 const samlStrategy: AuthStrategy<SamlConfig> = {
@@ -97,8 +207,23 @@ const samlStrategy: AuthStrategy<SamlConfig> = {
   displayName: "SAML SSO",
   description: "Enterprise Single Sign-On via SAML 2.0",
   icon: "KeyRound",
-  configVersion: 1,
-  configSchema: samlConfigV1,
+  configVersion: 2,
+  configSchema: samlConfigV2,
+  migrations: [
+    {
+      description: "Add group-to-role mapping configuration",
+      fromVersion: 1,
+      toVersion: 2,
+      migrate: (oldConfig: z.infer<typeof _samlConfigV1>) => ({
+        ...oldConfig,
+        groupMapping: {
+          enabled: false,
+          groupAttribute: "http://schemas.xmlsoap.org/claims/Group",
+          mappings: [],
+        },
+      }),
+    },
+  ],
   requiresManualRegistration: false,
   adminInstructions: `
 ## SAML SSO Configuration
@@ -126,22 +251,15 @@ Map SAML attributes from your IdP to user fields:
 - **Email**: Usually \`http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress\`
 - **Name**: Usually \`http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name\`
 
+### Group to Role Mapping
+Map SAML groups to Checkstack roles for automatic role assignment:
+1. Enable **Group to Role Mapping**
+2. Set the **Group Attribute** (the SAML claim containing group memberships)
+3. Add mappings from directory groups to Checkstack roles
+4. Optionally set a **Default Role** for all SAML users
+
 > **Tip**: Most IdPs use standard claim URIs. Consult your IdP documentation for specific attribute names.
 `.trim(),
-};
-
-// Helper to extract attribute value from SAML assertion
-const extractAttribute = ({
-  attributes,
-  attributeName,
-}: {
-  attributes: Record<string, unknown>;
-  attributeName: string;
-}): string | undefined => {
-  const value = attributes[attributeName];
-  if (typeof value === "string") return value;
-  if (Array.isArray(value) && value.length > 0) return String(value[0]);
-  return undefined;
 };
 
 export default createBackendPlugin({
@@ -172,7 +290,7 @@ export default createBackendPlugin({
           sp: samlify.ServiceProviderInstance;
           idp: samlify.IdentityProviderInstance;
         }> => {
-          const samlConfig = await config.get("saml", samlConfigV1, 1);
+          const samlConfig = await config.get("saml", samlConfigV2, 2);
 
           if (!samlConfig) {
             throw new Error("SAML configuration not found");
@@ -263,7 +381,7 @@ export default createBackendPlugin({
           nameId: string;
           attributes: Record<string, unknown>;
         }): Promise<{ userId: string; email: string; name: string }> => {
-          const samlConfig = await config.get("saml", samlConfigV1, 1);
+          const samlConfig = await config.get("saml", samlConfigV2, 2);
           if (!samlConfig) {
             throw new Error("SAML configuration not found");
           }
@@ -299,6 +417,45 @@ export default createBackendPlugin({
             name = email.split("@")[0];
           }
 
+          // Extract groups and map to roles if enabled
+          let syncRoles: string[] | undefined;
+          let managedRoleIds: string[] | undefined;
+          if (samlConfig.groupMapping?.enabled) {
+            const groups = extractGroups({
+              attributes,
+              groupAttribute: samlConfig.groupMapping.groupAttribute,
+            });
+
+            // Map groups to roles
+            const mappedRoles = samlConfig.groupMapping.mappings
+              .filter((m) => groups.includes(m.directoryGroup))
+              .map((m) => m.checkstackRole);
+
+            // Add default role if configured
+            if (samlConfig.groupMapping.defaultRole) {
+              mappedRoles.push(samlConfig.groupMapping.defaultRole);
+            }
+
+            // Deduplicate roles
+            syncRoles = [...new Set(mappedRoles)];
+
+            // Collect all managed role IDs (all roles in mappings + default)
+            // These are roles controlled by directory - will be removed if user leaves groups
+            const allManagedRoles = samlConfig.groupMapping.mappings.map(
+              (m) => m.checkstackRole,
+            );
+            if (samlConfig.groupMapping.defaultRole) {
+              allManagedRoles.push(samlConfig.groupMapping.defaultRole);
+            }
+            managedRoleIds = [...new Set(allManagedRoles)];
+
+            if (syncRoles.length > 0) {
+              logger.debug(
+                `SAML user ${email} will be assigned roles: ${syncRoles.join(", ")}`,
+              );
+            }
+          }
+
           // Use RPC to upsert user - always create/update SAML users
           const hashedPassword = await hashPassword(crypto.randomUUID());
 
@@ -309,6 +466,8 @@ export default createBackendPlugin({
             accountId: nameId,
             password: hashedPassword,
             autoUpdateUser: true,
+            syncRoles,
+            managedRoleIds,
           });
 
           if (created) {

@@ -9,7 +9,7 @@ import { getConfigMeta } from "./zod-config";
  */
 function addSchemaMetadata(
   zodSchema: z.ZodTypeAny,
-  jsonSchema: Record<string, unknown>
+  jsonSchema: Record<string, unknown>,
 ): void {
   // Handle arrays - recurse into items
   if (zodSchema instanceof z.ZodArray) {
@@ -23,6 +23,20 @@ function addSchemaMetadata(
 
   // Handle optional - unwrap and recurse
   if (zodSchema instanceof z.ZodOptional) {
+    const innerSchema = zodSchema.unwrap() as z.ZodTypeAny;
+    addSchemaMetadata(innerSchema, jsonSchema);
+    return;
+  }
+
+  // Handle default - unwrap and recurse
+  if (zodSchema instanceof z.ZodDefault) {
+    const innerSchema = zodSchema.def.innerType as z.ZodTypeAny;
+    addSchemaMetadata(innerSchema, jsonSchema);
+    return;
+  }
+
+  // Handle nullable - unwrap and recurse
+  if (zodSchema instanceof z.ZodNullable) {
     const innerSchema = zodSchema.unwrap() as z.ZodTypeAny;
     addSchemaMetadata(innerSchema, jsonSchema);
     return;

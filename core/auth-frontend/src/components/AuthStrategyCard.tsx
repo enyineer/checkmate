@@ -1,8 +1,12 @@
+import { useCallback, useMemo } from "react";
 import {
   StrategyConfigCard,
   type ConfigSection,
   type LucideIconName,
+  type OptionsResolver,
 } from "@checkstack/ui";
+import { usePluginClient } from "@checkstack/frontend-api";
+import { AuthApi } from "@checkstack/auth-common";
 import type { AuthStrategy } from "../api";
 
 export interface AuthStrategyCardProps {
@@ -30,6 +34,28 @@ export function AuthStrategyCard({
   onExpandedChange,
   config,
 }: AuthStrategyCardProps) {
+  const authClient = usePluginClient(AuthApi);
+
+  // Fetch all roles once for the dropdown options
+  const { data: roles = [] } = authClient.getRoles.useQuery({});
+
+  // Create resolver for dynamic role selection in group mapping
+  // Uses the already-fetched roles data
+  const roleOptionsResolver: OptionsResolver = useCallback(async () => {
+    return roles.map((role) => ({
+      value: role.id,
+      label: role.name,
+    }));
+  }, [roles]);
+
+  // Memoize the resolvers object to prevent unnecessary re-renders
+  const optionsResolvers = useMemo(
+    () => ({
+      roleOptions: roleOptionsResolver,
+    }),
+    [roleOptionsResolver],
+  );
+
   // Check if config schema has properties
   const hasConfigSchema =
     strategy.configSchema &&
@@ -40,7 +66,7 @@ export function AuthStrategyCard({
   // Config is missing if schema has properties but no saved config
   const configMissing = hasConfigSchema && strategy.config === undefined;
 
-  // Build config sections
+  // Build config sections with role options resolver
   const configSections: ConfigSection[] = [];
   if (hasConfigSchema) {
     configSections.push({
@@ -48,6 +74,7 @@ export function AuthStrategyCard({
       title: "Configuration",
       schema: strategy.configSchema,
       value: config ?? strategy.config,
+      optionsResolvers,
       onSave: async (newConfig) => {
         await onSaveConfig(strategy.id, newConfig);
       },

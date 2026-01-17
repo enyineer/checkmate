@@ -368,6 +368,271 @@ describe("Auth Router", () => {
     expect(mockDb.insert).toHaveBeenCalled();
   });
 
+  it("upsertExternalUser syncs roles when syncRoles provided for new user", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock user not found (empty result)
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])),
+    }));
+
+    // Mock registration allowed
+    mockConfigService.get.mockResolvedValueOnce({ allowRegistration: true });
+
+    // Mock valid roles lookup
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() =>
+        createChain([{ id: USERS_ROLE_ID }, { id: "custom-role" }]),
+      ),
+    }));
+
+    // Mock current roles lookup (empty for new user)
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])),
+    }));
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "saml-user@example.com",
+        name: "SAML User",
+        providerId: "saml",
+        accountId: "samluser",
+        password: "hashed-password",
+        syncRoles: [USERS_ROLE_ID, "custom-role", "invalid-role"],
+      },
+      { context },
+    );
+
+    expect(result.created).toBe(true);
+    expect(mockDb.insert).toHaveBeenCalled();
+  });
+
+  it("upsertExternalUser additively syncs roles for existing user", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock existing user found
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "existing-user-id" }])),
+    }));
+
+    // Mock update chain
+    mockDb.update = mock(() => ({
+      set: mock(() => ({
+        where: mock(() => Promise.resolve()),
+      })),
+    }));
+
+    // Mock valid roles lookup
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "new-role" }])),
+    }));
+
+    // Mock current roles lookup (user already has existing role)
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ roleId: USERS_ROLE_ID }])),
+    }));
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "existing@example.com",
+        name: "Existing User",
+        providerId: "ldap",
+        accountId: "existinguser",
+        password: "hashed-password",
+        autoUpdateUser: true,
+        syncRoles: ["new-role"],
+      },
+      { context },
+    );
+
+    expect(result.created).toBe(false);
+    expect(result.userId).toBe("existing-user-id");
+    // New role should be added (insert called)
+    expect(mockDb.insert).toHaveBeenCalled();
+  });
+
+  it("upsertExternalUser ignores invalid role IDs silently", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock user not found (empty result)
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])),
+    }));
+
+    // Mock registration allowed
+    mockConfigService.get.mockResolvedValueOnce({ allowRegistration: true });
+
+    // Mock valid roles lookup - none of the provided roles are valid
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])), // No valid roles
+    }));
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "user@example.com",
+        name: "User",
+        providerId: "saml",
+        accountId: "user123",
+        password: "hashed-password",
+        syncRoles: ["invalid-role-1", "invalid-role-2"],
+      },
+      { context },
+    );
+
+    // Should still succeed even with all invalid roles
+    expect(result.created).toBe(true);
+    expect(result.userId).toBeDefined();
+  });
+
+  it("upsertExternalUser does not sync roles when syncRoles not provided", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock user not found (empty result)
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([])),
+    }));
+
+    // Mock registration allowed
+    mockConfigService.get.mockResolvedValueOnce({ allowRegistration: true });
+
+    // Reset insert mock to track calls
+    const insertMock = mock(() => ({
+      values: mock(() => createChain()),
+    }));
+    mockDb.insert = insertMock;
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "user@example.com",
+        name: "User",
+        providerId: "saml",
+        accountId: "user123",
+        password: "hashed-password",
+        // No syncRoles provided
+      },
+      { context },
+    );
+
+    expect(result.created).toBe(true);
+    // Transaction should be called for user creation, but no role sync
+    expect(mockDb.transaction).toHaveBeenCalled();
+  });
+
+  it("upsertExternalUser removes managed roles when user leaves directory groups", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock existing user found
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "existing-user-id" }])),
+    }));
+
+    // Mock update chain (for autoUpdateUser)
+    mockDb.update = mock(() => ({
+      set: mock(() => ({
+        where: mock(() => Promise.resolve()),
+      })),
+    }));
+
+    // Note: When syncRoles is empty [], we skip the valid roles query
+    // So next select is the current roles lookup
+
+    // Mock current roles lookup - user has managed role that should be removed
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() =>
+        createChain([
+          { roleId: "managed-role-1" }, // Should be removed - managed but not in syncRoles
+          { roleId: "manual-role" }, // Should be preserved - not in managedRoleIds
+        ]),
+      ),
+    }));
+
+    // Mock delete
+    mockDb.delete = mock(() => ({
+      where: mock(() => Promise.resolve()),
+    }));
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "user@example.com",
+        name: "User",
+        providerId: "ldap",
+        accountId: "user123",
+        password: "hashed-password",
+        autoUpdateUser: true,
+        syncRoles: [], // User no longer has any groups
+        managedRoleIds: ["managed-role-1", "managed-role-2"], // Roles controlled by directory
+      },
+      { context },
+    );
+
+    expect(result.created).toBe(false);
+    // Delete should be called to remove the managed role
+    expect(mockDb.delete).toHaveBeenCalled();
+  });
+
+  it("upsertExternalUser preserves unmanaged roles during sync", async () => {
+    const context = createMockRpcContext({ user: mockServiceUser });
+
+    // Mock existing user found
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "existing-user-id" }])),
+    }));
+
+    // Mock update chain
+    mockDb.update = mock(() => ({
+      set: mock(() => ({
+        where: mock(() => Promise.resolve()),
+      })),
+    }));
+
+    // Mock valid sync roles lookup
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() => createChain([{ id: "new-managed-role" }])),
+    }));
+
+    // Mock current roles - user has both managed and unmanaged roles
+    mockDb.select.mockImplementationOnce(() => ({
+      from: mock(() =>
+        createChain([
+          { roleId: "old-managed-role" }, // Should be removed - managed but not in syncRoles
+          { roleId: "admin-role" }, // Should be preserved - manually assigned, not managed
+        ]),
+      ),
+    }));
+
+    // Mock delete
+    const deleteMock = mock(() => ({
+      where: mock(() => Promise.resolve()),
+    }));
+    mockDb.delete = deleteMock;
+
+    const result = await call(
+      router.upsertExternalUser,
+      {
+        email: "user@example.com",
+        name: "User",
+        providerId: "ldap",
+        accountId: "user123",
+        password: "hashed-password",
+        autoUpdateUser: true,
+        syncRoles: ["new-managed-role"],
+        managedRoleIds: ["old-managed-role", "new-managed-role"], // Only these are managed
+      },
+      { context },
+    );
+
+    expect(result.created).toBe(false);
+    // Insert should be called to add new role
+    expect(mockDb.insert).toHaveBeenCalled();
+    // Delete should be called to remove old-managed-role (but NOT admin-role)
+    expect(deleteMock).toHaveBeenCalled();
+  });
+
   // ==========================================================================
   // ADMIN USER CREATION TESTS
   // ==========================================================================

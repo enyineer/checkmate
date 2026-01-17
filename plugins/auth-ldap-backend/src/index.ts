@@ -15,6 +15,7 @@ import { AuthApi } from "@checkstack/auth-common";
 import { z } from "zod";
 import { Client as LdapClient } from "ldapts";
 import { hashPassword } from "better-auth/crypto";
+import { extractGroups } from "./helpers";
 
 // LDAP Configuration Schema V1
 const _ldapConfigV1 = z.object({
@@ -28,7 +29,7 @@ const _ldapConfigV1 = z.object({
   bindDN: configString({})
     .optional()
     .describe(
-      "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)"
+      "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)",
     ),
   bindPassword: configString({ "x-secret": true })
     .describe("Service account password")
@@ -86,8 +87,8 @@ const _ldapConfigV1 = z.object({
     .describe("Update user attributes on each login"),
 });
 
-// LDAP Configuration Schema V1
-const ldapConfigV2 = z.object({
+// LDAP Configuration Schema V2 (kept for migration type reference)
+const _ldapConfigV2 = z.object({
   url: configString({})
     .url()
     .default("ldaps://ldap.example.com:636")
@@ -95,7 +96,7 @@ const ldapConfigV2 = z.object({
   bindDN: configString({})
     .optional()
     .describe(
-      "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)"
+      "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)",
     ),
   bindPassword: configString({ "x-secret": true })
     .describe("Service account password")
@@ -153,7 +154,108 @@ const ldapConfigV2 = z.object({
     .describe("Update user attributes on each login"),
 });
 
-type LdapConfig = z.infer<typeof ldapConfigV2>;
+// LDAP Configuration Schema V3 - Adds group-to-role mapping
+const ldapConfigV3 = z.object({
+  url: configString({})
+    .url()
+    .default("ldaps://ldap.example.com:636")
+    .describe("LDAP server URL (e.g., ldaps://ldap.example.com:636)"),
+  bindDN: configString({})
+    .optional()
+    .describe(
+      "Service account DN for searching (e.g., cn=admin,dc=example,dc=com)",
+    ),
+  bindPassword: configString({ "x-secret": true })
+    .describe("Service account password")
+    .optional(),
+  baseDN: configString({})
+    .default("ou=users,dc=example,dc=com")
+    .describe("Base DN for user searches (e.g., ou=users,dc=example,dc=com)"),
+  searchFilter: configString({})
+    .default("(uid={0})")
+    .describe("LDAP search filter, {0} will be replaced with username"),
+  usernameAttribute: configString({})
+    .default("uid")
+    .describe("LDAP attribute to match against login username"),
+  attributeMapping: z
+    .object({
+      email: configString({})
+        .default("mail")
+        .describe("LDAP attribute for email address"),
+      name: configString({})
+        .default("displayName")
+        .describe("LDAP attribute for display name"),
+      firstName: configString({})
+        .default("givenName")
+        .describe("LDAP attribute for first name")
+        .optional(),
+      lastName: configString({})
+        .default("sn")
+        .describe("LDAP attribute for last name")
+        .optional(),
+    })
+    .default({
+      email: "mail",
+      name: "displayName",
+    })
+    .describe("Map LDAP attributes to user fields"),
+  // Group to Role Mapping
+  groupMapping: z
+    .object({
+      enabled: configBoolean({})
+        .default(false)
+        .describe("Enable group-to-role mapping"),
+      memberOfAttribute: configString({})
+        .default("memberOf")
+        .describe("LDAP attribute containing group memberships"),
+      mappings: z
+        .array(
+          z.object({
+            directoryGroup: configString({}).describe(
+              "Directory group DN (e.g., cn=developers,ou=groups,dc=example,dc=com)",
+            ),
+            checkstackRole: configString({
+              "x-options-resolver": "roleOptions",
+            }).describe("Checkstack role ID to assign"),
+          }),
+        )
+        .default([])
+        .describe("Map directory groups to Checkstack roles"),
+      defaultRole: configString({
+        "x-options-resolver": "roleOptions",
+      })
+        .optional()
+        .describe("Default role assigned to all LDAP users (optional)"),
+    })
+    .default({
+      enabled: false,
+      memberOfAttribute: "memberOf",
+      mappings: [],
+    })
+    .describe("Map LDAP groups to Checkstack roles"),
+  tlsOptions: z
+    .object({
+      rejectUnauthorized: configBoolean({})
+        .default(true)
+        .describe("Reject unauthorized SSL certificates"),
+      ca: configString({ "x-secret": true })
+        .describe("Custom CA certificate (PEM format)")
+        .optional(),
+    })
+    .default({ rejectUnauthorized: true })
+    .describe("TLS/SSL configuration"),
+  timeout: configNumber({})
+    .default(5000)
+    .describe("Connection timeout in milliseconds"),
+  autoCreateUsers: configBoolean({})
+    .default(true)
+    .describe("Automatically create users on first login"),
+  autoUpdateUsers: configBoolean({})
+    .default(true)
+    .describe("Update user attributes on each login"),
+});
+
+type LdapConfig = z.infer<typeof ldapConfigV3>;
 
 // LDAP Strategy Definition
 const ldapStrategy: AuthStrategy<LdapConfig> = {
@@ -161,8 +263,8 @@ const ldapStrategy: AuthStrategy<LdapConfig> = {
   displayName: "LDAP",
   description: "Authenticate using LDAP directory",
   icon: "Network",
-  configVersion: 2,
-  configSchema: ldapConfigV2,
+  configVersion: 3,
+  configSchema: ldapConfigV3,
   requiresManualRegistration: false,
   adminInstructions: `
 ## LDAP Configuration
@@ -174,6 +276,13 @@ Configure LDAP authentication to allow users from your directory to sign in:
 3. Set the **Base DN** where user accounts are located
 4. Configure the **search filter** to match usernames (e.g., \`(uid={0})\` or \`(sAMAccountName={0})\`)
 5. Map **LDAP attributes** to user fields (email, name)
+
+### Group to Role Mapping
+Map LDAP groups to Checkstack roles for automatic role assignment:
+1. Enable **Group to Role Mapping**
+2. Set the **Member Of Attribute** (usually \`memberOf\`)
+3. Add mappings from directory group DNs to Checkstack roles
+4. Optionally set a **Default Role** for all LDAP users
 
 > **Active Directory**: Use \`ldaps://\` with port 636, \`sAMAccountName\` for username, and \`userPrincipalName\` for email.
 `.trim(),
@@ -187,6 +296,19 @@ Configure LDAP authentication to allow users from your directory to sign in:
         const { enabled, ...rest } = oldConfig;
         return rest;
       },
+    },
+    {
+      description: "Add group-to-role mapping configuration",
+      fromVersion: 2,
+      toVersion: 3,
+      migrate: (oldConfig: z.infer<typeof _ldapConfigV2>) => ({
+        ...oldConfig,
+        groupMapping: {
+          enabled: false,
+          memberOfAttribute: "memberOf",
+          mappings: [],
+        },
+      }),
     },
   ],
 };
@@ -215,7 +337,7 @@ export default createBackendPlugin({
         // Helper function to authenticate against LDAP
         const authenticateLdap = async (
           username: string,
-          password: string
+          password: string,
         ): Promise<{
           success: boolean;
           userAttributes?: Record<string, unknown>;
@@ -223,7 +345,7 @@ export default createBackendPlugin({
         }> => {
           try {
             // Load LDAP configuration
-            const ldapConfig = await config.get("ldap", ldapConfigV2, 2);
+            const ldapConfig = await config.get("ldap", ldapConfigV3, 3);
 
             if (!ldapConfig) {
               return {
@@ -257,7 +379,7 @@ export default createBackendPlugin({
               // Step 2: Search for the user
               const searchFilter = ldapConfig.searchFilter.replace(
                 "{0}",
-                username
+                username,
               );
               const searchResult = await client.search(ldapConfig.baseDN, {
                 filter: searchFilter,
@@ -276,7 +398,7 @@ export default createBackendPlugin({
 
               if (searchResult.searchEntries.length > 1) {
                 logger.warn(
-                  `Multiple LDAP entries found for username: ${username}`
+                  `Multiple LDAP entries found for username: ${username}`,
                 );
               }
 
@@ -335,9 +457,9 @@ export default createBackendPlugin({
         // Helper function to create or update user via RPC
         const syncUser = async (
           username: string,
-          ldapAttributes: Record<string, unknown>
+          ldapAttributes: Record<string, unknown>,
         ): Promise<{ userId: string; email: string; name: string }> => {
-          const ldapConfig = await config.get("ldap", ldapConfigV2, 2);
+          const ldapConfig = await config.get("ldap", ldapConfigV3, 3);
           if (!ldapConfig) {
             throw new Error("LDAP configuration not found");
           }
@@ -370,7 +492,46 @@ export default createBackendPlugin({
             const existingUser = await authClient.findUserByEmail({ email });
             if (!existingUser) {
               throw new Error(
-                "User does not exist and auto-creation is disabled"
+                "User does not exist and auto-creation is disabled",
+              );
+            }
+          }
+
+          // Extract groups and map to roles if enabled
+          let syncRoles: string[] | undefined;
+          let managedRoleIds: string[] | undefined;
+          if (ldapConfig.groupMapping?.enabled) {
+            const groups = extractGroups({
+              ldapEntry: ldapAttributes,
+              memberOfAttribute: ldapConfig.groupMapping.memberOfAttribute,
+            });
+
+            // Map groups to roles
+            const mappedRoles = ldapConfig.groupMapping.mappings
+              .filter((m) => groups.includes(m.directoryGroup))
+              .map((m) => m.checkstackRole);
+
+            // Add default role if configured
+            if (ldapConfig.groupMapping.defaultRole) {
+              mappedRoles.push(ldapConfig.groupMapping.defaultRole);
+            }
+
+            // Deduplicate roles
+            syncRoles = [...new Set(mappedRoles)];
+
+            // Collect all managed role IDs (all roles in mappings + default)
+            // These are roles controlled by directory - will be removed if user leaves groups
+            const allManagedRoles = ldapConfig.groupMapping.mappings.map(
+              (m) => m.checkstackRole,
+            );
+            if (ldapConfig.groupMapping.defaultRole) {
+              allManagedRoles.push(ldapConfig.groupMapping.defaultRole);
+            }
+            managedRoleIds = [...new Set(allManagedRoles)];
+
+            if (syncRoles.length > 0) {
+              logger.debug(
+                `LDAP user ${email} will be assigned roles: ${syncRoles.join(", ")}`,
               );
             }
           }
@@ -385,6 +546,8 @@ export default createBackendPlugin({
             accountId: username,
             password: hashedPassword,
             autoUpdateUser: ldapConfig.autoUpdateUsers,
+            syncRoles,
+            managedRoleIds,
           });
 
           if (created) {
@@ -412,14 +575,14 @@ export default createBackendPlugin({
 
             if (!authResult.success) {
               return redirectToAuthError(
-                authResult.error || "Authentication failed"
+                authResult.error || "Authentication failed",
               );
             }
 
             // Sync user to database
             const { userId, email, name } = await syncUser(
               username,
-              authResult.userAttributes!
+              authResult.userAttributes!,
             );
 
             // Create session via RPC
@@ -452,7 +615,7 @@ export default createBackendPlugin({
                     7 * 24 * 60 * 60
                   }`,
                 },
-              }
+              },
             );
           } catch (error) {
             logger.error("LDAP login error:", error);
