@@ -1,5 +1,12 @@
 # @checkstack/dashboard-frontend
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [18fa8e3]
+  - @checkstack/maintenance-common@0.4.0
+
 ## 0.3.5
 
 ### Patch Changes

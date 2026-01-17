@@ -1,5 +1,36 @@
 # @checkstack/healthcheck-backend
 
+## 0.4.0
+
+### Minor Changes
+
+- 18fa8e3: Add notification suppression toggle for maintenance windows
+
+  **New Feature:** When creating or editing a maintenance window, you can now enable "Suppress health notifications" to prevent health status change notifications from being sent for affected systems while the maintenance is active (in_progress status). This is useful for planned downtime where health alerts are expected and would otherwise create noise.
+
+  **Changes:**
+
+  - Added `suppressNotifications` field to maintenance schema
+  - Added new service-to-service API `hasActiveMaintenanceWithSuppression`
+  - Healthcheck queue executor now checks for suppression before sending notifications
+  - MaintenanceEditor UI includes new toggle checkbox
+
+  **Bug Fix:** Fixed migration system to correctly set PostgreSQL search_path when running plugin migrations. Previously, migrations could fail with "relation does not exist" errors because the schema context wasn't properly set.
+
+### Patch Changes
+
+- db9b37c: Fixed 500 errors on healthcheck `getHistory` and `getDetailedHistory` endpoints caused by the scoped database proxy not handling Drizzle's `$count()` utility method.
+
+  **Root Cause:** The `$count()` method returns a Promise directly (not a query builder), bypassing the chain-replay mechanism used for schema isolation. This caused queries to run without the proper `search_path`, resulting in database errors.
+
+  **Changes:**
+
+  - Added explicit `$count` method handling in `scoped-db.ts` to wrap count operations in transactions with proper schema isolation
+  - Wrapped `$count` return values with `Number()` in healthcheck service to handle BigInt serialization
+
+- Updated dependencies [18fa8e3]
+  - @checkstack/maintenance-common@0.4.0
+
 ## 0.3.5
 
 ### Patch Changes
