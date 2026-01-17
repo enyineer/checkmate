@@ -32,10 +32,12 @@
 <details>
 <summary><strong>🏠 Dashboard & Navigation</strong></summary>
 
-### Dashboard Overview
-![Dashboard Overview](assets/screenshots/dashboard-overview.png)
+### Dashboard
+The central hub showing all your systems with real-time health status badges, recent activity feed, and quick access to key functions.
+![Dashboard](assets/screenshots/dashboard.png)
 
 ### Command Palette
+Lightning-fast keyboard-driven navigation with `Ctrl+K` / `Cmd+K`. Search for systems, actions, and settings instantly. Fully extensible by plugins.
 ![Command Palette](assets/screenshots/command-palette.png)
 
 </details>
@@ -44,13 +46,15 @@
 <summary><strong>✅ Health Checks</strong></summary>
 
 ### Health Check Configuration
-![Health Check Configuration](assets/screenshots/health-check-configuration.png)
+Configure automated monitoring with strategy-specific settings. Supports HTTP, TCP, DNS, TLS, PostgreSQL, MySQL, Redis, gRPC, RCON, SSH, and custom scripts.
+![Health Check Configuration](assets/screenshots/healthcheck-config.png)
 
-### Health Check Details
-![Health Check Details 1](assets/screenshots/health-check-configuration-details-1.png)
-![Health Check Details 2](assets/screenshots/health-check-configuration-details-2.png)
+### Flexible Assertions
+Define custom success criteria with multiple assertion types: status codes, response times, content matching, numeric comparisons, and more.
+![Health Check Assertions](assets/screenshots/healthcheck-config-assertion.png)
 
 ### System Details with Health Status
+Comprehensive system view showing current health status, historical performance charts with response times, and detailed check results.
 ![System Details](assets/screenshots/system-details.png)
 
 </details>
@@ -59,11 +63,19 @@
 <summary><strong>🚨 Incidents & Maintenance</strong></summary>
 
 ### Incident Management
-![Incident Configuration](assets/screenshots/incident-configuration.png)
+Track and document unplanned outages. Create timeline updates, link affected systems, and keep stakeholders informed in real-time.
+![Incident Management](assets/screenshots/incident-management.png)
+
+### Incident Details
+Rich incident timeline with status updates, affected systems, and full history. Changes are broadcast instantly via WebSocket.
 ![Incident Details](assets/screenshots/incident-details.png)
 
 ### Maintenance Windows
-![Maintenance Configuration](assets/screenshots/maintenance-configuration.png)
+Schedule planned maintenance with automatic status transitions from "Planned" → "Active" → "Completed". Subscribers are notified automatically.
+![Maintenance Management](assets/screenshots/maintenance-management.png)
+
+### Maintenance Details
+Detailed maintenance view showing schedule, affected systems, and status history. Link multiple systems to a single maintenance window.
 ![Maintenance Details](assets/screenshots/maintenance-details.png)
 
 </details>
@@ -72,14 +84,24 @@
 <summary><strong>📋 Catalog & Notifications</strong></summary>
 
 ### System Catalog
-![Catalog Configuration](assets/screenshots/catalog-configuration.png)
+Organize your infrastructure into Systems and Groups. Track dependencies, assign owners, and maintain a clear inventory of all monitored services.
+![Catalog Management](assets/screenshots/catalog-management.png)
 
-### Notification Center
-![Notification Overview](assets/screenshots/notification-overview.png)
-![Notifications Configuration](assets/screenshots/notifications-configuration.png)
+### In-App Notification Bell
+Real-time notification center accessible from any page. Shows unread count badge and instant updates via WebSocket.
+![In-App Notification Bell](assets/screenshots/in-app-notification-bell.png)
+
+### In-App Notification Overview
+Full notification history with read/unread tracking. Mark individual notifications or all as read with a single click.
+![In-App Notification Overview](assets/screenshots/in-app-notification-overview.png)
+
+### Notifications Configuration
+Configure multi-channel notification delivery: SMTP, Telegram, Microsoft Teams, Webex, Discord, Slack, Gotify, and Pushover. User-specific settings per channel.
+![Notifications Management](assets/screenshots/notifications-management.png)
 
 ### Telegram Integration Example
-![Telegram Notification](assets/screenshots/telegram-notification-example.png)
+Example of rich notification delivery via Telegram with formatted messages and direct links to affected systems.
+![Telegram Notification](assets/screenshots/example-telegram-notification.png)
 
 </details>
 
@@ -87,28 +109,41 @@
 <summary><strong>🔌 Integrations & Queues</strong></summary>
 
 ### External Integrations
-![Integrations Configuration](assets/screenshots/integrations-configuration.png)
-![Integration Connection Details](assets/screenshots/integrations-connection-details.png)
+Connect Checkstack to external systems like Jira, Microsoft Teams, Webex, and custom webhooks. Event-driven architecture enables automated workflows.
+![Integration Management](assets/screenshots/integration-management.png)
 
 ### Queue Management
-![Queue Configuration](assets/screenshots/queue-configuration.png)
+Monitor background job processing with real-time statistics. View scheduling lag, worker concurrency, and job queue status. Built-in lag warnings for health monitoring.
+![Queue Management](assets/screenshots/queue-management.png)
 
 </details>
 
 <details>
 <summary><strong>🔐 Authentication & Security</strong></summary>
 
-### User Management
-![Users Configuration](assets/screenshots/auth-configuration-users.png)
+### User & Role Management
+Manage users with flexible role assignments. Support for both local accounts and external identity provider users (SAML, LDAP, GitHub OAuth).
+![User Role Management](assets/screenshots/user-role-management.png)
 
 ### Role-Based Access Control
-![Roles Configuration](assets/screenshots/auth-configuration-roles.png)
+Define custom roles with granular permissions. Assign platform-wide access rules and combine with team-based resource-level access control.
+![Role Access Management](assets/screenshots/role-access-management.png)
+
+### Team Management
+Organize users into logical teams for resource-level access control. Designate team managers and assign API keys to teams for automated workflows.
+![Team Management](assets/screenshots/team-management.png)
 
 ### Authentication Strategies
-![Strategies Configuration](assets/screenshots/auth-configuration-strategies.png)
+Configure multiple authentication methods: Credential Login, GitHub OAuth, SAML 2.0 SSO, and LDAP/AD. Includes directory group-to-role mapping for enterprise SSO.
+![Authentication Strategies](assets/screenshots/auth-strategies.png)
 
 ### External Applications
-![Applications Configuration](assets/screenshots/auth-configuration-applications.png)
+Create API keys (service accounts) for machine-to-machine access. Full RBAC permission control and optional team assignment for scoped access.
+![External Applications](assets/screenshots/applications.png)
+
+### Profile Management
+Users can update their profile information including name and email (for credential users). Credential users can also change their password from this page.
+![Profile Management](assets/screenshots/profile-management.png)
 
 </details>
 
@@ -116,7 +151,8 @@
 <summary><strong>📖 API Documentation</strong></summary>
 
 ### Built-in API Docs
-![API Documentation](assets/screenshots/api-docuementation.png)
+Interactive API documentation. Explore all available endpoints and view response schemas directly in the browser.
+![API Documentation](assets/screenshots/api-docs.png)
 
 </details>
 
