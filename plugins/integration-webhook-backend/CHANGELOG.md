@@ -1,5 +1,20 @@
 # @checkstack/integration-webhook-backend
 
+## 0.0.9
+
+### Patch Changes
+
+- 83557c7: ## Multi-Type Editor Support for Webhooks
+
+  - Updated webhook provider to use new multi-type editor field for body templates
+
+- Updated dependencies [83557c7]
+- Updated dependencies [83557c7]
+  - @checkstack/backend-api@0.4.0
+  - @checkstack/common@0.4.0
+  - @checkstack/integration-backend@0.1.4
+  - @checkstack/integration-common@0.2.1
+
 ## 0.0.8
 
 ### Patch Changes

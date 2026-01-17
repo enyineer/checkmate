@@ -1,5 +1,12 @@
 # @checkstack/command-common
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [83557c7]
+  - @checkstack/common@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes

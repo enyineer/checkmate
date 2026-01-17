@@ -1,5 +1,13 @@
 # @checkstack/common
 
+## 0.4.0
+
+### Minor Changes
+
+- 83557c7: ## EditorType Definition
+
+  - Added `EditorType` enum for multi-type editor support (json, yaml, xml, markdown, formdata, raw)
+
 ## 0.3.0
 
 ### Minor Changes

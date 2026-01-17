@@ -1,5 +1,19 @@
 # @checkstack/healthcheck-http-backend
 
+## 0.1.6
+
+### Patch Changes
+
+- 83557c7: ## Multi-Type Editor Support for HTTP Requests
+
+  - Updated request collector to use new multi-type editor field for body templates
+
+- Updated dependencies [83557c7]
+- Updated dependencies [83557c7]
+  - @checkstack/backend-api@0.4.0
+  - @checkstack/common@0.4.0
+  - @checkstack/healthcheck-common@0.4.1
+
 ## 0.1.5
 
 ### Patch Changes

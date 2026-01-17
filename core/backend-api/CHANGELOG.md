@@ -1,5 +1,21 @@
 # @checkstack/backend-api
 
+## 0.4.0
+
+### Minor Changes
+
+- 83557c7: ## Multi-Type Editor Schema Support
+
+  - Added `editorTypes` support to zod-config for multi-type editor fields
+  - Extended schema-utils to handle editor type annotations
+
+### Patch Changes
+
+- Updated dependencies [83557c7]
+  - @checkstack/common@0.4.0
+  - @checkstack/queue-api@0.1.2
+  - @checkstack/signal-common@0.1.2
+
 ## 0.3.3
 
 ### Patch Changes
