@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 
-import { isValidJsonTemplatePosition, calculateJsonIndentation } from "./json";
+import {
+  isValidJsonTemplatePosition,
+  calculateJsonIndentation,
+} from "./json-utils";
 
 describe("isValidJsonTemplatePosition", () => {
   describe("string values (inside quotes)", () => {

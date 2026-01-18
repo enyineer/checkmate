@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   isValidMarkdownTemplatePosition,
   calculateMarkdownIndentation,
-} from "./markdown";
+} from "./markdown-utils";
 
 describe("isValidMarkdownTemplatePosition", () => {
   describe("valid text positions", () => {

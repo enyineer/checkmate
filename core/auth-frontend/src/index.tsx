@@ -2,7 +2,6 @@ import React from "react";
 import {
   ApiRef,
   accessApiRef,
-  AccessApi,
   createFrontendPlugin,
   createSlotExtension,
   NavbarRightSlot,
@@ -24,10 +23,8 @@ import { OnboardingPage } from "./components/OnboardingPage";
 import { ProfilePage } from "./components/ProfilePage";
 import { authApiRef, AuthApi, AuthSession } from "./api";
 import { getAuthClientLazy } from "./lib/auth-client";
+import { AuthAccessApi } from "./lib/AuthAccessApi";
 
-import { useAccessRules } from "./hooks/useAccessRules";
-
-import type { AccessRule } from "@checkstack/common";
 import { useNavigate } from "react-router-dom";
 import { Settings2, User } from "lucide-react";
 import { DropdownMenuItem } from "@checkstack/ui";
@@ -40,40 +37,6 @@ import {
 } from "@checkstack/auth-common";
 import { resolveRoute } from "@checkstack/common";
 import { OnboardingCheck } from "./components/OnboardingCheck";
-
-/**
- * Unified access API implementation.
- * Uses AccessRule objects for access checks.
- */
-class AuthAccessApi implements AccessApi {
-  useAccess(accessRule: AccessRule): { loading: boolean; allowed: boolean } {
-    const { accessRules, loading } = useAccessRules();
-
-    if (loading) {
-      return { loading: true, allowed: false };
-    }
-
-    // If no user, or user has no access rules, return false
-    if (!accessRules || accessRules.length === 0) {
-      return { loading: false, allowed: false };
-    }
-
-    const accessRuleId = accessRule.id;
-
-    // Check wildcard, exact match, or manage implies read
-    const isWildcard = accessRules.includes("*");
-    const hasExact = accessRules.includes(accessRuleId);
-
-    // For read actions, also check if user has manage access for the same resource
-    const hasManage =
-      accessRule.level === "read"
-        ? accessRules.includes(`${accessRule.resource}.manage`)
-        : false;
-
-    const allowed = isWildcard || hasExact || hasManage;
-    return { loading: false, allowed };
-  }
-}
 
 /**
  * BetterAuthApi wraps only better-auth client methods.

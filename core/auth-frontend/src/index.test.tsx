@@ -1,6 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
-import { authPlugin } from "./index";
-import { accessApiRef } from "@checkstack/frontend-api";
+import { AuthAccessApi } from "./lib/AuthAccessApi";
 import type { AccessRule } from "@checkstack/common";
 import { useAccessRules } from "./hooks/useAccessRules";
 
@@ -32,14 +31,10 @@ const otherAccess: AccessRule = {
 };
 
 describe("AuthAccessApi", () => {
-  let accessApi: {
-    useAccess: (p: AccessRule) => { loading: boolean; allowed: boolean };
-  };
+  let accessApi: AuthAccessApi;
 
   beforeEach(() => {
-    const apiDef = authPlugin.apis?.find((a) => a.ref.id === accessApiRef.id);
-    if (!apiDef) throw new Error("Access API not found in plugin");
-    accessApi = apiDef.factory({ get: () => ({}) } as any) as any;
+    accessApi = new AuthAccessApi();
   });
 
   it("should return true if user has the access rule", () => {

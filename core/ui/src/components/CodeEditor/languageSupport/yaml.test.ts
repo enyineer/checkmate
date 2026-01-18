@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 
-import { isValidYamlTemplatePosition, calculateYamlIndentation } from "./yaml";
+import {
+  isValidYamlTemplatePosition,
+  calculateYamlIndentation,
+} from "./yaml-utils";
 
 describe("isValidYamlTemplatePosition", () => {
   describe("value positions", () => {

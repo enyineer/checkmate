@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 
-import { isValidXmlTemplatePosition, calculateXmlIndentation } from "./xml";
+import {
+  isValidXmlTemplatePosition,
+  calculateXmlIndentation,
+} from "./xml-utils";
 
 describe("isValidXmlTemplatePosition", () => {
   describe("text content positions", () => {
