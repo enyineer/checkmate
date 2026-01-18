@@ -5,6 +5,7 @@ import {
   QueueStats,
   ConsumeOptions,
   RecurringJobDetails,
+  RecurringSchedule,
 } from "@checkstack/queue-api";
 import { Queue as BullQueue, Worker, JobsOptions } from "bullmq";
 import type { BullMQConfig } from "./plugin";
@@ -25,7 +26,10 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
   private consumerGroups = new Map<string, ConsumerGroupState>();
   private stopped = false;
 
-  constructor(private name: string, private config: BullMQConfig) {
+  constructor(
+    private name: string,
+    private config: BullMQConfig,
+  ) {
     // Initialize BullMQ Queue with Redis connection
     this.queue = new BullQueue(name, {
       connection: {
@@ -55,7 +59,7 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to connect to Redis at ${this.config.host}:${this.config.port}: ${message}`
+        `Failed to connect to Redis at ${this.config.host}:${this.config.port}: ${message}`,
       );
     }
   }
@@ -66,7 +70,7 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
       priority?: number;
       startDelay?: number;
       jobId?: string;
-    }
+    },
   ): Promise<string> {
     if (this.stopped) {
       throw new Error("Queue has been stopped");
@@ -93,7 +97,7 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
 
   async consume(
     consumer: QueueConsumer<T>,
-    options: ConsumeOptions
+    options: ConsumeOptions,
   ): Promise<void> {
     if (this.stopped) {
       throw new Error("Queue has been stopped");
@@ -138,7 +142,7 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
               return Math.pow(2, attemptsMade) * 1000;
             },
           },
-        }
+        },
       );
 
       // Configure retries at job level via job options
@@ -147,7 +151,7 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
           // Max retries exhausted
           console.debug(
             `Job ${job.id} exhausted retries (${job.attemptsMade}/${maxRetries}):`,
-            err
+            err,
           );
         }
       });
@@ -164,33 +168,29 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
     data: T,
     options: {
       jobId: string;
-      intervalSeconds: number;
-      startDelay?: number;
       priority?: number;
-    }
+    } & RecurringSchedule,
   ): Promise<string> {
     if (this.stopped) {
       throw new Error("Queue has been stopped");
     }
 
-    const { jobId, intervalSeconds, startDelay, priority } = options;
+    const { jobId, priority } = options;
 
     // Use upsertJobScheduler for create-or-update semantics
+    // BullMQ supports either 'every' (interval) or 'pattern' (cron)
     await this.queue.upsertJobScheduler(
       jobId,
-      {
-        every: intervalSeconds * 1000,
-        startDate: startDelay
-          ? new Date(Date.now() + startDelay * 1000)
-          : undefined,
-      },
+      "cronPattern" in options && options.cronPattern
+        ? { pattern: options.cronPattern }
+        : { every: options.intervalSeconds! * 1000 },
       {
         name: this.name,
         data,
         opts: {
           priority,
         },
-      }
+      },
     );
 
     return jobId;
@@ -214,7 +214,7 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
   }
 
   async getRecurringJobDetails(
-    jobId: string
+    jobId: string,
   ): Promise<RecurringJobDetails<T> | undefined> {
     if (this.stopped) {
       throw new Error("Queue has been stopped");
@@ -228,12 +228,20 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
     }
 
     // BullMQ scheduler template contains the data
-    return {
+    // Determine if it's cron-based or interval-based
+    const baseDetails = {
       jobId,
       data: scheduler.template?.data as T,
-      intervalSeconds: scheduler.every ? scheduler.every / 1000 : 0,
       priority: scheduler.template?.opts?.priority,
       nextRunAt: scheduler.next ? new Date(scheduler.next) : undefined,
+    };
+
+    if (scheduler.pattern) {
+      return { ...baseDetails, cronPattern: scheduler.pattern };
+    }
+    return {
+      ...baseDetails,
+      intervalSeconds: scheduler.every ? scheduler.every / 1000 : 0,
     };
   }
 
@@ -267,7 +275,7 @@ export class BullMQQueue<T = unknown> implements Queue<T> {
       "waiting",
       "active",
       "completed",
-      "failed"
+      "failed",
     );
 
     return {

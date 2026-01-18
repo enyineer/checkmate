@@ -5,9 +5,11 @@ import {
   QueueStats,
   ConsumeOptions,
   RecurringJobDetails,
+  RecurringSchedule,
 } from "@checkstack/queue-api";
 import type { Logger } from "@checkstack/backend-api";
 import { InMemoryQueueConfig } from "./plugin";
+import parser from "cron-parser";
 
 /**
  * Extended queue job with availability tracking for delayed jobs
@@ -62,16 +64,20 @@ interface ConsumerGroupState<T> {
 }
 
 /**
- * Recurring job metadata
+ * Maximum setTimeout delay (~24.8 days) to avoid overflow
  */
-interface RecurringJobMetadata<T> {
+const MAX_TIMEOUT = 2_147_483_647;
+
+/**
+ * Recurring job metadata - supports both interval and cron patterns
+ */
+type RecurringJobMetadata<T> = {
   jobId: string;
-  intervalSeconds: number;
   payload: T;
   priority: number;
-  enabled: boolean; // For cancellation
-  intervalId?: ReturnType<typeof setInterval>; // For wall-clock scheduling
-}
+  enabled: boolean;
+  timerId?: ReturnType<typeof setTimeout> | ReturnType<typeof setInterval>;
+} & RecurringSchedule;
 
 /**
  * In-memory queue implementation with consumer group support
@@ -94,7 +100,7 @@ export class InMemoryQueue<T> implements Queue<T> {
   constructor(
     private name: string,
     private config: InMemoryQueueConfig,
-    logger: Logger
+    logger: Logger,
   ) {
     this.semaphore = new Semaphore(config.concurrency);
     this.logger = logger;
@@ -126,11 +132,11 @@ export class InMemoryQueue<T> implements Queue<T> {
 
   async enqueue(
     data: T,
-    options?: { priority?: number; startDelay?: number; jobId?: string }
+    options?: { priority?: number; startDelay?: number; jobId?: string },
   ): Promise<string> {
     if (this.jobs.length >= this.config.maxQueueSize) {
       throw new Error(
-        `Queue '${this.name}' is full (max: ${this.config.maxQueueSize})`
+        `Queue '${this.name}' is full (max: ${this.config.maxQueueSize})`,
       );
     }
 
@@ -160,7 +166,7 @@ export class InMemoryQueue<T> implements Queue<T> {
 
     // Insert job in priority order (higher priority first)
     const insertIndex = this.jobs.findIndex(
-      (existingJob) => existingJob.priority! < job.priority!
+      (existingJob) => existingJob.priority! < job.priority!,
     );
 
     if (insertIndex === -1) {
@@ -188,7 +194,7 @@ export class InMemoryQueue<T> implements Queue<T> {
 
   async consume(
     consumer: QueueConsumer<T>,
-    options: ConsumeOptions
+    options: ConsumeOptions,
   ): Promise<void> {
     const { consumerGroup, maxRetries = 3 } = options;
 
@@ -220,50 +226,102 @@ export class InMemoryQueue<T> implements Queue<T> {
     data: T,
     options: {
       jobId: string;
-      intervalSeconds: number;
-      startDelay?: number;
       priority?: number;
-    }
+    } & RecurringSchedule,
   ): Promise<string> {
-    const { jobId, intervalSeconds, startDelay = 0, priority = 0 } = options;
+    const { jobId, priority = 0 } = options;
 
     // Check if this is an update to an existing recurring job
     const existingMetadata = this.recurringJobs.get(jobId);
     if (existingMetadata) {
-      // UPDATE CASE: Clear existing interval and pending executions
-      if (existingMetadata.intervalId) {
-        clearInterval(existingMetadata.intervalId);
+      // UPDATE CASE: Clear existing timer and pending executions
+      if (existingMetadata.timerId) {
+        if ("cronPattern" in existingMetadata) {
+          clearTimeout(existingMetadata.timerId);
+        } else {
+          clearInterval(existingMetadata.timerId);
+        }
       }
 
       // Find and remove any pending jobs for this recurring job
       this.jobs = this.jobs.filter((job) => {
-        // Check if this job belongs to the recurring job being updated
         if (job.id.startsWith(jobId + ":")) {
-          // Remove from processed sets to prevent orphaned references
           for (const group of this.consumerGroups.values()) {
             group.processedJobIds.delete(job.id);
           }
-          return false; // Remove this job
+          return false;
         }
-        return true; // Keep other jobs
+        return true;
       });
     }
 
-    // Calculate interval in ms with delay multiplier
+    // Handle cron-based scheduling
+    if ("cronPattern" in options && options.cronPattern) {
+      const cronPattern = options.cronPattern;
+
+      // Wall-clock cron scheduling with MAX_TIMEOUT handling
+      const scheduleNextCronRun = () => {
+        if (this.stopped) return;
+
+        const metadata = this.recurringJobs.get(jobId);
+        if (!metadata || !metadata.enabled) return;
+
+        try {
+          const interval = parser.parseExpression(cronPattern);
+          const nextRun = interval.next().toDate();
+          const delayMs = nextRun.getTime() - Date.now();
+
+          if (delayMs > MAX_TIMEOUT) {
+            // Chunk long delays - wake up periodically to recalculate
+            metadata.timerId = setTimeout(scheduleNextCronRun, MAX_TIMEOUT);
+            return;
+          }
+
+          metadata.timerId = setTimeout(
+            () => {
+              if (!this.stopped && metadata.enabled) {
+                const uniqueId = `${jobId}:${Date.now()}-${Math.random()
+                  .toString(36)
+                  .slice(2, 8)}`;
+                void this.enqueue(data, { jobId: uniqueId, priority });
+                scheduleNextCronRun(); // Reschedule for next cron time
+              }
+            },
+            Math.max(0, delayMs),
+          );
+        } catch (error) {
+          this.logger.error(`Invalid cron pattern "${cronPattern}":`, error);
+        }
+      };
+
+      // Store recurring job metadata
+      this.recurringJobs.set(jobId, {
+        jobId,
+        cronPattern,
+        payload: data,
+        priority,
+        enabled: true,
+      });
+
+      // Start cron scheduling
+      scheduleNextCronRun();
+
+      return jobId;
+    }
+
+    // Handle interval-based scheduling (original behavior)
+    // TypeScript XOR pattern doesn't narrow well, but intervalSeconds is guaranteed here
+    const intervalSeconds = options.intervalSeconds!;
     const intervalMs =
       intervalSeconds * 1000 * (this.config.delayMultiplier ?? 1);
 
     // Create interval for wall-clock scheduling
-    const intervalId = setInterval(() => {
+    const timerId = setInterval(() => {
       if (!this.stopped) {
-        // Add random suffix to ensure unique job IDs
         const uniqueId = `${jobId}:${Date.now()}-${Math.random()
           .toString(36)
           .slice(2, 8)}`;
-        void this.enqueue(data, {
-          jobId: uniqueId,
-          priority,
-        });
+        void this.enqueue(data, { jobId: uniqueId, priority });
       }
     }, intervalMs);
 
@@ -274,18 +332,14 @@ export class InMemoryQueue<T> implements Queue<T> {
       payload: data,
       priority,
       enabled: true,
-      intervalId,
+      timerId,
     });
 
-    // Schedule first execution (with optional startDelay)
+    // Schedule first execution immediately for interval-based jobs
     const firstJobId = `${jobId}:${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 8)}`;
-    await this.enqueue(data, {
-      jobId: firstJobId,
-      startDelay,
-      priority,
-    });
+    await this.enqueue(data, { jobId: firstJobId, priority });
 
     return jobId;
   }
@@ -295,16 +349,19 @@ export class InMemoryQueue<T> implements Queue<T> {
     if (metadata) {
       metadata.enabled = false; // Mark as disabled
 
-      // Clear the interval timer
-      if (metadata.intervalId) {
-        clearInterval(metadata.intervalId);
-        metadata.intervalId = undefined;
+      // Clear the timer (works for both setTimeout and setInterval)
+      if (metadata.timerId) {
+        if ("cronPattern" in metadata) {
+          clearTimeout(metadata.timerId);
+        } else {
+          clearInterval(metadata.timerId);
+        }
+        metadata.timerId = undefined;
       }
 
       // Also cancel any pending jobs
       this.jobs = this.jobs.filter((job) => {
         if (job.id.startsWith(jobId + ":")) {
-          // Remove from processed sets
           for (const group of this.consumerGroups.values()) {
             group.processedJobIds.delete(job.id);
           }
@@ -320,18 +377,23 @@ export class InMemoryQueue<T> implements Queue<T> {
   }
 
   async getRecurringJobDetails(
-    jobId: string
+    jobId: string,
   ): Promise<RecurringJobDetails<T> | undefined> {
     const metadata = this.recurringJobs.get(jobId);
     if (!metadata || !metadata.enabled) {
       return undefined;
     }
-    return {
+
+    const baseDetails = {
       jobId: metadata.jobId,
       data: metadata.payload,
-      intervalSeconds: metadata.intervalSeconds,
       priority: metadata.priority,
     };
+
+    if ("cronPattern" in metadata && metadata.cronPattern) {
+      return { ...baseDetails, cronPattern: metadata.cronPattern };
+    }
+    return { ...baseDetails, intervalSeconds: metadata.intervalSeconds! };
   }
 
   async getInFlightCount(): Promise<number> {
@@ -351,7 +413,7 @@ export class InMemoryQueue<T> implements Queue<T> {
 
       // Find next unprocessed job for this group that is available
       const job = this.jobs.find(
-        (j) => !groupState.processedJobIds.has(j.id) && j.availableAt <= now
+        (j) => !groupState.processedJobIds.has(j.id) && j.availableAt <= now,
       );
 
       if (!job) continue;
@@ -373,7 +435,7 @@ export class InMemoryQueue<T> implements Queue<T> {
     this.jobs = this.jobs.filter((job) => {
       // Job is done if all groups have processed it
       return ![...this.consumerGroups.values()].every((group) =>
-        group.processedJobIds.has(job.id)
+        group.processedJobIds.has(job.id),
       );
     });
   }
@@ -382,7 +444,7 @@ export class InMemoryQueue<T> implements Queue<T> {
     job: InternalQueueJob<T>,
     consumer: ConsumerGroupState<T>["consumers"][0],
     groupId: string,
-    groupState: ConsumerGroupState<T>
+    groupState: ConsumerGroupState<T>,
   ): Promise<void> {
     await this.semaphore.acquire();
     this.processing++;
@@ -395,7 +457,7 @@ export class InMemoryQueue<T> implements Queue<T> {
     } catch (error) {
       this.logger.error(
         `Job ${job.id} failed in group ${groupId} (attempt ${job.attempts}):`,
-        error
+        error,
       );
 
       // Retry logic
@@ -408,7 +470,7 @@ export class InMemoryQueue<T> implements Queue<T> {
 
         // Re-add job to queue for retry (with priority to process soon, preserving availableAt)
         const insertIndex = this.jobs.findIndex(
-          (existingJob) => existingJob.priority! < (job.priority ?? 0)
+          (existingJob) => existingJob.priority! < (job.priority ?? 0),
         );
         if (insertIndex === -1) {
           this.jobs.push(job);
@@ -447,11 +509,15 @@ export class InMemoryQueue<T> implements Queue<T> {
       this.heartbeatInterval = undefined;
     }
 
-    // Clear all recurring job intervals
+    // Clear all recurring job timers (both cron and interval)
     for (const metadata of this.recurringJobs.values()) {
-      if (metadata.intervalId) {
-        clearInterval(metadata.intervalId);
-        metadata.intervalId = undefined;
+      if (metadata.timerId) {
+        if ("cronPattern" in metadata) {
+          clearTimeout(metadata.timerId);
+        } else {
+          clearInterval(metadata.timerId);
+        }
+        metadata.timerId = undefined;
       }
       metadata.enabled = false;
     }

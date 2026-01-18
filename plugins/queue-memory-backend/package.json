@@ -12,8 +12,9 @@
     "@checkstack/backend-api": "workspace:*",
     "@checkstack/queue-api": "workspace:*",
     "@checkstack/queue-memory-common": "workspace:*",
-    "zod": "^4.2.1",
-    "@checkstack/common": "workspace:*"
+    "@checkstack/common": "workspace:*",
+    "cron-parser": "^4.9.0",
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Queue, QueueStats } from "./queue";
+import type { Queue, QueueStats, RecurringSchedule } from "./queue";
 import type { Migration, Logger } from "@checkstack/backend-api";
 
 export interface QueuePlugin<Config = unknown> {
@@ -37,12 +37,11 @@ export interface SwitchResult {
 /**
  * Info about a recurring job across all queues
  */
-export interface RecurringJobInfo {
+export type RecurringJobInfo = {
   queueName: string;
   jobId: string;
-  intervalSeconds: number;
   nextRunAt?: Date;
-}
+} & RecurringSchedule;
 
 /**
  * QueueManager handles queue creation, backend switching, and multi-instance coordination.

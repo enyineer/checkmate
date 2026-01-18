@@ -4,6 +4,7 @@ import type {
   ConsumeOptions,
   QueueStats,
   RecurringJobDetails,
+  RecurringSchedule,
 } from "@checkstack/queue-api";
 import { rootLogger } from "../logger";
 
@@ -39,7 +40,7 @@ export class QueueProxy<T = unknown> implements Queue<T> {
     // Wait for pending operations to complete
     if (this.pendingOperations.length > 0) {
       rootLogger.debug(
-        `Waiting for ${this.pendingOperations.length} pending operations...`
+        `Waiting for ${this.pendingOperations.length} pending operations...`,
       );
       await Promise.allSettled(this.pendingOperations);
     }
@@ -56,7 +57,7 @@ export class QueueProxy<T = unknown> implements Queue<T> {
     // Re-apply all stored subscriptions
     for (const [group, { consumer, options }] of this.subscriptions) {
       rootLogger.debug(
-        `Re-applying subscription for group '${group}' on queue '${this.name}'`
+        `Re-applying subscription for group '${group}' on queue '${this.name}'`,
       );
       await this.delegate.consume(consumer, options);
     }
@@ -72,7 +73,7 @@ export class QueueProxy<T = unknown> implements Queue<T> {
   private ensureDelegate(): Queue<T> {
     if (!this.delegate) {
       throw new Error(
-        `Queue '${this.name}' not initialized. Ensure QueueManager.loadConfiguration() has been called.`
+        `Queue '${this.name}' not initialized. Ensure QueueManager.loadConfiguration() has been called.`,
       );
     }
     if (this.stopped) {
@@ -85,7 +86,7 @@ export class QueueProxy<T = unknown> implements Queue<T> {
     this.pendingOperations.push(operation);
     return operation.finally(() => {
       this.pendingOperations = this.pendingOperations.filter(
-        (p) => p !== operation
+        (p) => p !== operation,
       );
     });
   }
@@ -96,7 +97,7 @@ export class QueueProxy<T = unknown> implements Queue<T> {
       priority?: number;
       startDelay?: number;
       jobId?: string;
-    }
+    },
   ): Promise<string> {
     const delegate = this.ensureDelegate();
     return this.trackOperation(delegate.enqueue(data, options));
@@ -104,7 +105,7 @@ export class QueueProxy<T = unknown> implements Queue<T> {
 
   async consume(
     consumer: QueueConsumer<T>,
-    options: ConsumeOptions
+    options: ConsumeOptions,
   ): Promise<void> {
     // Store subscription for replay after backend switch
     this.subscriptions.set(options.consumerGroup, { consumer, options });
@@ -119,10 +120,9 @@ export class QueueProxy<T = unknown> implements Queue<T> {
     data: T,
     options: {
       jobId: string;
-      intervalSeconds: number;
       startDelay?: number;
       priority?: number;
-    }
+    } & RecurringSchedule,
   ): Promise<string> {
     const delegate = this.ensureDelegate();
     return this.trackOperation(delegate.scheduleRecurring(data, options));
@@ -139,7 +139,7 @@ export class QueueProxy<T = unknown> implements Queue<T> {
   }
 
   async getRecurringJobDetails(
-    jobId: string
+    jobId: string,
   ): Promise<RecurringJobDetails<T> | undefined> {
     const delegate = this.ensureDelegate();
     return delegate.getRecurringJobDetails(jobId);

@@ -34,7 +34,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const [hours, minutes] = e.target.value.split(":").map(Number);
     const newDate = new Date(value);
-    newDate.setHours(hours, minutes);
+    newDate.setHours(hours, minutes, 0, 0); // Reset seconds and milliseconds
     onChange(newDate);
   };
 

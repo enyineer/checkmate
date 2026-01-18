@@ -2,7 +2,6 @@ import { implement, ORPCError } from "@orpc/server";
 import {
   maintenanceContract,
   MAINTENANCE_UPDATED,
-  maintenanceRoutes,
 } from "@checkstack/maintenance-common";
 import {
   autoAuthMiddleware,
@@ -13,8 +12,8 @@ import type { SignalService } from "@checkstack/signal-common";
 import type { MaintenanceService } from "./service";
 import { CatalogApi } from "@checkstack/catalog-common";
 import type { InferClient } from "@checkstack/common";
-import { resolveRoute } from "@checkstack/common";
 import { maintenanceHooks } from "./hooks";
+import { notifyAffectedSystems } from "./notifications";
 
 export function createRouter(
   service: MaintenanceService,
@@ -25,47 +24,6 @@ export function createRouter(
   const os = implement(maintenanceContract)
     .$context<RpcContext>()
     .use(autoAuthMiddleware);
-
-  /**
-   * Helper to notify subscribers of affected systems about a maintenance event.
-   * Each system triggers a separate notification call, but within each call
-   * the subscribers are deduplicated (system + its groups).
-   */
-  const notifyAffectedSystems = async (props: {
-    maintenanceId: string;
-    maintenanceTitle: string;
-    systemIds: string[];
-    action: "created" | "updated";
-  }) => {
-    const { maintenanceId, maintenanceTitle, systemIds, action } = props;
-
-    const actionText = action === "created" ? "scheduled" : "updated";
-    const maintenanceDetailPath = resolveRoute(
-      maintenanceRoutes.routes.detail,
-      {
-        maintenanceId,
-      },
-    );
-
-    for (const systemId of systemIds) {
-      try {
-        await catalogClient.notifySystemSubscribers({
-          systemId,
-          title: `Maintenance ${actionText}`,
-          body: `A maintenance **"${maintenanceTitle}"** has been ${actionText} for a system you're subscribed to.`,
-          importance: "info",
-          action: { label: "View Maintenance", url: maintenanceDetailPath },
-          includeGroupSubscribers: true,
-        });
-      } catch (error) {
-        // Log but don't fail the operation - notifications are best-effort
-        logger.warn(
-          `Failed to notify subscribers for system ${systemId}:`,
-          error,
-        );
-      }
-    }
-  };
 
   return os.router({
     listMaintenances: os.listMaintenances.handler(async ({ input }) => {
@@ -127,6 +85,8 @@ export function createRouter(
 
         // Send notifications to system subscribers
         await notifyAffectedSystems({
+          catalogClient,
+          logger,
           maintenanceId: result.id,
           maintenanceTitle: result.title,
           systemIds: result.systemIds,
@@ -167,6 +127,8 @@ export function createRouter(
 
         // Send notifications to system subscribers
         await notifyAffectedSystems({
+          catalogClient,
+          logger,
           maintenanceId: result.id,
           maintenanceTitle: result.title,
           systemIds: result.systemIds,
@@ -180,14 +142,25 @@ export function createRouter(
     addUpdate: os.addUpdate.handler(async ({ input, context }) => {
       const userId =
         context.user && "id" in context.user ? context.user.id : undefined;
+
+      // Get previous status before update for comparison
+      const previousMaintenance = input.statusChange
+        ? await service.getMaintenance(input.maintenanceId)
+        : undefined;
+      const previousStatus = previousMaintenance?.status;
+
       const result = await service.addUpdate(input, userId);
       // Get maintenance to broadcast with correct systemIds
       const maintenance = await service.getMaintenance(input.maintenanceId);
       if (maintenance) {
+        // Determine action based on status change
+        const action =
+          input.statusChange === "completed" ? "closed" : "updated";
+
         await signalService.broadcast(MAINTENANCE_UPDATED, {
           maintenanceId: input.maintenanceId,
           systemIds: maintenance.systemIds,
-          action: "updated",
+          action,
         });
 
         // Emit hook for cross-plugin coordination and integrations
@@ -199,8 +172,33 @@ export function createRouter(
           status: maintenance.status,
           startAt: maintenance.startAt.toISOString(),
           endAt: maintenance.endAt.toISOString(),
-          action: "updated",
+          action,
         });
+
+        // Send notifications when status actually changes
+        if (input.statusChange && previousStatus !== input.statusChange) {
+          // Determine notification action based on the actual status transition
+          let notificationAction: "started" | "completed" | "updated";
+          if (
+            input.statusChange === "in_progress" &&
+            previousStatus !== "in_progress"
+          ) {
+            notificationAction = "started";
+          } else if (input.statusChange === "completed") {
+            notificationAction = "completed";
+          } else {
+            notificationAction = "updated";
+          }
+
+          await notifyAffectedSystems({
+            catalogClient,
+            logger,
+            maintenanceId: input.maintenanceId,
+            maintenanceTitle: maintenance.title,
+            systemIds: maintenance.systemIds,
+            action: notificationAction,
+          });
+        }
       }
       return result;
     }),

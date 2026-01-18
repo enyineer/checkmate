@@ -65,7 +65,9 @@ export function createMockQueueManager(): QueueManager {
       scheduleRecurring: async (data, options) => {
         recurringJobs.set(options.jobId, {
           data,
-          intervalSeconds: options.intervalSeconds,
+          // Store intervalSeconds if present (XOR pattern - one must be defined)
+          intervalSeconds:
+            "intervalSeconds" in options ? options.intervalSeconds! : 0,
         });
         return options.jobId;
       },
@@ -76,7 +78,7 @@ export function createMockQueueManager(): QueueManager {
         return [...recurringJobs.keys()];
       },
       getRecurringJobDetails: async (
-        jobId
+        jobId,
       ): Promise<RecurringJobDetails<T> | undefined> => {
         const job = recurringJobs.get(jobId);
         if (!job) return undefined;

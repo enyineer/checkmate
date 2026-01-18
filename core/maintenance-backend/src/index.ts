@@ -7,7 +7,7 @@ import {
   pluginMetadata,
   maintenanceContract,
   maintenanceRoutes,
-  MAINTENANCE_UPDATED,
+  MaintenanceApi,
 } from "@checkstack/maintenance-common";
 
 import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
@@ -16,7 +16,7 @@ import { MaintenanceService } from "./service";
 import { createRouter } from "./router";
 import { CatalogApi } from "@checkstack/catalog-common";
 import { registerSearchProvider } from "@checkstack/command-backend";
-import { resolveRoute } from "@checkstack/common";
+import { resolveRoute, type InferClient } from "@checkstack/common";
 import { maintenanceHooks } from "./hooks";
 
 // =============================================================================
@@ -87,6 +87,9 @@ export default createBackendPlugin({
 
     // Store service reference for afterPluginsReady
     let maintenanceService: MaintenanceService;
+    // Store clients for afterPluginsReady
+    let catalogClient: InferClient<typeof CatalogApi>;
+    let maintenanceClient: InferClient<typeof MaintenanceApi>;
 
     env.registerInit({
       schema,
@@ -100,7 +103,8 @@ export default createBackendPlugin({
       init: async ({ logger, database, rpc, rpcClient, signalService }) => {
         logger.debug("🔧 Initializing Maintenance Backend...");
 
-        const catalogClient = rpcClient.forPlugin(CatalogApi);
+        catalogClient = rpcClient.forPlugin(CatalogApi);
+        maintenanceClient = rpcClient.forPlugin(MaintenanceApi);
 
         maintenanceService = new MaintenanceService(
           database as NodePgDatabase<typeof schema>,
@@ -141,12 +145,7 @@ export default createBackendPlugin({
 
         logger.debug("✅ Maintenance Backend initialized.");
       },
-      afterPluginsReady: async ({
-        queueManager,
-        emitHook,
-        logger,
-        signalService,
-      }) => {
+      afterPluginsReady: async ({ queueManager, logger }) => {
         // Schedule the recurring status transition check job
         const queue = queueManager.getQueue<Record<string, never>>(
           STATUS_TRANSITION_QUEUE,
@@ -160,35 +159,21 @@ export default createBackendPlugin({
             // Get maintenances that need to start
             const toStart = await maintenanceService.getMaintenancesToStart();
             for (const maintenance of toStart) {
-              const updated = await maintenanceService.transitionStatus(
-                maintenance.id,
-                "in_progress",
-                "Maintenance started automatically",
-              );
-
-              if (updated) {
+              try {
+                // Call addUpdate via RPC - this handles hooks, signals, and notifications
+                await maintenanceClient.addUpdate({
+                  maintenanceId: maintenance.id,
+                  message: "Maintenance started automatically",
+                  statusChange: "in_progress",
+                });
                 logger.info(
-                  `Maintenance "${updated.title}" transitioned to in_progress`,
+                  `Maintenance "${maintenance.title}" transitioned to in_progress`,
                 );
-
-                // Emit hook for integrations
-                await emitHook(maintenanceHooks.maintenanceUpdated, {
-                  maintenanceId: updated.id,
-                  systemIds: updated.systemIds,
-                  title: updated.title,
-                  description: updated.description,
-                  status: updated.status,
-                  startAt: updated.startAt.toISOString(),
-                  endAt: updated.endAt.toISOString(),
-                  action: "updated" as const,
-                });
-
-                // Send signal for real-time UI updates
-                await signalService.broadcast(MAINTENANCE_UPDATED, {
-                  maintenanceId: updated.id,
-                  systemIds: updated.systemIds,
-                  action: "updated",
-                });
+              } catch (error) {
+                logger.error(
+                  `Failed to transition maintenance ${maintenance.id}:`,
+                  error,
+                );
               }
             }
 
@@ -196,35 +181,21 @@ export default createBackendPlugin({
             const toComplete =
               await maintenanceService.getMaintenancesToComplete();
             for (const maintenance of toComplete) {
-              const updated = await maintenanceService.transitionStatus(
-                maintenance.id,
-                "completed",
-                "Maintenance completed automatically",
-              );
-
-              if (updated) {
+              try {
+                // Call addUpdate via RPC - this handles hooks, signals, and notifications
+                await maintenanceClient.addUpdate({
+                  maintenanceId: maintenance.id,
+                  message: "Maintenance completed automatically",
+                  statusChange: "completed",
+                });
                 logger.info(
-                  `Maintenance "${updated.title}" transitioned to completed`,
+                  `Maintenance "${maintenance.title}" transitioned to completed`,
                 );
-
-                // Emit hook for integrations
-                await emitHook(maintenanceHooks.maintenanceUpdated, {
-                  maintenanceId: updated.id,
-                  systemIds: updated.systemIds,
-                  title: updated.title,
-                  description: updated.description,
-                  status: updated.status,
-                  startAt: updated.startAt.toISOString(),
-                  endAt: updated.endAt.toISOString(),
-                  action: "closed" as const,
-                });
-
-                // Send signal for real-time UI updates
-                await signalService.broadcast(MAINTENANCE_UPDATED, {
-                  maintenanceId: updated.id,
-                  systemIds: updated.systemIds,
-                  action: "closed",
-                });
+              } catch (error) {
+                logger.error(
+                  `Failed to transition maintenance ${maintenance.id}:`,
+                  error,
+                );
               }
             }
 
@@ -240,12 +211,12 @@ export default createBackendPlugin({
           },
         );
 
-        // Schedule to run every minute (60 seconds)
+        // Schedule to run every minute at second 0 (cron-based for precise timing)
         await queue.scheduleRecurring(
           {}, // Empty payload - the job just triggers a check
           {
             jobId: STATUS_TRANSITION_JOB_ID,
-            intervalSeconds: 60,
+            cronPattern: "* * * * *", // Every minute at :00 seconds
           },
         );
 

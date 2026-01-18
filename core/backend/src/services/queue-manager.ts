@@ -41,7 +41,7 @@ export class QueueManagerImpl implements QueueManager {
   constructor(
     private registry: QueuePluginRegistryImpl,
     private configService: ConfigService,
-    private logger: Logger
+    private logger: Logger,
   ) {}
 
   async loadConfiguration(): Promise<void> {
@@ -50,7 +50,7 @@ export class QueueManagerImpl implements QueueManager {
       const pointer = await this.configService.get<ActivePluginPointer>(
         "queue:active",
         activePluginPointerSchema,
-        1
+        1,
       );
 
       if (pointer) {
@@ -63,7 +63,7 @@ export class QueueManagerImpl implements QueueManager {
           const config = await this.configService.get(
             this.activePluginId,
             plugin.configSchema,
-            plugin.configVersion
+            plugin.configVersion,
           );
 
           if (config) {
@@ -72,11 +72,11 @@ export class QueueManagerImpl implements QueueManager {
         }
 
         this.logger.info(
-          `📋 Loaded queue configuration: plugin=${this.activePluginId}, version=${this.configVersion}`
+          `📋 Loaded queue configuration: plugin=${this.activePluginId}, version=${this.configVersion}`,
         );
       } else {
         this.logger.info(
-          `📋 No queue configuration found, using default: plugin=${this.activePluginId}`
+          `📋 No queue configuration found, using default: plugin=${this.activePluginId}`,
         );
       }
     } catch (error) {
@@ -105,7 +105,7 @@ export class QueueManagerImpl implements QueueManager {
     const plugin = this.registry.getPlugin(this.activePluginId);
     if (!plugin) {
       this.logger.warn(
-        `Queue plugin '${this.activePluginId}' not found, deferring queue creation`
+        `Queue plugin '${this.activePluginId}' not found, deferring queue creation`,
       );
       return;
     }
@@ -126,7 +126,7 @@ export class QueueManagerImpl implements QueueManager {
 
   async setActiveBackend(
     pluginId: string,
-    config: unknown
+    config: unknown,
   ): Promise<SwitchResult> {
     const warnings: string[] = [];
 
@@ -145,7 +145,7 @@ export class QueueManagerImpl implements QueueManager {
       const testQueue = newPlugin.createQueue(
         "__connection_test__",
         config,
-        this.logger
+        this.logger,
       );
       await testQueue.testConnection();
       await testQueue.stop();
@@ -160,10 +160,10 @@ export class QueueManagerImpl implements QueueManager {
     const inFlightCount = await this.getInFlightJobCount();
     if (inFlightCount > 0) {
       warnings.push(
-        `${inFlightCount} jobs are currently in-flight and may be disrupted`
+        `${inFlightCount} jobs are currently in-flight and may be disrupted`,
       );
       this.logger.warn(
-        `⚠️ ${inFlightCount} in-flight jobs detected during backend switch`
+        `⚠️ ${inFlightCount} in-flight jobs detected during backend switch`,
       );
     }
 
@@ -197,7 +197,7 @@ export class QueueManagerImpl implements QueueManager {
     // 9. Migrate recurring jobs
     if (recurringJobs.length > 0 && oldPlugin && pluginId !== oldPluginId) {
       this.logger.info(
-        `📦 Migrating ${recurringJobs.length} recurring jobs...`
+        `📦 Migrating ${recurringJobs.length} recurring jobs...`,
       );
 
       for (const job of recurringJobs) {
@@ -209,18 +209,28 @@ export class QueueManagerImpl implements QueueManager {
             // Since we already switched, we need to get this from the collected info
             const details = await proxy.getRecurringJobDetails(job.jobId);
             if (details) {
-              await proxy.scheduleRecurring(details.data as unknown, {
-                jobId: details.jobId,
-                intervalSeconds: details.intervalSeconds,
-                priority: details.priority,
-              });
+              // Use if/else to properly satisfy XOR type constraint
+              // eslint-disable-next-line unicorn/prefer-ternary
+              if ("cronPattern" in details && details.cronPattern) {
+                await proxy.scheduleRecurring(details.data as unknown, {
+                  jobId: details.jobId,
+                  priority: details.priority,
+                  cronPattern: details.cronPattern,
+                });
+              } else {
+                await proxy.scheduleRecurring(details.data as unknown, {
+                  jobId: details.jobId,
+                  priority: details.priority,
+                  intervalSeconds: details.intervalSeconds!,
+                });
+              }
               migratedRecurringJobs++;
             }
           }
         } catch (error) {
           this.logger.error(
             `Failed to migrate recurring job ${job.jobId}`,
-            error
+            error,
           );
           warnings.push(`Failed to migrate recurring job: ${job.jobId}`);
         }
@@ -232,7 +242,7 @@ export class QueueManagerImpl implements QueueManager {
       pluginId,
       newPlugin.configSchema,
       newPlugin.configVersion,
-      config
+      config,
     );
 
     await this.configService.set("queue:active", activePluginPointerSchema, 1, {
@@ -303,12 +313,18 @@ export class QueueManagerImpl implements QueueManager {
           for (const jobId of jobIds) {
             const details = await delegate.getRecurringJobDetails(jobId);
             if (details) {
+              // Extract schedule from details (XOR pattern - one must be defined)
+              const schedule =
+                "cronPattern" in details
+                  ? { cronPattern: details.cronPattern }
+                  : { intervalSeconds: details.intervalSeconds };
+
               jobs.push({
                 queueName,
                 jobId,
-                intervalSeconds: details.intervalSeconds,
                 nextRunAt: details.nextRunAt,
-              });
+                ...schedule,
+              } as RecurringJobInfo);
             }
           }
         }
@@ -332,12 +348,12 @@ export class QueueManagerImpl implements QueueManager {
         const pointer = await this.configService.get<ActivePluginPointer>(
           "queue:active",
           activePluginPointerSchema,
-          1
+          1,
         );
 
         if (pointer && pointer.version !== this.configVersion) {
           this.logger.info(
-            `🔄 Queue configuration changed (v${this.configVersion} → v${pointer.version}), reloading...`
+            `🔄 Queue configuration changed (v${this.configVersion} → v${pointer.version}), reloading...`,
           );
           await this.reloadConfiguration(pointer);
         }
@@ -348,13 +364,13 @@ export class QueueManagerImpl implements QueueManager {
   }
 
   private async reloadConfiguration(
-    pointer: ActivePluginPointer
+    pointer: ActivePluginPointer,
   ): Promise<void> {
     // Load new plugin config
     const plugin = this.registry.getPlugin(pointer.activePluginId);
     if (!plugin) {
       this.logger.error(
-        `Queue plugin '${pointer.activePluginId}' not found during reload`
+        `Queue plugin '${pointer.activePluginId}' not found during reload`,
       );
       return;
     }
@@ -362,12 +378,12 @@ export class QueueManagerImpl implements QueueManager {
     const config = await this.configService.get(
       pointer.activePluginId,
       plugin.configSchema,
-      plugin.configVersion
+      plugin.configVersion,
     );
 
     if (!config) {
       this.logger.error(
-        `Failed to load config for plugin '${pointer.activePluginId}'`
+        `Failed to load config for plugin '${pointer.activePluginId}'`,
       );
       return;
     }
@@ -388,7 +404,7 @@ export class QueueManagerImpl implements QueueManager {
     this.configVersion = pointer.version;
 
     this.logger.info(
-      `✅ Queue configuration reloaded: plugin=${this.activePluginId}`
+      `✅ Queue configuration reloaded: plugin=${this.activePluginId}`,
     );
   }
 

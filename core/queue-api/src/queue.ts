@@ -10,15 +10,21 @@ export interface QueueJob<T = unknown> {
 }
 
 /**
+ * Schedule configuration: either interval-based or cron-based
+ */
+export type RecurringSchedule =
+  | { intervalSeconds: number; cronPattern?: never }
+  | { cronPattern: string; intervalSeconds?: never };
+
+/**
  * Details of a recurring job for migration purposes
  */
-export interface RecurringJobDetails<T = unknown> {
+export type RecurringJobDetails<T = unknown> = {
   jobId: string;
   data: T;
-  intervalSeconds: number;
   priority?: number;
   nextRunAt?: Date;
-}
+} & RecurringSchedule;
 
 export interface QueueConsumer<T = unknown> {
   (job: QueueJob<T>): Promise<void>;
@@ -62,7 +68,7 @@ export interface Queue<T = unknown> {
        * If provided and a job with this ID already exists, behavior depends on queue implementation
        */
       jobId?: string;
-    }
+    },
   ): Promise<string>;
 
   /**
@@ -73,7 +79,9 @@ export interface Queue<T = unknown> {
   consume(consumer: QueueConsumer<T>, options: ConsumeOptions): Promise<void>;
 
   /**
-   * Schedule a recurring job that executes at regular intervals.
+   * Schedule a recurring job that executes at regular intervals or on a cron schedule.
+   *
+   * Accepts EITHER `intervalSeconds` (fixed interval) OR `cronPattern` (cron expression).
    *
    * UPDATE SEMANTICS: Calling this method with an existing jobId will UPDATE
    * the recurring job configuration (interval, payload, priority, etc.).
@@ -94,13 +102,11 @@ export interface Queue<T = unknown> {
        * Calling scheduleRecurring with the same jobId updates the existing job.
        */
       jobId: string;
-      /** Interval in seconds between executions */
-      intervalSeconds: number;
       /** Optional delay before first execution (for delta-based scheduling) */
       startDelay?: number;
       /** Optional priority */
       priority?: number;
-    }
+    } & RecurringSchedule,
   ): Promise<string>;
 
   /**
@@ -122,7 +128,7 @@ export interface Queue<T = unknown> {
    * @returns Job details or undefined if not found
    */
   getRecurringJobDetails(
-    jobId: string
+    jobId: string,
   ): Promise<RecurringJobDetails<T> | undefined>;
 
   /**
