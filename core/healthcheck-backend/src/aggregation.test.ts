@@ -6,25 +6,27 @@ describe("HealthCheckService.getAggregatedHistory", () => {
   let mockDb: ReturnType<typeof createMockDb>;
   let mockRegistry: ReturnType<typeof createMockRegistry>;
   let service: HealthCheckService;
+  // Store mock data for different queries
+  let mockConfigResult: { id: string; strategyId: string } | null = null;
+  let mockRunsResult: unknown[] = [];
 
   function createMockDb() {
-    return {
-      select: mock(() => ({
-        from: mock(() => ({
-          where: mock(() => ({
-            orderBy: mock(() => Promise.resolve([])),
-          })),
+    // Create a mock that handles both config queries (with limit) and runs queries (with orderBy)
+    const createSelectChain = () => ({
+      from: mock(() => ({
+        where: mock(() => ({
+          // For config query: uses .limit(1)
+          limit: mock(() =>
+            Promise.resolve(mockConfigResult ? [mockConfigResult] : []),
+          ),
+          // For runs query: uses .orderBy()
+          orderBy: mock(() => Promise.resolve(mockRunsResult)),
         })),
       })),
-      query: {
-        healthCheckConfigurations: {
-          findFirst: mock(() => Promise.resolve(null)) as ReturnType<
-            typeof mock<
-              () => Promise<{ id: string; strategyId: string } | null>
-            >
-          >,
-        },
-      },
+    });
+
+    return {
+      select: mock(createSelectChain),
     };
   }
 
@@ -47,6 +49,9 @@ describe("HealthCheckService.getAggregatedHistory", () => {
   }
 
   beforeEach(() => {
+    // Reset mock data
+    mockConfigResult = null;
+    mockRunsResult = [];
     mockDb = createMockDb();
     mockRegistry = createMockRegistry();
     service = new HealthCheckService(mockDb as never, mockRegistry as never);
@@ -65,7 +70,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           endDate,
           bucketSize: "auto",
         },
-        { includeAggregatedResult: true }
+        { includeAggregatedResult: true },
       );
 
       expect(result.buckets).toEqual([]);
@@ -83,7 +88,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           endDate,
           bucketSize: "auto",
         },
-        { includeAggregatedResult: true }
+        { includeAggregatedResult: true },
       );
 
       expect(result.buckets).toEqual([]);
@@ -122,18 +127,9 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         },
       ];
 
-      // Setup mock to return runs
-      mockDb.select = mock(() => ({
-        from: mock(() => ({
-          where: mock(() => ({
-            orderBy: mock(() => Promise.resolve(runs)),
-          })),
-        })),
-      }));
-
-      mockDb.query.healthCheckConfigurations.findFirst = mock(() =>
-        Promise.resolve({ id: "config-1", strategyId: "http" })
-      );
+      // Setup mock data
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
 
       const result = await service.getAggregatedHistory(
         {
@@ -143,14 +139,14 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           endDate: new Date("2024-01-01T23:59:59Z"),
           bucketSize: "hourly",
         },
-        { includeAggregatedResult: true }
+        { includeAggregatedResult: true },
       );
 
       expect(result.buckets).toHaveLength(2);
 
       // First bucket (10:00)
       const bucket10 = result.buckets.find(
-        (b) => b.bucketStart.getHours() === 10
+        (b) => b.bucketStart.getHours() === 10,
       );
       expect(bucket10).toBeDefined();
       expect(bucket10!.runCount).toBe(2);
@@ -161,7 +157,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
 
       // Second bucket (11:00)
       const bucket11 = result.buckets.find(
-        (b) => b.bucketStart.getHours() === 11
+        (b) => b.bucketStart.getHours() === 11,
       );
       expect(bucket11).toBeDefined();
       expect(bucket11!.runCount).toBe(1);
@@ -182,17 +178,9 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         timestamp: new Date("2024-01-01T10:00:00Z"),
       }));
 
-      mockDb.select = mock(() => ({
-        from: mock(() => ({
-          where: mock(() => ({
-            orderBy: mock(() => Promise.resolve(runs)),
-          })),
-        })),
-      }));
-
-      mockDb.query.healthCheckConfigurations.findFirst = mock(() =>
-        Promise.resolve({ id: "config-1", strategyId: "http" })
-      );
+      // Setup mock data
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
 
       const result = await service.getAggregatedHistory(
         {
@@ -202,7 +190,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           endDate: new Date("2024-01-01T23:59:59Z"),
           bucketSize: "hourly",
         },
-        { includeAggregatedResult: true }
+        { includeAggregatedResult: true },
       );
 
       expect(result.buckets).toHaveLength(1);
@@ -224,17 +212,9 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         },
       ];
 
-      mockDb.select = mock(() => ({
-        from: mock(() => ({
-          where: mock(() => ({
-            orderBy: mock(() => Promise.resolve(runs)),
-          })),
-        })),
-      }));
-
-      mockDb.query.healthCheckConfigurations.findFirst = mock(() =>
-        Promise.resolve({ id: "config-1", strategyId: "http" })
-      );
+      // Setup mock data
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
 
       const result = await service.getAggregatedHistory(
         {
@@ -244,7 +224,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           endDate: new Date("2024-01-01T23:59:59Z"),
           bucketSize: "hourly",
         },
-        { includeAggregatedResult: true }
+        { includeAggregatedResult: true },
       );
 
       const bucket = result.buckets[0];
@@ -270,18 +250,9 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         },
       ];
 
-      mockDb.select = mock(() => ({
-        from: mock(() => ({
-          where: mock(() => ({
-            orderBy: mock(() => Promise.resolve(runs)),
-          })),
-        })),
-      }));
-
-      // No config found means no strategy
-      mockDb.query.healthCheckConfigurations.findFirst = mock(() =>
-        Promise.resolve(null)
-      );
+      // Setup mock data - no config found means no strategy
+      mockRunsResult = runs;
+      mockConfigResult = null;
 
       const result = await service.getAggregatedHistory(
         {
@@ -291,12 +262,12 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           endDate: new Date("2024-01-01T23:59:59Z"),
           bucketSize: "hourly",
         },
-        { includeAggregatedResult: true }
+        { includeAggregatedResult: true },
       );
 
       const bucket = result.buckets[0];
       expect(
-        "aggregatedResult" in bucket ? bucket.aggregatedResult : undefined
+        "aggregatedResult" in bucket ? bucket.aggregatedResult : undefined,
       ).toBeUndefined();
     });
   });
@@ -333,17 +304,9 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         },
       ];
 
-      mockDb.select = mock(() => ({
-        from: mock(() => ({
-          where: mock(() => ({
-            orderBy: mock(() => Promise.resolve(runs)),
-          })),
-        })),
-      }));
-
-      mockDb.query.healthCheckConfigurations.findFirst = mock(() =>
-        Promise.resolve({ id: "config-1", strategyId: "http" })
-      );
+      // Setup mock data
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
 
       const result = await service.getAggregatedHistory(
         {
@@ -353,7 +316,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           endDate: new Date("2024-01-03T00:00:00Z"),
           bucketSize: "daily",
         },
-        { includeAggregatedResult: true }
+        { includeAggregatedResult: true },
       );
 
       expect(result.buckets).toHaveLength(2);
