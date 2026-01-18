@@ -424,6 +424,35 @@ export async function loadPlugins({
     }
   }
 
+  // Phase 2.5: Validate that all access rules used in contracts are registered
+  // This catches bugs where access rules are used in procedures but not added to
+  // the plugin's accessRules registration array.
+  rootLogger.debug("🔍 Validating access rules in contracts...");
+  const registeredRuleIds = new Set(
+    deps.registeredAccessRules.map((r) => r.id),
+  );
+  const validationErrors: string[] = [];
+
+  for (const [pluginId, contract] of deps.pluginContractRegistry) {
+    validateContractAccessRules({
+      pluginId,
+      contract,
+      registeredRuleIds,
+      validationErrors,
+    });
+  }
+
+  if (validationErrors.length > 0) {
+    rootLogger.error("❌ Unregistered access rules found in contracts:");
+    for (const error of validationErrors) {
+      rootLogger.error(`   • ${error}`);
+    }
+    throw new Error(
+      `Unregistered access rules in contracts:\n${validationErrors.join("\n")}`,
+    );
+  }
+  rootLogger.debug("✅ All access rules in contracts are registered");
+
   // Phase 3: Run afterPluginsReady callbacks
   rootLogger.debug("🔄 Running afterPluginsReady callbacks...");
 
@@ -506,4 +535,43 @@ export async function loadPlugins({
     }
   }
   rootLogger.debug("✅ All afterPluginsReady callbacks complete");
+}
+
+/**
+ * Validate that all access rules used in a contract are registered with the plugin system.
+ * Recursively traverses the contract to find all procedures and their access metadata.
+ */
+function validateContractAccessRules({
+  pluginId,
+  contract,
+  registeredRuleIds,
+  validationErrors,
+}: {
+  pluginId: string;
+  contract: AnyContractRouter;
+  registeredRuleIds: Set<string>;
+  validationErrors: string[];
+}): void {
+  for (const [procedureName, procedure] of Object.entries(
+    contract as Record<string, unknown>,
+  )) {
+    if (!procedure || typeof procedure !== "object") continue;
+
+    // Check if this is a procedure with oRPC metadata
+    const orpcData = (procedure as Record<string, unknown>)["~orpc"] as
+      | { meta?: { access?: Array<{ id: string }> } }
+      | undefined;
+
+    if (orpcData?.meta?.access) {
+      for (const accessRule of orpcData.meta.access) {
+        const qualifiedId = `${pluginId}.${accessRule.id}`;
+        if (!registeredRuleIds.has(qualifiedId)) {
+          validationErrors.push(
+            `Plugin "${pluginId}" procedure "${procedureName}" uses unregistered access rule "${accessRule.id}" (qualified: "${qualifiedId}"). ` +
+              `Add it to the plugin's accessRules registration array.`,
+          );
+        }
+      }
+    }
+  }
 }

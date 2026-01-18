@@ -19,7 +19,7 @@ export const incidentAccess = {
       idParam: "systemId",
       readIsDefault: true,
       readIsPublic: true,
-    }
+    },
   ),
 
   /**
@@ -39,4 +39,5 @@ export const incidentAccess = {
 export const incidentAccessRules = [
   incidentAccess.incident.read,
   incidentAccess.incident.manage,
+  incidentAccess.bulkIncident,
 ];

@@ -104,7 +104,7 @@ export const autoAuthMiddleware = os.middleware(
       qualifiedId: qualifyAccessRuleId(context.pluginMetadata, rule),
       qualifiedResourceType: qualifyResourceType(
         context.pluginMetadata.pluginId,
-        rule.resource
+        rule.resource,
       ),
     }));
 
@@ -115,13 +115,13 @@ export const autoAuthMiddleware = os.middleware(
       (r) =>
         r.instanceAccess?.idParam &&
         !r.instanceAccess?.listKey &&
-        !r.instanceAccess?.recordKey
+        !r.instanceAccess?.recordKey,
     );
     const listResourceRules = instanceRules.filter(
-      (r) => r.instanceAccess?.listKey
+      (r) => r.instanceAccess?.listKey,
     );
     const recordResourceRules = instanceRules.filter(
-      (r) => r.instanceAccess?.recordKey
+      (r) => r.instanceAccess?.recordKey,
     );
 
     // 1. Handle anonymous endpoints - no auth required, no access checks
@@ -229,9 +229,20 @@ export const autoAuthMiddleware = os.middleware(
       const resourceId = getNestedValue(input, rule.instanceAccess!.idParam!);
       if (!resourceId) continue;
 
-      // If no user (anonymous on public endpoint), deny access to single resources
-      // (they can't have team grants)
+      // If no user (anonymous on public endpoint), check if anonymous role has global access
       if (!userId || !userType) {
+        const anonymousAccessRules =
+          await context.auth.getAnonymousAccessRules();
+        const hasGlobalAccess =
+          anonymousAccessRules.includes("*") ||
+          anonymousAccessRules.includes(rule.qualifiedId);
+
+        if (hasGlobalAccess) {
+          // Anonymous user has global access - allow access to this resource
+          continue;
+        }
+
+        // No global access and can't have team grants - deny access
         throw new ORPCError("FORBIDDEN", {
           message: `Authentication required to access ${rule.resource}:${resourceId}`,
         });
@@ -276,7 +287,7 @@ export const autoAuthMiddleware = os.middleware(
 
         if (items === undefined) {
           context.logger.error(
-            `resourceAccess: expected "${outputKey}" in response but not found`
+            `resourceAccess: expected "${outputKey}" in response but not found`,
           );
           throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Invalid response shape for filtered endpoint",
@@ -285,7 +296,7 @@ export const autoAuthMiddleware = os.middleware(
 
         if (!Array.isArray(items)) {
           context.logger.error(
-            `resourceAccess: "${outputKey}" must be an array`
+            `resourceAccess: "${outputKey}" must be an array`,
           );
           throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Invalid response shape for filtered endpoint",
@@ -352,7 +363,7 @@ export const autoAuthMiddleware = os.middleware(
 
         if (record === undefined) {
           context.logger.error(
-            `resourceAccess: expected "${outputKey}" in response but not found`
+            `resourceAccess: expected "${outputKey}" in response but not found`,
           );
           throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Invalid response shape for filtered endpoint",
@@ -365,7 +376,7 @@ export const autoAuthMiddleware = os.middleware(
           Array.isArray(record)
         ) {
           context.logger.error(
-            `resourceAccess: "${outputKey}" must be an object (record)`
+            `resourceAccess: "${outputKey}" must be an object (record)`,
           );
           throw new ORPCError("INTERNAL_SERVER_ERROR", {
             message: "Invalid response shape for filtered endpoint",
@@ -419,7 +430,7 @@ export const autoAuthMiddleware = os.middleware(
     }
 
     return result;
-  }
+  },
 );
 
 /**
@@ -562,7 +573,7 @@ export interface RpcService {
    */
   registerRouter<C extends AnyContractRouter>(
     router: Router<C, RpcContext>,
-    contract: C
+    contract: C,
   ): void;
 
   /**
@@ -574,7 +585,7 @@ export interface RpcService {
    */
   registerHttpHandler(
     handler: (req: Request) => Promise<Response>,
-    path?: string
+    path?: string,
   ): void;
 }
 

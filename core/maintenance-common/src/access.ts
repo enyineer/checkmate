@@ -20,7 +20,7 @@ export const maintenanceAccess = {
       idParam: "systemId",
       readIsDefault: true,
       readIsPublic: true,
-    }
+    },
   ),
 
   /**
@@ -35,7 +35,7 @@ export const maintenanceAccess = {
       recordKey: "maintenances",
       isDefault: true,
       isPublic: true,
-    }
+    },
   ),
 };
 
@@ -45,4 +45,5 @@ export const maintenanceAccess = {
 export const maintenanceAccessRules = [
   maintenanceAccess.maintenance.read,
   maintenanceAccess.maintenance.manage,
+  maintenanceAccess.bulkMaintenance,
 ];

@@ -40,7 +40,7 @@ export const healthCheckAccess = {
   details: access(
     "healthcheck.details",
     "read",
-    "View Detailed Health Check Run Data (Warning: This may expose sensitive data, depending on the health check strategy)"
+    "View Detailed Health Check Run Data (Warning: This may expose sensitive data, depending on the health check strategy)",
   ),
 };
 
@@ -49,6 +49,7 @@ export const healthCheckAccess = {
  */
 export const healthCheckAccessRules = [
   healthCheckAccess.status,
+  healthCheckAccess.bulkStatus,
   healthCheckAccess.configuration.read,
   healthCheckAccess.configuration.manage,
   healthCheckAccess.details,

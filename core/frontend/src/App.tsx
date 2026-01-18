@@ -50,6 +50,25 @@ const queryClient = new QueryClient({
       gcTime: 5 * 60 * 1000,
       // Don't refetch on window focus by default (can be overridden per query)
       refetchOnWindowFocus: false,
+      // Custom retry logic: don't retry on 401/403 auth errors
+      // These are definitive responses that won't succeed on retry
+      retry: (failureCount, error) => {
+        // Check if it's an HTTP error with status code
+        const status = (error as { status?: number })?.status;
+        // Also check for oRPC error codes
+        const code = (error as { code?: string })?.code;
+
+        // Don't retry on authentication/authorization errors
+        if (status === 401 || status === 403) return false;
+        if (code === "UNAUTHORIZED" || code === "FORBIDDEN") return false;
+
+        // Default: retry up to 3 times for other errors
+        return failureCount < 3;
+      },
+    },
+    mutations: {
+      // Mutations should not retry by default (user can re-submit)
+      retry: false,
     },
   },
 });

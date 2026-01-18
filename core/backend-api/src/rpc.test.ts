@@ -36,13 +36,13 @@ const testContracts = {
       accessPair(
         "system",
         { read: "View systems", manage: "Manage systems" },
-        { listKey: "systems", readIsPublic: true }
+        { listKey: "systems", readIsPublic: true },
       ).read,
     ],
   }).output(
     z.object({
       systems: z.array(z.object({ id: z.string(), name: z.string() })),
-    })
+    }),
   ),
 
   // Authenticated endpoint
@@ -74,7 +74,7 @@ const testContracts = {
       accessPair(
         "system",
         { read: "View systems", manage: "Manage systems" },
-        { idParam: "systemId", readIsPublic: true }
+        { idParam: "systemId", readIsPublic: true },
       ).read,
     ],
   })
@@ -96,7 +96,7 @@ const testContracts = {
     .output(
       z.object({
         statuses: z.record(z.string(), z.object({ status: z.string() })),
-      })
+      }),
     ),
 
   // Mutation endpoint
@@ -121,7 +121,7 @@ const testImplementations = {
   publicGlobalEndpoint: implement(testContracts.publicGlobalEndpoint).handler(
     () => ({
       message: "Hello from public global",
-    })
+    }),
   ),
 
   publicListEndpoint: implement(testContracts.publicListEndpoint).handler(
@@ -131,13 +131,13 @@ const testImplementations = {
         { id: "system-2", name: "System 2" },
         { id: "system-3", name: "System 3" },
       ],
-    })
+    }),
   ),
 
   authenticatedEndpoint: implement(testContracts.authenticatedEndpoint).handler(
     () => ({
       message: "Hello from authenticated",
-    })
+    }),
   ),
 
   userOnlyEndpoint: implement(testContracts.userOnlyEndpoint).handler(() => ({
@@ -147,11 +147,11 @@ const testImplementations = {
   serviceOnlyEndpoint: implement(testContracts.serviceOnlyEndpoint).handler(
     () => ({
       message: "Hello from service",
-    })
+    }),
   ),
 
   singleResourceEndpoint: implement(
-    testContracts.singleResourceEndpoint
+    testContracts.singleResourceEndpoint,
   ).handler(({ input }) => ({
     system: { id: input.systemId },
   })),
@@ -159,9 +159,9 @@ const testImplementations = {
   recordEndpoint: implement(testContracts.recordEndpoint).handler(
     ({ input }) => ({
       statuses: Object.fromEntries(
-        input.systemIds.map((id) => [id, { status: "ok" }])
+        input.systemIds.map((id) => [id, { status: "ok" }]),
       ),
-    })
+    }),
   ),
 
   mutationEndpoint: implement(testContracts.mutationEndpoint).handler(() => ({
@@ -229,7 +229,7 @@ describe("autoAuthMiddleware", () => {
         .handler(() => ({ message: "success" }));
 
       expect(
-        call(procedure, undefined, { context: contextWithNoAccess })
+        call(procedure, undefined, { context: contextWithNoAccess }),
       ).rejects.toThrow();
     });
 
@@ -283,7 +283,7 @@ describe("autoAuthMiddleware", () => {
       expect(
         call(procedure, undefined, {
           context: { ...mockContext, user: undefined },
-        })
+        }),
       ).rejects.toThrow("Authentication required");
     });
   });
@@ -316,7 +316,7 @@ describe("autoAuthMiddleware", () => {
             ...mockContext,
             user: { type: "service" as const, pluginId: "test-service" },
           },
-        })
+        }),
       ).rejects.toThrow("This endpoint is for users only");
     });
   });
@@ -349,7 +349,7 @@ describe("autoAuthMiddleware", () => {
         .handler(() => ({ message: "success" }));
 
       expect(
-        call(procedure, undefined, { context: mockContext })
+        call(procedure, undefined, { context: mockContext }),
       ).rejects.toThrow("This endpoint is for services only");
     });
   });
@@ -368,7 +368,7 @@ describe("autoAuthMiddleware", () => {
       const result = await call(
         procedure,
         { systemId: "test-123" },
-        { context: mockContext }
+        { context: mockContext },
       );
 
       expect(result).toEqual({ system: { id: "test-123" } });
@@ -394,9 +394,61 @@ describe("autoAuthMiddleware", () => {
         call(
           procedure,
           { systemId: "forbidden-id" },
-          { context: contextWithNoAccess }
-        )
+          { context: contextWithNoAccess },
+        ),
       ).rejects.toThrow();
+    });
+
+    // Regression tests for anonymous user access to single resources (issue: 403 for public endpoints)
+    it("should allow anonymous users with global access to single resource endpoints", async () => {
+      // Mock anonymous access rules to include the required access
+      const contextWithAnonymousAccess = {
+        ...mockContext,
+        user: undefined,
+        auth: {
+          ...mockContext.auth,
+          getAnonymousAccessRules: () =>
+            Promise.resolve(["test-plugin.system.read"]),
+        },
+      };
+
+      const procedure = implement(testContracts.singleResourceEndpoint)
+        .$context<RpcContext>()
+        .use(autoAuthMiddleware)
+        .handler(({ input }) => ({ system: { id: input.systemId } }));
+
+      const result = await call(
+        procedure,
+        { systemId: "system-123" },
+        { context: contextWithAnonymousAccess },
+      );
+
+      expect(result).toEqual({ system: { id: "system-123" } });
+    });
+
+    it("should deny anonymous users without global access to single resource endpoints", async () => {
+      // Mock anonymous access rules to NOT include the required access
+      const contextWithoutAnonymousAccess = {
+        ...mockContext,
+        user: undefined,
+        auth: {
+          ...mockContext.auth,
+          getAnonymousAccessRules: () => Promise.resolve([]),
+        },
+      };
+
+      const procedure = implement(testContracts.singleResourceEndpoint)
+        .$context<RpcContext>()
+        .use(autoAuthMiddleware)
+        .handler(({ input }) => ({ system: { id: input.systemId } }));
+
+      expect(
+        call(
+          procedure,
+          { systemId: "system-123" },
+          { context: contextWithoutAnonymousAccess },
+        ),
+      ).rejects.toThrow("Authentication required to access");
     });
   });
 
@@ -433,14 +485,14 @@ describe("autoAuthMiddleware", () => {
         .use(autoAuthMiddleware)
         .handler(({ input }) => ({
           statuses: Object.fromEntries(
-            input.systemIds.map((id) => [id, { status: "ok" }])
+            input.systemIds.map((id) => [id, { status: "ok" }]),
           ),
         }));
 
       const result = await call(
         procedure,
         { systemIds: ["sys-1", "sys-2"] },
-        { context: mockContext }
+        { context: mockContext },
       );
 
       expect(Object.keys(result.statuses)).toHaveLength(2);
