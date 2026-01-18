@@ -7,7 +7,9 @@ import {
   pluginMetadata,
   maintenanceContract,
   maintenanceRoutes,
+  MAINTENANCE_UPDATED,
 } from "@checkstack/maintenance-common";
+
 import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
 import { integrationEventExtensionPoint } from "@checkstack/integration-backend";
 import { MaintenanceService } from "./service";
@@ -42,6 +44,11 @@ const maintenanceUpdatedPayloadSchema = z.object({
   action: z.enum(["updated", "closed"]),
 });
 
+// Queue and job constants
+const STATUS_TRANSITION_QUEUE = "maintenance-status-transitions";
+const STATUS_TRANSITION_JOB_ID = "maintenance-status-transition-check";
+const WORKER_GROUP = "maintenance-status-worker";
+
 // =============================================================================
 // Plugin Definition
 // =============================================================================
@@ -53,7 +60,7 @@ export default createBackendPlugin({
 
     // Register hooks as integration events
     const integrationEvents = env.getExtensionPoint(
-      integrationEventExtensionPoint
+      integrationEventExtensionPoint,
     );
 
     integrationEvents.registerEvent(
@@ -64,7 +71,7 @@ export default createBackendPlugin({
         category: "Maintenance",
         payloadSchema: maintenanceCreatedPayloadSchema,
       },
-      pluginMetadata
+      pluginMetadata,
     );
 
     integrationEvents.registerEvent(
@@ -75,8 +82,11 @@ export default createBackendPlugin({
         category: "Maintenance",
         payloadSchema: maintenanceUpdatedPayloadSchema,
       },
-      pluginMetadata
+      pluginMetadata,
     );
+
+    // Store service reference for afterPluginsReady
+    let maintenanceService: MaintenanceService;
 
     env.registerInit({
       schema,
@@ -85,20 +95,21 @@ export default createBackendPlugin({
         rpc: coreServices.rpc,
         rpcClient: coreServices.rpcClient,
         signalService: coreServices.signalService,
+        queueManager: coreServices.queueManager,
       },
       init: async ({ logger, database, rpc, rpcClient, signalService }) => {
         logger.debug("🔧 Initializing Maintenance Backend...");
 
         const catalogClient = rpcClient.forPlugin(CatalogApi);
 
-        const service = new MaintenanceService(
-          database as NodePgDatabase<typeof schema>
+        maintenanceService = new MaintenanceService(
+          database as NodePgDatabase<typeof schema>,
         );
         const router = createRouter(
-          service,
+          maintenanceService,
           signalService,
           catalogClient,
-          logger
+          logger,
         );
         rpc.registerRouter(router, maintenanceContract);
 
@@ -129,6 +140,116 @@ export default createBackendPlugin({
         });
 
         logger.debug("✅ Maintenance Backend initialized.");
+      },
+      afterPluginsReady: async ({
+        queueManager,
+        emitHook,
+        logger,
+        signalService,
+      }) => {
+        // Schedule the recurring status transition check job
+        const queue = queueManager.getQueue<Record<string, never>>(
+          STATUS_TRANSITION_QUEUE,
+        );
+
+        // Subscribe to process status transition check jobs
+        await queue.consume(
+          async () => {
+            logger.debug("⏰ Checking maintenance status transitions...");
+
+            // Get maintenances that need to start
+            const toStart = await maintenanceService.getMaintenancesToStart();
+            for (const maintenance of toStart) {
+              const updated = await maintenanceService.transitionStatus(
+                maintenance.id,
+                "in_progress",
+                "Maintenance started automatically",
+              );
+
+              if (updated) {
+                logger.info(
+                  `Maintenance "${updated.title}" transitioned to in_progress`,
+                );
+
+                // Emit hook for integrations
+                await emitHook(maintenanceHooks.maintenanceUpdated, {
+                  maintenanceId: updated.id,
+                  systemIds: updated.systemIds,
+                  title: updated.title,
+                  description: updated.description,
+                  status: updated.status,
+                  startAt: updated.startAt.toISOString(),
+                  endAt: updated.endAt.toISOString(),
+                  action: "updated" as const,
+                });
+
+                // Send signal for real-time UI updates
+                await signalService.broadcast(MAINTENANCE_UPDATED, {
+                  maintenanceId: updated.id,
+                  systemIds: updated.systemIds,
+                  action: "updated",
+                });
+              }
+            }
+
+            // Get maintenances that need to complete
+            const toComplete =
+              await maintenanceService.getMaintenancesToComplete();
+            for (const maintenance of toComplete) {
+              const updated = await maintenanceService.transitionStatus(
+                maintenance.id,
+                "completed",
+                "Maintenance completed automatically",
+              );
+
+              if (updated) {
+                logger.info(
+                  `Maintenance "${updated.title}" transitioned to completed`,
+                );
+
+                // Emit hook for integrations
+                await emitHook(maintenanceHooks.maintenanceUpdated, {
+                  maintenanceId: updated.id,
+                  systemIds: updated.systemIds,
+                  title: updated.title,
+                  description: updated.description,
+                  status: updated.status,
+                  startAt: updated.startAt.toISOString(),
+                  endAt: updated.endAt.toISOString(),
+                  action: "closed" as const,
+                });
+
+                // Send signal for real-time UI updates
+                await signalService.broadcast(MAINTENANCE_UPDATED, {
+                  maintenanceId: updated.id,
+                  systemIds: updated.systemIds,
+                  action: "closed",
+                });
+              }
+            }
+
+            if (toStart.length > 0 || toComplete.length > 0) {
+              logger.debug(
+                `Status transitions: ${toStart.length} started, ${toComplete.length} completed`,
+              );
+            }
+          },
+          {
+            consumerGroup: WORKER_GROUP,
+            maxRetries: 0, // Status checks should not retry
+          },
+        );
+
+        // Schedule to run every minute (60 seconds)
+        await queue.scheduleRecurring(
+          {}, // Empty payload - the job just triggers a check
+          {
+            jobId: STATUS_TRANSITION_JOB_ID,
+            intervalSeconds: 60,
+          },
+        );
+
+        logger.debug("✅ Maintenance status transition job scheduled.");
       },
     });
   },

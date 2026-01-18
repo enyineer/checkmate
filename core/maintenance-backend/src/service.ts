@@ -362,4 +362,110 @@ export class MaintenanceService {
 
     return !!match;
   }
+
+  /**
+   * Get maintenances that should transition from 'scheduled' to 'in_progress'.
+   * These are maintenances where status = 'scheduled' AND startAt <= now.
+   */
+  async getMaintenancesToStart(): Promise<MaintenanceWithSystems[]> {
+    const now = new Date();
+
+    const rows = await this.db
+      .select()
+      .from(maintenances)
+      .where(
+        and(
+          eq(maintenances.status, "scheduled"),
+          // startAt is in the past or now
+          // Using SQL comparison - startAt <= now
+        ),
+      );
+
+    // Filter in JS since Drizzle SQL comparison can be tricky with dates
+    const startable = rows.filter((m) => m.startAt <= now);
+
+    // Fetch system IDs for each
+    const result: MaintenanceWithSystems[] = [];
+    for (const m of startable) {
+      const systems = await this.db
+        .select({ systemId: maintenanceSystems.systemId })
+        .from(maintenanceSystems)
+        .where(eq(maintenanceSystems.maintenanceId, m.id));
+
+      result.push({
+        ...m,
+        description: m.description ?? undefined,
+        systemIds: systems.map((s) => s.systemId),
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Get maintenances that should transition from 'in_progress' to 'completed'.
+   * These are maintenances where status = 'in_progress' AND endAt <= now.
+   */
+  async getMaintenancesToComplete(): Promise<MaintenanceWithSystems[]> {
+    const now = new Date();
+
+    const rows = await this.db
+      .select()
+      .from(maintenances)
+      .where(eq(maintenances.status, "in_progress"));
+
+    // Filter in JS for those that have ended
+    const completable = rows.filter((m) => m.endAt <= now);
+
+    // Fetch system IDs for each
+    const result: MaintenanceWithSystems[] = [];
+    for (const m of completable) {
+      const systems = await this.db
+        .select({ systemId: maintenanceSystems.systemId })
+        .from(maintenanceSystems)
+        .where(eq(maintenanceSystems.maintenanceId, m.id));
+
+      result.push({
+        ...m,
+        description: m.description ?? undefined,
+        systemIds: systems.map((s) => s.systemId),
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Transition a maintenance to a new status with an automatic update entry.
+   * Used by the scheduled job for automatic status transitions.
+   */
+  async transitionStatus(
+    id: string,
+    newStatus: MaintenanceStatus,
+    message: string,
+  ): Promise<MaintenanceWithSystems | undefined> {
+    const [existing] = await this.db
+      .select()
+      .from(maintenances)
+      .where(eq(maintenances.id, id));
+
+    if (!existing) return undefined;
+
+    // Update the maintenance status
+    await this.db
+      .update(maintenances)
+      .set({ status: newStatus, updatedAt: new Date() })
+      .where(eq(maintenances.id, id));
+
+    // Add update entry (no user - system-generated)
+    await this.db.insert(maintenanceUpdates).values({
+      id: generateId(),
+      maintenanceId: id,
+      message,
+      statusChange: newStatus,
+      createdBy: undefined, // System-generated, no user
+    });
+
+    return (await this.getMaintenance(id))!;
+  }
 }
