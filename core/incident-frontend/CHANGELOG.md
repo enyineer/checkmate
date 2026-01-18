@@ -1,5 +1,11 @@
 # @checkstack/incident-frontend
 
+## 0.3.7
+
+### Patch Changes
+
+- @checkstack/dashboard-frontend@0.3.6
+
 ## 0.3.6
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @checkstack/healthcheck-frontend
 
+## 0.4.8
+
+### Patch Changes
+
+- @checkstack/dashboard-frontend@0.3.6
+
 ## 0.4.7
 
 ### Patch Changes
