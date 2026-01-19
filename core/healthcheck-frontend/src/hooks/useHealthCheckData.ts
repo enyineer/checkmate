@@ -67,14 +67,14 @@ export function useHealthCheckData({
 
   // Access state
   const { allowed: hasAccess, loading: accessLoading } = accessApi.useAccess(
-    healthCheckAccess.details
+    healthCheckAccess.details,
   );
 
   // Calculate date range in days
   const dateRangeDays = useMemo(() => {
     return Math.ceil(
       (dateRange.endDate.getTime() - dateRange.startDate.getTime()) /
-        (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24),
     );
   }, [dateRange.startDate, dateRange.endDate]);
 
@@ -82,7 +82,7 @@ export function useHealthCheckData({
   const { data: retentionData, isLoading: retentionLoading } =
     healthCheckClient.getRetentionConfig.useQuery(
       { systemId, configurationId },
-      { enabled: !!systemId && !!configurationId && hasAccess }
+      { enabled: !!systemId && !!configurationId && hasAccess },
     );
 
   const retentionConfig =
@@ -101,6 +101,7 @@ export function useHealthCheckData({
       systemId,
       configurationId,
       startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
       limit,
       offset,
     },
@@ -112,7 +113,7 @@ export function useHealthCheckData({
         !accessLoading &&
         !retentionLoading &&
         !isAggregated,
-    }
+    },
   );
 
   // Query: Fetch aggregated data (when in aggregated mode)
@@ -134,7 +135,7 @@ export function useHealthCheckData({
           !accessLoading &&
           !retentionLoading &&
           isAggregated,
-      }
+      },
     );
 
   // Listen for realtime health check updates to refresh data silently

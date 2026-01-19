@@ -59,7 +59,7 @@ export const HealthCheckStatusTimeline: React.FC<
           <XAxis
             dataKey="timestamp"
             type="number"
-            domain={["auto", "auto"]}
+            domain={["dataMin", "dataMax"]}
             tickFormatter={(ts: number) => format(new Date(ts), timeFormat)}
             stroke="hsl(var(--muted-foreground))"
             fontSize={10}
@@ -133,7 +133,7 @@ export const HealthCheckStatusTimeline: React.FC<
         <XAxis
           dataKey="timestamp"
           type="number"
-          domain={["auto", "auto"]}
+          domain={["dataMin", "dataMax"]}
           tickFormatter={(ts: number) => format(new Date(ts), "HH:mm")}
           stroke="hsl(var(--muted-foreground))"
           fontSize={10}

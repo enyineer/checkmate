@@ -9,7 +9,12 @@ export interface DateRange {
   endDate: Date;
 }
 
-export type DateRangePreset = "24h" | "7d" | "30d" | "custom";
+export enum DateRangePreset {
+  Last24Hours = "24h",
+  Last7Days = "7d",
+  Last30Days = "30d",
+  Custom = "custom",
+}
 
 export interface DateRangeFilterProps {
   value: DateRange;
@@ -18,25 +23,25 @@ export interface DateRangeFilterProps {
 }
 
 const PRESETS: Array<{ id: DateRangePreset; label: string }> = [
-  { id: "24h", label: "Last 24h" },
-  { id: "7d", label: "Last 7 days" },
-  { id: "30d", label: "Last 30 days" },
-  { id: "custom", label: "Custom" },
+  { id: DateRangePreset.Last24Hours, label: "Last 24h" },
+  { id: DateRangePreset.Last7Days, label: "Last 7 days" },
+  { id: DateRangePreset.Last30Days, label: "Last 30 days" },
+  { id: DateRangePreset.Custom, label: "Custom" },
 ];
 
-function getPresetRange(preset: DateRangePreset): DateRange {
+export function getPresetRange(preset: DateRangePreset): DateRange {
   const now = new Date();
   switch (preset) {
-    case "24h": {
+    case DateRangePreset.Last24Hours: {
       return { startDate: subHours(now, 24), endDate: now };
     }
-    case "7d": {
+    case DateRangePreset.Last7Days: {
       return { startDate: startOfDay(subDays(now, 7)), endDate: now };
     }
-    case "30d": {
+    case DateRangePreset.Last30Days: {
       return { startDate: startOfDay(subDays(now, 30)), endDate: now };
     }
-    case "custom": {
+    case DateRangePreset.Custom: {
       return { startDate: startOfDay(subDays(now, 7)), endDate: now };
     }
   }
@@ -48,10 +53,10 @@ function detectPreset(range: DateRange): DateRangePreset {
   const diffHours = diffMs / (1000 * 60 * 60);
   const diffDays = diffHours / 24;
 
-  if (diffHours <= 25 && diffHours >= 23) return "24h";
-  if (diffDays <= 8 && diffDays >= 6) return "7d";
-  if (diffDays <= 31 && diffDays >= 29) return "30d";
-  return "custom";
+  if (diffHours <= 25 && diffHours >= 23) return DateRangePreset.Last24Hours;
+  if (diffDays <= 8 && diffDays >= 6) return DateRangePreset.Last7Days;
+  if (diffDays <= 31 && diffDays >= 29) return DateRangePreset.Last30Days;
+  return DateRangePreset.Custom;
 }
 
 /**
@@ -63,10 +68,12 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   className,
 }) => {
   const activePreset = useMemo(() => detectPreset(value), [value]);
-  const [showCustom, setShowCustom] = useState(activePreset === "custom");
+  const [showCustom, setShowCustom] = useState(
+    activePreset === DateRangePreset.Custom,
+  );
 
   const handlePresetClick = (preset: DateRangePreset) => {
-    if (preset === "custom") {
+    if (preset === DateRangePreset.Custom) {
       setShowCustom(true);
     } else {
       setShowCustom(false);
@@ -88,7 +95,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
               variant={
                 activePreset === preset.id && !showCustom
                   ? "primary"
-                  : preset.id === "custom" && showCustom
+                  : preset.id === DateRangePreset.Custom && showCustom
                     ? "primary"
                     : "outline"
               }
@@ -132,5 +139,5 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
 
 /** Create a default date range (last 7 days) */
 export function getDefaultDateRange(): DateRange {
-  return getPresetRange("7d");
+  return getPresetRange(DateRangePreset.Last7Days);
 }

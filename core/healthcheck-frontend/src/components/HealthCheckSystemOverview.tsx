@@ -20,6 +20,8 @@ import {
   usePagination,
   usePaginationSync,
   DateRangeFilter,
+  getPresetRange,
+  DateRangePreset,
 } from "@checkstack/ui";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -55,17 +57,10 @@ interface ExpandedRowProps {
 const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
   const healthCheckClient = usePluginClient(HealthCheckApi);
 
-  // Date range state for filtering
-  const [dateRange, setDateRange] = useState<{
-    startDate: Date;
-    endDate: Date;
-  }>(() => {
-    // Default to last 24 hours
-    const end = new Date();
-    const start = new Date();
-    start.setHours(start.getHours() - 24);
-    return { startDate: start, endDate: end };
-  });
+  // Date range state for filtering - default to last 24 hours
+  const [dateRange, setDateRange] = useState(() =>
+    getPresetRange(DateRangePreset.Last24Hours),
+  );
 
   // Use shared hook for chart data - handles both raw and aggregated modes
   // and includes signal handling for automatic refresh
@@ -281,8 +276,8 @@ export function HealthCheckSystemOverview(props: SlotProps) {
           void refetch();
         }
       },
-      [systemId, refetch]
-    )
+      [systemId, refetch],
+    ),
   );
 
   if (initialLoading) {
