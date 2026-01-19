@@ -44,6 +44,8 @@ interface UseHealthCheckDataResult {
   hasAccess: boolean;
   /** Whether access is still loading */
   accessLoading: boolean;
+  /** Bucket interval in seconds (only for aggregated mode) */
+  bucketIntervalSeconds: number | undefined;
 }
 
 /**
@@ -117,7 +119,6 @@ export function useHealthCheckData({
   );
 
   // Query: Fetch aggregated data (when in aggregated mode)
-  const bucketSize = dateRangeDays > 30 ? "daily" : "hourly";
   const { data: aggregatedData, isLoading: aggregatedLoading } =
     healthCheckClient.getDetailedAggregatedHistory.useQuery(
       {
@@ -125,7 +126,7 @@ export function useHealthCheckData({
         configurationId,
         startDate: dateRange.startDate,
         endDate: dateRange.endDate,
-        bucketSize,
+        targetPoints: 500,
       },
       {
         enabled:
@@ -224,5 +225,6 @@ export function useHealthCheckData({
     retentionConfig,
     hasAccess,
     accessLoading,
+    bucketIntervalSeconds: aggregatedData?.bucketIntervalSeconds,
   };
 }

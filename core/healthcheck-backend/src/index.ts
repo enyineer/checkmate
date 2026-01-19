@@ -132,6 +132,7 @@ export default createBackendPlugin({
         const healthCheckRouter = createHealthCheckRouter(
           database as SafeDatabase<typeof schema>,
           healthCheckRegistry,
+          collectorRegistry,
         );
         rpc.registerRouter(healthCheckRouter, healthCheckContract);
 

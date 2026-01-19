@@ -68,7 +68,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     context: chartContext,
     loading: chartLoading,
     isAggregated,
-    retentionConfig,
+    bucketIntervalSeconds,
   } = useHealthCheckData({
     systemId,
     configurationId: item.configurationId,
@@ -155,7 +155,8 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
         <HealthCheckDiagram
           context={chartContext}
           isAggregated={isAggregated}
-          rawRetentionDays={retentionConfig.rawRetentionDays}
+          bucketIntervalSeconds={bucketIntervalSeconds}
+          checkIntervalSeconds={item.intervalSeconds}
         />
       </div>
     );

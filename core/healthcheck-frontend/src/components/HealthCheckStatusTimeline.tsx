@@ -50,8 +50,11 @@ export const HealthCheckStatusTimeline: React.FC<
       total: d.runCount,
     }));
 
+    // Use daily format for intervals >= 6 hours, otherwise include time
     const timeFormat =
-      buckets[0]?.bucketSize === "daily" ? "MMM d" : "MMM d HH:mm";
+      (buckets[0]?.bucketIntervalSeconds ?? 3600) >= 21_600
+        ? "MMM d"
+        : "MMM d HH:mm";
 
     return (
       <ResponsiveContainer width="100%" height={height}>

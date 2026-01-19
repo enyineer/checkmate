@@ -32,6 +32,8 @@ export const CollectorDtoSchema = z.object({
   configSchema: z.record(z.string(), z.unknown()),
   /** JSON Schema for per-run result metadata (with chart annotations) */
   resultSchema: z.record(z.string(), z.unknown()),
+  /** JSON Schema for aggregated result metadata (with chart annotations) */
+  aggregatedResultSchema: z.record(z.string(), z.unknown()).optional(),
   /** Whether multiple instances of this collector are allowed per config */
   allowMultiple: z.boolean(),
 });
@@ -276,7 +278,10 @@ export const DEFAULT_RETENTION_CONFIG: RetentionConfig = {
  */
 export const AggregatedBucketBaseSchema = z.object({
   bucketStart: z.date(),
-  bucketSize: z.enum(["hourly", "daily"]),
+  /** @deprecated Use bucketIntervalSeconds instead. Kept for backward compatibility. */
+  bucketSize: z.enum(["hourly", "daily"]).optional(),
+  /** Bucket interval in seconds (e.g., 7 for 7-second buckets) */
+  bucketIntervalSeconds: z.number(),
   runCount: z.number(),
   healthyCount: z.number(),
   degradedCount: z.number(),

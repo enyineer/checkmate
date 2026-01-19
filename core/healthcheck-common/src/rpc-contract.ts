@@ -248,12 +248,15 @@ export const healthCheckContract = {
         configurationId: z.string(),
         startDate: z.date(),
         endDate: z.date(),
-        bucketSize: z.enum(["hourly", "daily", "auto"]),
+        /** Target number of data points (default: 500). Bucket interval is calculated as (endDate - startDate) / targetPoints */
+        targetPoints: z.number().min(10).max(2000).default(500),
       }),
     )
     .output(
       z.object({
         buckets: z.array(AggregatedBucketBaseSchema),
+        /** The calculated bucket interval in seconds */
+        bucketIntervalSeconds: z.number(),
       }),
     ),
 
@@ -268,12 +271,15 @@ export const healthCheckContract = {
         configurationId: z.string(),
         startDate: z.date(),
         endDate: z.date(),
-        bucketSize: z.enum(["hourly", "daily", "auto"]),
+        /** Target number of data points (default: 500). Bucket interval is calculated as (endDate - startDate) / targetPoints */
+        targetPoints: z.number().min(10).max(2000).default(500),
       }),
     )
     .output(
       z.object({
         buckets: z.array(AggregatedBucketSchema),
+        /** The calculated bucket interval in seconds */
+        bucketIntervalSeconds: z.number(),
       }),
     ),
 

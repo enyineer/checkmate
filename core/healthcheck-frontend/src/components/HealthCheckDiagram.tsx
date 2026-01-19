@@ -11,8 +11,10 @@ interface HealthCheckDiagramProps {
   context: HealthCheckDiagramSlotContext;
   /** Whether the data is aggregated (for showing the info banner) */
   isAggregated?: boolean;
-  /** Raw retention days (for the info banner) */
-  rawRetentionDays?: number;
+  /** The bucket interval in seconds (from aggregated response) */
+  bucketIntervalSeconds?: number;
+  /** The check interval in seconds (for comparison in banner) */
+  checkIntervalSeconds?: number;
 }
 
 /**
@@ -22,20 +24,15 @@ interface HealthCheckDiagramProps {
 export function HealthCheckDiagram({
   context,
   isAggregated = false,
-  rawRetentionDays = 7,
+  bucketIntervalSeconds,
+  checkIntervalSeconds,
 }: HealthCheckDiagramProps) {
-  // Determine bucket size from context for aggregated data info banner
-  const bucketSize =
-    context.type === "aggregated" && context.buckets.length > 0
-      ? context.buckets[0].bucketSize
-      : "hourly";
-
   return (
     <>
-      {isAggregated && (
+      {isAggregated && bucketIntervalSeconds && (
         <AggregatedDataBanner
-          bucketSize={bucketSize}
-          rawRetentionDays={rawRetentionDays}
+          bucketIntervalSeconds={bucketIntervalSeconds}
+          checkIntervalSeconds={checkIntervalSeconds}
         />
       )}
       <ExtensionSlot slot={HealthCheckDiagramSlot} context={context} />

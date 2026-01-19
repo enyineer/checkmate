@@ -43,7 +43,18 @@ describe("HealthCheck Router", () => {
     getStrategiesWithMeta: mock(() => []),
   };
 
-  const router = createHealthCheckRouter(mockDb as never, mockRegistry);
+  const mockCollectorRegistry = {
+    register: mock(),
+    getCollector: mock(),
+    getCollectors: mock(() => []),
+    getCollectorsForPlugin: mock(() => []),
+  };
+
+  const router = createHealthCheckRouter(
+    mockDb as never,
+    mockRegistry,
+    mockCollectorRegistry as never,
+  );
 
   it("getStrategies returns strategies from registry", async () => {
     const context = createMockRpcContext({
@@ -119,7 +130,7 @@ describe("HealthCheck Router", () => {
     const result = await call(
       router.getCollectors,
       { strategyId: "healthcheck-ssh" },
-      { context }
+      { context },
     );
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("collector-hardware.cpu");
@@ -139,7 +150,7 @@ describe("HealthCheck Router", () => {
     const result = await call(
       router.getCollectors,
       { strategyId: "unknown" },
-      { context }
+      { context },
     );
     expect(result).toHaveLength(0);
   });

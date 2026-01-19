@@ -20,6 +20,7 @@ import { stateThresholds } from "./state-thresholds-migrations";
 import type {
   HealthCheckRegistry,
   SafeDatabase,
+  CollectorRegistry,
 } from "@checkstack/backend-api";
 
 // Drizzle type helper - uses SafeDatabase to prevent relational query API usage
@@ -43,6 +44,7 @@ export class HealthCheckService {
   constructor(
     private db: Db,
     private registry?: HealthCheckRegistry,
+    private collectorRegistry?: CollectorRegistry,
   ) {}
 
   async createConfiguration(
@@ -551,9 +553,8 @@ export class HealthCheckService {
   }
 
   /**
-   * Get aggregated health check history with bucketed metrics.
-   * Currently aggregates raw data on-the-fly. Will merge with stored aggregates
-   * once the retention job populates historical data.
+   * Get aggregated health check history with dynamically-sized buckets.
+   * Bucket interval is calculated as (endDate - startDate) / targetPoints.
    */
   async getAggregatedHistory(
     props: {
@@ -561,19 +562,23 @@ export class HealthCheckService {
       configurationId: string;
       startDate: Date;
       endDate: Date;
-      bucketSize: "hourly" | "daily" | "auto";
+      targetPoints?: number;
     },
     options: { includeAggregatedResult: boolean },
   ) {
-    const { systemId, configurationId, startDate, endDate } = props;
-    let bucketSize = props.bucketSize;
+    const {
+      systemId,
+      configurationId,
+      startDate,
+      endDate,
+      targetPoints = 500,
+    } = props;
 
-    // Auto-select bucket size based on range
-    if (bucketSize === "auto") {
-      const diffDays =
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-      bucketSize = diffDays > 7 ? "daily" : "hourly";
-    }
+    // Calculate dynamic bucket interval
+    const rangeMs = endDate.getTime() - startDate.getTime();
+    const MIN_INTERVAL_MS = 1000; // 1 second minimum
+    const bucketIntervalMs = Math.max(rangeMs / targetPoints, MIN_INTERVAL_MS);
+    const bucketIntervalSeconds = Math.round(bucketIntervalMs / 1000);
 
     // Get the configuration to find the strategy
     // Note: Using standard select instead of relational query API
@@ -604,7 +609,7 @@ export class HealthCheckService {
       )
       .orderBy(healthCheckRuns.timestamp);
 
-    // Group runs into buckets (with full result for metadata aggregation)
+    // Group runs into buckets using dynamic interval
     const bucketMap = new Map<
       string,
       {
@@ -618,7 +623,11 @@ export class HealthCheckService {
     >();
 
     for (const run of runs) {
-      const bucketStart = this.getBucketStart(run.timestamp, bucketSize);
+      const bucketStart = this.getBucketStartDynamic(
+        run.timestamp,
+        startDate,
+        bucketIntervalMs,
+      );
       const key = bucketStart.toISOString();
 
       if (!bucketMap.has(key)) {
@@ -669,7 +678,7 @@ export class HealthCheckService {
       // Build base bucket (always included)
       const baseBucket = {
         bucketStart: bucket.bucketStart,
-        bucketSize: bucketSize as "hourly" | "daily",
+        bucketIntervalSeconds,
         runCount,
         healthyCount,
         degradedCount,
@@ -683,38 +692,117 @@ export class HealthCheckService {
 
       // Only include aggregatedResult if requested and strategy is available
       if (options.includeAggregatedResult && strategy) {
+        // Aggregate collector data if collector registry is available
+        let collectorsAggregated: Record<string, unknown> | undefined;
+        if (this.collectorRegistry) {
+          collectorsAggregated = this.aggregateCollectorData(
+            bucket.runs,
+            this.collectorRegistry,
+          );
+        }
+
+        const strategyResult = strategy.aggregateResult(bucket.runs) as Record<
+          string,
+          unknown
+        >;
+
         return {
           ...baseBucket,
-          aggregatedResult: strategy.aggregateResult(bucket.runs) as Record<
-            string,
-            unknown
-          >,
+          aggregatedResult: {
+            ...strategyResult,
+            ...(collectorsAggregated
+              ? { collectors: collectorsAggregated }
+              : {}),
+          },
         };
       }
 
       return baseBucket;
     });
 
-    return { buckets };
+    return { buckets, bucketIntervalSeconds };
   }
 
-  private getBucketStart(
+  /**
+   * Calculate bucket start time for dynamic interval sizing.
+   * Aligns buckets to the query start time.
+   */
+  private getBucketStartDynamic(
     timestamp: Date,
-    bucketSize: "hourly" | "daily",
+    rangeStart: Date,
+    intervalMs: number,
   ): Date {
-    const date = new Date(timestamp);
-    if (bucketSize === "daily") {
-      date.setHours(0, 0, 0, 0);
-    } else {
-      date.setMinutes(0, 0, 0);
-    }
-    return date;
+    const offsetMs = timestamp.getTime() - rangeStart.getTime();
+    const bucketIndex = Math.floor(offsetMs / intervalMs);
+    return new Date(rangeStart.getTime() + bucketIndex * intervalMs);
   }
 
   private calculatePercentile(values: number[], percentile: number): number {
     const sorted = values.toSorted((a, b) => a - b);
     const index = Math.ceil((percentile / 100) * sorted.length) - 1;
     return sorted[Math.max(0, index)];
+  }
+
+  /**
+   * Aggregate collector data from runs in a bucket.
+   * Groups by collector UUID and calls each collector's aggregateResult.
+   */
+  private aggregateCollectorData(
+    runs: Array<{
+      status: string;
+      latencyMs?: number;
+      metadata?: Record<string, unknown>;
+    }>,
+    collectorRegistry: CollectorRegistry,
+  ): Record<string, unknown> {
+    // Group collector data by UUID
+    const collectorDataByUuid = new Map<
+      string,
+      { collectorId: string; metadata: Record<string, unknown>[] }
+    >();
+
+    for (const run of runs) {
+      const collectors = run.metadata?.collectors as
+        | Record<string, Record<string, unknown>>
+        | undefined;
+      if (!collectors) continue;
+
+      for (const [uuid, data] of Object.entries(collectors)) {
+        const collectorId = data._collectorId as string | undefined;
+        if (!collectorId) continue;
+
+        if (!collectorDataByUuid.has(uuid)) {
+          collectorDataByUuid.set(uuid, { collectorId, metadata: [] });
+        }
+
+        // Add metadata without internal fields
+        const { _collectorId, _assertionFailed, ...rest } = data;
+        collectorDataByUuid.get(uuid)!.metadata.push(rest);
+      }
+    }
+
+    // Call aggregateResult for each collector
+    const result: Record<string, unknown> = {};
+
+    for (const [uuid, { collectorId, metadata }] of collectorDataByUuid) {
+      const registered = collectorRegistry.getCollector(collectorId);
+      if (!registered?.collector.aggregateResult) continue;
+
+      // Transform metadata to the format expected by aggregateResult
+      const runsForAggregation = metadata.map((m) => ({
+        status: "healthy" as const, // Placeholder, collector uses metadata
+        metadata: m,
+      }));
+
+      const aggregated =
+        registered.collector.aggregateResult(runsForAggregation);
+      result[uuid] = {
+        _collectorId: collectorId,
+        ...aggregated,
+      };
+    }
+
+    return result;
   }
 
   private mapConfig(

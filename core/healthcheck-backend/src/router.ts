@@ -5,6 +5,7 @@ import {
   type RpcContext,
   type HealthCheckRegistry,
   type SafeDatabase,
+  type CollectorRegistry,
 } from "@checkstack/backend-api";
 import { healthCheckContract } from "@checkstack/healthcheck-common";
 import { HealthCheckService } from "./service";
@@ -20,9 +21,10 @@ import { toJsonSchemaWithChartMeta } from "./schema-utils";
 export const createHealthCheckRouter = (
   database: SafeDatabase<typeof schema>,
   registry: HealthCheckRegistry,
+  collectorRegistry: CollectorRegistry,
 ) => {
   // Create service instance once - shared across all handlers
-  const service = new HealthCheckService(database, registry);
+  const service = new HealthCheckService(database, registry, collectorRegistry);
 
   // Create contract implementer with context type AND auto auth middleware
   const os = implement(healthCheckContract)
@@ -74,6 +76,9 @@ export const createHealthCheckRouter = (
         description: collector.description,
         configSchema: toJsonSchema(collector.config.schema),
         resultSchema: toJsonSchemaWithChartMeta(collector.result.schema),
+        aggregatedResultSchema: collector.aggregatedResult
+          ? toJsonSchemaWithChartMeta(collector.aggregatedResult.schema)
+          : undefined,
         allowMultiple: collector.allowMultiple ?? false,
       }));
     }),

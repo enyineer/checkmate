@@ -38,7 +38,7 @@ export function useStrategySchemas(strategyId: string): {
   // Fetch collectors with useQuery
   const { data: collectors } = healthCheckClient.getCollectors.useQuery(
     { strategyId },
-    { enabled: !!strategyId }
+    { enabled: !!strategyId },
   );
 
   useEffect(() => {
@@ -51,22 +51,34 @@ export function useStrategySchemas(strategyId: string): {
     if (strategy) {
       // Build collector schemas object for nesting under resultSchema.properties.collectors
       const collectorProperties: Record<string, unknown> = {};
+      const collectorAggregatedProperties: Record<string, unknown> = {};
+
       for (const collector of collectors) {
         // Use full ID so it matches stored data keys like "healthcheck-http.request"
         collectorProperties[collector.id] = collector.resultSchema;
+
+        // Also collect aggregated schemas if available
+        if (collector.aggregatedResultSchema) {
+          collectorAggregatedProperties[collector.id] =
+            collector.aggregatedResultSchema;
+        }
       }
 
       // Merge collector schemas into strategy result schema
       const mergedResultSchema = mergeCollectorSchemas(
         strategy.resultSchema as Record<string, unknown> | undefined,
-        collectorProperties
+        collectorProperties,
+      );
+
+      // Merge collector aggregated schemas into strategy aggregated schema
+      const mergedAggregatedSchema = mergeCollectorSchemas(
+        strategy.aggregatedResultSchema as Record<string, unknown> | undefined,
+        collectorAggregatedProperties,
       );
 
       setSchemas({
         resultSchema: mergedResultSchema,
-        aggregatedResultSchema:
-          (strategy.aggregatedResultSchema as Record<string, unknown>) ??
-          undefined,
+        aggregatedResultSchema: mergedAggregatedSchema,
       });
     }
 
@@ -85,7 +97,7 @@ export function useStrategySchemas(strategyId: string): {
  */
 function mergeCollectorSchemas(
   strategySchema: Record<string, unknown> | undefined,
-  collectorProperties: Record<string, unknown>
+  collectorProperties: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
   // If no collectors, return original schema
   if (Object.keys(collectorProperties).length === 0) {
