@@ -1,5 +1,14 @@
 # @checkstack/incident-frontend
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [090143b]
+  - @checkstack/ui@0.5.1
+  - @checkstack/dashboard-frontend@0.3.11
+  - @checkstack/auth-frontend@0.5.6
+
 ## 0.4.0
 
 ### Minor Changes
