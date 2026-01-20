@@ -588,6 +588,32 @@ export class HealthCheckService {
   }
 
   /**
+   * Get a single health check run by its ID.
+   */
+  async getRunById(props: { runId: string }) {
+    const run = await this.db
+      .select()
+      .from(healthCheckRuns)
+      .where(eq(healthCheckRuns.id, props.runId))
+      .limit(1);
+
+    if (run.length === 0) {
+      return;
+    }
+
+    const r = run[0];
+    return {
+      id: r.id,
+      configurationId: r.configurationId,
+      systemId: r.systemId,
+      status: r.status,
+      result: r.result ?? {},
+      timestamp: r.timestamp,
+      latencyMs: r.latencyMs ?? undefined,
+    };
+  }
+
+  /**
    * Get aggregated health check history with dynamically-sized buckets.
    * Queries all three tiers (raw, hourly, daily) and merges with priority.
    * Bucket interval is calculated as (endDate - startDate) / targetPoints.

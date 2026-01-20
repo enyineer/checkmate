@@ -22,21 +22,26 @@ import {
   BackLink,
   DateRangeFilter,
   getDefaultDateRange,
+  HealthBadge,
   type DateRange,
 } from "@checkstack/ui";
-import { useParams } from "react-router-dom";
-import { History } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { History, X } from "lucide-react";
+import { format } from "date-fns";
 import {
   HealthCheckRunsTable,
   type HealthCheckRunDetailed,
 } from "../components/HealthCheckRunsTable";
+import { ExpandedResultView } from "../components/ExpandedResultView";
 
 const HealthCheckHistoryDetailPageContent = () => {
-  const { systemId, configurationId } = useParams<{
+  const { systemId, configurationId, runId } = useParams<{
     systemId: string;
     configurationId: string;
+    runId?: string;
   }>();
 
+  const navigate = useNavigate();
   const healthCheckClient = usePluginClient(HealthCheckApi);
   const accessApi = useApi(accessApiRef);
   const { allowed: canManage, loading: accessLoading } = accessApi.useAccess(
@@ -47,6 +52,16 @@ const HealthCheckHistoryDetailPageContent = () => {
 
   // Pagination state
   const pagination = usePagination({ defaultLimit: 20 });
+
+  // Fetch specific run if runId is provided
+  const { data: specificRun } = healthCheckClient.getRunById.useQuery(
+    {
+      runId: runId!,
+    },
+    {
+      enabled: !!runId,
+    },
+  );
 
   // Fetch data with useQuery - newest first for table display
   const { data, isLoading } = healthCheckClient.getDetailedHistory.useQuery({
@@ -64,6 +79,17 @@ const HealthCheckHistoryDetailPageContent = () => {
 
   const runs = (data?.runs ?? []) as HealthCheckRunDetailed[];
 
+  // Handler to dismiss the highlighted run
+  const dismissHighlightedRun = () => {
+    navigate(
+      resolveRoute(healthcheckRoutes.routes.historyDetail, {
+        systemId,
+        configurationId,
+      }),
+      { replace: true },
+    );
+  };
+
   return (
     <PageLayout
       title="Health Check Run History"
@@ -80,6 +106,33 @@ const HealthCheckHistoryDetailPageContent = () => {
         </BackLink>
       }
     >
+      {/* Highlighted specific run when navigated with runId */}
+      {runId && specificRun && (
+        <Card className="mb-4 border-primary/50 bg-primary/5">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <span>Selected Run</span>
+                <HealthBadge status={specificRun.status} />
+              </CardTitle>
+              <button
+                onClick={dismissHighlightedRun}
+                className="p-1 hover:bg-muted rounded"
+                title="Dismiss"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(specificRun.timestamp), "PPpp")}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ExpandedResultView result={specificRun.result} />
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Run History</CardTitle>

@@ -59,6 +59,12 @@ export default createFrontendPlugin({
       title: "Health Check Detail",
       accessRule: healthCheckAccess.details,
     },
+    {
+      route: healthcheckRoutes.routes.historyRun,
+      element: <HealthCheckHistoryDetailPage />,
+      title: "Health Check Run",
+      accessRule: healthCheckAccess.details,
+    },
   ],
   // No APIs needed - components use usePluginClient() directly
   apis: [],

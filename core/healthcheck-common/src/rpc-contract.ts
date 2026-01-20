@@ -255,6 +255,18 @@ export const healthCheckContract = {
       }),
     ),
 
+  getRunById: proc({
+    operationType: "query",
+    userType: "authenticated",
+    access: [healthCheckAccess.details],
+  })
+    .input(
+      z.object({
+        runId: z.string(),
+      }),
+    )
+    .output(HealthCheckRunSchema.optional()),
+
   getAggregatedHistory: proc({
     operationType: "query",
     userType: "public",

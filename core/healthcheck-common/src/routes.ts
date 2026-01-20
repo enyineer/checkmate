@@ -7,4 +7,5 @@ export const healthcheckRoutes = createRoutes("healthcheck", {
   config: "/config",
   history: "/history",
   historyDetail: "/history/:systemId/:configurationId",
+  historyRun: "/history/:systemId/:configurationId/:runId",
 });

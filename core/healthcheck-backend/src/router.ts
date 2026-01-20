@@ -178,6 +178,10 @@ export const createHealthCheckRouter = (
       return service.getDetailedHistory(input);
     }),
 
+    getRunById: os.getRunById.handler(async ({ input }) => {
+      return service.getRunById(input);
+    }),
+
     getAggregatedHistory: os.getAggregatedHistory.handler(async ({ input }) => {
       return service.getAggregatedHistory(input, {
         includeAggregatedResult: false,

@@ -320,10 +320,11 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
                         ? () =>
                             navigate(
                               resolveRoute(
-                                healthcheckRoutes.routes.historyDetail,
+                                healthcheckRoutes.routes.historyRun,
                                 {
                                   systemId,
                                   configurationId: item.configurationId,
+                                  runId: run.id,
                                 },
                               ),
                             )
