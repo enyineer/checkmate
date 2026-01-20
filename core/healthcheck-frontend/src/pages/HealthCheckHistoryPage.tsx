@@ -21,12 +21,13 @@ import {
   healthCheckAccess,
   HealthCheckApi,
 } from "@checkstack/healthcheck-common";
+import { History } from "lucide-react";
 
 const HealthCheckHistoryPageContent = () => {
   const healthCheckClient = usePluginClient(HealthCheckApi);
   const accessApi = useApi(accessApiRef);
   const { allowed: canManage, loading: accessLoading } = accessApi.useAccess(
-    healthCheckAccess.configuration.manage
+    healthCheckAccess.configuration.manage,
   );
 
   // Pagination state
@@ -47,6 +48,7 @@ const HealthCheckHistoryPageContent = () => {
     <PageLayout
       title="Health Check History"
       subtitle="Detailed run history with full result data"
+      icon={History}
       loading={accessLoading}
       allowed={canManage}
     >
@@ -68,5 +70,5 @@ const HealthCheckHistoryPageContent = () => {
 };
 
 export const HealthCheckHistoryPage = wrapInSuspense(
-  HealthCheckHistoryPageContent
+  HealthCheckHistoryPageContent,
 );

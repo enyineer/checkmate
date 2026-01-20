@@ -32,10 +32,10 @@ const QueueConfigPageContent = () => {
   const accessApi = useApi(accessApiRef);
   const toast = useToast();
   const { allowed: canRead, loading: accessLoading } = accessApi.useAccess(
-    queueAccess.settings.read
+    queueAccess.settings.read,
   );
   const { allowed: canUpdate } = accessApi.useAccess(
-    queueAccess.settings.manage
+    queueAccess.settings.manage,
   );
 
   // Fetch plugins and configuration
@@ -78,6 +78,7 @@ const QueueConfigPageContent = () => {
     <PageLayout
       title="Queue Settings"
       subtitle="Configure the queue system for background jobs"
+      icon={Gauge}
       loading={accessLoading}
       allowed={canRead}
       maxWidth="3xl"

@@ -21,6 +21,7 @@ import { catalogRoutes, CatalogApi } from "@checkstack/catalog-common";
 import {
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Badge,
@@ -55,7 +56,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
   const toast = useToast();
 
   const { allowed: canManage } = accessApi.useAccess(
-    maintenanceAccess.maintenance.manage
+    maintenanceAccess.maintenance.manage,
   );
 
   const [showUpdateForm, setShowUpdateForm] = useState(false);
@@ -67,7 +68,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
     refetch: refetchMaintenance,
   } = maintenanceClient.getMaintenance.useQuery(
     { id: maintenanceId ?? "" },
-    { enabled: !!maintenanceId }
+    { enabled: !!maintenanceId },
   );
 
   // Fetch systems with useQuery
@@ -85,7 +86,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to complete"
+        error instanceof Error ? error.message : "Failed to complete",
       );
     },
   });
@@ -141,6 +142,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
     <PageLayout
       title={maintenance.title}
       subtitle="Maintenance details and status history"
+      icon={Wrench}
       loading={false}
       allowed={true}
       actions={
@@ -150,7 +152,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
               navigate(
                 resolveRoute(maintenanceRoutes.routes.systemHistory, {
                   systemId: sourceSystemId,
-                })
+                }),
               )
             }
           >
@@ -163,12 +165,12 @@ const MaintenanceDetailPageContent: React.FC = () => {
         {/* Maintenance Info Card */}
         <Card>
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <CardHeaderRow>
               <div className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Maintenance Details</CardTitle>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {getMaintenanceStatusBadge(maintenance.status)}
                 {canComplete && (
                   <Button
@@ -182,7 +184,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
                   </Button>
                 )}
               </div>
-            </div>
+            </CardHeaderRow>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
             {maintenance.description && (
@@ -244,7 +246,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
         {/* Status Updates Timeline */}
         <Card>
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <CardHeaderRow>
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Status Updates</CardTitle>
@@ -259,7 +261,7 @@ const MaintenanceDetailPageContent: React.FC = () => {
                   Add Update
                 </Button>
               )}
-            </div>
+            </CardHeaderRow>
           </CardHeader>
           <CardContent className="p-6">
             {/* Add Update Form */}
@@ -287,5 +289,5 @@ const MaintenanceDetailPageContent: React.FC = () => {
 };
 
 export const MaintenanceDetailPage = wrapInSuspense(
-  MaintenanceDetailPageContent
+  MaintenanceDetailPageContent,
 );

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Table,
@@ -57,7 +58,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create role"
+        error instanceof Error ? error.message : "Failed to create role",
       );
     },
   });
@@ -69,7 +70,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update role"
+        error instanceof Error ? error.message : "Failed to update role",
       );
     },
   });
@@ -82,7 +83,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete role"
+        error instanceof Error ? error.message : "Failed to delete role",
       );
     },
   });
@@ -103,16 +104,18 @@ export const RolesTab: React.FC<RolesTabProps> = ({
     description?: string;
     accessRules: string[];
   }) => {
-    await (params.id ? updateRoleMutation.mutateAsync({
-        id: params.id,
-        name: params.name,
-        description: params.description,
-        accessRules: params.accessRules,
-      }) : createRoleMutation.mutateAsync({
-        name: params.name,
-        description: params.description,
-        accessRules: params.accessRules,
-      }));
+    await (params.id
+      ? updateRoleMutation.mutateAsync({
+          id: params.id,
+          name: params.name,
+          description: params.description,
+          accessRules: params.accessRules,
+        })
+      : createRoleMutation.mutateAsync({
+          name: params.name,
+          description: params.description,
+          accessRules: params.accessRules,
+        }));
   };
 
   const handleDeleteRole = () => {
@@ -123,14 +126,16 @@ export const RolesTab: React.FC<RolesTabProps> = ({
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Role Management</CardTitle>
-          {canCreateRoles && (
-            <Button onClick={handleCreateRole} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Role
-            </Button>
-          )}
+        <CardHeader>
+          <CardHeaderRow>
+            <CardTitle>Role Management</CardTitle>
+            {canCreateRoles && (
+              <Button onClick={handleCreateRole} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Role
+              </Button>
+            )}
+          </CardHeaderRow>
         </CardHeader>
         <CardContent>
           {canReadRoles ? (

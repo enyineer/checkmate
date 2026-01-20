@@ -48,7 +48,7 @@ export const NotificationsPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to mark as read"
+        error instanceof Error ? error.message : "Failed to mark as read",
       );
     },
   });
@@ -61,7 +61,9 @@ export const NotificationsPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete notification"
+        error instanceof Error
+          ? error.message
+          : "Failed to delete notification",
       );
     },
   });
@@ -74,7 +76,7 @@ export const NotificationsPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to mark all as read"
+        error instanceof Error ? error.message : "Failed to mark all as read",
       );
     },
   });
@@ -129,7 +131,7 @@ export const NotificationsPage = () => {
   };
 
   return (
-    <PageLayout title="Notifications" loading={loading}>
+    <PageLayout title="Notifications" icon={Bell} loading={loading}>
       <div className="space-y-4">
         {/* Header with filters */}
         <div className="flex items-center justify-between">

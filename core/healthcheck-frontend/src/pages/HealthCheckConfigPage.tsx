@@ -21,7 +21,7 @@ import {
   PageLayout,
   useToast,
 } from "@checkstack/ui";
-import { Plus, History } from "lucide-react";
+import { Plus, History, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 import { resolveRoute } from "@checkstack/common";
 
@@ -31,10 +31,10 @@ const HealthCheckConfigPageContent = () => {
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { allowed: canRead, loading: accessLoading } = accessApi.useAccess(
-    healthCheckAccess.configuration.read
+    healthCheckAccess.configuration.read,
   );
   const { allowed: canManage } = accessApi.useAccess(
-    healthCheckAccess.configuration.manage
+    healthCheckAccess.configuration.manage,
   );
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -52,7 +52,7 @@ const HealthCheckConfigPageContent = () => {
 
   // Fetch strategies with useQuery
   const { data: strategies = [] } = healthCheckClient.getStrategies.useQuery(
-    {}
+    {},
   );
 
   const configurations = configurationsData?.configurations ?? [];
@@ -137,6 +137,7 @@ const HealthCheckConfigPageContent = () => {
     <PageLayout
       title="Health Checks"
       subtitle="Manage health check configurations"
+      icon={Activity}
       loading={accessLoading}
       allowed={canRead}
       actions={
@@ -184,5 +185,5 @@ const HealthCheckConfigPageContent = () => {
 };
 
 export const HealthCheckConfigPage = wrapInSuspense(
-  HealthCheckConfigPageContent
+  HealthCheckConfigPageContent,
 );

@@ -36,7 +36,7 @@ const SystemMaintenanceHistoryPageContent: React.FC = () => {
   const { data: maintenancesData, isLoading: maintenancesLoading } =
     maintenanceClient.listMaintenances.useQuery(
       { systemId },
-      { enabled: !!systemId }
+      { enabled: !!systemId },
     );
 
   // Fetch systems with useQuery
@@ -82,13 +82,14 @@ const SystemMaintenanceHistoryPageContent: React.FC = () => {
     <PageLayout
       title={`Maintenance History: ${systemName}`}
       subtitle="All past and scheduled maintenances for this system"
+      icon={History}
       loading={loading}
       allowed={true}
       actions={
         <BackLink
           onClick={() =>
             navigate(
-              resolveRoute(catalogRoutes.routes.systemDetail, { systemId })
+              resolveRoute(catalogRoutes.routes.systemDetail, { systemId }),
             )
           }
         >
@@ -132,7 +133,7 @@ const SystemMaintenanceHistoryPageContent: React.FC = () => {
                       navigate(
                         `${resolveRoute(maintenanceRoutes.routes.detail, {
                           maintenanceId: m.id,
-                        })}?from=${systemId}`
+                        })}?from=${systemId}`,
                       )
                     }
                   >
@@ -173,5 +174,5 @@ const SystemMaintenanceHistoryPageContent: React.FC = () => {
 };
 
 export const SystemMaintenanceHistoryPage = wrapInSuspense(
-  SystemMaintenanceHistoryPageContent
+  SystemMaintenanceHistoryPageContent,
 );

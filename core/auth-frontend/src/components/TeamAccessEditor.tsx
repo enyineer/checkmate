@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Button,
@@ -77,7 +78,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
   const toast = useToast();
 
   const { allowed: canManageTeams } = accessApi.useAccess(
-    authAccess.teams.manage
+    authAccess.teams.manage,
   );
 
   const [expanded, setExpanded] = useState(initialExpanded);
@@ -90,7 +91,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
     refetch: refetchAccess,
   } = authClient.getResourceTeamAccess.useQuery(
     { resourceType, resourceId },
-    { enabled: expanded && !!resourceId }
+    { enabled: expanded && !!resourceId },
   );
 
   // Query: All teams
@@ -104,7 +105,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
     refetch: refetchSettings,
   } = authClient.getResourceAccessSettings.useQuery(
     { resourceType, resourceId },
-    { enabled: expanded && !!resourceId }
+    { enabled: expanded && !!resourceId },
   );
 
   const loading = accessLoading || teamsLoading || settingsLoading;
@@ -120,7 +121,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update access"
+        error instanceof Error ? error.message : "Failed to update access",
       );
     },
   });
@@ -133,7 +134,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to remove access"
+        error instanceof Error ? error.message : "Failed to remove access",
       );
     },
   });
@@ -145,7 +146,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update settings"
+        error instanceof Error ? error.message : "Failed to update settings",
       );
     },
   });
@@ -168,10 +169,10 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
 
   const handleUpdateAccess = (
     teamId: string,
-    updates: { canRead?: boolean; canManage?: boolean }
+    updates: { canRead?: boolean; canManage?: boolean },
   ) => {
     const currentAccess = (accessList as TeamAccess[]).find(
-      (a) => a.teamId === teamId
+      (a) => a.teamId === teamId,
     );
     setAccessMutation.mutate({
       resourceType,
@@ -199,7 +200,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
 
     // Check if this was the last team - if so, reset teamOnly
     const remainingTeams = (accessList as TeamAccess[]).filter(
-      (a) => a.teamId !== teamId
+      (a) => a.teamId !== teamId,
     );
     if (remainingTeams.length === 0 && teamOnly) {
       setSettingsMutation.mutate({
@@ -213,7 +214,7 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
   // Get teams that don't already have access
   const typedAccessList = accessList as TeamAccess[];
   const availableTeams = (teams as Team[]).filter(
-    (t) => !typedAccessList.some((a) => a.teamId === t.id)
+    (t) => !typedAccessList.some((a) => a.teamId === t.id),
   );
 
   const adding = setAccessMutation.isPending;
@@ -412,19 +413,21 @@ export const TeamAccessEditor: React.FC<TeamAccessEditorProps> = ({
   // Card mode (default)
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between py-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Shield className="h-4 w-4" />
-          Team Access Control
-        </CardTitle>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpanded(false)}
-        >
-          Collapse
-        </Button>
+      <CardHeader>
+        <CardHeaderRow>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Team Access Control
+          </CardTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(false)}
+          >
+            Collapse
+          </Button>
+        </CardHeaderRow>
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (

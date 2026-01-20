@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Table,
@@ -102,7 +103,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     refetch: refetchTeamDetail,
   } = authClient.getTeam.useQuery(
     { teamId: selectedTeamId ?? "" },
-    { enabled: !!selectedTeamId && membersDialogOpen }
+    { enabled: !!selectedTeamId && membersDialogOpen },
   );
 
   // Mutations
@@ -115,7 +116,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create team"
+        error instanceof Error ? error.message : "Failed to create team",
       );
     },
   });
@@ -129,7 +130,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update team"
+        error instanceof Error ? error.message : "Failed to update team",
       );
     },
   });
@@ -143,7 +144,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete team"
+        error instanceof Error ? error.message : "Failed to delete team",
       );
     },
   });
@@ -157,7 +158,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to add member"
+        error instanceof Error ? error.message : "Failed to add member",
       );
     },
   });
@@ -170,7 +171,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to remove member"
+        error instanceof Error ? error.message : "Failed to remove member",
       );
     },
   });
@@ -182,7 +183,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to promote to manager"
+        error instanceof Error ? error.message : "Failed to promote to manager",
       );
     },
   });
@@ -194,7 +195,9 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to remove manager role"
+        error instanceof Error
+          ? error.message
+          : "Failed to remove manager role",
       );
     },
   });
@@ -304,14 +307,16 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Team Management</CardTitle>
-          {canManageTeams && (
-            <Button onClick={handleCreateTeam} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Team
-            </Button>
-          )}
+        <CardHeader>
+          <CardHeaderRow>
+            <CardTitle>Team Management</CardTitle>
+            {canManageTeams && (
+              <Button onClick={handleCreateTeam} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Team
+              </Button>
+            )}
+          </CardHeaderRow>
         </CardHeader>
         <CardContent>
           {canReadTeams ? (
@@ -463,7 +468,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
             <div className="space-y-4">
               {/* Add Member Form */}
               {(teamDetailData.managers.some((m) =>
-                users.some((u) => u.id === m.id)
+                users.some((u) => u.id === m.id),
               ) ||
                 canManageTeams) && (
                 <div className="flex gap-2">
@@ -508,7 +513,7 @@ export const TeamsTab: React.FC<TeamsTabProps> = ({
                 ) : (
                   teamDetailData.members.map((member) => {
                     const isManager = teamDetailData.managers.some(
-                      (m) => m.id === member.id
+                      (m) => m.id === member.id,
                     );
                     return (
                       <div

@@ -44,7 +44,7 @@ export const AuthSettingsPage: React.FC = () => {
       ["users", "roles", "teams", "strategies", "applications"].includes(tab)
     ) {
       setActiveTab(
-        tab as "users" | "roles" | "teams" | "strategies" | "applications"
+        tab as "users" | "roles" | "teams" | "strategies" | "applications",
       );
     }
 
@@ -94,7 +94,7 @@ export const AuthSettingsPage: React.FC = () => {
     refetch: refetchStrategies,
   } = authClient.getStrategies.useQuery(
     {},
-    { enabled: canManageStrategies.allowed }
+    { enabled: canManageStrategies.allowed },
   );
 
   const dataLoading =
@@ -191,6 +191,7 @@ export const AuthSettingsPage: React.FC = () => {
   return (
     <PageLayout
       title="Authentication Settings"
+      icon={Shield}
       loading={accessRulesLoading}
       allowed={isAllowed}
     >
@@ -199,7 +200,12 @@ export const AuthSettingsPage: React.FC = () => {
         activeTab={activeTab}
         onTabChange={(tabId) =>
           setActiveTab(
-            tabId as "users" | "roles" | "teams" | "strategies" | "applications"
+            tabId as
+              | "users"
+              | "roles"
+              | "teams"
+              | "strategies"
+              | "applications",
           )
         }
         className="mb-6"

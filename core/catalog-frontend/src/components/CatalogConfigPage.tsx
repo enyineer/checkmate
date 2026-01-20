@@ -12,21 +12,20 @@ import {
   catalogAccess,
 } from "@checkstack/catalog-common";
 import {
-  SectionHeader,
+  PageLayout,
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Button,
   Label,
-  LoadingSpinner,
   EmptyState,
-  AccessDenied,
   EditableText,
   ConfirmationModal,
   useToast,
 } from "@checkstack/ui";
-import { Plus, Trash2, LayoutGrid, Server, Settings, Edit } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, Server, Edit } from "lucide-react";
 import { SystemEditor } from "./SystemEditor";
 import { GroupEditor } from "./GroupEditor";
 
@@ -36,7 +35,7 @@ export const CatalogConfigPage = () => {
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { allowed: canManage, loading: accessLoading } = accessApi.useAccess(
-    catalogAccess.system.manage
+    catalogAccess.system.manage,
   );
 
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -104,7 +103,7 @@ export const CatalogConfigPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create system"
+        error instanceof Error ? error.message : "Failed to create system",
       );
     },
   });
@@ -118,7 +117,7 @@ export const CatalogConfigPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update system"
+        error instanceof Error ? error.message : "Failed to update system",
       );
     },
   });
@@ -131,7 +130,7 @@ export const CatalogConfigPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete system"
+        error instanceof Error ? error.message : "Failed to delete system",
       );
     },
   });
@@ -144,7 +143,7 @@ export const CatalogConfigPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create group"
+        error instanceof Error ? error.message : "Failed to create group",
       );
     },
   });
@@ -157,7 +156,7 @@ export const CatalogConfigPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete group"
+        error instanceof Error ? error.message : "Failed to delete group",
       );
     },
   });
@@ -169,7 +168,7 @@ export const CatalogConfigPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update group name"
+        error instanceof Error ? error.message : "Failed to update group name",
       );
       throw error;
     },
@@ -183,7 +182,9 @@ export const CatalogConfigPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to add system to group"
+        error instanceof Error
+          ? error.message
+          : "Failed to add system to group",
       );
     },
   });
@@ -198,7 +199,7 @@ export const CatalogConfigPage = () => {
         toast.error(
           error instanceof Error
             ? error.message
-            : "Failed to remove system from group"
+            : "Failed to remove system from group",
         );
       },
     });
@@ -259,37 +260,33 @@ export const CatalogConfigPage = () => {
     updateGroupMutation.mutate({ id, data: { name: newName } });
   };
 
-  if (loading || accessLoading) return <LoadingSpinner />;
-
-  if (!canManage) {
-    return <AccessDenied />;
-  }
-
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
   const availableSystems = systems.filter(
-    (s) => !selectedGroup?.systemIds?.includes(s.id)
+    (s) => !selectedGroup?.systemIds?.includes(s.id),
   );
 
   return (
-    <div className="space-y-8">
-      <SectionHeader
-        title="Catalog Management"
-        description="Manage systems and logical groups within your infrastructure"
-        icon={<Settings className="w-6 h-6 text-primary" />}
-      />
-
+    <PageLayout
+      title="Catalog Management"
+      subtitle="Manage systems and logical groups within your infrastructure"
+      icon={Server}
+      loading={loading || accessLoading}
+      allowed={canManage}
+    >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Systems Management */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Server className="w-5 h-5 text-muted-foreground" />
-              Systems
-            </CardTitle>
-            <Button size="sm" onClick={() => setIsSystemEditorOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add System
-            </Button>
+          <CardHeader>
+            <CardHeaderRow>
+              <CardTitle className="flex items-center gap-2">
+                <Server className="w-5 h-5 text-muted-foreground" />
+                Systems
+              </CardTitle>
+              <Button size="sm" onClick={() => setIsSystemEditorOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add System
+              </Button>
+            </CardHeaderRow>
           </CardHeader>
           <CardContent className="space-y-4">
             {systems.length === 0 ? (
@@ -347,15 +344,17 @@ export const CatalogConfigPage = () => {
 
         {/* Groups Management */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <LayoutGrid className="w-5 h-5 text-muted-foreground" />
-              Groups
-            </CardTitle>
-            <Button size="sm" onClick={() => setIsGroupEditorOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Group
-            </Button>
+          <CardHeader>
+            <CardHeaderRow>
+              <CardTitle className="flex items-center gap-2">
+                <LayoutGrid className="w-5 h-5 text-muted-foreground" />
+                Groups
+              </CardTitle>
+              <Button size="sm" onClick={() => setIsGroupEditorOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Group
+              </Button>
+            </CardHeaderRow>
           </CardHeader>
           <CardContent className="space-y-4">
             {groups.length === 0 ? (
@@ -516,6 +515,6 @@ export const CatalogConfigPage = () => {
         confirmText="Delete"
         variant="danger"
       />
-    </div>
+    </PageLayout>
   );
 };

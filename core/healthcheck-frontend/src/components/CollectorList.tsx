@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   Label,
   Select,
@@ -157,62 +158,68 @@ export const CollectorList: React.FC<CollectorListProps> = ({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Check Items</CardTitle>
-        {addableCollectors.length > 0 && (
-          <Select value="" onValueChange={handleAdd}>
-            <SelectTrigger className="w-[200px]">
-              <Plus className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Add collector..." />
-            </SelectTrigger>
-            <SelectContent>
-              {/* Built-in collectors first */}
-              {builtInCollectors.length > 0 && (
-                <>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                    Built-in
-                  </div>
-                  {builtInCollectors
-                    .filter((c) => addableCollectors.some((a) => a.id === c.id))
-                    .map((collector) => (
-                      <SelectItem key={collector.id} value={collector.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{collector.displayName}</span>
-                          {collector.allowMultiple && (
-                            <Badge variant="outline" className="text-xs">
-                              Multiple
-                            </Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                </>
-              )}
-              {/* External collectors */}
-              {externalCollectors.length > 0 && (
-                <>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                    External
-                  </div>
-                  {externalCollectors
-                    .filter((c) => addableCollectors.some((a) => a.id === c.id))
-                    .map((collector) => (
-                      <SelectItem key={collector.id} value={collector.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{collector.displayName}</span>
-                          {collector.allowMultiple && (
-                            <Badge variant="outline" className="text-xs">
-                              Multiple
-                            </Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                </>
-              )}
-            </SelectContent>
-          </Select>
-        )}
+      <CardHeader>
+        <CardHeaderRow>
+          <CardTitle className="text-base">Check Items</CardTitle>
+          {addableCollectors.length > 0 && (
+            <Select value="" onValueChange={handleAdd}>
+              <SelectTrigger className="w-[200px]">
+                <Plus className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Add collector..." />
+              </SelectTrigger>
+              <SelectContent>
+                {/* Built-in collectors first */}
+                {builtInCollectors.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      Built-in
+                    </div>
+                    {builtInCollectors
+                      .filter((c) =>
+                        addableCollectors.some((a) => a.id === c.id),
+                      )
+                      .map((collector) => (
+                        <SelectItem key={collector.id} value={collector.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{collector.displayName}</span>
+                            {collector.allowMultiple && (
+                              <Badge variant="outline" className="text-xs">
+                                Multiple
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </>
+                )}
+                {/* External collectors */}
+                {externalCollectors.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      External
+                    </div>
+                    {externalCollectors
+                      .filter((c) =>
+                        addableCollectors.some((a) => a.id === c.id),
+                      )
+                      .map((collector) => (
+                        <SelectItem key={collector.id} value={collector.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{collector.displayName}</span>
+                            {collector.allowMultiple && (
+                              <Badge variant="outline" className="text-xs">
+                                Multiple
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          )}
+        </CardHeaderRow>
       </CardHeader>
       <CardContent>
         {configuredCollectors.length === 0 ? (

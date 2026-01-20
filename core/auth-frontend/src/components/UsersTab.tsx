@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Table,
@@ -53,7 +54,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const [createUserDialogOpen, setCreateUserDialogOpen] = useState(false);
 
   const hasCredentialStrategy = strategies.some(
-    (s) => s.id === "credential" && s.enabled
+    (s) => s.id === "credential" && s.enabled,
   );
 
   // Mutations
@@ -65,7 +66,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete user"
+        error instanceof Error ? error.message : "Failed to delete user",
       );
     },
   });
@@ -76,7 +77,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update roles"
+        error instanceof Error ? error.message : "Failed to update roles",
       );
     },
   });
@@ -88,7 +89,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create user"
+        error instanceof Error ? error.message : "Failed to create user",
       );
       throw error;
     },
@@ -102,7 +103,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const handleToggleRole = (
     userId: string,
     roleId: string,
-    currentRoles: string[]
+    currentRoles: string[],
   ) => {
     if (currentUserId === userId) {
       toast.error("You cannot update your own roles");
@@ -127,14 +128,16 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>User Management</CardTitle>
-          {canCreateUsers && hasCredentialStrategy && (
-            <Button onClick={() => setCreateUserDialogOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Create User
-            </Button>
-          )}
+        <CardHeader>
+          <CardHeaderRow>
+            <CardTitle>User Management</CardTitle>
+            {canCreateUsers && hasCredentialStrategy && (
+              <Button onClick={() => setCreateUserDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create User
+              </Button>
+            )}
+          </CardHeaderRow>
         </CardHeader>
         <CardContent>
           <Alert variant="info" className="mb-4">
@@ -188,7 +191,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                                     handleToggleRole(
                                       user.id,
                                       role.id,
-                                      user.roles
+                                      user.roles,
                                     )
                                   }
                                 />

@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Plus, Webhook, ArrowRight, Activity } from "lucide-react";
+import {
+  Plus,
+  Webhook,
+  ArrowRight,
+  Activity,
+  Link as LinkIcon,
+} from "lucide-react";
 import {
   PageLayout,
   Card,
@@ -55,13 +61,15 @@ export const IntegrationsPage = () => {
   const toggleMutation = client.toggleSubscription.useMutation({
     onSuccess: (_result, variables) => {
       toast.success(
-        variables.enabled ? "Subscription enabled" : "Subscription disabled"
+        variables.enabled ? "Subscription enabled" : "Subscription disabled",
       );
       void refetchSubs();
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to toggle subscription"
+        error instanceof Error
+          ? error.message
+          : "Failed to toggle subscription",
       );
     },
   });
@@ -81,10 +89,10 @@ export const IntegrationsPage = () => {
   }, [searchParams, setSearchParams]);
 
   const getProviderInfo = (
-    providerId: string
+    providerId: string,
   ): IntegrationProviderInfo | undefined => {
     return (providers as IntegrationProviderInfo[]).find(
-      (p) => p.qualifiedId === providerId
+      (p) => p.qualifiedId === providerId,
     );
   };
 
@@ -124,6 +132,7 @@ export const IntegrationsPage = () => {
     <PageLayout
       title="Integrations"
       subtitle="Configure webhooks to send events to external systems"
+      icon={LinkIcon}
       loading={loading}
       actions={
         <Button onClick={openCreateDialog}>

@@ -91,12 +91,12 @@ export const ProviderConnectionsPage = () => {
     refetch: refetchConnections,
   } = client.listConnections.useQuery(
     { providerId: providerId ?? "" },
-    { enabled: !!providerId }
+    { enabled: !!providerId },
   );
 
   const loading = providersLoading || connectionsLoading;
   const provider = (providers as IntegrationProviderInfo[]).find(
-    (p) => p.qualifiedId === providerId
+    (p) => p.qualifiedId === providerId,
   );
 
   // Mutations
@@ -111,7 +111,7 @@ export const ProviderConnectionsPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create connection"
+        error instanceof Error ? error.message : "Failed to create connection",
       );
       setSaving(false);
     },
@@ -127,7 +127,7 @@ export const ProviderConnectionsPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update connection"
+        error instanceof Error ? error.message : "Failed to update connection",
       );
       setSaving(false);
     },
@@ -142,7 +142,7 @@ export const ProviderConnectionsPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete connection"
+        error instanceof Error ? error.message : "Failed to delete connection",
       );
     },
   });
@@ -166,7 +166,7 @@ export const ProviderConnectionsPage = () => {
         [variables.connectionId]: { success: false, message: "Test failed" },
       }));
       toast.error(
-        error instanceof Error ? error.message : "Connection test failed"
+        error instanceof Error ? error.message : "Connection test failed",
       );
       setTestingId(undefined);
     },
@@ -226,12 +226,16 @@ export const ProviderConnectionsPage = () => {
   };
 
   if (!providerId) {
-    return <PageLayout title="Error">Missing provider ID</PageLayout>;
+    return (
+      <PageLayout title="Error" icon={Settings2}>
+        Missing provider ID
+      </PageLayout>
+    );
   }
 
   if (!loading && !provider) {
     return (
-      <PageLayout title="Provider Not Found">
+      <PageLayout title="Provider Not Found" icon={Settings2}>
         <EmptyState
           icon={<Settings2 className="h-12 w-12" />}
           title="Provider not found"
@@ -243,7 +247,7 @@ export const ProviderConnectionsPage = () => {
 
   if (!loading && !provider?.hasConnectionSchema) {
     return (
-      <PageLayout title={provider?.displayName ?? "Provider"}>
+      <PageLayout title={provider?.displayName ?? "Provider"} icon={Settings2}>
         <EmptyState
           icon={<Settings2 className="h-12 w-12" />}
           title="No connection management"
@@ -257,6 +261,7 @@ export const ProviderConnectionsPage = () => {
     <PageLayout
       title={`${provider?.displayName ?? "Provider"} Connections`}
       subtitle="Manage site-wide connections for this integration provider"
+      icon={Settings2}
       loading={loading}
       actions={
         <div className="flex items-center gap-2">

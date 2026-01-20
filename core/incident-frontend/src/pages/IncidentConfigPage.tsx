@@ -56,11 +56,11 @@ const IncidentConfigPageContent: React.FC = () => {
   const toast = useToast();
 
   const { allowed: canManage, loading: accessLoading } = accessApi.useAccess(
-    incidentAccess.incident.manage
+    incidentAccess.incident.manage,
   );
 
   const [statusFilter, setStatusFilter] = useState<IncidentStatus | "all">(
-    "all"
+    "all",
   );
   const [showResolved, setShowResolved] = useState(false);
 
@@ -84,7 +84,7 @@ const IncidentConfigPageContent: React.FC = () => {
   } = incidentClient.listIncidents.useQuery(
     statusFilter === "all"
       ? { includeResolved: showResolved }
-      : { status: statusFilter, includeResolved: showResolved }
+      : { status: statusFilter, includeResolved: showResolved },
   );
 
   // Fetch systems with useQuery
@@ -205,6 +205,7 @@ const IncidentConfigPageContent: React.FC = () => {
     <PageLayout
       title="Incident Management"
       subtitle="Track and manage incidents affecting your systems"
+      icon={AlertTriangle}
       loading={accessLoading}
       allowed={canManage}
       actions={

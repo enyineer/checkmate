@@ -108,6 +108,7 @@ export const DeliveryLogsPage = () => {
     <PageLayout
       title="Delivery Logs"
       subtitle="View and manage webhook delivery attempts"
+      icon={FileText}
       loading={isLoading}
       actions={
         <BackLink to={resolveRoute(integrationRoutes.routes.list)}>

@@ -25,6 +25,7 @@ import {
   type DateRange,
 } from "@checkstack/ui";
 import { useParams } from "react-router-dom";
+import { History } from "lucide-react";
 import {
   HealthCheckRunsTable,
   type HealthCheckRunDetailed,
@@ -39,7 +40,7 @@ const HealthCheckHistoryDetailPageContent = () => {
   const healthCheckClient = usePluginClient(HealthCheckApi);
   const accessApi = useApi(accessApiRef);
   const { allowed: canManage, loading: accessLoading } = accessApi.useAccess(
-    healthCheckAccess.configuration.manage
+    healthCheckAccess.configuration.manage,
   );
 
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
@@ -67,8 +68,9 @@ const HealthCheckHistoryDetailPageContent = () => {
       title="Health Check Run History"
       subtitle={`System: ${systemId} • Configuration: ${configurationId?.slice(
         0,
-        8
+        8,
       )}...`}
+      icon={History}
       loading={accessLoading}
       allowed={canManage}
       actions={
@@ -100,5 +102,5 @@ const HealthCheckHistoryDetailPageContent = () => {
 };
 
 export const HealthCheckHistoryDetailPage = wrapInSuspense(
-  HealthCheckHistoryDetailPageContent
+  HealthCheckHistoryDetailPageContent,
 );

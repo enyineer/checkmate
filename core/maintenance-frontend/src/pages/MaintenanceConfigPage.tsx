@@ -57,11 +57,11 @@ const MaintenanceConfigPageContent: React.FC = () => {
   const toast = useToast();
 
   const { allowed: canManage, loading: accessLoading } = accessApi.useAccess(
-    maintenanceAccess.maintenance.manage
+    maintenanceAccess.maintenance.manage,
   );
 
   const [statusFilter, setStatusFilter] = useState<MaintenanceStatus | "all">(
-    "all"
+    "all",
   );
 
   // Editor state
@@ -82,7 +82,7 @@ const MaintenanceConfigPageContent: React.FC = () => {
     isLoading: maintenancesLoading,
     refetch: refetchMaintenances,
   } = maintenanceClient.listMaintenances.useQuery(
-    statusFilter === "all" ? {} : { status: statusFilter }
+    statusFilter === "all" ? {} : { status: statusFilter },
   );
 
   // Fetch systems with useQuery
@@ -124,7 +124,7 @@ const MaintenanceConfigPageContent: React.FC = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to complete"
+        error instanceof Error ? error.message : "Failed to complete",
       );
     },
   });
@@ -171,6 +171,7 @@ const MaintenanceConfigPageContent: React.FC = () => {
     <PageLayout
       title="Planned Maintenances"
       subtitle="Manage scheduled maintenance windows for systems"
+      icon={Wrench}
       loading={accessLoading}
       allowed={canManage}
       actions={
@@ -329,5 +330,5 @@ const MaintenanceConfigPageContent: React.FC = () => {
 };
 
 export const MaintenanceConfigPage = wrapInSuspense(
-  MaintenanceConfigPageContent
+  MaintenanceConfigPageContent,
 );

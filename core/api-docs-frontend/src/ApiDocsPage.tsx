@@ -7,6 +7,7 @@ import {
   CardTitle,
   Badge,
   Button,
+  PageLayout,
 } from "@checkstack/ui";
 import {
   ChevronDown,
@@ -17,6 +18,7 @@ import {
   Globe,
   User,
   Server,
+  FileCode,
 } from "lucide-react";
 
 interface OpenApiSpec {
@@ -125,7 +127,7 @@ function CopyButton({ text }: { text: string }) {
 function generateFetchExample(
   path: string,
   method: string,
-  operation: OperationObject
+  operation: OperationObject,
 ): string {
   const baseUrl = "http://localhost:3000";
   const hasBody = operation.requestBody?.content?.["application/json"]?.schema;
@@ -292,7 +294,9 @@ function EndpointCard({
 
           {meta?.accessRules && meta.accessRules.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium mb-2">Required Access Rules</h4>
+              <h4 className="text-sm font-medium mb-2">
+                Required Access Rules
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {meta.accessRules.map((perm) => (
                   <Badge key={perm} variant="secondary">
@@ -346,7 +350,7 @@ export function ApiDocsPage() {
   const [error, setError] = useState<string>();
   // Default to showing externally accessible endpoints only
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(
-    new Set(["authenticated", "public"])
+    new Set(["authenticated", "public"]),
   );
 
   const toggleType = (type: string) => {
@@ -384,24 +388,18 @@ export function ApiDocsPage() {
     void fetchSpec();
   }, []);
 
-  if (loading) {
+  if (loading || !spec) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="animate-pulse">Loading API documentation...</div>
-      </div>
-    );
-  }
-
-  if (error || !spec) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Error Loading API Documentation</CardTitle>
-            <CardDescription>{error ?? "Unknown error"}</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <PageLayout title="API Documentation" icon={FileCode} loading={loading}>
+        {error && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Error Loading API Documentation</CardTitle>
+              <CardDescription>{error}</CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+      </PageLayout>
     );
   }
 
@@ -433,14 +431,14 @@ export function ApiDocsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{spec.info.title}</h1>
-        <p className="text-muted-foreground mt-2">{spec.info.description}</p>
-        <Badge variant="secondary" className="mt-2">
-          v{spec.info.version}
-        </Badge>
-      </div>
+    <PageLayout
+      title={spec.info.title}
+      subtitle={spec.info.description}
+      icon={FileCode}
+      loading={loading}
+      maxWidth="full"
+    >
+      <Badge variant="secondary">v{spec.info.version}</Badge>
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted-foreground">Filter by access:</span>
@@ -518,6 +516,6 @@ export function ApiDocsPage() {
             </div>
           ))}
       </div>
-    </div>
+    </PageLayout>
   );
 }

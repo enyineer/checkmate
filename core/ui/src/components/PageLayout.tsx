@@ -1,4 +1,5 @@
 import React from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   Page,
   PageHeader,
@@ -10,6 +11,7 @@ import {
 interface PageLayoutProps {
   title: string;
   subtitle?: string;
+  icon: LucideIcon;
   actions?: React.ReactNode;
   loading?: boolean;
   allowed?: boolean;
@@ -31,6 +33,7 @@ interface PageLayoutProps {
 export const PageLayout: React.FC<PageLayoutProps> = ({
   title,
   subtitle,
+  icon,
   actions,
   loading,
   allowed,
@@ -46,7 +49,12 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
   if (isLoading) {
     return (
       <Page>
-        <PageHeader title={title} subtitle={subtitle} actions={actions} />
+        <PageHeader
+          title={title}
+          subtitle={subtitle}
+          icon={icon}
+          actions={actions}
+        />
         <PageContent>
           <div className="flex justify-center py-12">
             <LoadingSpinner />
@@ -60,7 +68,12 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
   if (allowed === false) {
     return (
       <Page>
-        <PageHeader title={title} subtitle={subtitle} actions={actions} />
+        <PageHeader
+          title={title}
+          subtitle={subtitle}
+          icon={icon}
+          actions={actions}
+        />
         <PageContent>
           <AccessDenied />
         </PageContent>
@@ -70,10 +83,17 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
 
   return (
     <Page>
-      <PageHeader title={title} subtitle={subtitle} actions={actions} />
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        icon={icon}
+        actions={actions}
+      />
       <PageContent>
         <div
-          className={maxWidth === "full" ? "" : `max-w-${maxWidth} space-y-6`}
+          className={
+            maxWidth === "full" ? "space-y-6" : `max-w-${maxWidth} space-y-6`
+          }
         >
           {children}
         </div>

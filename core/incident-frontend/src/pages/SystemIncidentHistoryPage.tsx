@@ -12,15 +12,13 @@ import {
 import { CatalogApi, catalogRoutes } from "@checkstack/catalog-common";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   Badge,
-  LoadingSpinner,
+  PageLayout,
   EmptyState,
   BackLink,
 } from "@checkstack/ui";
-import { AlertTriangle, Clock, ChevronRight } from "lucide-react";
+import { Clock, ChevronRight, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const SystemIncidentHistoryPageContent: React.FC = () => {
@@ -35,7 +33,7 @@ const SystemIncidentHistoryPageContent: React.FC = () => {
     refetch: refetchIncidents,
   } = incidentClient.listIncidents.useQuery(
     { systemId, includeResolved: true },
-    { enabled: !!systemId }
+    { enabled: !!systemId },
   );
 
   // Fetch systems with useQuery
@@ -91,36 +89,25 @@ const SystemIncidentHistoryPageContent: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-12 flex justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+  // Actions for the page header
+  const headerActions = system && (
+    <BackLink
+      to={resolveRoute(catalogRoutes.routes.systemDetail, {
+        systemId: system.id,
+      })}
+    >
+      Back to {system.name}
+    </BackLink>
+  );
 
   return (
-    <div className="space-y-6 p-6">
+    <PageLayout
+      title={`Incident History${system ? ` - ${system.name}` : ""}`}
+      icon={AlertTriangle}
+      loading={loading}
+      actions={headerActions}
+    >
       <Card>
-        <CardHeader className="border-b border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>
-                Incident History{system ? ` - ${system.name}` : ""}
-              </CardTitle>
-            </div>
-            {system && (
-              <BackLink
-                to={resolveRoute(catalogRoutes.routes.systemDetail, {
-                  systemId: system.id,
-                })}
-              >
-                Back to {system.name}
-              </BackLink>
-            )}
-          </div>
-        </CardHeader>
         <CardContent className="p-0">
           {incidents.length === 0 ? (
             <EmptyState
@@ -172,10 +159,10 @@ const SystemIncidentHistoryPageContent: React.FC = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 };
 
 export const SystemIncidentHistoryPage = wrapInSuspense(
-  SystemIncidentHistoryPageContent
+  SystemIncidentHistoryPageContent,
 );

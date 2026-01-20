@@ -72,7 +72,7 @@ export const NotificationSettingsPage = () => {
     refetch: refetchStrategies,
   } = notificationClient.getDeliveryStrategies.useQuery(
     {},
-    { enabled: isAdmin }
+    { enabled: isAdmin },
   );
 
   // Query: User delivery channels
@@ -97,7 +97,7 @@ export const NotificationSettingsPage = () => {
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error ? error.message : "Failed to save settings"
+          error instanceof Error ? error.message : "Failed to save settings",
         );
       },
     });
@@ -109,7 +109,7 @@ export const NotificationSettingsPage = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to unsubscribe"
+        error instanceof Error ? error.message : "Failed to unsubscribe",
       );
     },
   });
@@ -123,7 +123,7 @@ export const NotificationSettingsPage = () => {
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error ? error.message : "Failed to update channel"
+          error instanceof Error ? error.message : "Failed to update channel",
         );
         setStrategySaving(undefined);
       },
@@ -138,7 +138,9 @@ export const NotificationSettingsPage = () => {
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error ? error.message : "Failed to update preference"
+          error instanceof Error
+            ? error.message
+            : "Failed to update preference",
         );
         setChannelSaving(undefined);
       },
@@ -153,7 +155,7 @@ export const NotificationSettingsPage = () => {
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error ? error.message : "Failed to disconnect"
+          error instanceof Error ? error.message : "Failed to disconnect",
         );
         setChannelSaving(undefined);
       },
@@ -166,7 +168,7 @@ export const NotificationSettingsPage = () => {
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error ? error.message : "Failed to start OAuth flow"
+          error instanceof Error ? error.message : "Failed to start OAuth flow",
         );
         setChannelConnecting(undefined);
       },
@@ -180,7 +182,7 @@ export const NotificationSettingsPage = () => {
 
   const handleSaveRetention = () => {
     setRetentionMutation.mutate(
-      retentionSettings as { enabled: boolean; retentionDays: number }
+      retentionSettings as { enabled: boolean; retentionDays: number },
     );
   };
 
@@ -192,7 +194,7 @@ export const NotificationSettingsPage = () => {
     strategyId: string,
     enabled: boolean,
     config?: Record<string, unknown>,
-    layoutConfig?: Record<string, unknown>
+    layoutConfig?: Record<string, unknown>,
   ) => {
     setStrategySaving(strategyId);
     await updateStrategyMutation.mutateAsync({
@@ -226,7 +228,7 @@ export const NotificationSettingsPage = () => {
 
   const handleChannelConfigSave = async (
     strategyId: string,
-    userConfig: Record<string, unknown>
+    userConfig: Record<string, unknown>,
   ) => {
     setChannelSaving(strategyId);
     const channel = userChannels.find((c) => c.strategyId === strategyId);
@@ -243,7 +245,7 @@ export const NotificationSettingsPage = () => {
   };
 
   return (
-    <PageLayout title="Notification Settings" loading={subsLoading}>
+    <PageLayout title="Notification Settings" icon={Bell} loading={subsLoading}>
       <div className="space-y-8">
         {/* Your Notification Channels - All users */}
         <section>

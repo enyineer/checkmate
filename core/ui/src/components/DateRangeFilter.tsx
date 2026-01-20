@@ -22,11 +22,15 @@ export interface DateRangeFilterProps {
   className?: string;
 }
 
-const PRESETS: Array<{ id: DateRangePreset; label: string }> = [
-  { id: DateRangePreset.Last24Hours, label: "Last 24h" },
-  { id: DateRangePreset.Last7Days, label: "Last 7 days" },
-  { id: DateRangePreset.Last30Days, label: "Last 30 days" },
-  { id: DateRangePreset.Custom, label: "Custom" },
+const PRESETS: Array<{
+  id: DateRangePreset;
+  label: string;
+  shortLabel: string;
+}> = [
+  { id: DateRangePreset.Last24Hours, label: "Last 24h", shortLabel: "24h" },
+  { id: DateRangePreset.Last7Days, label: "Last 7 days", shortLabel: "7d" },
+  { id: DateRangePreset.Last30Days, label: "Last 30 days", shortLabel: "30d" },
+  { id: DateRangePreset.Custom, label: "Custom", shortLabel: "Custom" },
 ];
 
 export function getPresetRange(preset: DateRangePreset): DateRange {
@@ -88,7 +92,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
         <span className="text-sm font-medium text-muted-foreground">
           Time range:
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {PRESETS.map((preset) => (
             <Button
               key={preset.id}
@@ -102,7 +106,8 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
               size="sm"
               onClick={() => handlePresetClick(preset.id)}
             >
-              {preset.label}
+              <span className="sm:hidden">{preset.shortLabel}</span>
+              <span className="hidden sm:inline">{preset.label}</span>
             </Button>
           ))}
         </div>

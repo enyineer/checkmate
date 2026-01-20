@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Table,
@@ -70,7 +71,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
     refetch: refetchApplications,
   } = authClient.getApplications.useQuery(
     {},
-    { enabled: canManageApplications }
+    { enabled: canManageApplications },
   );
 
   // Mutations
@@ -88,7 +89,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create application"
+        error instanceof Error ? error.message : "Failed to create application",
       );
     },
   });
@@ -99,7 +100,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update application"
+        error instanceof Error ? error.message : "Failed to update application",
       );
     },
   });
@@ -112,7 +113,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete application"
+        error instanceof Error ? error.message : "Failed to delete application",
       );
     },
   });
@@ -129,7 +130,9 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error ? error.message : "Failed to regenerate secret"
+          error instanceof Error
+            ? error.message
+            : "Failed to regenerate secret",
         );
       },
     });
@@ -148,7 +151,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   const handleToggleApplicationRole = (
     appId: string,
     roleId: string,
-    currentRoles: string[]
+    currentRoles: string[],
   ) => {
     const newRoles = currentRoles.includes(roleId)
       ? currentRoles.filter((r) => r !== roleId)
@@ -173,14 +176,16 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>External Applications</CardTitle>
-          {canManageApplications && (
-            <Button onClick={() => setCreateAppDialogOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Application
-            </Button>
-          )}
+        <CardHeader>
+          <CardHeaderRow>
+            <CardTitle>External Applications</CardTitle>
+            {canManageApplications && (
+              <Button onClick={() => setCreateAppDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Application
+              </Button>
+            )}
+          </CardHeaderRow>
         </CardHeader>
         <CardContent>
           <Alert variant="info" className="mb-4">
@@ -242,7 +247,7 @@ export const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
                                   handleToggleApplicationRole(
                                     app.id,
                                     role.id,
-                                    app.roles
+                                    app.roles,
                                   )
                                 }
                               />

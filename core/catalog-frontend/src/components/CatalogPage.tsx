@@ -1,5 +1,7 @@
 import React from "react";
 import { useApi, loggerApiRef } from "@checkstack/frontend-api";
+import { PageLayout } from "@checkstack/ui";
+import { Layers } from "lucide-react";
 
 export const CatalogPage = () => {
   const logger = useApi(loggerApiRef);
@@ -9,9 +11,8 @@ export const CatalogPage = () => {
   }, [logger]);
 
   return (
-    <div className="p-4 rounded-lg bg-white shadow">
-      <h2 className="text-2xl font-semibold mb-4">Catalog</h2>
+    <PageLayout title="Catalog" icon={Layers}>
       <p className="text-muted-foreground">Welcome to the Service Catalog.</p>
-    </div>
+    </PageLayout>
   );
 };

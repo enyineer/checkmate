@@ -18,6 +18,7 @@ import { CatalogApi } from "@checkstack/catalog-common";
 import {
   Card,
   CardHeader,
+  CardHeaderRow,
   CardTitle,
   CardContent,
   Button,
@@ -54,7 +55,7 @@ const IncidentDetailPageContent: React.FC = () => {
   const toast = useToast();
 
   const { allowed: canManage } = accessApi.useAccess(
-    incidentAccess.incident.manage
+    incidentAccess.incident.manage,
   );
 
   const [showUpdateForm, setShowUpdateForm] = useState(false);
@@ -66,7 +67,7 @@ const IncidentDetailPageContent: React.FC = () => {
     refetch: refetchIncident,
   } = incidentClient.getIncident.useQuery(
     { id: incidentId ?? "" },
-    { enabled: !!incidentId }
+    { enabled: !!incidentId },
   );
 
   // Fetch systems with useQuery
@@ -138,6 +139,7 @@ const IncidentDetailPageContent: React.FC = () => {
     <PageLayout
       title={incident.title}
       subtitle="Incident details and status history"
+      icon={AlertTriangle}
       loading={false}
       allowed={true}
       actions={
@@ -147,7 +149,7 @@ const IncidentDetailPageContent: React.FC = () => {
               navigate(
                 resolveRoute(incidentRoutes.routes.systemHistory, {
                   systemId: sourceSystemId,
-                })
+                }),
               )
             }
           >
@@ -160,12 +162,12 @@ const IncidentDetailPageContent: React.FC = () => {
         {/* Incident Info Card */}
         <Card>
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <CardHeaderRow>
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Incident Details</CardTitle>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {getIncidentSeverityBadge(incident.severity)}
                 {getIncidentStatusBadge(incident.status)}
                 {canResolve && (
@@ -180,7 +182,7 @@ const IncidentDetailPageContent: React.FC = () => {
                   </Button>
                 )}
               </div>
-            </div>
+            </CardHeaderRow>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
             {incident.description && (
@@ -236,7 +238,7 @@ const IncidentDetailPageContent: React.FC = () => {
         {/* Status Updates Timeline */}
         <Card>
           <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between">
+            <CardHeaderRow>
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Status Updates</CardTitle>
@@ -251,7 +253,7 @@ const IncidentDetailPageContent: React.FC = () => {
                   Add Update
                 </Button>
               )}
-            </div>
+            </CardHeaderRow>
           </CardHeader>
           <CardContent className="p-6">
             {/* Add Update Form */}

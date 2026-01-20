@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  LoadingSpinner,
+  PageLayout,
   SubscribeButton,
   useToast,
   BackLink,
@@ -74,7 +74,7 @@ export const SystemDetailPage: React.FC = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to subscribe"
+        error instanceof Error ? error.message : "Failed to subscribe",
       );
     },
   });
@@ -87,7 +87,7 @@ export const SystemDetailPage: React.FC = () => {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to unsubscribe"
+        error instanceof Error ? error.message : "Failed to unsubscribe",
       );
     },
   });
@@ -103,7 +103,7 @@ export const SystemDetailPage: React.FC = () => {
   useEffect(() => {
     if (groupsData && systemId) {
       const systemGroups = groupsData.filter((group) =>
-        group.systemIds?.includes(systemId)
+        group.systemIds?.includes(systemId),
       );
       setGroups(systemGroups);
     }
@@ -129,26 +129,32 @@ export const SystemDetailPage: React.FC = () => {
     unsubscribeMutation.mutate({ groupId: getSystemGroupId() });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+  // Actions for the page header
+  const headerActions = (
+    <div className="flex items-center gap-4 flex-wrap">
+      {session && (
+        <SubscribeButton
+          isSubscribed={isSubscribed}
+          onSubscribe={handleSubscribe}
+          onUnsubscribe={handleUnsubscribe}
+          loading={
+            subscriptionLoading ||
+            subscribeMutation.isPending ||
+            unsubscribeMutation.isPending
+          }
+        />
+      )}
+      <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
+    </div>
+  );
 
-  if (notFound || !system) {
+  if (notFound) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">
-              System Not Found
-            </h1>
-          </div>
-          <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
-        </div>
+      <PageLayout
+        title="System Not Found"
+        icon={Activity}
+        actions={headerActions}
+      >
         <Card className="border-destructive/30 bg-destructive/10">
           <CardContent className="p-12 text-center">
             <p className="text-destructive">
@@ -156,35 +162,23 @@ export const SystemDetailPage: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-      </div>
+      </PageLayout>
     );
   }
 
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* System Name with Subscribe Button and Back Link */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Activity className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold text-foreground">{system.name}</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          {session && (
-            <SubscribeButton
-              isSubscribed={isSubscribed}
-              onSubscribe={handleSubscribe}
-              onUnsubscribe={handleUnsubscribe}
-              loading={
-                subscriptionLoading ||
-                subscribeMutation.isPending ||
-                unsubscribeMutation.isPending
-              }
-            />
-          )}
-          <BackLink onClick={() => navigate("/")}>Back to Dashboard</BackLink>
-        </div>
-      </div>
+  // Guard for TypeScript - PageLayout already handles loading state
+  if (!system) {
+    return;
+  }
 
+  return (
+    <PageLayout
+      title={system.name}
+      icon={Activity}
+      loading={loading}
+      actions={headerActions}
+      maxWidth="full"
+    >
       {/* Top Extension Slot for urgent items like maintenance alerts */}
       <ExtensionSlot slot={SystemDetailsTopSlot} context={{ system }} />
 
@@ -310,8 +304,7 @@ export const SystemDetailPage: React.FC = () => {
           </Card>
         )}
 
-      {/* Extension Slot for System Details */}
       <ExtensionSlot slot={SystemDetailsSlot} context={{ system }} />
-    </div>
+    </PageLayout>
   );
 };

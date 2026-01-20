@@ -151,7 +151,7 @@ function AppContent() {
             </div>
           </div>
         </header>
-        <main className="p-8 max-w-7xl mx-auto">
+        <main className="px-3 py-4 md:p-8 max-w-7xl mx-auto">
           <Routes>
             <Route
               path="/"
