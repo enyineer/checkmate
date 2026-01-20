@@ -2,6 +2,7 @@ import type {
   HealthCheckRegistry,
   Logger,
   SafeDatabase,
+  CollectorRegistry,
 } from "@checkstack/backend-api";
 import * as schema from "./schema";
 import {
@@ -13,12 +14,19 @@ import {
 } from "./schema";
 import { eq, and, lt, sql } from "drizzle-orm";
 import type { QueueManager } from "@checkstack/queue-api";
+import {
+  aggregateCollectorData,
+  calculateLatencyStats,
+  countStatuses,
+  extractLatencies,
+} from "./aggregation-utils";
 
 type Db = SafeDatabase<typeof schema>;
 
 interface RetentionJobDeps {
   db: Db;
   registry: HealthCheckRegistry;
+  collectorRegistry: CollectorRegistry;
   logger: Logger;
   queueManager: QueueManager;
 }
@@ -36,7 +44,7 @@ interface RetentionJobPayload {
  * 3. Deletes expired daily aggregates
  */
 export async function setupRetentionJob(deps: RetentionJobDeps) {
-  const { queueManager, logger, db, registry } = deps;
+  const { queueManager, logger, db, registry, collectorRegistry } = deps;
 
   const queue = queueManager.getQueue<RetentionJobPayload>(RETENTION_QUEUE);
 
@@ -44,7 +52,13 @@ export async function setupRetentionJob(deps: RetentionJobDeps) {
   await queue.consume(
     async () => {
       logger.info("Starting health check retention job");
-      await runRetentionJob({ db, registry, logger, queueManager });
+      await runRetentionJob({
+        db,
+        registry,
+        collectorRegistry,
+        logger,
+        queueManager,
+      });
       logger.info("Completed health check retention job");
     },
     { consumerGroup: "retention-worker" },
@@ -66,7 +80,7 @@ export async function setupRetentionJob(deps: RetentionJobDeps) {
  * Main retention job logic
  */
 export async function runRetentionJob(deps: RetentionJobDeps) {
-  const { db, registry, logger } = deps;
+  const { db, registry, collectorRegistry, logger } = deps;
 
   // Get all unique system-config assignments
   const assignments = await db.select().from(systemHealthChecks);
@@ -80,6 +94,7 @@ export async function runRetentionJob(deps: RetentionJobDeps) {
       await aggregateRawRuns({
         db,
         registry,
+        collectorRegistry,
         systemId: assignment.systemId,
         configurationId: assignment.configurationId,
         rawRetentionDays: retentionConfig.rawRetentionDays,
@@ -112,6 +127,7 @@ export async function runRetentionJob(deps: RetentionJobDeps) {
 interface AggregateRawRunsParams {
   db: Db;
   registry: HealthCheckRegistry;
+  collectorRegistry: CollectorRegistry;
   systemId: string;
   configurationId: string;
   rawRetentionDays: number;
@@ -121,7 +137,14 @@ interface AggregateRawRunsParams {
  * Aggregates raw runs older than retention period into hourly buckets
  */
 async function aggregateRawRuns(params: AggregateRawRunsParams) {
-  const { db, registry, systemId, configurationId, rawRetentionDays } = params;
+  const {
+    db,
+    registry,
+    collectorRegistry,
+    systemId,
+    configurationId,
+    rawRetentionDays,
+  } = params;
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - rawRetentionDays);
@@ -183,42 +206,43 @@ async function aggregateRawRuns(params: AggregateRawRunsParams) {
 
   // Create aggregates and delete raw runs
   for (const [, bucket] of buckets) {
-    // Calculate metrics
     const runCount = bucket.runs.length;
-    let healthyCount = 0;
-    let degradedCount = 0;
-    let unhealthyCount = 0;
-    for (const r of bucket.runs) {
-      if (r.status === "healthy") healthyCount++;
-      if (r.status === "degraded") degradedCount++;
-      if (r.status === "unhealthy") unhealthyCount++;
-    }
 
-    const latencies = bucket.runs
-      .map((r) => r.latencyMs)
-      .filter((l): l is number => l !== undefined);
+    // Calculate status counts
+    const { healthyCount, degradedCount, unhealthyCount } = countStatuses(
+      bucket.runs,
+    );
 
-    let avgLatencyMs: number | undefined;
-    let minLatencyMs: number | undefined;
-    let maxLatencyMs: number | undefined;
-    let p95LatencyMs: number | undefined;
+    // Calculate latency stats
+    const latencies = extractLatencies(bucket.runs);
+    const {
+      latencySumMs,
+      avgLatencyMs,
+      minLatencyMs,
+      maxLatencyMs,
+      p95LatencyMs,
+    } = calculateLatencyStats(latencies);
 
-    if (latencies.length > 0) {
-      let sum = 0;
-      for (const l of latencies) sum += l;
-      avgLatencyMs = Math.round(sum / latencies.length);
-      minLatencyMs = Math.min(...latencies);
-      maxLatencyMs = Math.max(...latencies);
-      p95LatencyMs = calculatePercentile(latencies, 95);
-    }
-
-    // Aggregate result if strategy is available
+    // Aggregate strategy result
     let aggregatedResult: Record<string, unknown> | undefined;
     if (strategy) {
-      aggregatedResult = strategy.aggregateResult(bucket.runs) as Record<
+      const strategyResult = strategy.aggregateResult(bucket.runs) as Record<
         string,
         unknown
       >;
+
+      // Aggregate collector data
+      const collectorsAggregated = aggregateCollectorData(
+        bucket.runs,
+        collectorRegistry,
+      );
+
+      aggregatedResult = {
+        ...strategyResult,
+        ...(Object.keys(collectorsAggregated).length > 0
+          ? { collectors: collectorsAggregated }
+          : {}),
+      };
     }
 
     // Insert or update aggregate
@@ -233,6 +257,7 @@ async function aggregateRawRuns(params: AggregateRawRunsParams) {
         healthyCount,
         degradedCount,
         unhealthyCount,
+        latencySumMs,
         avgLatencyMs,
         minLatencyMs,
         maxLatencyMs,
@@ -319,20 +344,23 @@ async function rollupHourlyAggregates(params: RollupParams) {
     let healthyCount = 0;
     let degradedCount = 0;
     let unhealthyCount = 0;
-    let totalWeightedLatency = 0;
+    let latencySumMs = 0;
 
     for (const a of bucket.aggregates) {
       runCount += a.runCount;
       healthyCount += a.healthyCount;
       degradedCount += a.degradedCount;
       unhealthyCount += a.unhealthyCount;
-      if (a.avgLatencyMs !== null) {
-        totalWeightedLatency += a.avgLatencyMs * a.runCount;
+      // Use latencySumMs if available, fallback to avg*count approximation
+      if (a.latencySumMs !== null) {
+        latencySumMs += a.latencySumMs;
+      } else if (a.avgLatencyMs !== null) {
+        latencySumMs += a.avgLatencyMs * a.runCount;
       }
     }
 
     const avgLatencyMs =
-      runCount > 0 ? Math.round(totalWeightedLatency / runCount) : undefined;
+      runCount > 0 ? Math.round(latencySumMs / runCount) : undefined;
 
     // Min/max across all hourly buckets
     const minValues = bucket.aggregates
@@ -341,10 +369,16 @@ async function rollupHourlyAggregates(params: RollupParams) {
     const maxValues = bucket.aggregates
       .map((a) => a.maxLatencyMs)
       .filter((v): v is number => v !== null);
+    const p95Values = bucket.aggregates
+      .map((a) => a.p95LatencyMs)
+      .filter((v): v is number => v !== null);
     const minLatencyMs =
       minValues.length > 0 ? Math.min(...minValues) : undefined;
     const maxLatencyMs =
       maxValues.length > 0 ? Math.max(...maxValues) : undefined;
+    // Use max of hourly p95s as upper bound approximation
+    const p95LatencyMs =
+      p95Values.length > 0 ? Math.max(...p95Values) : undefined;
 
     // Insert daily aggregate
     await db.insert(healthCheckAggregates).values({
@@ -356,10 +390,11 @@ async function rollupHourlyAggregates(params: RollupParams) {
       healthyCount,
       degradedCount,
       unhealthyCount,
+      latencySumMs: latencySumMs > 0 ? latencySumMs : undefined,
       avgLatencyMs,
       minLatencyMs,
       maxLatencyMs,
-      p95LatencyMs: undefined, // Cannot accurately combine p95s
+      p95LatencyMs,
       aggregatedResult: undefined, // Cannot combine result across hours
     });
 
@@ -398,10 +433,4 @@ async function deleteExpiredAggregates(params: DeleteExpiredParams) {
         lt(healthCheckAggregates.bucketStart, cutoffDate),
       ),
     );
-}
-
-function calculatePercentile(values: number[], percentile: number): number {
-  const sorted = values.toSorted((a, b) => a - b);
-  const index = Math.ceil((percentile / 100) * sorted.length) - 1;
-  return sorted[Math.max(0, index)];
 }

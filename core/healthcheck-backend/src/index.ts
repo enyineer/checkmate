@@ -2,6 +2,7 @@ import {
   setupHealthCheckWorker,
   bootstrapHealthChecks,
 } from "./queue-executor";
+import { setupRetentionJob } from "./retention-job";
 import * as schema from "./schema";
 import {
   healthCheckAccessRules,
@@ -127,6 +128,15 @@ export default createBackendPlugin({
           catalogClient,
           maintenanceClient,
           getEmitHook: () => storedEmitHook,
+        });
+
+        // Setup retention job for tiered storage (daily aggregation)
+        await setupRetentionJob({
+          db: database,
+          registry: healthCheckRegistry,
+          collectorRegistry,
+          logger,
+          queueManager,
         });
 
         const healthCheckRouter = createHealthCheckRouter(

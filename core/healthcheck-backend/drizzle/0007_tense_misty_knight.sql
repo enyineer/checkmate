@@ -1,0 +1,1 @@
+ALTER TABLE "health_check_aggregates" ADD COLUMN "latency_sum_ms" integer;

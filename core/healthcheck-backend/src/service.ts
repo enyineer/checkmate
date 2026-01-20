@@ -10,6 +10,7 @@ import {
   healthCheckConfigurations,
   systemHealthChecks,
   healthCheckRuns,
+  healthCheckAggregates,
   VersionedStateThresholds,
 } from "./schema";
 import * as schema from "./schema";
@@ -22,6 +23,15 @@ import type {
   SafeDatabase,
   CollectorRegistry,
 } from "@checkstack/backend-api";
+import {
+  aggregateCollectorData,
+  extractLatencies,
+  mergeTieredBuckets,
+  reaggregateBuckets,
+  countStatuses,
+  calculateLatencyStats,
+  type NormalizedBucket,
+} from "./aggregation-utils";
 
 // Drizzle type helper - uses SafeDatabase to prevent relational query API usage
 type Db = SafeDatabase<typeof schema>;
@@ -554,6 +564,7 @@ export class HealthCheckService {
 
   /**
    * Get aggregated health check history with dynamically-sized buckets.
+   * Queries all three tiers (raw, hourly, daily) and merges with priority.
    * Bucket interval is calculated as (endDate - startDate) / targetPoints.
    */
   async getAggregatedHistory(
@@ -581,8 +592,6 @@ export class HealthCheckService {
     const bucketIntervalSeconds = Math.round(bucketIntervalMs / 1000);
 
     // Get the configuration to find the strategy
-    // Note: Using standard select instead of relational query API
-    // as the relational API is blocked by the scoped database proxy
     const [config] = await this.db
       .select()
       .from(healthCheckConfigurations)
@@ -595,21 +604,175 @@ export class HealthCheckService {
         ? this.registry.getStrategy(config.strategyId)
         : undefined;
 
-    // Query raw runs within the date range (including result for metadata)
-    const runs = await this.db
-      .select()
-      .from(healthCheckRuns)
-      .where(
-        and(
-          eq(healthCheckRuns.systemId, systemId),
-          eq(healthCheckRuns.configurationId, configurationId),
-          gte(healthCheckRuns.timestamp, startDate),
-          lte(healthCheckRuns.timestamp, endDate),
-        ),
-      )
-      .orderBy(healthCheckRuns.timestamp);
+    // Query all three tiers in parallel
+    const [rawRuns, hourlyAggregates, dailyAggregates] = await Promise.all([
+      // Raw runs
+      this.db
+        .select()
+        .from(healthCheckRuns)
+        .where(
+          and(
+            eq(healthCheckRuns.systemId, systemId),
+            eq(healthCheckRuns.configurationId, configurationId),
+            gte(healthCheckRuns.timestamp, startDate),
+            lte(healthCheckRuns.timestamp, endDate),
+          ),
+        )
+        .orderBy(healthCheckRuns.timestamp),
+      // Hourly aggregates
+      this.db
+        .select()
+        .from(healthCheckAggregates)
+        .where(
+          and(
+            eq(healthCheckAggregates.systemId, systemId),
+            eq(healthCheckAggregates.configurationId, configurationId),
+            eq(healthCheckAggregates.bucketSize, "hourly"),
+            gte(healthCheckAggregates.bucketStart, startDate),
+            lte(healthCheckAggregates.bucketStart, endDate),
+          ),
+        )
+        .orderBy(healthCheckAggregates.bucketStart),
+      // Daily aggregates
+      this.db
+        .select()
+        .from(healthCheckAggregates)
+        .where(
+          and(
+            eq(healthCheckAggregates.systemId, systemId),
+            eq(healthCheckAggregates.configurationId, configurationId),
+            eq(healthCheckAggregates.bucketSize, "daily"),
+            gte(healthCheckAggregates.bucketStart, startDate),
+            lte(healthCheckAggregates.bucketStart, endDate),
+          ),
+        )
+        .orderBy(healthCheckAggregates.bucketStart),
+    ]);
 
-    // Group runs into buckets using dynamic interval
+    // Normalize raw runs to buckets using target interval for proper aggregation
+    // This ensures aggregatedResult is computed per target bucket, not per sub-bucket
+    const rawBuckets = this.normalizeRawRunsToBuckets({
+      runs: rawRuns,
+      bucketIntervalMs: bucketIntervalMs,
+      rangeStart: startDate,
+      strategy,
+    });
+
+    // Normalize hourly and daily aggregates to NormalizedBucket format
+    const HOURLY_MS = 60 * 60 * 1000;
+    const DAILY_MS = 24 * 60 * 60 * 1000;
+
+    const hourlyBuckets: NormalizedBucket[] = hourlyAggregates.map((agg) => ({
+      bucketStart: agg.bucketStart,
+      bucketEndMs: agg.bucketStart.getTime() + HOURLY_MS,
+      runCount: agg.runCount,
+      healthyCount: agg.healthyCount,
+      degradedCount: agg.degradedCount,
+      unhealthyCount: agg.unhealthyCount,
+      latencySumMs: agg.latencySumMs ?? undefined,
+      minLatencyMs: agg.minLatencyMs ?? undefined,
+      maxLatencyMs: agg.maxLatencyMs ?? undefined,
+      p95LatencyMs: agg.p95LatencyMs ?? undefined,
+      aggregatedResult: agg.aggregatedResult ?? undefined,
+      sourceTier: "hourly" as const,
+    }));
+
+    const dailyBuckets: NormalizedBucket[] = dailyAggregates.map((agg) => ({
+      bucketStart: agg.bucketStart,
+      bucketEndMs: agg.bucketStart.getTime() + DAILY_MS,
+      runCount: agg.runCount,
+      healthyCount: agg.healthyCount,
+      degradedCount: agg.degradedCount,
+      unhealthyCount: agg.unhealthyCount,
+      latencySumMs: agg.latencySumMs ?? undefined,
+      minLatencyMs: agg.minLatencyMs ?? undefined,
+      maxLatencyMs: agg.maxLatencyMs ?? undefined,
+      p95LatencyMs: agg.p95LatencyMs ?? undefined,
+      aggregatedResult: agg.aggregatedResult ?? undefined,
+      sourceTier: "daily" as const,
+    }));
+
+    // Merge all tiers with priority (raw > hourly > daily)
+    const mergedBuckets = mergeTieredBuckets({
+      rawBuckets,
+      hourlyBuckets,
+      dailyBuckets,
+    });
+
+    // Re-aggregate to target bucket interval
+    const targetBuckets = reaggregateBuckets({
+      sourceBuckets: mergedBuckets,
+      targetIntervalMs: bucketIntervalMs,
+      rangeStart: startDate,
+    });
+
+    // Convert to output format
+    const buckets = targetBuckets.map((bucket) => {
+      const successRate =
+        bucket.runCount > 0 ? bucket.healthyCount / bucket.runCount : 0;
+      const avgLatencyMs =
+        bucket.latencySumMs !== undefined && bucket.runCount > 0
+          ? Math.round(bucket.latencySumMs / bucket.runCount)
+          : undefined;
+
+      const baseBucket = {
+        bucketStart: bucket.bucketStart,
+        bucketIntervalSeconds,
+        runCount: bucket.runCount,
+        healthyCount: bucket.healthyCount,
+        degradedCount: bucket.degradedCount,
+        unhealthyCount: bucket.unhealthyCount,
+        successRate,
+        avgLatencyMs,
+        minLatencyMs: bucket.minLatencyMs,
+        maxLatencyMs: bucket.maxLatencyMs,
+        p95LatencyMs: bucket.p95LatencyMs,
+      };
+
+      // Include aggregatedResult if available (only from raw data)
+      if (options.includeAggregatedResult && bucket.aggregatedResult) {
+        return {
+          ...baseBucket,
+          aggregatedResult: bucket.aggregatedResult,
+        };
+      }
+
+      return baseBucket;
+    });
+
+    return { buckets, bucketIntervalSeconds };
+  }
+
+  /**
+   * Normalize raw runs into buckets for merging with aggregate tiers.
+   */
+  private normalizeRawRunsToBuckets(params: {
+    runs: Array<{
+      id: string;
+      status: "healthy" | "unhealthy" | "degraded";
+      timestamp: Date;
+      latencyMs: number | null;
+      result: Record<string, unknown> | null;
+    }>;
+    bucketIntervalMs: number;
+    rangeStart: Date;
+    strategy?: {
+      aggregateResult: (
+        runs: Array<{
+          status: "healthy" | "unhealthy" | "degraded";
+          latencyMs?: number;
+          metadata?: unknown;
+        }>,
+      ) => unknown;
+    };
+  }): NormalizedBucket[] {
+    const { runs, bucketIntervalMs, rangeStart, strategy } = params;
+
+    if (runs.length === 0) {
+      return [];
+    }
+
+    // Group runs by bucket
     const bucketMap = new Map<
       string,
       {
@@ -625,7 +788,7 @@ export class HealthCheckService {
     for (const run of runs) {
       const bucketStart = this.getBucketStartDynamic(
         run.timestamp,
-        startDate,
+        rangeStart,
         bucketIntervalMs,
       );
       const key = bucketStart.toISOString();
@@ -633,11 +796,11 @@ export class HealthCheckService {
       if (!bucketMap.has(key)) {
         bucketMap.set(key, { bucketStart, runs: [] });
       }
-      // run.result is StoredHealthCheckResult: { status, latencyMs, message, metadata }
-      // Strategy's aggregateResult expects metadata to be the strategy-specific fields
+
       const storedResult = run.result as {
         metadata?: Record<string, unknown>;
       } | null;
+
       bucketMap.get(key)!.runs.push({
         status: run.status,
         latencyMs: run.latencyMs ?? undefined,
@@ -645,82 +808,56 @@ export class HealthCheckService {
       });
     }
 
-    // Calculate metrics for each bucket
-    const buckets = [...bucketMap.values()].map((bucket) => {
-      const runCount = bucket.runs.length;
-      const healthyCount = bucket.runs.filter(
-        (r) => r.status === "healthy",
-      ).length;
-      const degradedCount = bucket.runs.filter(
-        (r) => r.status === "degraded",
-      ).length;
-      const unhealthyCount = bucket.runs.filter(
-        (r) => r.status === "unhealthy",
-      ).length;
-      const successRate = runCount > 0 ? healthyCount / runCount : 0;
+    // Convert to NormalizedBucket format
+    const result: NormalizedBucket[] = [];
 
-      const latencies = bucket.runs
-        .map((r) => r.latencyMs)
-        .filter((l): l is number => typeof l === "number");
-      const avgLatencyMs =
-        latencies.length > 0
-          ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)
-          : undefined;
-      const minLatencyMs =
-        latencies.length > 0 ? Math.min(...latencies) : undefined;
-      const maxLatencyMs =
-        latencies.length > 0 ? Math.max(...latencies) : undefined;
-      const p95LatencyMs =
-        latencies.length > 0
-          ? this.calculatePercentile(latencies, 95)
-          : undefined;
+    for (const [, bucket] of bucketMap) {
+      const { healthyCount, degradedCount, unhealthyCount } = countStatuses(
+        bucket.runs,
+      );
+      const latencies = extractLatencies(bucket.runs);
+      const latencyStats = calculateLatencyStats(latencies);
 
-      // Build base bucket (always included)
-      const baseBucket = {
-        bucketStart: bucket.bucketStart,
-        bucketIntervalSeconds,
-        runCount,
-        healthyCount,
-        degradedCount,
-        unhealthyCount,
-        successRate,
-        avgLatencyMs,
-        minLatencyMs,
-        maxLatencyMs,
-        p95LatencyMs,
-      };
-
-      // Only include aggregatedResult if requested and strategy is available
-      if (options.includeAggregatedResult && strategy) {
-        // Aggregate collector data if collector registry is available
-        let collectorsAggregated: Record<string, unknown> | undefined;
-        if (this.collectorRegistry) {
-          collectorsAggregated = this.aggregateCollectorData(
-            bucket.runs,
-            this.collectorRegistry,
-          );
-        }
-
+      // Compute aggregatedResult if strategy is available
+      let aggregatedResult: Record<string, unknown> | undefined;
+      if (strategy) {
         const strategyResult = strategy.aggregateResult(bucket.runs) as Record<
           string,
           unknown
         >;
 
-        return {
-          ...baseBucket,
-          aggregatedResult: {
-            ...strategyResult,
-            ...(collectorsAggregated
-              ? { collectors: collectorsAggregated }
-              : {}),
-          },
+        // Aggregate collector data if collector registry is available
+        let collectorsAggregated: Record<string, unknown> | undefined;
+        if (this.collectorRegistry) {
+          collectorsAggregated = aggregateCollectorData(
+            bucket.runs,
+            this.collectorRegistry,
+          );
+        }
+
+        aggregatedResult = {
+          ...strategyResult,
+          ...(collectorsAggregated ? { collectors: collectorsAggregated } : {}),
         };
       }
 
-      return baseBucket;
-    });
+      result.push({
+        bucketStart: bucket.bucketStart,
+        bucketEndMs: bucket.bucketStart.getTime() + bucketIntervalMs,
+        runCount: bucket.runs.length,
+        healthyCount,
+        degradedCount,
+        unhealthyCount,
+        latencySumMs: latencyStats.latencySumMs,
+        minLatencyMs: latencyStats.minLatencyMs,
+        maxLatencyMs: latencyStats.maxLatencyMs,
+        p95LatencyMs: latencyStats.p95LatencyMs,
+        aggregatedResult,
+        sourceTier: "raw",
+      });
+    }
 
-    return { buckets, bucketIntervalSeconds };
+    return result;
   }
 
   /**
@@ -735,74 +872,6 @@ export class HealthCheckService {
     const offsetMs = timestamp.getTime() - rangeStart.getTime();
     const bucketIndex = Math.floor(offsetMs / intervalMs);
     return new Date(rangeStart.getTime() + bucketIndex * intervalMs);
-  }
-
-  private calculatePercentile(values: number[], percentile: number): number {
-    const sorted = values.toSorted((a, b) => a - b);
-    const index = Math.ceil((percentile / 100) * sorted.length) - 1;
-    return sorted[Math.max(0, index)];
-  }
-
-  /**
-   * Aggregate collector data from runs in a bucket.
-   * Groups by collector UUID and calls each collector's aggregateResult.
-   */
-  private aggregateCollectorData(
-    runs: Array<{
-      status: string;
-      latencyMs?: number;
-      metadata?: Record<string, unknown>;
-    }>,
-    collectorRegistry: CollectorRegistry,
-  ): Record<string, unknown> {
-    // Group collector data by UUID
-    const collectorDataByUuid = new Map<
-      string,
-      { collectorId: string; metadata: Record<string, unknown>[] }
-    >();
-
-    for (const run of runs) {
-      const collectors = run.metadata?.collectors as
-        | Record<string, Record<string, unknown>>
-        | undefined;
-      if (!collectors) continue;
-
-      for (const [uuid, data] of Object.entries(collectors)) {
-        const collectorId = data._collectorId as string | undefined;
-        if (!collectorId) continue;
-
-        if (!collectorDataByUuid.has(uuid)) {
-          collectorDataByUuid.set(uuid, { collectorId, metadata: [] });
-        }
-
-        // Add metadata without internal fields
-        const { _collectorId, _assertionFailed, ...rest } = data;
-        collectorDataByUuid.get(uuid)!.metadata.push(rest);
-      }
-    }
-
-    // Call aggregateResult for each collector
-    const result: Record<string, unknown> = {};
-
-    for (const [uuid, { collectorId, metadata }] of collectorDataByUuid) {
-      const registered = collectorRegistry.getCollector(collectorId);
-      if (!registered?.collector.aggregateResult) continue;
-
-      // Transform metadata to the format expected by aggregateResult
-      const runsForAggregation = metadata.map((m) => ({
-        status: "healthy" as const, // Placeholder, collector uses metadata
-        metadata: m,
-      }));
-
-      const aggregated =
-        registered.collector.aggregateResult(runsForAggregation);
-      result[uuid] = {
-        _collectorId: collectorId,
-        ...aggregated,
-      };
-    }
-
-    return result;
   }
 
   private mapConfig(

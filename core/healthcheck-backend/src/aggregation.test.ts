@@ -9,21 +9,43 @@ describe("HealthCheckService.getAggregatedHistory", () => {
   // Store mock data for different queries
   let mockConfigResult: { id: string; strategyId: string } | null = null;
   let mockRunsResult: unknown[] = [];
+  let mockHourlyAggregates: unknown[] = [];
+  let mockDailyAggregates: unknown[] = [];
+  let selectCallCount = 0;
 
   function createMockDb() {
-    // Create a mock that handles both config queries (with limit) and runs queries (with orderBy)
-    const createSelectChain = () => ({
-      from: mock(() => ({
-        where: mock(() => ({
-          // For config query: uses .limit(1)
-          limit: mock(() =>
-            Promise.resolve(mockConfigResult ? [mockConfigResult] : []),
-          ),
-          // For runs query: uses .orderBy()
-          orderBy: mock(() => Promise.resolve(mockRunsResult)),
+    // Reset call counter on creation
+    selectCallCount = 0;
+
+    // Create a mock that handles:
+    // 1. Config query (uses limit(1))
+    // 2. Raw runs query (first orderBy after where)
+    // 3. Hourly aggregates query (second orderBy after where)
+    // 4. Daily aggregates query (third orderBy after where)
+    const createSelectChain = () => {
+      const currentCall = selectCallCount++;
+
+      return {
+        from: mock(() => ({
+          where: mock(() => ({
+            // For config query: uses .limit(1)
+            limit: mock(() =>
+              Promise.resolve(mockConfigResult ? [mockConfigResult] : []),
+            ),
+            // For runs/aggregates queries: uses .orderBy()
+            orderBy: mock(() => {
+              // Call 1: raw runs, Call 2: hourly, Call 3: daily
+              if (currentCall === 1) return Promise.resolve(mockRunsResult);
+              if (currentCall === 2)
+                return Promise.resolve(mockHourlyAggregates);
+              if (currentCall === 3)
+                return Promise.resolve(mockDailyAggregates);
+              return Promise.resolve([]);
+            }),
+          })),
         })),
-      })),
-    });
+      };
+    };
 
     return {
       select: mock(createSelectChain),
@@ -52,6 +74,8 @@ describe("HealthCheckService.getAggregatedHistory", () => {
     // Reset mock data
     mockConfigResult = null;
     mockRunsResult = [];
+    mockHourlyAggregates = [];
+    mockDailyAggregates = [];
     mockDb = createMockDb();
     mockRegistry = createMockRegistry();
     service = new HealthCheckService(mockDb as never, mockRegistry as never);
@@ -413,9 +437,12 @@ describe("HealthCheckService.getAggregatedHistory", () => {
       mockRunsResult = runs;
       mockConfigResult = { id: "config-1", strategyId: "http" };
 
+      // Create a fresh mock db for this test (resets call counter)
+      const freshMockDb = createMockDb();
+
       // Create service with mock collector registry
       const serviceWithCollectors = new HealthCheckService(
-        mockDb as never,
+        freshMockDb as never,
         mockRegistry as never,
         mockCollectorRegistry as never,
       );

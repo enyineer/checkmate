@@ -47,7 +47,7 @@ export const healthCheckConfigurations = pgTable(
     isTemplate: boolean("is_template").default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  }
+  },
 );
 
 /**
@@ -93,7 +93,7 @@ export const systemHealthChecks = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.systemId, t.configurationId] }),
-  })
+  }),
 );
 
 export const healthCheckRuns = pgTable("health_check_runs", {
@@ -137,6 +137,8 @@ export const healthCheckAggregates = pgTable(
     healthyCount: integer("healthy_count").notNull(),
     degradedCount: integer("degraded_count").notNull(),
     unhealthyCount: integer("unhealthy_count").notNull(),
+    /** Sum of all latencies in this bucket (for accurate averaging when combining) */
+    latencySumMs: integer("latency_sum_ms"),
     avgLatencyMs: integer("avg_latency_ms"),
     minLatencyMs: integer("min_latency_ms"),
     maxLatencyMs: integer("max_latency_ms"),
@@ -152,7 +154,7 @@ export const healthCheckAggregates = pgTable(
       t.configurationId,
       t.systemId,
       t.bucketStart,
-      t.bucketSize
+      t.bucketSize,
     ),
-  })
+  }),
 );

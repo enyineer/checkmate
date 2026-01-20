@@ -23,6 +23,27 @@ function formatDuration(seconds: number): string {
 }
 
 /**
+ * Get resolution tier label based on bucket interval.
+ */
+function getResolutionTier(
+  bucketIntervalSeconds: number,
+): "high" | "medium" | "low" {
+  if (bucketIntervalSeconds >= 86_400) {
+    return "low"; // Daily aggregates
+  }
+  if (bucketIntervalSeconds >= 3600) {
+    return "medium"; // Hourly aggregates
+  }
+  return "high"; // Raw data
+}
+
+const TIER_LABELS: Record<"high" | "medium" | "low", string> = {
+  high: "High resolution",
+  medium: "Medium resolution",
+  low: "Low resolution",
+};
+
+/**
  * Banner shown when viewing aggregated health check data.
  * Informs users about the aggregation level due to high data volume.
  */
@@ -35,10 +56,12 @@ export function AggregatedDataBanner({
     return;
   }
 
+  const tier = getResolutionTier(bucketIntervalSeconds);
+
   return (
     <InfoBanner variant="info">
-      Data is aggregated into {formatDuration(bucketIntervalSeconds)} intervals
-      for performance.
+      {TIER_LABELS[tier]} • Data aggregated into{" "}
+      {formatDuration(bucketIntervalSeconds)} intervals
     </InfoBanner>
   );
 }
