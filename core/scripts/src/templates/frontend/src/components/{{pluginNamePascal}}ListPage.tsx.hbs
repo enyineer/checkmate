@@ -1,8 +1,9 @@
 import { usePluginClient } from "@checkstack/frontend-api";
 import { {{pluginNamePascal}}Api } from "@checkstack/{{pluginBaseName}}-common";
 import type { {{pluginNamePascal}}Item } from "../api";
-import { Button, Card } from "@checkstack/ui";
+import { Button, Card, PageLayout } from "@checkstack/ui";
 import { useNavigate } from "react-router-dom";
+import { Boxes } from "lucide-react";
 
 export const {{pluginNamePascal}}ListPage = () => {
   const client = usePluginClient({{pluginNamePascal}}Api);
@@ -22,18 +23,25 @@ export const {{pluginNamePascal}}ListPage = () => {
     deleteMutation.mutate({ id });
   };
 
-  if (isLoading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error.message}</div>;
+  if (error) {
+    return (
+      <PageLayout title="{{pluginNamePascal}}" icon={Boxes}>
+        <div className="text-destructive">Error: {error.message}</div>
+      </PageLayout>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">{{pluginNamePascal}} Items</h1>
+    <PageLayout
+      title="{{pluginNamePascal}}"
+      icon={Boxes}
+      loading={isLoading}
+      actions={
         <Button onClick={() => navigate("/{{pluginBaseName}}/new")}>
           Create Item
         </Button>
-      </div>
-
+      }
+    >
       <div className="grid gap-4">
         {items.map((item: {{pluginNamePascal}}Item) => (
           <Card key={item.id} className="p-4">
@@ -41,7 +49,7 @@ export const {{pluginNamePascal}}ListPage = () => {
               <div>
                 <h3 className="font-semibold">{item.name}</h3>
                 {item.description && (
-                  <p className="text-sm text-gray-600">{item.description}</p>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
                 )}
               </div>
               <div className="flex gap-2">
@@ -66,11 +74,11 @@ export const {{pluginNamePascal}}ListPage = () => {
         ))}
 
         {items.length === 0 && (
-          <Card className="p-8 text-center text-gray-500">
+          <Card className="p-8 text-center text-muted-foreground">
             No items yet. Create your first item to get started.
           </Card>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 };
