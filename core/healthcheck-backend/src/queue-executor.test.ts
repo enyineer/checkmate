@@ -285,4 +285,116 @@ describe("Queue-Based Health Check Executor", () => {
       );
     });
   });
+
+  describe("executeHealthCheckJob - paused behavior", () => {
+    it("should skip execution when configuration is paused", async () => {
+      const mockDb = createMockDb();
+      const mockRegistry = createMockRegistry();
+      const mockLogger = createMockLogger();
+      const mockQueueManager = createMockQueueManager();
+      const mockCatalogClient = createMockCatalogClient();
+      const mockMaintenanceClient = createMockMaintenanceClient();
+      const mockIncidentClient = createMockIncidentClient();
+      const mockSignalService = createMockSignalService();
+
+      // Mock the database to return a paused configuration
+      let selectCallCount = 0;
+      (mockDb.select as any) = mock(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          // First call: get previous system health status
+          return {
+            from: mock(() => ({
+              innerJoin: mock(() => ({
+                where: mock(() => Promise.resolve([])),
+              })),
+            })),
+          };
+        } else if (selectCallCount === 2) {
+          // Second call: fetch configuration (return paused config)
+          return {
+            from: mock(() => ({
+              innerJoin: mock(() => ({
+                where: mock(() =>
+                  Promise.resolve([
+                    {
+                      configId: "config-1",
+                      configName: "Test Check",
+                      strategyId: "test-strategy",
+                      config: {},
+                      collectors: [],
+                      interval: 30,
+                      enabled: true,
+                      paused: true, // Configuration is paused
+                    },
+                  ]),
+                ),
+              })),
+            })),
+          };
+        }
+        // Default
+        return {
+          from: mock(() => ({
+            innerJoin: mock(() => ({
+              where: mock(() => Promise.resolve([])),
+            })),
+          })),
+        };
+      });
+
+      // Setup worker and get handler
+      const queue =
+        mockQueueManager.getQueue<HealthCheckJobPayload>("health-checks");
+      let capturedHandler:
+        | ((job: { data: HealthCheckJobPayload }) => Promise<void>)
+        | undefined;
+      (queue.consume as any) = mock(
+        async (
+          handler: (job: { data: HealthCheckJobPayload }) => Promise<void>,
+        ) => {
+          capturedHandler = handler;
+        },
+      );
+
+      await setupHealthCheckWorker({
+        db: mockDb as unknown as Parameters<
+          typeof setupHealthCheckWorker
+        >[0]["db"],
+        registry: mockRegistry,
+        collectorRegistry:
+          createMockCollectorRegistry() as unknown as Parameters<
+            typeof setupHealthCheckWorker
+          >[0]["collectorRegistry"],
+        logger: mockLogger,
+        queueManager: mockQueueManager,
+        signalService: mockSignalService,
+        catalogClient: mockCatalogClient as unknown as Parameters<
+          typeof setupHealthCheckWorker
+        >[0]["catalogClient"],
+        maintenanceClient: mockMaintenanceClient as unknown as Parameters<
+          typeof setupHealthCheckWorker
+        >[0]["maintenanceClient"],
+        incidentClient: mockIncidentClient as unknown as Parameters<
+          typeof setupHealthCheckWorker
+        >[0]["incidentClient"],
+        getEmitHook: () => undefined,
+      });
+
+      // Execute a paused health check
+      if (capturedHandler) {
+        await capturedHandler({
+          data: { configId: "config-1", systemId: "system-1" },
+        });
+      }
+
+      // Verify execution was skipped with appropriate log
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringContaining("is paused, skipping execution"),
+      );
+
+      // Verify no signal was broadcast (since execution was skipped)
+      expect(mockSignalService.getRecordedSignals()).toHaveLength(0);
+    });
+  });
 });

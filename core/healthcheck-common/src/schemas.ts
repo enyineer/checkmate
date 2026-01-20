@@ -81,6 +81,8 @@ export const HealthCheckConfigurationSchema = z.object({
   intervalSeconds: z.number(),
   /** Optional collector configurations */
   collectors: z.array(CollectorConfigEntrySchema).optional(),
+  /** Whether this configuration is paused (execution skipped for all systems) */
+  paused: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

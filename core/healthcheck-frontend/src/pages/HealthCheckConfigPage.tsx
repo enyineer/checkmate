@@ -100,6 +100,24 @@ const HealthCheckConfigPageContent = () => {
     },
   });
 
+  const pauseMutation = healthCheckClient.pauseConfiguration.useMutation({
+    onSuccess: () => {
+      void refetchConfigurations();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to pause");
+    },
+  });
+
+  const resumeMutation = healthCheckClient.resumeConfiguration.useMutation({
+    onSuccess: () => {
+      void refetchConfigurations();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Failed to resume");
+    },
+  });
+
   const handleCreate = () => {
     setEditingConfig(undefined);
     setIsEditorOpen(true);
@@ -160,6 +178,9 @@ const HealthCheckConfigPageContent = () => {
         strategies={strategies}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onPause={(id) => pauseMutation.mutate(id)}
+        onResume={(id) => resumeMutation.mutate(id)}
+        canManage={canManage}
       />
 
       <HealthCheckEditor

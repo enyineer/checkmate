@@ -11,14 +11,18 @@ import {
   TableHeader,
   TableRow,
   Button,
+  Badge,
 } from "@checkstack/ui";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, Pause, Play } from "lucide-react";
 
 interface HealthCheckListProps {
   configurations: HealthCheckConfiguration[];
   strategies: HealthCheckStrategyDto[];
   onEdit: (config: HealthCheckConfiguration) => void;
   onDelete: (id: string) => void;
+  onPause?: (id: string) => void;
+  onResume?: (id: string) => void;
+  canManage?: boolean;
 }
 
 export const HealthCheckList: React.FC<HealthCheckListProps> = ({
@@ -26,6 +30,9 @@ export const HealthCheckList: React.FC<HealthCheckListProps> = ({
   strategies,
   onEdit,
   onDelete,
+  onPause,
+  onResume,
+  canManage = true,
 }) => {
   const getStrategyName = (id: string) => {
     return strategies.find((s) => s.id === id)?.displayName || id;
@@ -39,24 +46,57 @@ export const HealthCheckList: React.FC<HealthCheckListProps> = ({
             <TableHead>Name</TableHead>
             <TableHead>Strategy</TableHead>
             <TableHead>Interval (s)</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {configurations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="h-24 text-center">
+              <TableCell colSpan={5} className="h-24 text-center">
                 No health checks configured.
               </TableCell>
             </TableRow>
           ) : (
             configurations.map((config) => (
-              <TableRow key={config.id}>
+              <TableRow
+                key={config.id}
+                className={config.paused ? "opacity-60" : ""}
+              >
                 <TableCell className="font-medium">{config.name}</TableCell>
                 <TableCell>{getStrategyName(config.strategyId)}</TableCell>
                 <TableCell>{config.intervalSeconds}</TableCell>
+                <TableCell>
+                  {config.paused ? (
+                    <Badge variant="secondary">Paused</Badge>
+                  ) : (
+                    <Badge variant="default">Active</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    {canManage &&
+                      onPause &&
+                      onResume &&
+                      (config.paused ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onResume(config.id)}
+                          title="Resume health check"
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onPause(config.id)}
+                          title="Pause health check"
+                        >
+                          <Pause className="h-4 w-4" />
+                        </Button>
+                      ))}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -64,14 +104,16 @@ export const HealthCheckList: React.FC<HealthCheckListProps> = ({
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => onDelete(config.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {canManage && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => onDelete(config.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

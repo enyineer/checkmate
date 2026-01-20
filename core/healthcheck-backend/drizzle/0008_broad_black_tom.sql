@@ -1,0 +1,1 @@
+ALTER TABLE "health_check_configurations" ADD COLUMN "paused" boolean DEFAULT false NOT NULL;

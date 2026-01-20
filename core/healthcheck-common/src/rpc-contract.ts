@@ -99,6 +99,22 @@ export const healthCheckContract = {
     .input(z.string())
     .output(z.void()),
 
+  pauseConfiguration: proc({
+    operationType: "mutation",
+    userType: "authenticated",
+    access: [healthCheckAccess.configuration.manage],
+  })
+    .input(z.string())
+    .output(z.void()),
+
+  resumeConfiguration: proc({
+    operationType: "mutation",
+    userType: "authenticated",
+    access: [healthCheckAccess.configuration.manage],
+  })
+    .input(z.string())
+    .output(z.void()),
+
   // ==========================================================================
   // SYSTEM ASSOCIATION (userType: "authenticated")
   // ==========================================================================

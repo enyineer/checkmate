@@ -105,6 +105,14 @@ export const createHealthCheckRouter = (
       await service.deleteConfiguration(input);
     }),
 
+    pauseConfiguration: os.pauseConfiguration.handler(async ({ input }) => {
+      await service.pauseConfiguration(input);
+    }),
+
+    resumeConfiguration: os.resumeConfiguration.handler(async ({ input }) => {
+      await service.resumeConfiguration(input);
+    }),
+
     getSystemConfigurations: os.getSystemConfigurations.handler(
       async ({ input }) => {
         return service.getSystemConfigurations(input);

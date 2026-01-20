@@ -105,6 +105,20 @@ export class HealthCheckService {
       .where(eq(healthCheckConfigurations.id, id));
   }
 
+  async pauseConfiguration(id: string): Promise<void> {
+    await this.db
+      .update(healthCheckConfigurations)
+      .set({ paused: true, updatedAt: new Date() })
+      .where(eq(healthCheckConfigurations.id, id));
+  }
+
+  async resumeConfiguration(id: string): Promise<void> {
+    await this.db
+      .update(healthCheckConfigurations)
+      .set({ paused: false, updatedAt: new Date() })
+      .where(eq(healthCheckConfigurations.id, id));
+  }
+
   async getConfigurations(): Promise<HealthCheckConfiguration[]> {
     const configs = await this.db.select().from(healthCheckConfigurations);
     return configs.map((c) => this.mapConfig(c));
@@ -884,6 +898,7 @@ export class HealthCheckService {
       config: row.config,
       collectors: row.collectors ?? undefined,
       intervalSeconds: row.intervalSeconds,
+      paused: row.paused,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

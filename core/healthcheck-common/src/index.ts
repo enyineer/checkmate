@@ -28,6 +28,7 @@ export interface HealthCheckConfiguration {
   config: Record<string, unknown>;
   intervalSeconds: number;
   collectors?: CollectorConfigEntry[];
+  paused: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,5 +59,5 @@ export const HEALTH_CHECK_RUN_COMPLETED = createSignal(
     configurationName: z.string(),
     status: z.enum(["healthy", "degraded", "unhealthy"]),
     latencyMs: z.number().optional(),
-  })
+  }),
 );

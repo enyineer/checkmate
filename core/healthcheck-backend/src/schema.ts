@@ -45,6 +45,8 @@ export const healthCheckConfigurations = pgTable(
     collectors: jsonb("collectors").$type<CollectorConfigEntry[]>(),
     intervalSeconds: integer("interval_seconds").notNull(),
     isTemplate: boolean("is_template").default(false),
+    /** Whether this configuration is paused (execution skipped for all systems) */
+    paused: boolean("paused").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

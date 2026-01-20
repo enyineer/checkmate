@@ -253,6 +253,7 @@ async function executeHealthCheckJob(props: {
         collectors: healthCheckConfigurations.collectors,
         interval: healthCheckConfigurations.intervalSeconds,
         enabled: systemHealthChecks.enabled,
+        paused: healthCheckConfigurations.paused,
       })
       .from(systemHealthChecks)
       .innerJoin(
@@ -271,6 +272,14 @@ async function executeHealthCheckJob(props: {
     if (!configRow) {
       logger.debug(
         `Health check ${configId} for system ${systemId} not found or disabled, not rescheduling`,
+      );
+      return;
+    }
+
+    // If configuration is paused, skip execution (job continues to be scheduled)
+    if (configRow.paused) {
+      logger.debug(
+        `Health check ${configId} is paused, skipping execution for system ${systemId}`,
       );
       return;
     }
