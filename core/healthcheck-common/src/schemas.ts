@@ -280,6 +280,8 @@ export const DEFAULT_RETENTION_CONFIG: RetentionConfig = {
  */
 export const AggregatedBucketBaseSchema = z.object({
   bucketStart: z.date(),
+  /** Actual end time of this bucket (may differ from start + interval for the last bucket) */
+  bucketEnd: z.date(),
   /** @deprecated Use bucketIntervalSeconds instead. Kept for backward compatibility. */
   bucketSize: z.enum(["hourly", "daily"]).optional(),
   /** Bucket interval in seconds (e.g., 7 for 7-second buckets) */

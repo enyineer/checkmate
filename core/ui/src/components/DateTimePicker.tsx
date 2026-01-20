@@ -10,6 +10,8 @@ export interface DateTimePickerProps {
   onChange: (date: Date | undefined) => void;
   minDate?: Date;
   maxDate?: Date;
+  /** Disable all interactions */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -37,6 +39,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   onChange,
   minDate,
   maxDate,
+  disabled = false,
   className,
 }) => {
   const isValidDate = value instanceof Date && !Number.isNaN(value.getTime());
@@ -258,6 +261,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               size="icon"
               className="h-9 w-9 rounded-none border-r"
               type="button"
+              disabled={disabled}
             >
               <Calendar className="h-4 w-4" />
             </Button>
@@ -271,8 +275,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               onChange={(e) => handleFieldChange("day", e.target.value)}
               onBlur={() => handleFieldBlur("day")}
               placeholder="DD"
-              className="w-7 text-center bg-transparent border-none outline-none text-sm font-mono"
+              className="w-7 text-center bg-transparent border-none outline-none text-sm font-mono disabled:opacity-50"
               maxLength={2}
+              disabled={disabled}
             />
             <span className="text-muted-foreground">/</span>
             <input
@@ -282,8 +287,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               onChange={(e) => handleFieldChange("month", e.target.value)}
               onBlur={() => handleFieldBlur("month")}
               placeholder="MM"
-              className="w-7 text-center bg-transparent border-none outline-none text-sm font-mono"
+              className="w-7 text-center bg-transparent border-none outline-none text-sm font-mono disabled:opacity-50"
               maxLength={2}
+              disabled={disabled}
             />
             <span className="text-muted-foreground">/</span>
             <input
@@ -293,8 +299,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               onChange={(e) => handleFieldChange("year", e.target.value)}
               onBlur={() => handleFieldBlur("year")}
               placeholder="YYYY"
-              className="w-11 text-center bg-transparent border-none outline-none text-sm font-mono"
+              className="w-11 text-center bg-transparent border-none outline-none text-sm font-mono disabled:opacity-50"
               maxLength={4}
+              disabled={disabled}
             />
           </div>
 
@@ -337,8 +344,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             onChange={(e) => handleFieldChange("hour", e.target.value)}
             onBlur={() => handleFieldBlur("hour")}
             placeholder="HH"
-            className="w-6 text-center bg-transparent border-none outline-none text-sm font-mono"
+            className="w-6 text-center bg-transparent border-none outline-none text-sm font-mono disabled:opacity-50"
             maxLength={2}
+            disabled={disabled}
           />
           <span className="text-muted-foreground">:</span>
           <input
@@ -348,8 +356,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             onChange={(e) => handleFieldChange("minute", e.target.value)}
             onBlur={() => handleFieldBlur("minute")}
             placeholder="MM"
-            className="w-6 text-center bg-transparent border-none outline-none text-sm font-mono"
+            className="w-6 text-center bg-transparent border-none outline-none text-sm font-mono disabled:opacity-50"
             maxLength={2}
+            disabled={disabled}
           />
         </div>
       </div>

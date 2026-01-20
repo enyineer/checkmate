@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { subDays, subHours, startOfDay } from "date-fns";
+import { subDays, subHours } from "date-fns";
 import { DateTimePicker } from "./DateTimePicker";
 import { Button } from "./Button";
 import { Calendar } from "lucide-react";
@@ -18,7 +18,12 @@ export enum DateRangePreset {
 
 export interface DateRangeFilterProps {
   value: DateRange;
+  /** Called when a preset is clicked (immediate) */
   onChange: (range: DateRange) => void;
+  /** Optional: Called when custom date picker values change (for debounced Apply pattern) */
+  onCustomChange?: (range: DateRange) => void;
+  /** Disable all interactions (buttons and date pickers) */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -40,13 +45,13 @@ export function getPresetRange(preset: DateRangePreset): DateRange {
       return { startDate: subHours(now, 24), endDate: now };
     }
     case DateRangePreset.Last7Days: {
-      return { startDate: startOfDay(subDays(now, 7)), endDate: now };
+      return { startDate: subDays(now, 7), endDate: now };
     }
     case DateRangePreset.Last30Days: {
-      return { startDate: startOfDay(subDays(now, 30)), endDate: now };
+      return { startDate: subDays(now, 30), endDate: now };
     }
     case DateRangePreset.Custom: {
-      return { startDate: startOfDay(subDays(now, 7)), endDate: now };
+      return { startDate: subDays(now, 7), endDate: now };
     }
   }
 }
@@ -69,6 +74,8 @@ function detectPreset(range: DateRange): DateRangePreset {
 export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   value,
   onChange,
+  onCustomChange,
+  disabled = false,
   className,
 }) => {
   const activePreset = useMemo(() => detectPreset(value), [value]);
@@ -77,6 +84,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   );
 
   const handlePresetClick = (preset: DateRangePreset) => {
+    if (disabled) return;
     if (preset === DateRangePreset.Custom) {
       setShowCustom(true);
     } else {
@@ -85,11 +93,17 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
     }
   };
 
+  // Use onCustomChange if provided, otherwise fall back to onChange
+  const handleCustomDateChange = onCustomChange ?? onChange;
+
+  // Validate date range
+  const isInvalidRange = showCustom && value.startDate >= value.endDate;
+
   return (
-    <div className={`space-y-3 ${className ?? ""}`}>
+    <div className={className}>
       <div className="flex items-center gap-2 flex-wrap">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium text-muted-foreground">
+        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-medium text-muted-foreground shrink-0">
           Time range:
         </span>
         <div className="flex gap-1 flex-wrap">
@@ -105,38 +119,73 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
               }
               size="sm"
               onClick={() => handlePresetClick(preset.id)}
+              disabled={disabled}
             >
               <span className="sm:hidden">{preset.shortLabel}</span>
               <span className="hidden sm:inline">{preset.label}</span>
             </Button>
           ))}
         </div>
+        {showCustom && (
+          <>
+            <div className="w-px h-5 bg-border hidden sm:block" />
+            {/* Desktop: inline with right arrow */}
+            <div className="hidden sm:flex items-center gap-2">
+              <DateTimePicker
+                value={value.startDate}
+                onChange={(startDate) => {
+                  if (startDate && !disabled) {
+                    handleCustomDateChange({ ...value, startDate });
+                  }
+                }}
+                maxDate={value.endDate}
+                disabled={disabled}
+              />
+              <span className="text-sm text-muted-foreground">→</span>
+              <DateTimePicker
+                value={value.endDate}
+                onChange={(endDate) => {
+                  if (endDate && !disabled) {
+                    handleCustomDateChange({ ...value, endDate });
+                  }
+                }}
+                minDate={value.startDate}
+                maxDate={new Date()}
+                disabled={disabled}
+              />
+            </div>
+            {/* Mobile: stacked vertically with down arrow, centered */}
+            <div className="flex sm:hidden flex-col items-center gap-1 w-full">
+              <DateTimePicker
+                value={value.startDate}
+                onChange={(startDate) => {
+                  if (startDate && !disabled) {
+                    handleCustomDateChange({ ...value, startDate });
+                  }
+                }}
+                maxDate={value.endDate}
+                disabled={disabled}
+              />
+              <span className="text-sm text-muted-foreground">↓</span>
+              <DateTimePicker
+                value={value.endDate}
+                onChange={(endDate) => {
+                  if (endDate && !disabled) {
+                    handleCustomDateChange({ ...value, endDate });
+                  }
+                }}
+                minDate={value.startDate}
+                maxDate={new Date()}
+                disabled={disabled}
+              />
+            </div>
+          </>
+        )}
       </div>
-
-      {showCustom && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground">From:</span>
-          <DateTimePicker
-            value={value.startDate}
-            onChange={(startDate) => {
-              if (startDate) {
-                onChange({ ...value, startDate });
-              }
-            }}
-            maxDate={value.endDate}
-          />
-          <span className="text-sm text-muted-foreground">To:</span>
-          <DateTimePicker
-            value={value.endDate}
-            onChange={(endDate) => {
-              if (endDate) {
-                onChange({ ...value, endDate });
-              }
-            }}
-            minDate={value.startDate}
-            maxDate={new Date()}
-          />
-        </div>
+      {isInvalidRange && (
+        <p className="text-sm text-destructive mt-2">
+          Start date must be before end date
+        </p>
       )}
     </div>
   );

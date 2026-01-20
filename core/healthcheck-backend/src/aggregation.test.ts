@@ -476,4 +476,386 @@ describe("HealthCheckService.getAggregatedHistory", () => {
       expect(collectorData.successRate).toBe(100);
     });
   });
+
+  describe("recent runs near endDate - edge case for live data", () => {
+    /**
+     * This test suite verifies that runs occurring close to the query endDate
+     * are properly included in the last bucket. This is critical for real-time
+     * dashboards where users expect to see data up to "now".
+     *
+     * Scenario: User queries "Last 7 days" and runs have been occurring every minute.
+     * The last bucket should include runs up to the endDate, not stop at a previous
+     * bucket boundary.
+     */
+
+    it("includes runs right up to endDate in the last bucket", async () => {
+      // Simulate a 7-day query range that creates ~23 minute buckets
+      // 7 days = 604,800 seconds / 500 target points = 1,209.6 seconds (~20 min) per bucket
+      const endDate = new Date("2026-01-20T22:05:00Z"); // Current time
+      const startDate = new Date("2026-01-13T22:05:00Z"); // 7 days ago
+
+      // Create runs: some old ones and some very recent ones near endDate
+      const runs = [
+        // Old run at the start of the range
+        {
+          id: "run-old-1",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "healthy" as const,
+          latencyMs: 100,
+          result: { statusCode: 200 },
+          timestamp: new Date("2026-01-13T22:10:00Z"),
+        },
+        // Run ~25 minutes before endDate
+        {
+          id: "run-recent-1",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "unhealthy" as const,
+          latencyMs: 2500,
+          result: { statusCode: 500 },
+          timestamp: new Date("2026-01-20T21:40:00Z"),
+        },
+        // Run ~15 minutes before endDate
+        {
+          id: "run-recent-2",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "unhealthy" as const,
+          latencyMs: 3000,
+          result: { statusCode: 503 },
+          timestamp: new Date("2026-01-20T21:50:00Z"),
+        },
+        // Run ~5 minutes before endDate
+        {
+          id: "run-recent-3",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "unhealthy" as const,
+          latencyMs: 2800,
+          result: { statusCode: 502 },
+          timestamp: new Date("2026-01-20T22:00:00Z"),
+        },
+        // Run 2 minutes before endDate - SHOULD BE IN LAST BUCKET
+        {
+          id: "run-recent-4",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "unhealthy" as const,
+          latencyMs: 2600,
+          result: { statusCode: 500 },
+          timestamp: new Date("2026-01-20T22:03:00Z"),
+        },
+        // Run 1 minute before endDate - SHOULD BE IN LAST BUCKET
+        {
+          id: "run-recent-5",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "unhealthy" as const,
+          latencyMs: 2700,
+          result: { statusCode: 500 },
+          timestamp: new Date("2026-01-20T22:04:00Z"),
+        },
+      ];
+
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
+
+      const result = await service.getAggregatedHistory(
+        {
+          systemId: "sys-1",
+          configurationId: "config-1",
+          startDate,
+          endDate,
+          targetPoints: 500,
+        },
+        { includeAggregatedResult: true },
+      );
+
+      // We should have buckets that cover the entire range
+      expect(result.buckets.length).toBeGreaterThan(0);
+
+      // Find the last bucket
+      const lastBucket = result.buckets[result.buckets.length - 1];
+
+      // The last bucket should contain runs from the most recent times
+      // Specifically, the runs at 22:03 and 22:04 should be in some bucket
+      const allRunCounts = result.buckets.reduce(
+        (sum, b) => sum + b.runCount,
+        0,
+      );
+      expect(allRunCounts).toBe(6); // All 6 runs should be accounted for
+
+      // The last bucket's bucketStart + interval should cover endDate
+      const bucketIntervalMs = result.bucketIntervalSeconds * 1000;
+      const lastBucketEnd = new Date(
+        lastBucket.bucketStart.getTime() + bucketIntervalMs,
+      );
+
+      // Last bucket should extend close to endDate
+      // (within one bucket interval of endDate)
+      expect(lastBucketEnd.getTime()).toBeGreaterThanOrEqual(
+        endDate.getTime() - bucketIntervalMs,
+      );
+    });
+
+    it("includes partial last bucket when endDate is mid-bucket", async () => {
+      // Scenario: Query ends at a time that's not aligned to bucket boundaries
+      // Runs exist right before endDate and should still appear
+      const startDate = new Date("2026-01-20T21:00:00Z");
+      const endDate = new Date("2026-01-20T22:00:00Z"); // 1 hour range
+
+      // Create runs every 5 minutes for the hour
+      const runs = [];
+      for (let i = 0; i < 12; i++) {
+        runs.push({
+          id: `run-${i}`,
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "healthy" as const,
+          latencyMs: 100 + i * 10,
+          result: { statusCode: 200 },
+          timestamp: new Date(
+            startDate.getTime() + i * 5 * 60 * 1000, // Every 5 minutes
+          ),
+        });
+      }
+
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
+
+      // Use 10 target points = 6 minute buckets
+      const result = await service.getAggregatedHistory(
+        {
+          systemId: "sys-1",
+          configurationId: "config-1",
+          startDate,
+          endDate,
+          targetPoints: 10,
+        },
+        { includeAggregatedResult: true },
+      );
+
+      // All 12 runs should be accounted for in the buckets
+      const allRunCounts = result.buckets.reduce(
+        (sum, b) => sum + b.runCount,
+        0,
+      );
+      expect(allRunCounts).toBe(12);
+
+      // Last bucket should exist and have runs in it
+      const lastBucket = result.buckets[result.buckets.length - 1];
+      expect(lastBucket.runCount).toBeGreaterThan(0);
+
+      // The run at 21:55 (55 minutes after start) should be in a bucket
+      // That's in bucket index floor(55/6) = 9 (the last bucket)
+      expect(result.buckets.length).toBe(10);
+    });
+
+    it("handles runs at exact endDate boundary", async () => {
+      const startDate = new Date("2026-01-20T21:00:00Z");
+      const endDate = new Date("2026-01-20T22:00:00Z");
+
+      const runs = [
+        {
+          id: "run-start",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "healthy" as const,
+          latencyMs: 100,
+          result: { statusCode: 200 },
+          timestamp: new Date("2026-01-20T21:00:00Z"), // Exact start
+        },
+        {
+          id: "run-end",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "unhealthy" as const,
+          latencyMs: 5000,
+          result: { statusCode: 500 },
+          timestamp: new Date("2026-01-20T22:00:00Z"), // Exact end
+        },
+      ];
+
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
+
+      const result = await service.getAggregatedHistory(
+        {
+          systemId: "sys-1",
+          configurationId: "config-1",
+          startDate,
+          endDate,
+          targetPoints: 10,
+        },
+        { includeAggregatedResult: true },
+      );
+
+      // Both runs should be included
+      const allRunCounts = result.buckets.reduce(
+        (sum, b) => sum + b.runCount,
+        0,
+      );
+      expect(allRunCounts).toBe(2);
+
+      // First bucket should have the start run
+      expect(result.buckets[0].runCount).toBeGreaterThan(0);
+
+      // Last bucket should have the end run
+      const lastBucket = result.buckets[result.buckets.length - 1];
+      expect(lastBucket.runCount).toBeGreaterThan(0);
+    });
+
+    it("simulates real-world 7-day dashboard with minute-by-minute runs", async () => {
+      /**
+       * Real-world simulation:
+       * - 7 day query range
+       * - Health check runs every minute
+       * - Query with 500 target points (~20 min buckets)
+       * - Recent runs should appear in the latest bucket
+       */
+      const endDate = new Date("2026-01-20T22:05:00Z");
+      const startDate = new Date("2026-01-13T22:05:00Z");
+
+      // Create runs for the last 30 minutes (simulates recent activity)
+      const runs = [];
+      for (let i = 0; i < 30; i++) {
+        const timestamp = new Date(endDate.getTime() - (30 - i) * 60 * 1000);
+        runs.push({
+          id: `run-${i}`,
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: i % 3 === 0 ? ("unhealthy" as const) : ("healthy" as const),
+          latencyMs: 100 + i * 10,
+          result: { statusCode: i % 3 === 0 ? 500 : 200 },
+          timestamp,
+        });
+      }
+
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
+
+      const result = await service.getAggregatedHistory(
+        {
+          systemId: "sys-1",
+          configurationId: "config-1",
+          startDate,
+          endDate,
+          targetPoints: 500,
+        },
+        { includeAggregatedResult: true },
+      );
+
+      // Verify bucket interval is roughly 20 minutes for 7-day / 500 points
+      // 7 days = 604,800 seconds / 500 = 1,209.6 seconds (~20 min)
+      expect(result.bucketIntervalSeconds).toBe(1210);
+
+      // All 30 runs should be in buckets
+      const allRunCounts = result.buckets.reduce(
+        (sum, b) => sum + b.runCount,
+        0,
+      );
+      expect(allRunCounts).toBe(30);
+
+      // The most recent run (at endDate - 1 minute) should be in a bucket
+      // This is the critical assertion for the bug we're fixing
+      const lastBucket = result.buckets[result.buckets.length - 1];
+
+      // Last bucket should have some runs
+      expect(lastBucket.runCount).toBeGreaterThan(0);
+
+      // The last bucket's end time should be near endDate
+      const bucketIntervalMs = result.bucketIntervalSeconds * 1000;
+      const lastBucketEnd = new Date(
+        lastBucket.bucketStart.getTime() + bucketIntervalMs,
+      );
+
+      // Last bucket should extend to cover the endDate or be within one interval
+      const timeDiffMs = endDate.getTime() - lastBucketEnd.getTime();
+      expect(timeDiffMs).toBeLessThan(bucketIntervalMs);
+    });
+
+    it("verifies last bucket contains the most recent timestamp", async () => {
+      const startDate = new Date("2026-01-20T21:00:00Z");
+      const endDate = new Date("2026-01-20T22:05:00Z"); // 65 minutes
+
+      // Create runs with known timestamps
+      const runs = [
+        {
+          id: "run-1",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "healthy" as const,
+          latencyMs: 100,
+          result: {},
+          timestamp: new Date("2026-01-20T21:05:00Z"),
+        },
+        {
+          id: "run-2",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "healthy" as const,
+          latencyMs: 100,
+          result: {},
+          timestamp: new Date("2026-01-20T21:35:00Z"),
+        },
+        // Most recent run - 2 minutes before endDate
+        {
+          id: "run-latest",
+          systemId: "sys-1",
+          configurationId: "config-1",
+          strategyId: "http",
+          status: "unhealthy" as const,
+          latencyMs: 5000,
+          result: { statusCode: 500 },
+          timestamp: new Date("2026-01-20T22:03:00Z"),
+        },
+      ];
+
+      mockRunsResult = runs;
+      mockConfigResult = { id: "config-1", strategyId: "http" };
+
+      // Use 5 target points = 13 minute buckets
+      const result = await service.getAggregatedHistory(
+        {
+          systemId: "sys-1",
+          configurationId: "config-1",
+          startDate,
+          endDate,
+          targetPoints: 5,
+        },
+        { includeAggregatedResult: true },
+      );
+
+      expect(result.buckets.length).toBeGreaterThan(0);
+
+      // All 3 runs should be included
+      const allRunCounts = result.buckets.reduce(
+        (sum, b) => sum + b.runCount,
+        0,
+      );
+      expect(allRunCounts).toBe(3);
+
+      // The last bucket should have the unhealthy run
+      const lastBucket = result.buckets[result.buckets.length - 1];
+      expect(lastBucket.unhealthyCount).toBe(1);
+
+      // Bucket containing 22:03 run should have bucketStart before 22:03
+      expect(lastBucket.bucketStart.getTime()).toBeLessThanOrEqual(
+        new Date("2026-01-20T22:03:00Z").getTime(),
+      );
+    });
+  });
 });

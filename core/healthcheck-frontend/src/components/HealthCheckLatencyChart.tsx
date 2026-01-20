@@ -40,6 +40,7 @@ export const HealthCheckLatencyChart: React.FC<
 
     const chartData = buckets.map((d) => ({
       timestamp: new Date(d.bucketStart).getTime(),
+      bucketEndTimestamp: new Date(d.bucketEnd).getTime(),
       latencyMs: d.avgLatencyMs!,
       minLatencyMs: d.minLatencyMs,
       maxLatencyMs: d.maxLatencyMs,
@@ -54,7 +55,7 @@ export const HealthCheckLatencyChart: React.FC<
     const timeFormat =
       (buckets[0]?.bucketIntervalSeconds ?? 3600) >= 21_600
         ? "MMM d"
-        : "MMM d HH:mm";
+        : "MMM d, HH:mm";
 
     return (
       <ResponsiveContainer width="100%" height={height}>
@@ -90,6 +91,14 @@ export const HealthCheckLatencyChart: React.FC<
             content={({ active, payload }) => {
               if (!active || !payload?.length) return;
               const data = payload[0].payload as (typeof chartData)[number];
+              const startTime = format(
+                new Date(data.timestamp),
+                "MMM d, HH:mm",
+              );
+              const endTime = format(
+                new Date(data.bucketEndTimestamp),
+                "HH:mm",
+              );
               return (
                 <div
                   className="rounded-md border bg-popover p-2 text-sm shadow-md"
@@ -99,9 +108,9 @@ export const HealthCheckLatencyChart: React.FC<
                   }}
                 >
                   <p className="text-muted-foreground">
-                    {format(new Date(data.timestamp), "MMM d, HH:mm:ss")}
+                    {startTime} - {endTime}
                   </p>
-                  <p className="font-medium">{data.latencyMs}ms</p>
+                  <p className="font-medium">{data.latencyMs}ms (avg)</p>
                 </div>
               );
             }}
@@ -145,7 +154,8 @@ export const HealthCheckLatencyChart: React.FC<
     );
   }
 
-  const chartData = runs.toReversed().map((d) => ({
+  // Runs come in chronological order from API (oldest first, newest last)
+  const chartData = runs.map((d) => ({
     timestamp: new Date(d.timestamp).getTime(),
     latencyMs: d.latencyMs!,
   }));

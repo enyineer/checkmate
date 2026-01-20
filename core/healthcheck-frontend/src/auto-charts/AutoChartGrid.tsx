@@ -10,6 +10,7 @@ import { extractChartFields, getFieldValue } from "./schema-parser";
 import { useStrategySchemas } from "./useStrategySchemas";
 import type { HealthCheckDiagramSlotContext } from "../slots";
 import type { StoredHealthCheckResult } from "@checkstack/healthcheck-common";
+import { SparklineTooltip } from "../components/SparklineTooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@checkstack/ui";
 import {
   PieChart,
@@ -26,6 +27,11 @@ import {
   RadialBarChart,
   RadialBar,
 } from "recharts";
+import { format } from "date-fns";
+import {
+  downsampleSparkline,
+  MAX_SPARKLINE_BARS,
+} from "../utils/sparkline-downsampling";
 
 interface AutoChartGridProps {
   context: HealthCheckDiagramSlotContext;
@@ -146,6 +152,8 @@ function buildCollectorGroups(
 
 /**
  * Renders a collector group with heading, assertion status, and field cards.
+ * Cards are organized into two sections: narrow cards that fill together,
+ * and wide timeline cards that span full width.
  */
 function CollectorGroup({
   group,
@@ -154,20 +162,41 @@ function CollectorGroup({
   group: CollectorGroupData;
   context: HealthCheckDiagramSlotContext;
 }) {
-  // Get assertion status for this collector instance
-  const assertionFailed = getAssertionFailed(context, group.instanceKey);
+  // Separate fields into narrow (grid) and wide (full-width) categories
+  const narrowFields = group.fields.filter(
+    (f) => !WIDE_CHART_TYPES.has(f.chartType),
+  );
+  const wideFields = group.fields.filter((f) =>
+    WIDE_CHART_TYPES.has(f.chartType),
+  );
 
   return (
-    <div>
-      <h4 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+    <div className="space-y-4">
+      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
         {group.displayName}
       </h4>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Assertion status card */}
-        <AssertionStatusCard assertionFailed={assertionFailed} />
 
-        {/* Field cards */}
-        {group.fields.map((field) => (
+      {/* Narrow cards grid - these pack together nicely */}
+      {narrowFields.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {narrowFields.map((field) => (
+            <AutoChartCard
+              key={`${field.instanceKey}-${field.name}`}
+              field={field}
+              context={context}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Wide timeline cards - assertion plus timeline fields */}
+      <div className="space-y-4">
+        <AssertionStatusCard
+          context={context}
+          instanceKey={group.instanceKey}
+        />
+
+        {wideFields.map((field) => (
           <AutoChartCard
             key={`${field.instanceKey}-${field.name}`}
             field={field}
@@ -180,59 +209,142 @@ function CollectorGroup({
 }
 
 /**
- * Get the _assertionFailed value for a specific collector instance.
+ * Get all assertion results for a specific collector instance.
+ * Returns array of results with timestamps/time spans in chronological order.
+ *
+ * For raw data: extracts run status with timestamp.
+ * For aggregated data: uses bucket counts with time span.
  */
-function getAssertionFailed(
+function getAllAssertionResults(
   context: HealthCheckDiagramSlotContext,
-  instanceKey: string,
-): string | undefined {
-  if (context.type === "raw" && context.runs.length > 0) {
-    const latestRun = context.runs[0];
-    const result = latestRun.result as StoredHealthCheckResult | undefined;
-    const collectors = result?.metadata?.collectors as
-      | Record<string, Record<string, unknown>>
-      | undefined;
-    const collectorData = collectors?.[instanceKey];
-    return collectorData?._assertionFailed as string | undefined;
+  _instanceKey: string,
+): { passed: boolean; errorMessage?: string; timeLabel?: string }[] {
+  if (context.type === "raw") {
+    return context.runs.map((run) => {
+      const result = run.result as StoredHealthCheckResult | undefined;
+      const isUnhealthy = result?.status === "unhealthy";
+      return {
+        passed: !isUnhealthy,
+        errorMessage: isUnhealthy ? result?.message : undefined,
+        timeLabel: format(new Date(run.timestamp), "MMM d, HH:mm:ss"),
+      };
+    });
   }
-  return undefined;
+
+  // For aggregated data, return one result per bucket with time span
+  return context.buckets.map((bucket) => {
+    const failedCount = bucket.degradedCount + bucket.unhealthyCount;
+    const passed = failedCount === 0;
+    const bucketStart = new Date(bucket.bucketStart);
+    const bucketEnd = new Date(bucket.bucketEnd);
+    const timeSpan = `${format(bucketStart, "MMM d, HH:mm")} - ${format(bucketEnd, "HH:mm")}`;
+    return {
+      passed,
+      errorMessage: passed
+        ? undefined
+        : `${failedCount} failed of ${bucket.runCount}`,
+      timeLabel: timeSpan,
+    };
+  });
 }
 
 /**
- * Card showing assertion pass/fail status.
+ * Card showing assertion pass/fail status with historical sparkline.
  */
 function AssertionStatusCard({
-  assertionFailed,
+  context,
+  instanceKey,
 }: {
-  assertionFailed: string | undefined;
+  context: HealthCheckDiagramSlotContext;
+  instanceKey: string;
 }) {
-  if (!assertionFailed) {
+  const results = getAllAssertionResults(context, instanceKey);
+
+  if (results.length === 0) {
     return (
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Assertion</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-2 text-green-600">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span>Passed</span>
-          </div>
+          <div className="text-sm text-muted-foreground">No data</div>
         </CardContent>
       </Card>
     );
   }
 
+  const latestResult = results.at(-1)!;
+  const passCount = results.filter((r) => r.passed).length;
+  const passRate = Math.round((passCount / results.length) * 100);
+  const allPassed = results.every((r) => r.passed);
+  const allFailed = results.every((r) => !r.passed);
+
   return (
-    <Card className="border-red-200 dark:border-red-900">
+    <Card
+      className={
+        latestResult.passed ? "" : "border-red-200 dark:border-red-900"
+      }
+    >
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-red-600">
-          Assertion Failed
+        <CardTitle
+          className={`text-sm font-medium ${latestResult.passed ? "" : "text-red-600"}`}
+        >
+          {latestResult.passed ? "Assertion" : "Assertion Failed"}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded">
-          {assertionFailed}
+      <CardContent className="space-y-2">
+        {/* Current status with rate */}
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-3 h-3 rounded-full ${
+              latestResult.passed ? "bg-green-500" : "bg-red-500"
+            }`}
+          />
+          <span
+            className={latestResult.passed ? "text-green-600" : "text-red-600"}
+          >
+            {latestResult.passed ? "Passed" : "Failed"}
+          </span>
+          {!allPassed && !allFailed && (
+            <span className="text-xs text-muted-foreground">
+              ({passRate}% passed)
+            </span>
+          )}
         </div>
+
+        {/* Error message if failed */}
+        {!latestResult.passed && latestResult.errorMessage && (
+          <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded truncate">
+            {latestResult.errorMessage}
+          </div>
+        )}
+
+        {/* Sparkline timeline - always show for historical context */}
+        {(() => {
+          const buckets = downsampleSparkline(results);
+          return (
+            <div className="flex h-2 gap-px rounded">
+              {buckets.map((bucket, index) => {
+                const passedCount = bucket.items.filter((r) => r.passed).length;
+                const failedCount = bucket.items.length - passedCount;
+                const tooltip = bucket.timeLabel
+                  ? bucket.items.length > 1
+                    ? `${bucket.timeLabel}\n${passedCount} passed, ${failedCount} failed`
+                    : `${bucket.timeLabel}\n${bucket.passed ? "Passed" : "Failed"}`
+                  : bucket.passed
+                    ? "Passed"
+                    : "Failed";
+                return (
+                  <SparklineTooltip key={index} content={tooltip}>
+                    <div
+                      className={`flex-1 h-full ${bucket.passed ? "bg-green-500" : "bg-red-500"} hover:opacity-80`}
+                    />
+                  </SparklineTooltip>
+                );
+              })}
+            </div>
+          );
+        })()}
       </CardContent>
     </Card>
   );
@@ -301,6 +413,11 @@ interface AutoChartCardProps {
   field: ExpandedChartField;
   context: HealthCheckDiagramSlotContext;
 }
+
+/**
+ * Chart types that display historical timelines and benefit from wider display.
+ */
+const WIDE_CHART_TYPES = new Set(["line", "boolean", "text"]);
 
 /**
  * Individual chart card that renders based on field type.
@@ -456,39 +573,176 @@ function GaugeRenderer({ field, context }: ChartRendererProps) {
 }
 
 /**
- * Renders a boolean indicator (success/failure).
+ * Renders a boolean indicator with historical sparkline.
  */
 function BooleanRenderer({ field, context }: ChartRendererProps) {
-  const value = getLatestValue(field.name, context, field.instanceKey);
-  const isTrue = value === true;
+  const valuesWithTime = getAllBooleanValuesWithTime(
+    field.name,
+    context,
+    field.instanceKey,
+  );
+
+  if (valuesWithTime.length === 0) {
+    return <div className="text-sm text-muted-foreground">No data</div>;
+  }
+
+  // Calculate success rate
+  const trueCount = valuesWithTime.filter((v) => v.value === true).length;
+  const successRate = Math.round((trueCount / valuesWithTime.length) * 100);
+  const latestValue = valuesWithTime.at(-1)?.value;
+  const allSame = valuesWithTime.every(
+    (v) => v.value === valuesWithTime[0].value,
+  );
 
   return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`w-3 h-3 rounded-full ${
-          isTrue ? "bg-green-500" : "bg-red-500"
-        }`}
-      />
-      <span className={isTrue ? "text-green-600" : "text-red-600"}>
-        {isTrue ? "Yes" : "No"}
-      </span>
+    <div className="space-y-2">
+      {/* Current status with rate */}
+      <div className="flex items-center gap-2">
+        <div
+          className={`w-3 h-3 rounded-full ${
+            latestValue ? "bg-green-500" : "bg-red-500"
+          }`}
+        />
+        <span className={latestValue ? "text-green-600" : "text-red-600"}>
+          {latestValue ? "Yes" : "No"}
+        </span>
+        {!allSame && (
+          <span className="text-xs text-muted-foreground">
+            ({successRate}% success)
+          </span>
+        )}
+      </div>
+
+      {/* Sparkline timeline - always show for historical context */}
+      {(() => {
+        const buckets = downsampleSparkline(valuesWithTime);
+        return (
+          <div className="flex h-2 gap-px rounded">
+            {buckets.map((bucket, index) => {
+              const yesCount = bucket.items.filter((r) => r.value).length;
+              const noCount = bucket.items.length - yesCount;
+              const tooltip = bucket.timeLabel
+                ? bucket.items.length > 1
+                  ? `${bucket.timeLabel}\n${yesCount} yes, ${noCount} no`
+                  : `${bucket.timeLabel}\n${bucket.passed ? "Yes" : "No"}`
+                : bucket.passed
+                  ? "Yes"
+                  : "No";
+              return (
+                <SparklineTooltip key={index} content={tooltip}>
+                  <div
+                    className={`flex-1 h-full ${bucket.passed ? "bg-green-500" : "bg-red-500"} hover:opacity-80`}
+                  />
+                </SparklineTooltip>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
 /**
- * Renders text value.
+ * Renders text value with historical sparkline for status-type fields.
  */
 function TextRenderer({ field, context }: ChartRendererProps) {
-  const value = getLatestValue(field.name, context, field.instanceKey);
-  const displayValue = formatTextValue(value);
+  const valuesWithTime = getAllStringValuesWithTime(
+    field.name,
+    context,
+    field.instanceKey,
+  );
+
+  if (valuesWithTime.length === 0) {
+    return <div className="text-sm text-muted-foreground">—</div>;
+  }
+
+  const latestValue = valuesWithTime.at(-1)?.value ?? "";
+  const uniqueValues = [...new Set(valuesWithTime.map((v) => v.value))];
+  const allSame = uniqueValues.length === 1;
+  const latestCount = valuesWithTime.filter(
+    (v) => v.value === latestValue,
+  ).length;
 
   return (
-    <div
-      className="text-sm font-mono text-muted-foreground truncate"
-      title={displayValue}
-    >
-      {displayValue || "—"}
+    <div className="space-y-2">
+      {/* Current value with count */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-mono">{latestValue || "—"}</span>
+        {!allSame && (
+          <span className="text-xs text-muted-foreground">
+            ({latestCount}/{valuesWithTime.length}×)
+          </span>
+        )}
+      </div>
+
+      {/* Sparkline timeline - always show for historical context */}
+      {(() => {
+        // Downsample for string values - bucket is "primary" if all values match latest
+        const bucketSize =
+          valuesWithTime.length <= MAX_SPARKLINE_BARS
+            ? 1
+            : Math.ceil(valuesWithTime.length / MAX_SPARKLINE_BARS);
+
+        const buckets: Array<{
+          items: typeof valuesWithTime;
+          matchesLatest: boolean;
+          timeLabel?: string;
+        }> = [];
+        for (let i = 0; i < valuesWithTime.length; i += bucketSize) {
+          const items = valuesWithTime.slice(i, i + bucketSize);
+          const matchesLatest = items.every((v) => v.value === latestValue);
+          const startLabel = items[0]?.timeLabel;
+          const endLabel = items.at(-1)?.timeLabel;
+          buckets.push({
+            items,
+            matchesLatest,
+            timeLabel:
+              startLabel && endLabel && startLabel !== endLabel
+                ? `${startLabel} - ${endLabel}`
+                : startLabel,
+          });
+        }
+
+        return (
+          <div className="flex h-2 gap-px rounded">
+            {buckets.map((bucket, index) => {
+              // Build value distribution for tooltip
+              let valueInfo: string;
+              if (bucket.items.length === 1) {
+                valueInfo = bucket.items[0]?.value ?? "";
+              } else {
+                // Count occurrences of each value
+                const counts: Record<string, number> = {};
+                for (const item of bucket.items) {
+                  counts[item.value] = (counts[item.value] || 0) + 1;
+                }
+                // Format as "value: Nx" entries, sorted by count
+                valueInfo = Object.entries(counts)
+                  .toSorted((a, b) => b[1] - a[1])
+                  .slice(0, 3) // Show top 3
+                  .map(([val, count]) => `${val}: ${count}×`)
+                  .join(", ");
+                if (Object.keys(counts).length > 3) {
+                  valueInfo += ` (+${Object.keys(counts).length - 3} more)`;
+                }
+              }
+              const tooltip = bucket.timeLabel
+                ? `${bucket.timeLabel}\n${valueInfo}`
+                : valueInfo;
+              return (
+                <SparklineTooltip key={index} content={tooltip}>
+                  <div
+                    className={`flex-1 h-full ${
+                      bucket.matchesLatest ? "bg-primary" : "bg-amber-500"
+                    } hover:opacity-80`}
+                  />
+                </SparklineTooltip>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -515,20 +769,26 @@ function StatusRenderer({ field, context }: ChartRendererProps) {
  * Renders an area chart for time series data using Recharts AreaChart.
  */
 function LineChartRenderer({ field, context }: ChartRendererProps) {
-  const values = getAllValues(field.name, context, field.instanceKey);
+  const valuesWithTime = getAllValuesWithTime(
+    field.name,
+    context,
+    field.instanceKey,
+  );
   const unit = field.unit ?? "";
 
-  if (values.length === 0) {
+  if (valuesWithTime.length === 0) {
     return <div className="text-muted-foreground">No data</div>;
   }
 
-  // Transform values to recharts data format
-  const chartData = values.map((value, index) => ({
+  // Transform values to recharts data format with time labels
+  const chartData = valuesWithTime.map((item, index) => ({
     index,
-    value,
+    value: item.value,
+    timeLabel: item.timeLabel,
   }));
 
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const avg =
+    valuesWithTime.reduce((a, b) => a + b.value, 0) / valuesWithTime.length;
 
   return (
     <div className="space-y-2">
@@ -572,7 +832,10 @@ function LineChartRenderer({ field, context }: ChartRendererProps) {
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.length) return;
-              const data = payload[0].payload as { value: number };
+              const data = payload[0].payload as {
+                value: number;
+                timeLabel: string;
+              };
               return (
                 <div
                   className="rounded-md border bg-popover p-2 text-sm shadow-md"
@@ -581,6 +844,9 @@ function LineChartRenderer({ field, context }: ChartRendererProps) {
                     border: "1px solid hsl(var(--border))",
                   }}
                 >
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {data.timeLabel}
+                  </p>
                   <p className="font-medium">
                     {data.value.toFixed(1)}
                     {unit}
@@ -875,47 +1141,123 @@ function getValueCounts(
 }
 
 /**
- * Get all numeric values for a field from the context.
- *
- * For raw runs, the strategy-specific data is inside result.metadata.
- * For aggregated buckets, the data is directly in aggregatedResult.
- *
- * NOTE: Returns values in chronological order (oldest first) for proper
- * left-to-right time display in charts. Data comes from API in newest-first
- * order, so we reverse it here.
+ * Get all numeric values for a field with time labels.
+ * Returns values in chronological order with timestamps/time spans for tooltips.
  */
-function getAllValues(
+function getAllValuesWithTime(
   fieldName: string,
   context: HealthCheckDiagramSlotContext,
   collectorId?: string,
-): number[] {
+): { value: number; timeLabel: string }[] {
   if (context.type === "raw") {
     return context.runs
       .map((run) => {
-        // result is typed as StoredHealthCheckResult with { status, latencyMs, message, metadata }
         const result = run.result as StoredHealthCheckResult;
-        return getFieldValue(result?.metadata, fieldName, collectorId);
+        const value = getFieldValue(result?.metadata, fieldName, collectorId);
+        if (typeof value !== "number") return;
+        return {
+          value,
+          timeLabel: format(new Date(run.timestamp), "MMM d, HH:mm:ss"),
+        };
       })
-      .filter((v): v is number => typeof v === "number")
-      .toReversed();
+      .filter(
+        (v): v is { value: number; timeLabel: string } => v !== undefined,
+      );
   }
   return context.buckets
-    .map((bucket) =>
-      getFieldValue(
+    .map((bucket) => {
+      const value = getFieldValue(
         bucket.aggregatedResult as Record<string, unknown>,
         fieldName,
         collectorId,
-      ),
-    )
-    .filter((v): v is number => typeof v === "number")
-    .toReversed();
+      );
+      if (typeof value !== "number") return;
+      const bucketStart = new Date(bucket.bucketStart);
+      const bucketEnd = new Date(bucket.bucketEnd);
+      return {
+        value,
+        timeLabel: `${format(bucketStart, "MMM d, HH:mm")} - ${format(bucketEnd, "HH:mm")}`,
+      };
+    })
+    .filter((v): v is { value: number; timeLabel: string } => v !== undefined);
 }
 
 /**
- * Format a value for text display.
+ * Get all boolean values for a field from the context.
+ * Returns values with time labels in chronological order for sparkline display.
  */
-function formatTextValue(value: unknown): string {
-  if (value === undefined || value === null) return "";
-  if (Array.isArray(value)) return value.join(", ");
-  return String(value);
+function getAllBooleanValuesWithTime(
+  fieldName: string,
+  context: HealthCheckDiagramSlotContext,
+  collectorId?: string,
+): { value: boolean; timeLabel: string }[] {
+  if (context.type === "raw") {
+    return context.runs
+      .map((run) => {
+        const result = run.result as StoredHealthCheckResult;
+        const value = getFieldValue(result?.metadata, fieldName, collectorId);
+        if (typeof value !== "boolean") return;
+        return {
+          value,
+          timeLabel: format(new Date(run.timestamp), "MMM d, HH:mm:ss"),
+        };
+      })
+      .filter((v): v is { value: boolean; timeLabel: string } => v !== null);
+  }
+  return context.buckets
+    .map((bucket) => {
+      const value = getFieldValue(
+        bucket.aggregatedResult as Record<string, unknown>,
+        fieldName,
+        collectorId,
+      );
+      if (typeof value !== "boolean") return;
+      const bucketStart = new Date(bucket.bucketStart);
+      const bucketEnd = new Date(bucket.bucketEnd);
+      return {
+        value,
+        timeLabel: `${format(bucketStart, "MMM d, HH:mm")} - ${format(bucketEnd, "HH:mm")}`,
+      };
+    })
+    .filter((v): v is { value: boolean; timeLabel: string } => v !== null);
+}
+
+/**
+ * Get all string values for a field from the context.
+ * Returns values with time labels in chronological order for sparkline display.
+ */
+function getAllStringValuesWithTime(
+  fieldName: string,
+  context: HealthCheckDiagramSlotContext,
+  collectorId?: string,
+): { value: string; timeLabel: string }[] {
+  if (context.type === "raw") {
+    return context.runs
+      .map((run) => {
+        const result = run.result as StoredHealthCheckResult;
+        const value = getFieldValue(result?.metadata, fieldName, collectorId);
+        if (typeof value !== "string") return;
+        return {
+          value,
+          timeLabel: format(new Date(run.timestamp), "MMM d, HH:mm:ss"),
+        };
+      })
+      .filter((v): v is { value: string; timeLabel: string } => v !== null);
+  }
+  return context.buckets
+    .map((bucket) => {
+      const value = getFieldValue(
+        bucket.aggregatedResult as Record<string, unknown>,
+        fieldName,
+        collectorId,
+      );
+      if (typeof value !== "string") return;
+      const bucketStart = new Date(bucket.bucketStart);
+      const bucketEnd = new Date(bucket.bucketEnd);
+      return {
+        value,
+        timeLabel: `${format(bucketStart, "MMM d, HH:mm")} - ${format(bucketEnd, "HH:mm")}`,
+      };
+    })
+    .filter((v): v is { value: string; timeLabel: string } => v !== null);
 }

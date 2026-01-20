@@ -414,7 +414,7 @@ export class HealthCheckService {
     const sparklineLimit = 25;
 
     for (const assoc of associations) {
-      // Get last 25 runs for sparkline
+      // Get last 25 runs for sparkline (newest first, then reverse for chronological display)
       const runs = await this.db
         .select({
           id: healthCheckRuns.id,
@@ -431,15 +431,18 @@ export class HealthCheckService {
         .orderBy(desc(healthCheckRuns.timestamp))
         .limit(sparklineLimit);
 
+      // Reverse to chronological order (oldest first) for sparkline display
+      const chronologicalRuns = runs.toReversed();
+
       // Migrate and extract thresholds
       let thresholds: StateThresholds | undefined;
       if (assoc.stateThresholds) {
         thresholds = await stateThresholds.parse(assoc.stateThresholds);
       }
 
-      // Evaluate current status
+      // Evaluate current status (runs are in DESC order - newest first - as evaluateHealthStatus expects)
       const status = evaluateHealthStatus({
-        runs: runs as Array<{ status: HealthCheckStatus; timestamp: Date }>,
+        runs,
         thresholds,
       });
 
@@ -451,7 +454,7 @@ export class HealthCheckService {
         enabled: assoc.enabled,
         status,
         stateThresholds: thresholds,
-        recentRuns: runs.map((r) => ({
+        recentRuns: chronologicalRuns.map((r) => ({
           id: r.id,
           status: r.status,
           timestamp: r.timestamp,
@@ -464,6 +467,7 @@ export class HealthCheckService {
 
   /**
    * Get paginated health check run history (public - no result data).
+   * @param sortOrder - 'asc' for chronological (oldest first), 'desc' for reverse (newest first)
    */
   async getHistory(props: {
     systemId?: string;
@@ -472,6 +476,7 @@ export class HealthCheckService {
     endDate?: Date;
     limit?: number;
     offset?: number;
+    sortOrder: "asc" | "desc";
   }) {
     const {
       systemId,
@@ -480,6 +485,7 @@ export class HealthCheckService {
       endDate,
       limit = 10,
       offset = 0,
+      sortOrder,
     } = props;
 
     const conditions = [];
@@ -495,16 +501,17 @@ export class HealthCheckService {
     // Get total count using drizzle $count
     const total = await this.db.$count(healthCheckRuns, whereClause);
 
-    // Get paginated runs
+    // Get paginated runs with requested sort order
     let query = this.db.select().from(healthCheckRuns);
     if (whereClause) {
       // @ts-expect-error drizzle-orm type mismatch
       query = query.where(whereClause);
     }
-    const runs = await query
-      .orderBy(desc(healthCheckRuns.timestamp))
-      .limit(limit)
-      .offset(offset);
+    const orderColumn =
+      sortOrder === "desc"
+        ? desc(healthCheckRuns.timestamp)
+        : healthCheckRuns.timestamp;
+    const runs = await query.orderBy(orderColumn).limit(limit).offset(offset);
 
     // Return without result field for public access (latencyMs is public data)
     return {
@@ -523,6 +530,7 @@ export class HealthCheckService {
   /**
    * Get detailed health check run history with full result data.
    * Restricted to users with manage access.
+   * @param sortOrder - 'asc' for chronological (oldest first), 'desc' for reverse (newest first)
    */
   async getDetailedHistory(props: {
     systemId?: string;
@@ -531,6 +539,7 @@ export class HealthCheckService {
     endDate?: Date;
     limit?: number;
     offset?: number;
+    sortOrder: "asc" | "desc";
   }) {
     const {
       systemId,
@@ -539,6 +548,7 @@ export class HealthCheckService {
       endDate,
       limit = 10,
       offset = 0,
+      sortOrder,
     } = props;
 
     const conditions = [];
@@ -556,10 +566,11 @@ export class HealthCheckService {
       // @ts-expect-error drizzle-orm type mismatch
       query = query.where(whereClause);
     }
-    const runs = await query
-      .orderBy(desc(healthCheckRuns.timestamp))
-      .limit(limit)
-      .offset(offset);
+    const orderColumn =
+      sortOrder === "desc"
+        ? desc(healthCheckRuns.timestamp)
+        : healthCheckRuns.timestamp;
+    const runs = await query.orderBy(orderColumn).limit(limit).offset(offset);
 
     // Return with full result data for manage access
     return {
@@ -718,6 +729,7 @@ export class HealthCheckService {
       sourceBuckets: mergedBuckets,
       targetIntervalMs: bucketIntervalMs,
       rangeStart: startDate,
+      rangeEnd: endDate,
     });
 
     // Convert to output format
@@ -731,6 +743,7 @@ export class HealthCheckService {
 
       const baseBucket = {
         bucketStart: bucket.bucketStart,
+        bucketEnd: new Date(bucket.bucketEndMs),
         bucketIntervalSeconds,
         runCount: bucket.runCount,
         healthyCount: bucket.healthyCount,

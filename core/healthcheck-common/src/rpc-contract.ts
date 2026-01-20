@@ -222,6 +222,7 @@ export const healthCheckContract = {
         endDate: z.date().optional(),
         limit: z.number().optional().default(10),
         offset: z.number().optional().default(0),
+        sortOrder: z.enum(["asc", "desc"]),
       }),
     )
     .output(
@@ -244,6 +245,7 @@ export const healthCheckContract = {
         endDate: z.date().optional(),
         limit: z.number().optional().default(10),
         offset: z.number().optional().default(0),
+        sortOrder: z.enum(["asc", "desc"]),
       }),
     )
     .output(

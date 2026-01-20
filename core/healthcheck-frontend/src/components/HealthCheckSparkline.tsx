@@ -1,6 +1,7 @@
 import React from "react";
 import type { HealthCheckStatus } from "@checkstack/healthcheck-common";
 import { cn } from "@checkstack/ui";
+import { SparklineTooltip } from "./SparklineTooltip";
 
 interface HealthCheckSparklineProps {
   runs: Array<{
@@ -25,26 +26,21 @@ export const HealthCheckSparkline: React.FC<HealthCheckSparklineProps> = ({
   runs,
   className,
 }) => {
-  // Runs come in newest-first order from API, reverse for left-to-right time display
+  // Runs come in chronological order from API (oldest first, newest last)
   // Ensure we show 25 slots (with empty placeholders if fewer runs)
-  const slots = Array.from(
-    { length: 25 },
-    (_, i) => runs[i]?.status,
-  ).toReversed();
+  const slots = Array.from({ length: 25 }, (_, i) => runs[i]?.status);
 
   return (
     <div className={cn("flex gap-0.5 items-center", className)}>
       {slots.map((status, index) => (
-        <div
-          key={index}
-          className={cn(
-            "w-2 h-4 rounded-sm transition-all",
-            status ? statusColors[status] : "bg-muted/40",
-          )}
-          title={
-            status ? `Run ${index + 1}: ${status}` : `Run ${index + 1}: No data`
-          }
-        />
+        <SparklineTooltip key={index} content={status || "No data"}>
+          <div
+            className={cn(
+              "w-2 h-4 rounded-sm transition-all hover:scale-110",
+              status ? statusColors[status] : "bg-muted/40",
+            )}
+          />
+        </SparklineTooltip>
       ))}
     </div>
   );

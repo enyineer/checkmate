@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import {
   usePluginClient,
   accessApiRef,
@@ -26,6 +26,10 @@ interface UseHealthCheckDataProps {
     startDate: Date;
     endDate: Date;
   };
+  /** Whether the date range is a rolling preset (e.g., 'Last 7 days') that should auto-update */
+  isRollingPreset?: boolean;
+  /** Callback to update the date range (e.g., to refresh endDate to current time) */
+  onDateRangeRefresh?: (newEndDate: Date) => void;
   /** Pagination for raw data mode */
   limit?: number;
   offset?: number;
@@ -34,8 +38,10 @@ interface UseHealthCheckDataProps {
 interface UseHealthCheckDataResult {
   /** The context to pass to HealthCheckDiagramSlot */
   context: HealthCheckDiagramSlotContext | undefined;
-  /** Whether data is currently loading */
+  /** Whether data is currently loading (no previous data available) */
   loading: boolean;
+  /** Whether data is being fetched (even if previous data is shown) */
+  isFetching: boolean;
   /** Whether aggregated data mode is active */
   isAggregated: boolean;
   /** The resolved retention config */
@@ -61,6 +67,8 @@ export function useHealthCheckData({
   configurationId,
   strategyId,
   dateRange,
+  isRollingPreset = false,
+  onDateRangeRefresh,
   limit = 100,
   offset = 0,
 }: UseHealthCheckDataProps): UseHealthCheckDataResult {
@@ -91,9 +99,11 @@ export function useHealthCheckData({
     retentionData?.retentionConfig ?? DEFAULT_RETENTION_CONFIG;
 
   // Determine if we should use aggregated data
-  const isAggregated = dateRangeDays > retentionConfig.rawRetentionDays;
+  // Use >= so that a range equal to retention days uses aggregation (e.g., 7-day range with 7-day retention)
+  const isAggregated = dateRangeDays >= retentionConfig.rawRetentionDays;
 
   // Query: Fetch raw data (when in raw mode)
+  // Use 'asc' order for chronological chart display (oldest first, newest last)
   const {
     data: rawData,
     isLoading: rawLoading,
@@ -106,6 +116,7 @@ export function useHealthCheckData({
       endDate: dateRange.endDate,
       limit,
       offset,
+      sortOrder: "asc",
     },
     {
       enabled:
@@ -115,41 +126,55 @@ export function useHealthCheckData({
         !accessLoading &&
         !retentionLoading &&
         !isAggregated,
+      // Keep previous data visible during refetch to prevent layout shift
+      placeholderData: (prev) => prev,
     },
   );
 
   // Query: Fetch aggregated data (when in aggregated mode)
-  const { data: aggregatedData, isLoading: aggregatedLoading } =
-    healthCheckClient.getDetailedAggregatedHistory.useQuery(
-      {
-        systemId,
-        configurationId,
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-        targetPoints: 500,
-      },
-      {
-        enabled:
-          !!systemId &&
-          !!configurationId &&
-          hasAccess &&
-          !accessLoading &&
-          !retentionLoading &&
-          isAggregated,
-      },
-    );
+  const {
+    data: aggregatedData,
+    isLoading: aggregatedLoading,
+    refetch: refetchAggregatedData,
+  } = healthCheckClient.getDetailedAggregatedHistory.useQuery(
+    {
+      systemId,
+      configurationId,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+      targetPoints: 500,
+    },
+    {
+      enabled:
+        !!systemId &&
+        !!configurationId &&
+        hasAccess &&
+        !accessLoading &&
+        !retentionLoading &&
+        isAggregated,
+      // Keep previous data visible during refetch to prevent layout shift
+      placeholderData: (prev) => prev,
+    },
+  );
 
   // Listen for realtime health check updates to refresh data silently
   useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
-    // Only refresh if we're in raw mode (not aggregated) and have access
     if (
       changedId === systemId &&
       hasAccess &&
       !accessLoading &&
-      !retentionLoading &&
-      !isAggregated
+      !retentionLoading
     ) {
-      void refetchRawData();
+      // Update endDate to current time only for rolling presets (not custom ranges)
+      if (isRollingPreset && onDateRangeRefresh) {
+        onDateRangeRefresh(new Date());
+      }
+      // Refetch the appropriate data
+      if (isAggregated) {
+        void refetchAggregatedData();
+      } else {
+        void refetchRawData();
+      }
     }
   });
 
@@ -185,6 +210,10 @@ export function useHealthCheckData({
     }
 
     if (isAggregated) {
+      // Don't create context with empty buckets during loading
+      if (aggregatedBuckets.length === 0) {
+        return undefined;
+      }
       return {
         type: "aggregated",
         systemId,
@@ -194,6 +223,10 @@ export function useHealthCheckData({
       };
     }
 
+    // Don't create context with empty runs during loading
+    if (rawRuns.length === 0) {
+      return undefined;
+    }
     return {
       type: "raw",
       systemId,
@@ -213,14 +246,31 @@ export function useHealthCheckData({
     aggregatedBuckets,
   ]);
 
-  const loading =
+  // Keep previous valid context to prevent layout shift during refetch
+  const previousContextRef = useRef<
+    HealthCheckDiagramSlotContext | undefined
+  >();
+  if (context) {
+    previousContextRef.current = context;
+  }
+
+  const isQueryLoading =
     accessLoading ||
     retentionLoading ||
     (isAggregated ? aggregatedLoading : rawLoading);
 
+  // Return previous context while loading to prevent layout shift
+  const stableContext =
+    context ?? (isQueryLoading ? previousContextRef.current : undefined);
+
+  // Only report loading when we don't have any context to show
+  // This prevents showing loading spinner during refetch when we have previous data
+  const loading = isQueryLoading && !stableContext;
+
   return {
-    context,
+    context: stableContext,
     loading,
+    isFetching: isQueryLoading,
     isAggregated,
     retentionConfig,
     hasAccess,

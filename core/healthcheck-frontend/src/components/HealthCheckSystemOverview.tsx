@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 import {
   ExtensionSlot,
   usePluginClient,
@@ -26,6 +27,10 @@ import {
   DateRangeFilter,
   getPresetRange,
   DateRangePreset,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
 } from "@checkstack/ui";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -66,12 +71,55 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
   const [dateRange, setDateRange] = useState(() =>
     getPresetRange(DateRangePreset.Last24Hours),
   );
+  // Track if a rolling preset is active (vs custom range)
+  const [isRollingPreset, setIsRollingPreset] = useState(true);
+
+  // Callback to handle date range changes from the filter
+  const handleDateRangeChange = useCallback(
+    (newRange: { startDate: Date; endDate: Date }) => {
+      setDateRange(newRange);
+      // Check if this is a rolling preset by comparing endDate to now (within 1 minute)
+      const isNearNow =
+        Math.abs(newRange.endDate.getTime() - Date.now()) < 60_000;
+      setIsRollingPreset(isNearNow);
+      // Clear any pending custom range when preset is selected
+      setPendingCustomRange(undefined);
+    },
+    [],
+  );
+
+  // Local state for custom date picker - only applied when user clicks Apply
+  const [pendingCustomRange, setPendingCustomRange] = useState<
+    | {
+        startDate: Date;
+        endDate: Date;
+      }
+    | undefined
+  >();
+
+  // Handle custom date changes - store locally until Apply
+  const handleCustomDateChange = useCallback(
+    (newRange: { startDate: Date; endDate: Date }) => {
+      setPendingCustomRange(newRange);
+    },
+    [],
+  );
+
+  // Apply pending custom range
+  const handleApplyCustomRange = useCallback(() => {
+    if (pendingCustomRange) {
+      setDateRange(pendingCustomRange);
+      setIsRollingPreset(false);
+      setPendingCustomRange(undefined);
+    }
+  }, [pendingCustomRange]);
 
   // Use shared hook for chart data - handles both raw and aggregated modes
   // and includes signal handling for automatic refresh
   const {
     context: chartContext,
     loading: chartLoading,
+    isFetching: chartFetching,
     isAggregated,
     bucketIntervalSeconds,
   } = useHealthCheckData({
@@ -79,13 +127,18 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     configurationId: item.configurationId,
     strategyId: item.strategyId,
     dateRange,
+    isRollingPreset,
     limit: 1000,
+    // Update endDate to current time when new runs are detected (only for rolling presets)
+    onDateRangeRefresh: (newEndDate) => {
+      setDateRange((prev) => ({ ...prev, endDate: newEndDate }));
+    },
   });
 
   // Pagination state for history table
   const pagination = usePagination({ defaultLimit: 10 });
 
-  // Fetch paginated history with useQuery
+  // Fetch paginated history with useQuery - newest first for table
   const {
     data: historyData,
     isLoading: loading,
@@ -97,6 +150,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     offset: pagination.offset,
     startDate: dateRange.startDate,
     // Don't pass endDate - backend defaults to 'now' so new runs are included
+    sortOrder: "desc",
   });
 
   // Sync total from response
@@ -147,19 +201,33 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
           />
         )}
         {/* Status Timeline */}
-        <div>
-          <h4 className="text-sm font-medium mb-2">Status Timeline</h4>
-          <HealthCheckStatusTimeline context={chartContext} height={50} />
-        </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Status Timeline
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HealthCheckStatusTimeline context={chartContext} height={50} />
+          </CardContent>
+        </Card>
         {/* Execution Duration Chart */}
-        <div>
-          <h4 className="text-sm font-medium mb-2">Execution Duration</h4>
-          <HealthCheckLatencyChart
-            context={chartContext}
-            height={150}
-            showAverage
-          />
-        </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              {isAggregated
+                ? "Average Execution Duration"
+                : "Execution Duration"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HealthCheckLatencyChart
+              context={chartContext}
+              height={150}
+              showAverage
+            />
+          </CardContent>
+        </Card>
         {/* Extension Slot for custom strategy-specific diagrams */}
         <ExtensionSlot slot={HealthCheckDiagramSlot} context={chartContext} />
       </div>
@@ -183,8 +251,30 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
         </div>
       </div>
 
-      {/* Date Range Filter */}
-      <DateRangeFilter value={dateRange} onChange={setDateRange} />
+      {/* Date Range Filter with Loading Spinner */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <DateRangeFilter
+          value={pendingCustomRange ?? dateRange}
+          onChange={handleDateRangeChange}
+          onCustomChange={handleCustomDateChange}
+          disabled={chartFetching}
+        />
+        {pendingCustomRange && (
+          <button
+            onClick={handleApplyCustomRange}
+            disabled={
+              chartFetching ||
+              pendingCustomRange.startDate >= pendingCustomRange.endDate
+            }
+            className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            Apply
+          </button>
+        )}
+        {chartFetching && (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        )}
+      </div>
 
       {/* Charts Section */}
       {renderCharts()}
@@ -193,6 +283,12 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
         <LoadingSpinner />
       ) : runs.length > 0 ? (
         <>
+          {/* Divider between charts and table */}
+          <div className="flex items-center gap-4 pt-4">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-sm text-muted-foreground">Recent Runs</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -261,8 +357,8 @@ export function HealthCheckSystemOverview(props: SlotProps) {
       name: check.configurationName,
       state: check.status,
       intervalSeconds: check.intervalSeconds,
-      lastRunAt: check.recentRuns[0]?.timestamp
-        ? new Date(check.recentRuns[0].timestamp)
+      lastRunAt: check.recentRuns.at(-1)?.timestamp
+        ? new Date(check.recentRuns.at(-1)!.timestamp)
         : undefined,
       stateThresholds: check.stateThresholds,
       recentStatusHistory: check.recentRuns.map((r) => r.status),

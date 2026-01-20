@@ -342,6 +342,66 @@ describe("aggregation-utils", () => {
       expect(result[1].sourceTier).toBe("hourly");
       expect(result[2].sourceTier).toBe("raw");
     });
+
+    it("raw buckets take precedence even when hourly starts earlier (regression test)", () => {
+      /**
+       * Regression test for the "Tail-End Stale" bug:
+       * When an hourly aggregate (e.g., 21:00-22:00) exists and raw data
+       * arrives mid-hour (e.g., 21:48), the raw data should take precedence,
+       * not be blocked by the hourly aggregate.
+       *
+       * Bug scenario:
+       * - Hourly aggregate: 21:00 to 22:00
+       * - Raw buckets: 21:48 to 22:11 (fresh data)
+       * - Old buggy behavior: hourly was processed first (earlier start time),
+       *   set coveredUntil=22:00, and raw was skipped
+       * - Correct behavior: raw always takes precedence, hourly is excluded
+       */
+      const baseTime = 21 * HOUR; // 21:00
+
+      // Hourly bucket covering 21:00-22:00 (stale aggregate)
+      const hourlyBuckets = [
+        createBucket({
+          startMs: baseTime,
+          durationMs: HOUR,
+          runCount: 60, // Old stale data
+          sourceTier: "hourly",
+        }),
+      ];
+
+      // Raw buckets at 21:48 and 22:00 (fresh data that should NOT be blocked)
+      const rawBuckets = [
+        createBucket({
+          startMs: baseTime + 48 * MINUTE, // 21:48
+          durationMs: 12 * MINUTE,
+          runCount: 12, // Fresh data
+          sourceTier: "raw",
+        }),
+        createBucket({
+          startMs: baseTime + HOUR, // 22:00
+          durationMs: 11 * MINUTE,
+          runCount: 11, // Fresh data
+          sourceTier: "raw",
+        }),
+      ];
+
+      const result = mergeTieredBuckets({
+        rawBuckets,
+        hourlyBuckets,
+        dailyBuckets: [],
+      });
+
+      // CRITICAL: Both raw buckets should be included
+      expect(result).toHaveLength(2);
+      expect(result[0].sourceTier).toBe("raw");
+      expect(result[1].sourceTier).toBe("raw");
+      expect(result[0].runCount).toBe(12); // 21:48 bucket
+      expect(result[1].runCount).toBe(11); // 22:00 bucket
+
+      // Hourly bucket should be excluded because raw data covers its range
+      const hourlyInResult = result.find((b) => b.sourceTier === "hourly");
+      expect(hourlyInResult).toBeUndefined();
+    });
   });
 
   describe("combineBuckets", () => {
@@ -520,6 +580,7 @@ describe("aggregation-utils", () => {
         sourceBuckets: [],
         targetIntervalMs: HOUR,
         rangeStart: new Date(0),
+        rangeEnd: new Date(HOUR),
       });
 
       expect(result).toEqual([]);
@@ -552,6 +613,7 @@ describe("aggregation-utils", () => {
         sourceBuckets,
         targetIntervalMs: HOUR,
         rangeStart: new Date(0),
+        rangeEnd: new Date(HOUR),
       });
 
       expect(result).toHaveLength(1);
@@ -585,6 +647,7 @@ describe("aggregation-utils", () => {
         sourceBuckets,
         targetIntervalMs: HOUR,
         rangeStart: new Date(0),
+        rangeEnd: new Date(2 * HOUR),
       });
 
       expect(result).toHaveLength(2);
@@ -611,6 +674,7 @@ describe("aggregation-utils", () => {
         sourceBuckets,
         targetIntervalMs: HOUR,
         rangeStart,
+        rangeEnd: new Date(rangeStart.getTime() + HOUR),
       });
 
       expect(result).toHaveLength(1);
@@ -633,6 +697,7 @@ describe("aggregation-utils", () => {
         sourceBuckets,
         targetIntervalMs: HOUR,
         rangeStart: new Date(0),
+        rangeEnd: new Date(3 * HOUR),
       });
 
       expect(result).toHaveLength(3);

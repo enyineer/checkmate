@@ -1,5 +1,7 @@
 import { format } from "date-fns";
 import type { HealthCheckDiagramSlotContext } from "../slots";
+import { SparklineTooltip } from "./SparklineTooltip";
+import { downsampleSparkline } from "../utils/sparkline-downsampling";
 
 interface HealthCheckStatusTimelineProps {
   context: HealthCheckDiagramSlotContext;
@@ -47,54 +49,53 @@ export const HealthCheckStatusTimeline: React.FC<
     return (
       <div style={{ height }} className="flex flex-col justify-between">
         {/* Status strip - equal width stacked segments for each bucket */}
-        <div className="flex h-4 gap-px rounded-md overflow-hidden bg-muted/30">
+        <div className="flex h-4 gap-px rounded-md bg-muted/30">
           {buckets.map((bucket, index) => {
             const total = bucket.runCount || 1;
             const healthyPct = (bucket.healthyCount / total) * 100;
             const degradedPct = (bucket.degradedCount / total) * 100;
             const unhealthyPct = (bucket.unhealthyCount / total) * 100;
 
-            // Calculate bucket end time for tooltip
+            // Use actual bucket end time from response (critical for last bucket which extends to query end)
             const bucketStart = new Date(bucket.bucketStart);
-            const bucketEnd = new Date(
-              bucketStart.getTime() + bucket.bucketIntervalSeconds * 1000,
-            );
+            const bucketEnd = new Date(bucket.bucketEnd);
             const timeSpan = `${format(bucketStart, "MMM d, HH:mm")} - ${format(bucketEnd, "HH:mm")}`;
 
             return (
-              <div
+              <SparklineTooltip
                 key={index}
-                className="flex-1 h-full flex flex-col overflow-hidden cursor-pointer group"
-                title={`${timeSpan}\nHealthy: ${bucket.healthyCount}\nDegraded: ${bucket.degradedCount}\nUnhealthy: ${bucket.unhealthyCount}`}
+                content={`${timeSpan}\nHealthy: ${bucket.healthyCount}\nDegraded: ${bucket.degradedCount}\nUnhealthy: ${bucket.unhealthyCount}`}
               >
-                {bucket.healthyCount > 0 && (
-                  <div
-                    className="w-full transition-opacity group-hover:opacity-80"
-                    style={{
-                      height: `${healthyPct}%`,
-                      backgroundColor: statusColors.healthy,
-                    }}
-                  />
-                )}
-                {bucket.degradedCount > 0 && (
-                  <div
-                    className="w-full transition-opacity group-hover:opacity-80"
-                    style={{
-                      height: `${degradedPct}%`,
-                      backgroundColor: statusColors.degraded,
-                    }}
-                  />
-                )}
-                {bucket.unhealthyCount > 0 && (
-                  <div
-                    className="w-full transition-opacity group-hover:opacity-80"
-                    style={{
-                      height: `${unhealthyPct}%`,
-                      backgroundColor: statusColors.unhealthy,
-                    }}
-                  />
-                )}
-              </div>
+                <div className="flex-1 h-full flex flex-col cursor-pointer group">
+                  {bucket.healthyCount > 0 && (
+                    <div
+                      className="w-full transition-opacity group-hover:opacity-80"
+                      style={{
+                        height: `${healthyPct}%`,
+                        backgroundColor: statusColors.healthy,
+                      }}
+                    />
+                  )}
+                  {bucket.degradedCount > 0 && (
+                    <div
+                      className="w-full transition-opacity group-hover:opacity-80"
+                      style={{
+                        height: `${degradedPct}%`,
+                        backgroundColor: statusColors.degraded,
+                      }}
+                    />
+                  )}
+                  {bucket.unhealthyCount > 0 && (
+                    <div
+                      className="w-full transition-opacity group-hover:opacity-80"
+                      style={{
+                        height: `${unhealthyPct}%`,
+                        backgroundColor: statusColors.unhealthy,
+                      }}
+                    />
+                  )}
+                </div>
+              </SparklineTooltip>
             );
           })}
         </div>
@@ -122,30 +123,66 @@ export const HealthCheckStatusTimeline: React.FC<
     );
   }
 
-  // Sort runs chronologically (oldest first) for left-to-right display
-  const sortedRuns = runs.toReversed();
+  // Runs come in chronological order from API (oldest first, newest last)
+  // No sorting needed
 
   // Calculate time range for labels
-  const firstTime = new Date(sortedRuns[0].timestamp).getTime();
-  const lastTime = new Date(sortedRuns.at(-1)!.timestamp).getTime();
+  const firstTime = new Date(runs[0].timestamp).getTime();
+  const lastTime = new Date(runs.at(-1)!.timestamp).getTime();
   const totalRange = lastTime - firstTime;
 
   return (
     <div style={{ height }} className="flex flex-col justify-between">
       {/* Status strip - equal width segments for clarity */}
-      <div className="flex h-4 gap-px rounded-md overflow-hidden bg-muted/30">
-        {sortedRuns.map((run, index) => (
-          <div
-            key={run.id ?? index}
-            className="flex-1 h-full transition-opacity hover:opacity-80 cursor-pointer"
-            style={{
-              backgroundColor:
-                statusColors[run.status as keyof typeof statusColors],
-            }}
-            title={`${format(new Date(run.timestamp), "MMM d, HH:mm:ss")} - ${run.status}`}
-          />
-        ))}
-      </div>
+      {(() => {
+        // Prepare runs with status info for downsampling
+        const runsWithStatus = runs.map((run) => ({
+          ...run,
+          passed: run.status === "healthy",
+          timeLabel: format(new Date(run.timestamp), "MMM d, HH:mm:ss"),
+        }));
+
+        const buckets = downsampleSparkline(runsWithStatus);
+
+        // Determine bucket color based on worst status in bucket
+        const getBucketColor = (
+          items: typeof runsWithStatus,
+        ): keyof typeof statusColors => {
+          if (items.some((r) => r.status === "unhealthy")) return "unhealthy";
+          if (items.some((r) => r.status === "degraded")) return "degraded";
+          return "healthy";
+        };
+
+        return (
+          <div className="flex h-4 gap-px rounded-md bg-muted/30">
+            {buckets.map((bucket, index) => {
+              const bucketStatus = getBucketColor(bucket.items);
+              const statusCounts = {
+                healthy: bucket.items.filter((r) => r.status === "healthy")
+                  .length,
+                degraded: bucket.items.filter((r) => r.status === "degraded")
+                  .length,
+                unhealthy: bucket.items.filter((r) => r.status === "unhealthy")
+                  .length,
+              };
+              const tooltip =
+                bucket.items.length === 1
+                  ? `${bucket.timeLabel} - ${bucket.items[0].status}`
+                  : `${bucket.timeLabel}\nHealthy: ${statusCounts.healthy}, Degraded: ${statusCounts.degraded}, Unhealthy: ${statusCounts.unhealthy}`;
+              return (
+                <SparklineTooltip key={index} content={tooltip}>
+                  <div
+                    className="flex-1 h-full transition-opacity hover:opacity-80 cursor-pointer"
+                    style={{
+                      backgroundColor: statusColors[bucketStatus],
+                    }}
+                  />
+                </SparklineTooltip>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Time axis labels */}
       <div className="flex justify-between text-xs text-muted-foreground mt-1">

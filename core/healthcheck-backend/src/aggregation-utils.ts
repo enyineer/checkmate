@@ -193,6 +193,10 @@ const TIER_PRIORITY: Record<NormalizedBucket["sourceTier"], number> = {
 /**
  * Merge buckets from different tiers, preferring most granular data.
  * For overlapping time periods, uses priority: raw > hourly > daily.
+ *
+ * IMPORTANT: Raw buckets always take precedence over hourly/daily aggregates,
+ * even when the aggregate bucket starts earlier. This ensures fresh raw data
+ * is never blocked by stale pre-computed aggregates.
  */
 export function mergeTieredBuckets(params: {
   rawBuckets: NormalizedBucket[];
@@ -201,41 +205,107 @@ export function mergeTieredBuckets(params: {
 }): NormalizedBucket[] {
   const { rawBuckets, hourlyBuckets, dailyBuckets } = params;
 
-  // Combine all buckets
-  const allBuckets = [...rawBuckets, ...hourlyBuckets, ...dailyBuckets];
-
-  if (allBuckets.length === 0) {
+  if (
+    rawBuckets.length === 0 &&
+    hourlyBuckets.length === 0 &&
+    dailyBuckets.length === 0
+  ) {
     return [];
   }
 
-  // Sort by start time, then by tier priority (most granular first)
-  allBuckets.sort((a, b) => {
-    const timeDiff = a.bucketStart.getTime() - b.bucketStart.getTime();
-    if (timeDiff !== 0) return timeDiff;
-    return TIER_PRIORITY[a.sourceTier] - TIER_PRIORITY[b.sourceTier];
-  });
+  // Two-pass approach:
+  // 1. First, collect all time ranges covered by raw data (highest priority)
+  // 2. Then, add hourly/daily buckets only for gaps not covered by raw data
 
-  // Merge overlapping buckets, keeping the most granular tier
-  const result: NormalizedBucket[] = [];
-  let coveredUntil = 0; // Timestamp up to which we have data
+  // Build a sorted list of raw bucket time ranges for efficient lookup
+  const rawTimeRanges = rawBuckets
+    .map((b) => ({
+      start: b.bucketStart.getTime(),
+      end: b.bucketEndMs,
+    }))
+    .toSorted((a, b) => a.start - b.start);
 
-  for (const bucket of allBuckets) {
-    const bucketStartMs = bucket.bucketStart.getTime();
-
-    // Skip if this bucket's time range is already covered by higher-priority data
-    if (bucketStartMs < coveredUntil) {
-      // Check if this bucket extends beyond current coverage
-      if (bucket.bucketEndMs > coveredUntil) {
-        // Partial overlap - for simplicity, we skip partially overlapping lower-priority buckets
-        // This is acceptable because we prefer raw data which is more granular
-        continue;
+  // Merge overlapping raw time ranges into continuous coverage
+  const rawCoverage: Array<{ start: number; end: number }> = [];
+  for (const range of rawTimeRanges) {
+    if (rawCoverage.length === 0) {
+      rawCoverage.push({ ...range });
+    } else {
+      const last = rawCoverage.at(-1)!;
+      // If this range overlaps or is adjacent to the last, extend it
+      if (range.start <= last.end) {
+        last.end = Math.max(last.end, range.end);
+      } else {
+        rawCoverage.push({ ...range });
       }
-      continue;
     }
-
-    result.push(bucket);
-    coveredUntil = bucket.bucketEndMs;
   }
+
+  // Helper: check if a bucket has ANY overlap with raw data
+  // Two ranges overlap if: start1 < end2 AND start2 < end1
+  const doesBucketOverlapWithRaw = (bucket: NormalizedBucket): boolean => {
+    const bucketStart = bucket.bucketStart.getTime();
+    const bucketEnd = bucket.bucketEndMs;
+
+    for (const range of rawCoverage) {
+      // Check for overlap: ranges overlap if they intersect
+      if (bucketStart < range.end && range.start < bucketEnd) {
+        return true;
+      }
+      // Optimization: if raw range starts after bucket ends, no more overlaps possible
+      if (range.start >= bucketEnd) {
+        break;
+      }
+    }
+    return false;
+  };
+
+  // Start with all raw buckets (they always take precedence)
+  const result: NormalizedBucket[] = [...rawBuckets];
+
+  // Add hourly buckets that don't overlap with raw data
+  for (const bucket of hourlyBuckets) {
+    if (!doesBucketOverlapWithRaw(bucket)) {
+      result.push(bucket);
+    }
+  }
+
+  // Add daily buckets that don't overlap with raw or hourly data
+  // Build hourly coverage to check against
+  const hourlyTimeRanges = hourlyBuckets
+    .map((b) => ({
+      start: b.bucketStart.getTime(),
+      end: b.bucketEndMs,
+    }))
+    .toSorted((a, b) => a.start - b.start);
+
+  // Helper: check if a bucket has ANY overlap with hourly data
+  const doesBucketOverlapWithHourly = (bucket: NormalizedBucket): boolean => {
+    const bucketStart = bucket.bucketStart.getTime();
+    const bucketEnd = bucket.bucketEndMs;
+
+    for (const range of hourlyTimeRanges) {
+      if (bucketStart < range.end && range.start < bucketEnd) {
+        return true;
+      }
+      if (range.start >= bucketEnd) {
+        break;
+      }
+    }
+    return false;
+  };
+
+  for (const bucket of dailyBuckets) {
+    if (
+      !doesBucketOverlapWithRaw(bucket) &&
+      !doesBucketOverlapWithHourly(bucket)
+    ) {
+      result.push(bucket);
+    }
+  }
+
+  // Sort final result by bucket start time
+  result.sort((a, b) => a.bucketStart.getTime() - b.bucketStart.getTime());
 
   return result;
 }
@@ -349,19 +419,24 @@ export function combineBuckets(params: {
 /**
  * Re-aggregate a list of normalized buckets into target-sized buckets.
  * Groups source buckets by target bucket boundaries and combines them.
+ *
+ * @param rangeEnd - The end of the query range. The last bucket will extend
+ *   to this time to ensure data is visually represented up to the query end.
  */
 export function reaggregateBuckets(params: {
   sourceBuckets: NormalizedBucket[];
   targetIntervalMs: number;
   rangeStart: Date;
+  rangeEnd: Date;
 }): NormalizedBucket[] {
-  const { sourceBuckets, targetIntervalMs, rangeStart } = params;
+  const { sourceBuckets, targetIntervalMs, rangeStart, rangeEnd } = params;
 
   if (sourceBuckets.length === 0) {
     return [];
   }
 
   const rangeStartMs = rangeStart.getTime();
+  const rangeEndMs = rangeEnd.getTime();
 
   // Group source buckets by target bucket index
   const bucketGroups = new Map<number, NormalizedBucket[]>();
@@ -379,9 +454,16 @@ export function reaggregateBuckets(params: {
   // Combine each group into a single target bucket
   const result: NormalizedBucket[] = [];
 
+  // Find the maximum bucket index to identify the last bucket
+  const maxIndex = Math.max(...bucketGroups.keys());
+
   for (const [index, buckets] of bucketGroups) {
     const targetBucketStart = new Date(rangeStartMs + index * targetIntervalMs);
-    const targetBucketEndMs = targetBucketStart.getTime() + targetIntervalMs;
+    const intervalEndMs = targetBucketStart.getTime() + targetIntervalMs;
+
+    // For the last bucket, extend to rangeEnd to capture all trailing data
+    const targetBucketEndMs =
+      index === maxIndex ? Math.max(intervalEndMs, rangeEndMs) : intervalEndMs;
 
     result.push(
       combineBuckets({

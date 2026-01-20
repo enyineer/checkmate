@@ -26,10 +26,10 @@ export const HealthCheckHistory: React.FC<SlotProps> = (props) => {
 
   const healthCheckClient = usePluginClient(HealthCheckApi);
 
-  // Fetch history with useQuery
+  // Fetch history with useQuery - newest first for table view
   const { data, isLoading: loading } = healthCheckClient.getHistory.useQuery(
-    { systemId, configurationId, limit },
-    { enabled: true }
+    { systemId, configurationId, limit, sortOrder: "desc" },
+    { enabled: true },
   );
 
   const history = data?.runs ?? [];
