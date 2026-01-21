@@ -47,6 +47,7 @@ export const MaintenanceUpdateSchema = z.object({
   statusChange: MaintenanceStatusEnum.optional(),
   createdAt: z.date(),
   createdBy: z.string().optional(),
+  createdByName: z.string().optional(),
 });
 export type MaintenanceUpdate = z.infer<typeof MaintenanceUpdateSchema>;
 

@@ -14,6 +14,7 @@
     "@checkstack/maintenance-common": "workspace:*",
     "@checkstack/notification-common": "workspace:*",
     "@checkstack/catalog-common": "workspace:*",
+    "@checkstack/auth-common": "workspace:*",
     "@checkstack/command-backend": "workspace:*",
     "@checkstack/signal-common": "workspace:*",
     "@checkstack/integration-backend": "workspace:*",

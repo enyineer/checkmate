@@ -53,6 +53,7 @@ export const IncidentUpdateSchema = z.object({
   statusChange: IncidentStatusEnum.optional(),
   createdAt: z.date(),
   createdBy: z.string().optional(),
+  createdByName: z.string().optional(),
 });
 export type IncidentUpdate = z.infer<typeof IncidentUpdateSchema>;
 

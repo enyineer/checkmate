@@ -11,16 +11,53 @@ import {
 import type { SignalService } from "@checkstack/signal-common";
 import type { IncidentService } from "./service";
 import { CatalogApi } from "@checkstack/catalog-common";
+import { AuthApi } from "@checkstack/auth-common";
 import type { InferClient } from "@checkstack/common";
 import { incidentHooks } from "./hooks";
 import { notifyAffectedSystems } from "./notifications";
+import type { IncidentUpdate } from "@checkstack/incident-common";
 
 export function createRouter(
   service: IncidentService,
   signalService: SignalService,
   catalogClient: InferClient<typeof CatalogApi>,
+  authClient: InferClient<typeof AuthApi>,
   logger: Logger,
 ) {
+  /**
+   * Resolve user IDs to profile names for a list of updates.
+   * Falls back to "Unknown User" if the user cannot be found.
+   */
+  async function resolveUserNames(
+    updates: IncidentUpdate[],
+  ): Promise<IncidentUpdate[]> {
+    const userIds = [
+      ...new Set(updates.map((u) => u.createdBy).filter(Boolean)),
+    ];
+    if (userIds.length === 0) return updates;
+
+    const userMap = new Map<string, string>();
+    await Promise.all(
+      userIds.map(async (userId) => {
+        try {
+          const user = await authClient.getUserById({ userId: userId! });
+          if (user?.name) {
+            userMap.set(userId!, user.name);
+          }
+        } catch {
+          // User not found, skip
+        }
+      }),
+    );
+
+    return updates.map((update) => ({
+      ...update,
+      createdByName: update.createdBy
+        ? (userMap.get(update.createdBy) ?? undefined)
+        : undefined,
+    }));
+  }
+
   const os = implement(incidentContract)
     .$context<RpcContext>()
     .use(autoAuthMiddleware);
@@ -32,8 +69,13 @@ export function createRouter(
 
     getIncident: os.getIncident.handler(async ({ input }) => {
       const result = await service.getIncident(input.id);
-      // eslint-disable-next-line unicorn/no-null -- oRPC contract requires null for missing values
-      return result ?? null;
+      if (!result) {
+        // eslint-disable-next-line unicorn/no-null -- oRPC contract requires null for missing values
+        return null;
+      }
+      // Resolve user names for updates
+      const updatesWithNames = await resolveUserNames(result.updates);
+      return { ...result, updates: updatesWithNames };
     }),
 
     getIncidentsForSystem: os.getIncidentsForSystem.handler(

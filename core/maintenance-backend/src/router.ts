@@ -11,16 +11,53 @@ import {
 import type { SignalService } from "@checkstack/signal-common";
 import type { MaintenanceService } from "./service";
 import { CatalogApi } from "@checkstack/catalog-common";
+import { AuthApi } from "@checkstack/auth-common";
 import type { InferClient } from "@checkstack/common";
 import { maintenanceHooks } from "./hooks";
 import { notifyAffectedSystems } from "./notifications";
+import type { MaintenanceUpdate } from "@checkstack/maintenance-common";
 
 export function createRouter(
   service: MaintenanceService,
   signalService: SignalService,
   catalogClient: InferClient<typeof CatalogApi>,
+  authClient: InferClient<typeof AuthApi>,
   logger: Logger,
 ) {
+  /**
+   * Resolve user IDs to profile names for a list of updates.
+   * Falls back to undefined if the user cannot be found.
+   */
+  async function resolveUserNames(
+    updates: MaintenanceUpdate[],
+  ): Promise<MaintenanceUpdate[]> {
+    const userIds = [
+      ...new Set(updates.map((u) => u.createdBy).filter(Boolean)),
+    ];
+    if (userIds.length === 0) return updates;
+
+    const userMap = new Map<string, string>();
+    await Promise.all(
+      userIds.map(async (userId) => {
+        try {
+          const user = await authClient.getUserById({ userId: userId! });
+          if (user?.name) {
+            userMap.set(userId!, user.name);
+          }
+        } catch {
+          // User not found, skip
+        }
+      }),
+    );
+
+    return updates.map((update) => ({
+      ...update,
+      createdByName: update.createdBy
+        ? (userMap.get(update.createdBy) ?? undefined)
+        : undefined,
+    }));
+  }
+
   const os = implement(maintenanceContract)
     .$context<RpcContext>()
     .use(autoAuthMiddleware);
@@ -32,8 +69,13 @@ export function createRouter(
 
     getMaintenance: os.getMaintenance.handler(async ({ input }) => {
       const result = await service.getMaintenance(input.id);
-      // eslint-disable-next-line unicorn/no-null -- oRPC contract requires null for missing values
-      return result ?? null;
+      if (!result) {
+        // eslint-disable-next-line unicorn/no-null -- oRPC contract requires null for missing values
+        return null;
+      }
+      // Resolve user names for updates
+      const updatesWithNames = await resolveUserNames(result.updates);
+      return { ...result, updates: updatesWithNames };
     }),
 
     getMaintenancesForSystem: os.getMaintenancesForSystem.handler(

@@ -15,6 +15,7 @@ import { integrationEventExtensionPoint } from "@checkstack/integration-backend"
 import { MaintenanceService } from "./service";
 import { createRouter } from "./router";
 import { CatalogApi } from "@checkstack/catalog-common";
+import { AuthApi } from "@checkstack/auth-common";
 import { registerSearchProvider } from "@checkstack/command-backend";
 import { resolveRoute, type InferClient } from "@checkstack/common";
 import { maintenanceHooks } from "./hooks";
@@ -105,6 +106,7 @@ export default createBackendPlugin({
 
         catalogClient = rpcClient.forPlugin(CatalogApi);
         maintenanceClient = rpcClient.forPlugin(MaintenanceApi);
+        const authClient = rpcClient.forPlugin(AuthApi);
 
         maintenanceService = new MaintenanceService(
           database as SafeDatabase<typeof schema>,
@@ -113,6 +115,7 @@ export default createBackendPlugin({
           maintenanceService,
           signalService,
           catalogClient,
+          authClient,
           logger,
         );
         rpc.registerRouter(router, maintenanceContract);

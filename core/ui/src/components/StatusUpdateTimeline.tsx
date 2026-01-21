@@ -124,12 +124,12 @@ export interface StatusUpdate<TStatus extends string = string> {
   message: string;
   statusChange?: TStatus;
   createdAt: Date | string;
-  createdBy?: string;
+  createdByName?: string;
 }
 
 export interface StatusUpdateTimelineProps<
   TStatus extends string,
-  T extends StatusUpdate<TStatus>
+  T extends StatusUpdate<TStatus>,
 > {
   /** Array of status updates to display */
   updates: T[];
@@ -154,7 +154,7 @@ export interface StatusUpdateTimelineProps<
  */
 export function StatusUpdateTimeline<
   TStatus extends string,
-  T extends StatusUpdate<TStatus>
+  T extends StatusUpdate<TStatus>,
 >({
   updates,
   renderStatusBadge,
@@ -205,13 +205,13 @@ export function StatusUpdateTimeline<
             <span>
               {format(
                 new Date(update.date),
-                showTimeline ? "MMM d, yyyy 'at' HH:mm" : "MMM d, HH:mm"
+                showTimeline ? "MMM d, yyyy 'at' HH:mm" : "MMM d, HH:mm",
               )}
             </span>
-            {update.createdBy && (
+            {update.createdByName && (
               <>
                 <span>•</span>
-                <span>by {update.createdBy}</span>
+                <span>by {update.createdByName}</span>
               </>
             )}
           </div>

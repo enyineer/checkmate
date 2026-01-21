@@ -13,6 +13,7 @@ import { integrationEventExtensionPoint } from "@checkstack/integration-backend"
 import { IncidentService } from "./service";
 import { createRouter } from "./router";
 import { CatalogApi } from "@checkstack/catalog-common";
+import { AuthApi } from "@checkstack/auth-common";
 import { catalogHooks } from "@checkstack/catalog-backend";
 import { registerSearchProvider } from "@checkstack/command-backend";
 import { resolveRoute } from "@checkstack/common";
@@ -61,7 +62,7 @@ export default createBackendPlugin({
 
     // Register hooks as integration events
     const integrationEvents = env.getExtensionPoint(
-      integrationEventExtensionPoint
+      integrationEventExtensionPoint,
     );
 
     integrationEvents.registerEvent(
@@ -72,7 +73,7 @@ export default createBackendPlugin({
         category: "Incidents",
         payloadSchema: incidentCreatedPayloadSchema,
       },
-      pluginMetadata
+      pluginMetadata,
     );
 
     integrationEvents.registerEvent(
@@ -84,7 +85,7 @@ export default createBackendPlugin({
         category: "Incidents",
         payloadSchema: incidentUpdatedPayloadSchema,
       },
-      pluginMetadata
+      pluginMetadata,
     );
 
     integrationEvents.registerEvent(
@@ -95,7 +96,7 @@ export default createBackendPlugin({
         category: "Incidents",
         payloadSchema: incidentResolvedPayloadSchema,
       },
-      pluginMetadata
+      pluginMetadata,
     );
 
     env.registerInit({
@@ -110,15 +111,17 @@ export default createBackendPlugin({
         logger.debug("🔧 Initializing Incident Backend...");
 
         const catalogClient = rpcClient.forPlugin(CatalogApi);
+        const authClient = rpcClient.forPlugin(AuthApi);
 
         const service = new IncidentService(
-          database as SafeDatabase<typeof schema>
+          database as SafeDatabase<typeof schema>,
         );
         const router = createRouter(
           service,
           signalService,
           catalogClient,
-          logger
+          authClient,
+          logger,
         );
         rpc.registerRouter(router, incidentContract);
 
@@ -159,11 +162,11 @@ export default createBackendPlugin({
           catalogHooks.systemDeleted,
           async (payload) => {
             logger.debug(
-              `Cleaning up incident associations for deleted system: ${payload.systemId}`
+              `Cleaning up incident associations for deleted system: ${payload.systemId}`,
             );
             await service.removeSystemAssociations(payload.systemId);
           },
-          { mode: "work-queue", workerGroup: "incident-system-cleanup" }
+          { mode: "work-queue", workerGroup: "incident-system-cleanup" },
         );
 
         logger.debug("✅ Incident Backend afterPluginsReady complete.");
