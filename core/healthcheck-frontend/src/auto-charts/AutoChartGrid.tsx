@@ -1202,7 +1202,9 @@ function getAllBooleanValuesWithTime(
           timeLabel: format(new Date(run.timestamp), "MMM d, HH:mm:ss"),
         };
       })
-      .filter((v): v is { value: boolean; timeLabel: string } => v !== null);
+      .filter(
+        (v): v is { value: boolean; timeLabel: string } => v !== undefined,
+      );
   }
   return context.buckets
     .map((bucket) => {
@@ -1219,7 +1221,7 @@ function getAllBooleanValuesWithTime(
         timeLabel: `${format(bucketStart, "MMM d, HH:mm")} - ${format(bucketEnd, "HH:mm")}`,
       };
     })
-    .filter((v): v is { value: boolean; timeLabel: string } => v !== null);
+    .filter((v): v is { value: boolean; timeLabel: string } => v !== undefined);
 }
 
 /**
@@ -1242,7 +1244,9 @@ function getAllStringValuesWithTime(
           timeLabel: format(new Date(run.timestamp), "MMM d, HH:mm:ss"),
         };
       })
-      .filter((v): v is { value: string; timeLabel: string } => v !== null);
+      .filter(
+        (v): v is { value: string; timeLabel: string } => v !== undefined,
+      );
   }
   return context.buckets
     .map((bucket) => {
@@ -1259,5 +1263,5 @@ function getAllStringValuesWithTime(
         timeLabel: `${format(bucketStart, "MMM d, HH:mm")} - ${format(bucketEnd, "HH:mm")}`,
       };
     })
-    .filter((v): v is { value: string; timeLabel: string } => v !== null);
+    .filter((v): v is { value: string; timeLabel: string } => v !== undefined);
 }
