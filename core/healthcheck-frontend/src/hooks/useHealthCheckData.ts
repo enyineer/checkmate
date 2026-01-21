@@ -30,9 +30,6 @@ interface UseHealthCheckDataProps {
   isRollingPreset?: boolean;
   /** Callback to update the date range (e.g., to refresh endDate to current time) */
   onDateRangeRefresh?: (newEndDate: Date) => void;
-  /** Pagination for raw data mode */
-  limit?: number;
-  offset?: number;
 }
 
 interface UseHealthCheckDataResult {
@@ -69,8 +66,6 @@ export function useHealthCheckData({
   dateRange,
   isRollingPreset = false,
   onDateRangeRefresh,
-  limit = 100,
-  offset = 0,
 }: UseHealthCheckDataProps): UseHealthCheckDataResult {
   const healthCheckClient = usePluginClient(HealthCheckApi);
   const accessApi = useApi(accessApiRef);
@@ -104,6 +99,7 @@ export function useHealthCheckData({
 
   // Query: Fetch raw data (when in raw mode)
   // Use 'asc' order for chronological chart display (oldest first, newest last)
+  // NOTE: For chart visualization, we fetch ALL runs in the date range (no pagination)
   const {
     data: rawData,
     isLoading: rawLoading,
@@ -114,8 +110,6 @@ export function useHealthCheckData({
       configurationId,
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
-      limit,
-      offset,
       sortOrder: "asc",
     },
     {

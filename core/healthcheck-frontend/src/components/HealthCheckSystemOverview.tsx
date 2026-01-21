@@ -163,7 +163,6 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     strategyId: item.strategyId,
     dateRange,
     isRollingPreset,
-    limit: 1000,
     // Update endDate to current time when new runs are detected (only for rolling presets)
     onDateRangeRefresh: (newEndDate) => {
       setDateRange((prev) => ({ ...prev, endDate: newEndDate }));
