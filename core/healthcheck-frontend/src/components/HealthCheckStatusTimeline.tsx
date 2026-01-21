@@ -144,19 +144,10 @@ export const HealthCheckStatusTimeline: React.FC<
 
         const buckets = downsampleSparkline(runsWithStatus);
 
-        // Determine bucket color based on worst status in bucket
-        const getBucketColor = (
-          items: typeof runsWithStatus,
-        ): keyof typeof statusColors => {
-          if (items.some((r) => r.status === "unhealthy")) return "unhealthy";
-          if (items.some((r) => r.status === "degraded")) return "degraded";
-          return "healthy";
-        };
-
         return (
           <div className="flex h-4 gap-px rounded-md bg-muted/30">
             {buckets.map((bucket, index) => {
-              const bucketStatus = getBucketColor(bucket.items);
+              const total = bucket.items.length || 1;
               const statusCounts = {
                 healthy: bucket.items.filter((r) => r.status === "healthy")
                   .length,
@@ -165,18 +156,46 @@ export const HealthCheckStatusTimeline: React.FC<
                 unhealthy: bucket.items.filter((r) => r.status === "unhealthy")
                   .length,
               };
+              const healthyPct = (statusCounts.healthy / total) * 100;
+              const degradedPct = (statusCounts.degraded / total) * 100;
+              const unhealthyPct = (statusCounts.unhealthy / total) * 100;
+
               const tooltip =
                 bucket.items.length === 1
                   ? `${bucket.timeLabel} - ${bucket.items[0].status}`
                   : `${bucket.timeLabel}\nHealthy: ${statusCounts.healthy}, Degraded: ${statusCounts.degraded}, Unhealthy: ${statusCounts.unhealthy}`;
+
               return (
                 <SparklineTooltip key={index} content={tooltip}>
-                  <div
-                    className="flex-1 h-full transition-opacity hover:opacity-80 cursor-pointer"
-                    style={{
-                      backgroundColor: statusColors[bucketStatus],
-                    }}
-                  />
+                  <div className="flex-1 h-full flex flex-col cursor-pointer group">
+                    {statusCounts.healthy > 0 && (
+                      <div
+                        className="w-full transition-opacity group-hover:opacity-80"
+                        style={{
+                          height: `${healthyPct}%`,
+                          backgroundColor: statusColors.healthy,
+                        }}
+                      />
+                    )}
+                    {statusCounts.degraded > 0 && (
+                      <div
+                        className="w-full transition-opacity group-hover:opacity-80"
+                        style={{
+                          height: `${degradedPct}%`,
+                          backgroundColor: statusColors.degraded,
+                        }}
+                      />
+                    )}
+                    {statusCounts.unhealthy > 0 && (
+                      <div
+                        className="w-full transition-opacity group-hover:opacity-80"
+                        style={{
+                          height: `${unhealthyPct}%`,
+                          backgroundColor: statusColors.unhealthy,
+                        }}
+                      />
+                    )}
+                  </div>
                 </SparklineTooltip>
               );
             })}
