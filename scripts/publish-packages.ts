@@ -274,15 +274,26 @@ async function main() {
   }
 
   // Output in changesets format for GitHub Action compatibility
-  if (successful.length > 0 && !dryRun) {
-    const publishedPackages = successful.map((p) => ({
-      name: p.name,
-      version: p.version,
-    }));
-    console.log("\n::set-output name=published::true");
-    console.log(
-      `::set-output name=publishedPackages::${JSON.stringify(publishedPackages)}`,
-    );
+  // Use GITHUB_OUTPUT file (modern approach) instead of deprecated ::set-output
+  const githubOutput = process.env.GITHUB_OUTPUT;
+  if (githubOutput && !dryRun) {
+    const { appendFile } = await import("node:fs/promises");
+
+    if (successful.length > 0) {
+      const publishedPackages = successful.map((p) => ({
+        name: p.name,
+        version: p.version,
+      }));
+
+      await appendFile(githubOutput, `published=true\n`);
+      await appendFile(
+        githubOutput,
+        `publishedPackages=${JSON.stringify(publishedPackages)}\n`,
+      );
+    } else {
+      // Explicitly set to false when no packages were published
+      await appendFile(githubOutput, `published=false\n`);
+    }
   }
 }
 

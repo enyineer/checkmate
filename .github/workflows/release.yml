@@ -76,9 +76,9 @@ jobs:
     needs: [typecheck, lint, test]
     runs-on: ubuntu-latest
     outputs:
-      published: ${{ steps.changesets.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
-      releasePublished: ${{ steps.check-release.outputs.releasePublished }}
+      published: ${{ steps.publish.outputs.published }}
+      publishedPackages: ${{ steps.publish.outputs.publishedPackages }}
+      releasePublished: ${{ steps.publish.outputs.published }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -98,22 +98,18 @@ jobs:
         uses: changesets/action@v1
         with:
           version: bun run version-packages
-          publish: bun run publish-packages
+          # Don't use the action's publish - we handle it separately for reliable output capture
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Bun uses NPM_CONFIG_TOKEN for npm registry authentication
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Check if packages were published
-        id: check-release
-        run: |
-          # The changesets action sets 'published' to 'true' when the publish command runs successfully
-          if [ "${{ steps.changesets.outputs.published }}" == "true" ]; then
-            echo "releasePublished=true" >> $GITHUB_OUTPUT
-          else
-            echo "releasePublished=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Publish packages to npm
+        id: publish
+        # Only run when changesets action didn't create a PR (meaning we're ready to publish)
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: bun run scripts/publish-packages.ts
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   docker:
     name: Build and Push Docker Image
