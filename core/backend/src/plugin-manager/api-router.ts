@@ -56,21 +56,42 @@ export function createApiRouteHandler({
       rootRpcRouter[pluginId] = router;
     }
 
+    // Resolve logger first for use in interceptor
+    const logger = await getService(coreServices.logger);
+
     const rpcHandler = new RPCHandler(
-      rootRpcRouter as ConstructorParameters<typeof RPCHandler>[0]
+      rootRpcRouter as ConstructorParameters<typeof RPCHandler>[0],
+      {
+        interceptors: [
+          async ({ next, ...rest }) => {
+            try {
+              return await next(rest);
+            } catch (error) {
+              if (logger) {
+                (logger as Logger).error(
+                  `RPC procedure error: ${String(error)}`,
+                );
+                if (error instanceof Error && error.stack) {
+                  (logger as Logger).error(`Stack trace: ${error.stack}`);
+                }
+              }
+              throw error;
+            }
+          },
+        ],
+      },
     );
 
     // Resolve core services for RPC context
     const auth = await getService(coreServices.auth);
-    const logger = await getService(coreServices.logger);
     const db = await getService(coreServices.database);
     const fetch = await getService(coreServices.fetch);
     const healthCheckRegistry = await getService(
-      coreServices.healthCheckRegistry
+      coreServices.healthCheckRegistry,
     );
     const collectorRegistry = await getService(coreServices.collectorRegistry);
     const queuePluginRegistry = await getService(
-      coreServices.queuePluginRegistry
+      coreServices.queuePluginRegistry,
     );
     const queueManager = await getService(coreServices.queueManager);
     const eventBus = await getService(coreServices.eventBus);
@@ -119,29 +140,24 @@ export function createApiRouteHandler({
     };
 
     // 1. Try oRPC first
-    try {
-      const { matched, response } = await rpcHandler.handle(c.req.raw, {
-        prefix: "/api",
-        context,
-      });
+    const { matched, response } = await rpcHandler.handle(c.req.raw, {
+      prefix: "/api",
+      context,
+    });
 
-      if (matched) {
-        return c.newResponse(response.body, response);
-      }
-
-      logger.debug(`RPC mismatch for: ${c.req.method} ${pathname}`);
-    } catch (error) {
-      logger.error(`RPC Handler error: ${String(error)}`);
+    if (matched) {
+      return c.newResponse(response.body, response);
     }
+
+    logger.debug(`RPC mismatch for: ${c.req.method} ${pathname}`);
 
     // 2. Try native handlers
     // Sort by path length (descending) to ensure more specific paths are tried first
-    const sortedHandlers = [...pluginHttpHandlers.entries()].toSorted(function (
-      a,
-      b
-    ) {
-      return b[0].length - a[0].length;
-    });
+    const sortedHandlers = [...pluginHttpHandlers.entries()].toSorted(
+      function (a, b) {
+        return b[0].length - a[0].length;
+      },
+    );
 
     for (const [path, handler] of sortedHandlers) {
       if (pathname.startsWith(path)) {
@@ -158,7 +174,7 @@ export function createApiRouteHandler({
  */
 export function registerApiRoute(
   rootRouter: Hono,
-  handler: ReturnType<typeof createApiRouteHandler>
+  handler: ReturnType<typeof createApiRouteHandler>,
 ) {
   rootRouter.all("/api/:pluginId/*", handler);
 }
