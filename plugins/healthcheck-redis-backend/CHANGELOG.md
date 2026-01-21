@@ -1,5 +1,12 @@
 # @checkstack/healthcheck-redis-backend
 
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [d6f7449]
+  - @checkstack/healthcheck-common@0.8.0
+
 ## 0.1.11
 
 ### Patch Changes
