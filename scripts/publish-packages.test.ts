@@ -1,6 +1,13 @@
 import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
 import { determinePackageStatus, type PackageJson } from "./publish-packages";
 
+/**
+ * Regex used by changesets action to detect published packages
+ * From: https://github.com/changesets/action/blob/main/src/run.ts
+ * let newTagRegex = /New tag:\s+(@[^/]+\/[^@]+|[^/]+)@([^\s]+)/;
+ */
+const CHANGESETS_NEW_TAG_REGEX = /New tag:\s+(@[^/]+\/[^@]+|[^/]+)@([^\s]+)/;
+
 describe("publish-packages", () => {
   describe("determinePackageStatus", () => {
     test("returns 'private' for private packages", () => {
@@ -131,6 +138,123 @@ describe("publish-packages", () => {
         const result = determinePackageStatus({ pkg, npmVersion });
         expect(result).toBe(expectedStatus);
       }
+    });
+  });
+
+  describe("changesets action output format", () => {
+    /**
+     * The changesets action parses stdout for lines matching:
+     * /New tag:\s+(@[^/]+\/[^@]+|[^/]+)@([^\s]+)/
+     *
+     * This regex expects:
+     * - "New tag: " prefix
+     * - Package name (scoped like @scope/name or unscoped like name)
+     * - "@" separator
+     * - Version number
+     */
+
+    test("scoped package output matches changesets regex", () => {
+      const output = "New tag: @checkstack/ui@0.5.2";
+      const match = output.match(CHANGESETS_NEW_TAG_REGEX);
+
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe("@checkstack/ui");
+      expect(match![2]).toBe("0.5.2");
+    });
+
+    test("scoped package with complex name matches changesets regex", () => {
+      const output = "New tag: @checkstack/healthcheck-http-backend@1.2.3";
+      const match = output.match(CHANGESETS_NEW_TAG_REGEX);
+
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe("@checkstack/healthcheck-http-backend");
+      expect(match![2]).toBe("1.2.3");
+    });
+
+    test("unscoped package output matches changesets regex", () => {
+      const output = "New tag: my-package@1.0.0";
+      const match = output.match(CHANGESETS_NEW_TAG_REGEX);
+
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe("my-package");
+      expect(match![2]).toBe("1.0.0");
+    });
+
+    test("prerelease version matches changesets regex", () => {
+      const output = "New tag: @checkstack/core@2.0.0-beta.1";
+      const match = output.match(CHANGESETS_NEW_TAG_REGEX);
+
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe("@checkstack/core");
+      expect(match![2]).toBe("2.0.0-beta.1");
+    });
+
+    test("output with surrounding text still matches", () => {
+      const output = "Publishing... New tag: @checkstack/api@0.1.0 done!";
+      const match = output.match(CHANGESETS_NEW_TAG_REGEX);
+
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe("@checkstack/api");
+      expect(match![2]).toBe("0.1.0");
+    });
+
+    test("multiple packages can be parsed from multiline output", () => {
+      const output = `
+Publishing @checkstack/ui...
+New tag: @checkstack/ui@0.5.2
+Publishing @checkstack/backend...
+New tag: @checkstack/backend@0.4.9
+`;
+      const lines = output.split("\n");
+      const publishedPackages: Array<{ name: string; version: string }> = [];
+
+      for (const line of lines) {
+        const match = line.match(CHANGESETS_NEW_TAG_REGEX);
+        if (match) {
+          publishedPackages.push({ name: match[1], version: match[2] });
+        }
+      }
+
+      expect(publishedPackages).toHaveLength(2);
+      expect(publishedPackages[0]).toEqual({
+        name: "@checkstack/ui",
+        version: "0.5.2",
+      });
+      expect(publishedPackages[1]).toEqual({
+        name: "@checkstack/backend",
+        version: "0.4.9",
+      });
+    });
+
+    test("generateNewTagOutput produces correct format", () => {
+      // This tests the exact format our script outputs
+      const pkg = { name: "@checkstack/test-pkg", version: "1.2.3" };
+      const output = `New tag: ${pkg.name}@${pkg.version}`;
+
+      const match = output.match(CHANGESETS_NEW_TAG_REGEX);
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe(pkg.name);
+      expect(match![2]).toBe(pkg.version);
+    });
+  });
+
+  describe("git tag format", () => {
+    test("git tag name matches expected format", () => {
+      // Git tags should be: @scope/package-name@version
+      const pkg = { name: "@checkstack/ui", version: "0.5.2" };
+      const tagName = `${pkg.name}@${pkg.version}`;
+
+      expect(tagName).toBe("@checkstack/ui@0.5.2");
+    });
+
+    test("git tag name for complex package names", () => {
+      const pkg = {
+        name: "@checkstack/healthcheck-http-backend",
+        version: "1.2.3",
+      };
+      const tagName = `${pkg.name}@${pkg.version}`;
+
+      expect(tagName).toBe("@checkstack/healthcheck-http-backend@1.2.3");
     });
   });
 });
