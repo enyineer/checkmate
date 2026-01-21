@@ -1,5 +1,14 @@
 # @checkstack/release
 
+## 0.22.0
+
+### Minor Changes
+
+- deec10c: Fix production crash when opening health check accordion and enable sourcemaps
+
+  - Fixed TypeError in `HealthCheckLatencyChart` where recharts Tooltip content function was returning `undefined` instead of `null`, causing "can't access property 'value', o is undefined" error
+  - Enabled production sourcemaps in Vite config for better debugging of production errors
+
 ## 0.21.0
 
 ### Minor Changes
