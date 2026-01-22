@@ -175,4 +175,7 @@ export const EDITOR_TYPE_LABELS: Record<EditorType, string> = {
   xml: "XML",
   markdown: "Markdown",
   formdata: "Form Data",
+  javascript: "JavaScript",
+  typescript: "TypeScript",
+  bash: "Bash",
 };

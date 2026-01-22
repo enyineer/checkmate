@@ -233,6 +233,39 @@ export const MultiTypeEditorField: React.FC<MultiTypeEditorFieldProps> = ({
           templateProperties={templateProperties}
         />
       )}
+
+      {selectedType === "javascript" && (
+        <CodeEditor
+          id={id}
+          value={value ?? ""}
+          onChange={onChange}
+          language="javascript"
+          minHeight="150px"
+          templateProperties={templateProperties}
+        />
+      )}
+
+      {selectedType === "typescript" && (
+        <CodeEditor
+          id={id}
+          value={value ?? ""}
+          onChange={onChange}
+          language="typescript"
+          minHeight="150px"
+          templateProperties={templateProperties}
+        />
+      )}
+
+      {selectedType === "bash" && (
+        <CodeEditor
+          id={id}
+          value={value ?? ""}
+          onChange={onChange}
+          language="bash"
+          minHeight="150px"
+          templateProperties={templateProperties}
+        />
+      )}
     </div>
   );
 };

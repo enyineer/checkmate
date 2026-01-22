@@ -1,6 +1,7 @@
 import {
   Versioned,
   z,
+  configString,
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
@@ -25,7 +26,9 @@ import type { ScriptTransportClient } from "./transport-client";
 // ============================================================================
 
 const executeConfigSchema = z.object({
-  command: z.string().min(1).describe("Command or script path to execute"),
+  command: configString({
+    "x-editor-types": ["bash"],
+  }).describe("Bash command or script to execute"),
   args: z.array(z.string()).default([]).describe("Command arguments"),
   cwd: z.string().optional().describe("Working directory"),
   env: z
@@ -89,10 +92,8 @@ const executeAggregatedDisplaySchema = healthResultSchema({
 });
 
 const executeAggregatedInternalSchema = z.object({
-  _executionTime: averageStateSchema
-    .optional(),
-  _success: rateStateSchema
-    .optional(),
+  _executionTime: averageStateSchema.optional(),
+  _success: rateStateSchema.optional(),
 });
 
 const executeAggregatedSchema = executeAggregatedDisplaySchema.merge(

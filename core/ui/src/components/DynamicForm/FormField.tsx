@@ -349,7 +349,18 @@ export const FormField: React.FC<FormFieldProps> = ({
     if (!itemSchema) return <></>;
 
     // Helper to create initial value for new array items
-    const createNewItem = (): Record<string, unknown> => {
+    const createNewItem = (): unknown => {
+      // Handle primitive types
+      if (itemSchema.type === "string") {
+        return itemSchema.default ?? "";
+      }
+      if (itemSchema.type === "number" || itemSchema.type === "integer") {
+        return itemSchema.default ?? 0;
+      }
+      if (itemSchema.type === "boolean") {
+        return itemSchema.default ?? false;
+      }
+
       // Check if itemSchema is a discriminated union
       const variants = itemSchema.oneOf || itemSchema.anyOf;
       if (variants && variants.length > 0) {
@@ -391,12 +402,7 @@ export const FormField: React.FC<FormFieldProps> = ({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() =>
-              onChange([
-                ...(items as Record<string, unknown>[]),
-                createNewItem(),
-              ])
-            }
+            onClick={() => onChange([...items, createNewItem()])}
             className="h-8 gap-1 transition-all hover:bg-accent hover:text-accent-foreground"
           >
             <Plus className="h-4 w-4" />

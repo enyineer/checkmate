@@ -19,6 +19,9 @@ import type { AccessRule, InstanceAccessConfig } from "./access-utils";
  * - "xml": CodeEditor with XML syntax highlighting
  * - "markdown": CodeEditor with Markdown syntax highlighting
  * - "formdata": Key/value pair editor (URL-encoded)
+ * - "javascript": CodeEditor with JavaScript syntax highlighting and autocomplete
+ * - "typescript": CodeEditor with TypeScript syntax highlighting and autocomplete
+ * - "bash": CodeEditor with Bash/Shell syntax highlighting
  */
 export type EditorType =
   | "none"
@@ -27,7 +30,10 @@ export type EditorType =
   | "yaml"
   | "xml"
   | "markdown"
-  | "formdata";
+  | "formdata"
+  | "javascript"
+  | "typescript"
+  | "bash";
 
 /**
  * Qualifies a resource type with the plugin namespace.

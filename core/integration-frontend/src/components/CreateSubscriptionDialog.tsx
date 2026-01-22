@@ -77,7 +77,7 @@ export const SubscriptionDialog = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [providerConfig, setProviderConfig] = useState<Record<string, unknown>>(
-    {}
+    {},
   );
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   // Track whether DynamicForm fields are valid (all required fields filled)
@@ -86,18 +86,18 @@ export const SubscriptionDialog = ({
   // Queries using hooks
   const { data: events = [] } = client.listEventTypes.useQuery(
     {},
-    { enabled: open }
+    { enabled: open },
   );
 
   const { data: connections = [], isLoading: loadingConnections } =
     client.listConnections.useQuery(
       { providerId: selectedProvider?.qualifiedId ?? "" },
-      { enabled: open && !!selectedProvider?.hasConnectionSchema }
+      { enabled: open && !!selectedProvider?.hasConnectionSchema },
     );
 
   const { data: payloadSchemaData } = client.getEventPayloadSchema.useQuery(
     { eventId: selectedEventId },
-    { enabled: open && !!selectedEventId }
+    { enabled: open && !!selectedEventId },
   );
 
   const payloadProperties: PayloadProperty[] =
@@ -112,7 +112,9 @@ export const SubscriptionDialog = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create subscription"
+        error instanceof Error
+          ? error.message
+          : "Failed to create subscription",
       );
       setSaving(false);
     },
@@ -127,7 +129,9 @@ export const SubscriptionDialog = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update subscription"
+        error instanceof Error
+          ? error.message
+          : "Failed to update subscription",
       );
       setSaving(false);
     },
@@ -141,7 +145,9 @@ export const SubscriptionDialog = ({
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete subscription"
+        error instanceof Error
+          ? error.message
+          : "Failed to delete subscription",
       );
     },
   });
@@ -158,7 +164,7 @@ export const SubscriptionDialog = ({
     if (open && subscription) {
       // Find the provider for this subscription
       const provider = providers.find(
-        (p) => p.qualifiedId === subscription.providerId
+        (p) => p.qualifiedId === subscription.providerId,
       );
       if (provider) {
         setSelectedProvider(provider);
@@ -198,7 +204,7 @@ export const SubscriptionDialog = ({
     if (!selectedProvider) return;
 
     const hasCustomConfig = getProviderConfigExtension(
-      selectedProvider.qualifiedId
+      selectedProvider.qualifiedId,
     );
     const hasNoSchema =
       !selectedProvider.configSchema ||
@@ -300,18 +306,18 @@ export const SubscriptionDialog = ({
             } catch (error) {
               console.error(
                 `Failed to fetch options for ${resolverName}:`,
-                error
+                error,
               );
               return [];
             }
           };
         },
         has: () => true, // All resolver names are valid
-      }
+      },
     ) as Record<
       string,
       (
-        formValues: Record<string, unknown>
+        formValues: Record<string, unknown>,
       ) => Promise<{ value: string; label: string }[]>
     >;
     // Note: getOptionsMutation intentionally omitted - mutation objects change on every render
@@ -333,17 +339,17 @@ export const SubscriptionDialog = ({
               {isEditMode
                 ? `Edit ${selectedProvider?.displayName ?? "Subscription"}`
                 : step === "provider"
-                ? "Select Provider"
-                : `Configure ${
-                    selectedProvider?.displayName ?? "Subscription"
-                  }`}
+                  ? "Select Provider"
+                  : `Configure ${
+                      selectedProvider?.displayName ?? "Subscription"
+                    }`}
             </DialogTitle>
             <DialogDescription className="sr-only">
               {isEditMode
                 ? "Edit the settings for this integration subscription"
                 : step === "provider"
-                ? "Choose a provider for your integration subscription"
-                : "Configure the subscription settings"}
+                  ? "Choose a provider for your integration subscription"
+                  : "Configure the subscription settings"}
             </DialogDescription>
           </DialogHeader>
 
@@ -462,7 +468,7 @@ export const SubscriptionDialog = ({
                             integrationRoutes.routes.connections,
                             {
                               providerId: selectedProvider.qualifiedId,
-                            }
+                            },
                           )}
                         >
                           Configure Connections
@@ -489,13 +495,29 @@ export const SubscriptionDialog = ({
                 </div>
               )}
 
-              {/* Provider Config */}
+              {/* Provider Config - only show when event is selected */}
               {selectedProvider &&
                 (() => {
                   // Check if provider has a custom config component
                   const extension = getProviderConfigExtension(
-                    selectedProvider.qualifiedId
+                    selectedProvider.qualifiedId,
                   );
+
+                  // Require event selection before showing config with template support
+                  if (!selectedEventId) {
+                    // Only show message if provider has configuration options
+                    if (extension || selectedProvider.configSchema) {
+                      return (
+                        <div className="border rounded-md p-4 bg-muted/50">
+                          <p className="text-sm text-muted-foreground">
+                            Select an event above to configure provider options
+                            with template support.
+                          </p>
+                        </div>
+                      );
+                    }
+                    return <></>;
+                  }
 
                   if (extension) {
                     // Render custom component
@@ -597,8 +619,8 @@ export const SubscriptionDialog = ({
                     ? "Saving..."
                     : "Creating..."
                   : isEditMode
-                  ? "Save Changes"
-                  : "Create Subscription"}
+                    ? "Save Changes"
+                    : "Create Subscription"}
               </Button>
             )}
           </DialogFooter>

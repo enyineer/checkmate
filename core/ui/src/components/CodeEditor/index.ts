@@ -5,6 +5,7 @@ export {
   type TemplateProperty,
 } from "./CodeEditor";
 
-// Re-export language support for testing and extensibility
-export { isValidJsonTemplatePosition } from "./languageSupport";
-export type { LanguageSupport, DecorationRange } from "./languageSupport";
+export {
+  generateTypeDefinitions,
+  type GenerateTypesOptions,
+} from "./generateTypeDefinitions";

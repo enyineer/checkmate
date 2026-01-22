@@ -2,6 +2,7 @@ import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
 import { ScriptHealthCheckStrategy } from "./strategy";
 import { pluginMetadata } from "./plugin-metadata";
 import { ExecuteCollector } from "./execute-collector";
+import { InlineScriptCollector } from "./inline-script-collector";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,
@@ -17,6 +18,7 @@ export default createBackendPlugin({
         const strategy = new ScriptHealthCheckStrategy();
         healthCheckRegistry.register(strategy);
         collectorRegistry.register(new ExecuteCollector());
+        collectorRegistry.register(new InlineScriptCollector());
       },
     });
   },
