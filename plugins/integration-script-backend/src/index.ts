@@ -2,7 +2,7 @@ import { createBackendPlugin, coreServices } from "@checkstack/backend-api";
 import { integrationProviderExtensionPoint } from "@checkstack/integration-backend";
 import { pluginMetadata } from "./plugin-metadata";
 import { scriptProvider } from "./provider";
-import { bashProvider } from "./bash-provider";
+import { shellProvider } from "./shell-provider";
 
 export default createBackendPlugin({
   metadata: pluginMetadata,
@@ -22,9 +22,9 @@ export default createBackendPlugin({
 
         // Register both providers
         extensionPoint.addProvider(scriptProvider, pluginMetadata);
-        extensionPoint.addProvider(bashProvider, pluginMetadata);
+        extensionPoint.addProvider(shellProvider, pluginMetadata);
 
-        logger.debug("✅ Script and Bash Integration Providers registered.");
+        logger.debug("✅ Script and Shell Integration Providers registered.");
       },
     });
   },

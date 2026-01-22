@@ -256,12 +256,12 @@ export const MultiTypeEditorField: React.FC<MultiTypeEditorFieldProps> = ({
         />
       )}
 
-      {selectedType === "bash" && (
+      {selectedType === "shell" && (
         <CodeEditor
           id={id}
           value={value ?? ""}
           onChange={onChange}
-          language="bash"
+          language="shell"
           minHeight="150px"
           templateProperties={templateProperties}
         />

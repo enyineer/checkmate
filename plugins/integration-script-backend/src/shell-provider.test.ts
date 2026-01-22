@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import {
-  bashProvider,
-  bashConfigSchemaV1,
-  type BashConfig,
-} from "./bash-provider";
+  shellProvider,
+  shellConfigSchemaV1,
+  type ShellConfig,
+} from "./shell-provider";
 import type { IntegrationDeliveryContext } from "@checkstack/integration-backend";
 
 /**
@@ -26,10 +26,10 @@ const mockLogger = {
 
 // Create a test delivery context
 function createTestContext(
-  configOverrides: Partial<BashConfig> = {},
+  configOverrides: Partial<ShellConfig> = {},
   payloadOverrides: Record<string, unknown> = {},
-): IntegrationDeliveryContext<BashConfig> {
-  const defaultConfig: BashConfig = {
+): IntegrationDeliveryContext<ShellConfig> {
+  const defaultConfig: ShellConfig = {
     script: 'echo "test"',
     timeout: 5000,
     ...configOverrides,
@@ -58,7 +58,7 @@ function createTestContext(
   };
 }
 
-describe("BashProvider", () => {
+describe("ShellProvider", () => {
   beforeEach(() => {
     mockLogger.debug.mockClear();
     mockLogger.info.mockClear();
@@ -72,21 +72,21 @@ describe("BashProvider", () => {
 
   describe("metadata", () => {
     it("has correct basic metadata", () => {
-      expect(bashProvider.id).toBe("bash");
-      expect(bashProvider.displayName).toBe("Bash Script");
-      expect(bashProvider.description).toContain("shell");
-      expect(bashProvider.icon).toBe("Terminal");
+      expect(shellProvider.id).toBe("shell");
+      expect(shellProvider.displayName).toBe("Bash Script");
+      expect(shellProvider.description).toContain("shell");
+      expect(shellProvider.icon).toBe("Terminal");
     });
 
     it("has a versioned config schema", () => {
-      expect(bashProvider.config).toBeDefined();
-      expect(bashProvider.config.version).toBe(1);
+      expect(shellProvider.config).toBeDefined();
+      expect(shellProvider.config.version).toBe(1);
     });
 
     it("has documentation with environment variable examples", () => {
-      expect(bashProvider.documentation?.setupGuide).toBeDefined();
-      expect(bashProvider.documentation?.setupGuide).toContain("EVENT_ID");
-      expect(bashProvider.documentation?.setupGuide).toContain("PAYLOAD_");
+      expect(shellProvider.documentation?.setupGuide).toBeDefined();
+      expect(shellProvider.documentation?.setupGuide).toContain("EVENT_ID");
+      expect(shellProvider.documentation?.setupGuide).toContain("PAYLOAD_");
     });
   });
 
@@ -97,19 +97,19 @@ describe("BashProvider", () => {
   describe("config schema", () => {
     it("requires script field", () => {
       expect(() => {
-        bashConfigSchemaV1.parse({});
+        shellConfigSchemaV1.parse({});
       }).toThrow();
     });
 
     it("accepts valid script", () => {
-      const result = bashConfigSchemaV1.parse({
+      const result = shellConfigSchemaV1.parse({
         script: 'echo "hello"',
       });
       expect(result.script).toBe('echo "hello"');
     });
 
     it("applies default timeout", () => {
-      const result = bashConfigSchemaV1.parse({
+      const result = shellConfigSchemaV1.parse({
         script: "exit 0",
       });
       expect(result.timeout).toBe(30_000);
@@ -117,7 +117,7 @@ describe("BashProvider", () => {
 
     it("validates timeout range", () => {
       expect(() => {
-        bashConfigSchemaV1.parse({
+        shellConfigSchemaV1.parse({
           script: "exit 0",
           timeout: 500, // Too short
         });
@@ -125,7 +125,7 @@ describe("BashProvider", () => {
     });
 
     it("accepts working directory", () => {
-      const result = bashConfigSchemaV1.parse({
+      const result = shellConfigSchemaV1.parse({
         script: "pwd",
         workingDirectory: "/tmp",
       });
@@ -143,7 +143,7 @@ describe("BashProvider", () => {
         script: 'echo "success"',
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("success");
@@ -154,7 +154,7 @@ describe("BashProvider", () => {
         script: "exit 1",
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("exited with code 1");
@@ -165,7 +165,7 @@ describe("BashProvider", () => {
         script: 'echo "first-line"\necho "second-line"',
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("first-line");
@@ -182,7 +182,7 @@ describe("BashProvider", () => {
         script: 'echo "$EVENT_ID"',
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("test-plugin.incident.created");
@@ -193,7 +193,7 @@ describe("BashProvider", () => {
         script: 'echo "$SUBSCRIPTION_NAME"',
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("Test Subscription");
@@ -204,7 +204,7 @@ describe("BashProvider", () => {
         script: 'echo "$PAYLOAD_TITLE"',
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("Test Incident");
@@ -215,7 +215,7 @@ describe("BashProvider", () => {
         script: 'echo "$PAYLOAD_NESTED_FIELD"',
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("value");
@@ -227,7 +227,7 @@ describe("BashProvider", () => {
         { "field-name": "dash-value" },
       );
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("dash-value");
@@ -244,7 +244,7 @@ describe("BashProvider", () => {
         script: 'echo "error message" >&2; exit 1',
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("error message");
@@ -255,7 +255,7 @@ describe("BashProvider", () => {
         script: "if then fi", // Invalid syntax
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
@@ -273,7 +273,7 @@ describe("BashProvider", () => {
         timeout: 1000,
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("timed out");
@@ -285,7 +285,7 @@ describe("BashProvider", () => {
         timeout: 5000,
       });
 
-      const result = await bashProvider.deliver(context);
+      const result = await shellProvider.deliver(context);
 
       expect(result.success).toBe(true);
       expect(result.externalId).toBe("fast");

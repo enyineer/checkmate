@@ -27,8 +27,8 @@ import type { ScriptTransportClient } from "./transport-client";
 
 const executeConfigSchema = z.object({
   command: configString({
-    "x-editor-types": ["bash"],
-  }).describe("Bash command or script to execute"),
+    "x-editor-types": ["shell"],
+  }).describe("Shell command or script to execute"),
   args: z.array(z.string()).default([]).describe("Command arguments"),
   cwd: z.string().optional().describe("Working directory"),
   env: z

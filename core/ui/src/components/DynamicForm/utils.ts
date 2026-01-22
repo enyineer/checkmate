@@ -177,5 +177,5 @@ export const EDITOR_TYPE_LABELS: Record<EditorType, string> = {
   formdata: "Form Data",
   javascript: "JavaScript",
   typescript: "TypeScript",
-  bash: "Bash",
+  shell: "Shell",
 };

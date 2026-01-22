@@ -20,8 +20,7 @@ export type CodeEditorLanguage =
   | "markdown"
   | "javascript"
   | "typescript"
-  | "shell"
-  | "bash"; // Aliased to shell in Monaco
+  | "shell";
 
 /**
  * A single payload property available for templating

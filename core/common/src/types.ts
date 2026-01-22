@@ -21,7 +21,7 @@ import type { AccessRule, InstanceAccessConfig } from "./access-utils";
  * - "formdata": Key/value pair editor (URL-encoded)
  * - "javascript": CodeEditor with JavaScript syntax highlighting and autocomplete
  * - "typescript": CodeEditor with TypeScript syntax highlighting and autocomplete
- * - "bash": CodeEditor with Bash/Shell syntax highlighting
+ * - "shell": CodeEditor with Shell syntax highlighting
  */
 export type EditorType =
   | "none"
@@ -33,7 +33,7 @@ export type EditorType =
   | "formdata"
   | "javascript"
   | "typescript"
-  | "bash";
+  | "shell";
 
 /**
  * Qualifies a resource type with the plugin namespace.

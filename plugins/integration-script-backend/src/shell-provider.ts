@@ -15,9 +15,9 @@ import type {
  * Bash provider configuration schema.
  * Executes shell scripts with event context available as environment variables.
  */
-export const bashConfigSchemaV1 = z.object({
+export const shellConfigSchemaV1 = z.object({
   script: configString({
-    "x-editor-types": ["bash"],
+    "x-editor-types": ["shell"],
   }).describe(
     "Bash script to execute. Event context is available via environment variables (e.g., $EVENT_ID, $PAYLOAD_*).",
   ),
@@ -34,7 +34,7 @@ export const bashConfigSchemaV1 = z.object({
     .describe("Working directory for script execution"),
 });
 
-export type BashConfig = z.infer<typeof bashConfigSchemaV1>;
+export type ShellConfig = z.infer<typeof shellConfigSchemaV1>;
 
 // =============================================================================
 // Environment Variable Helpers
@@ -125,7 +125,7 @@ async function executeBashScript({
   try {
     // Execute script via bash -c
     proc = spawn({
-      cmd: ["bash", "-c", script],
+      cmd: ["sh", "-c", script],
       cwd,
       env: { ...process.env, ...env },
       stdout: "pipe",
@@ -161,11 +161,11 @@ async function executeBashScript({
 }
 
 // =============================================================================
-// Bash Provider Implementation
+// Shell Provider Implementation
 // =============================================================================
 
 /**
- * Bash integration provider.
+ * Shell integration provider.
  * Executes shell scripts when events trigger, with context available via
  * environment variables.
  *
@@ -177,15 +177,15 @@ async function executeBashScript({
  * - SUBSCRIPTION_NAME: Subscription name
  * - PAYLOAD_*: Flattened event payload fields
  */
-export const bashProvider: IntegrationProvider<BashConfig> = {
-  id: "bash",
-  displayName: "Bash Script",
+export const shellProvider: IntegrationProvider<ShellConfig> = {
+  id: "shell",
+  displayName: "Shell Script",
   description: "Execute shell scripts when events trigger",
   icon: "Terminal",
 
   config: new Versioned({
     version: 1,
-    schema: bashConfigSchemaV1,
+    schema: shellConfigSchemaV1,
   }),
 
   documentation: {
@@ -226,12 +226,12 @@ exit 0
   },
 
   async deliver(
-    ctx: IntegrationDeliveryContext<BashConfig>,
+    ctx: IntegrationDeliveryContext<ShellConfig>,
   ): Promise<IntegrationDeliveryResult> {
     const { event, subscription, providerConfig, logger } = ctx;
 
     // Validate and parse config
-    const config = bashConfigSchemaV1.parse(providerConfig);
+    const config = shellConfigSchemaV1.parse(providerConfig);
 
     // Build environment variables for the script
     const env: Record<string, string> = {
