@@ -41,14 +41,19 @@ interface HealthCheckStrategy<TConfig, TResult, TAggregatedResult> {
   aggregatedResult: VersionedSchema<TAggregatedResult>;
 
   /**
-   * REQUIRED: Summarizes raw runs into an aggregated bucket.
-   * Called during retention processing and on-the-fly aggregation.
+   * REQUIRED: Incrementally merge a new run into the aggregated result.
+   * Called during real-time aggregation and retention processing.
    */
-  aggregateResult(
-    runs: Array<{ status: string; latencyMs?: number; result?: TResult }>
+  mergeResult(
+    existing: TAggregatedResult | undefined,
+    run: { status: string; latencyMs?: number; metadata?: TResult }
   ): TAggregatedResult;
 }
 ```
+
+> [!NOTE]
+> The incremental `mergeResult` pattern enables O(1) storage overhead by maintaining aggregation state
+> directly, without accumulating raw runs in memory.
 
 **Example: HTTP Check Strategy**
 
@@ -60,32 +65,38 @@ const httpCheckStrategy: HealthCheckStrategy<HttpConfig, HttpResult, HttpAggrega
   aggregatedResult: {
     version: 1,
     schema: z.object({
+      // Display fields
       statusCodeDistribution: z.record(z.string(), z.number()),
       avgResponseTimeMs: z.number(),
       errorRate: z.number(),
+      // Internal state for incremental aggregation
+      _responseTime: averageStateSchema,
+      _errorRate: rateStateSchema,
     }),
   },
 
-  aggregateResult(runs) {
-    const statusCodes: Record<string, number> = {};
-    let totalTime = 0;
-    let errorCount = 0;
-
-    for (const run of runs) {
-      const code = String(run.result?.statusCode ?? 0);
-      statusCodes[code] = (statusCodes[code] ?? 0) + 1;
-      totalTime += run.latencyMs ?? 0;
-      if (run.status !== "healthy") errorCount++;
-    }
+  mergeResult(existing, run) {
+    const metadata = run.metadata;
+    const code = String(metadata?.statusCode ?? 0);
+    
+    // Merge status code distribution
+    const statusCodes = { ...(existing?.statusCodeDistribution ?? {}) };
+    statusCodes[code] = (statusCodes[code] ?? 0) + 1;
+    
+    // Merge averages and rates using utilities
+    const responseTime = mergeAverage(existing?._responseTime, run.latencyMs);
+    const errorRate = mergeRate(existing?._errorRate, run.status === "healthy");
 
     return {
       statusCodeDistribution: statusCodes,
-      avgResponseTimeMs: runs.length > 0 ? totalTime / runs.length : 0,
-      errorRate: runs.length > 0 ? errorCount / runs.length : 0,
+      avgResponseTimeMs: responseTime.avg,
+      errorRate: 100 - errorRate.rate, // Convert success rate to error rate
+      _responseTime: responseTime,
+      _errorRate: errorRate,
     };
   },
 
-  // ... execute and other methods
+  // ... createClient and other methods
 };
 ```
 
@@ -96,11 +107,13 @@ A daily background job manages the data lifecycle:
 ### Stage 1: Raw → Hourly
 
 1. Identifies raw runs older than `rawRetentionDays`
-2. Groups runs into 1-hour windows
-3. Calculates aggregate metrics for each hour
-4. Calls `strategy.aggregateResult(runs)` for strategy-specific data
-5. Upserts into `health_check_aggregates` with `bucketSize: 'hourly'`
-6. Deletes processed raw runs
+2. For each run, calls `strategy.mergeResult(existing, run)` to incrementally aggregate
+3. Upserts into `health_check_aggregates` with `bucketSize: 'hourly'`
+4. Deletes processed raw runs
+
+> [!TIP]
+> The mergeResult pattern enables real-time aggregation during execution,
+> not just during retention processing.
 
 ### Stage 2: Hourly → Daily
 
@@ -175,9 +188,9 @@ Aggregated data access follows the same tiered access model as raw data:
 
 ## Best Practices
 
-### 1. Always Implement `aggregateResult`
+### 1. Always Implement `mergeResult`
 
-Every strategy **must** provide an `aggregateResult` implementation. Without it, long-term historical views will lack strategy-specific insights.
+Every strategy **must** provide a `mergeResult` implementation. Without it, long-term historical views will lack strategy-specific insights.
 
 ### 2. Keep Aggregated Results Compact
 

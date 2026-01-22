@@ -50,8 +50,11 @@ export interface HealthCheckStrategy<
   /** Create a connected transport client */
   createClient(config: TConfig): Promise<ConnectedClient<TClient>>;
 
-  /** Aggregate results from multiple runs */
-  aggregateResult(runs: HealthCheckRunForAggregation<TResult>[]): TAggregatedResult;
+  /** Incrementally merge a new run into the aggregated result */
+  mergeResult(
+    existing: TAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<TResult>
+  ): TAggregatedResult;
 }
 ```
 
@@ -182,6 +185,15 @@ import {
   z,
   configString,
   configNumber,
+  mergeAverage,
+  mergeRate,
+  mergeCounter,
+  averageStateSchema,
+  rateStateSchema,
+  counterStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
   type ConnectedClient,
 } from "@checkstack/backend-api";
 import {
@@ -227,8 +239,8 @@ const sshResultSchema = healthResultSchema({
 
 type SshResult = z.infer<typeof sshResultSchema>;
 
-// Aggregated result
-const sshAggregatedSchema = healthResultSchema({
+// Aggregated display schema (what's shown in charts)
+const sshAggregatedDisplaySchema = healthResultSchema({
   avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
@@ -245,6 +257,14 @@ const sshAggregatedSchema = healthResultSchema({
   }),
 });
 
+// Aggregated internal schema (state for incremental aggregation)
+const sshAggregatedInternalSchema = z.object({
+  _connectionTime: averageStateSchema,
+  _successRate: rateStateSchema,
+  _errorCount: counterStateSchema,
+});
+
+const sshAggregatedSchema = sshAggregatedDisplaySchema.merge(sshAggregatedInternalSchema);
 type SshAggregatedResult = z.infer<typeof sshAggregatedSchema>;
 
 // Strategy implementation
@@ -276,27 +296,23 @@ export class SshHealthCheckStrategy
     };
   }
 
-  aggregateResult(runs: HealthCheckRunForAggregation<SshResult>[]): SshAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+  mergeResult(
+    existing: SshAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<SshResult>,
+  ): SshAggregatedResult {
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return { avgConnectionTime: 0, successRate: 0, errorCount: 0 };
-    }
-
-    const connectionTimes = validRuns
-      .map((r) => r.metadata?.connectionTimeMs)
-      .filter((t): t is number => typeof t === "number");
-
-    const successCount = validRuns.filter((r) => r.metadata?.connected).length;
-    const errorCount = validRuns.filter((r) => r.metadata?.error).length;
+    const connectionTime = mergeAverage(existing?._connectionTime, metadata?.connectionTimeMs);
+    const successRate = mergeRate(existing?._successRate, metadata?.connected);
+    const errorCount = mergeCounter(existing?._errorCount, !!metadata?.error);
 
     return {
-      avgConnectionTime:
-        connectionTimes.length > 0
-          ? Math.round(connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length)
-          : 0,
-      successRate: Math.round((successCount / validRuns.length) * 100),
-      errorCount,
+      _connectionTime: connectionTime,
+      _successRate: successRate,
+      _errorCount: errorCount,
+      avgConnectionTime: connectionTime.avg,
+      successRate: successRate.rate,
+      errorCount: errorCount.count,
     };
   }
 

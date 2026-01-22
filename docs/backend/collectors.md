@@ -95,8 +95,11 @@ interface CollectorStrategy<
     pluginId: string;
   }): Promise<CollectorResult<TResult>>;
 
-  /** Aggregate results from multiple runs into a summary */
-  aggregateResult(runs: HealthCheckRunForAggregation<TResult>[]): TAggregated;
+  /** Incrementally merge a new run into the aggregated result */
+  mergeResult(
+    existing: TAggregated | undefined,
+    run: HealthCheckRunForAggregation<TResult>
+  ): TAggregated;
 }
 ```
 
@@ -211,6 +214,9 @@ const cpuAggregatedSchema = z.object({
 import {
   Versioned,
   z,
+  mergeAverage,
+  averageStateSchema,
+  type AverageState,
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
@@ -243,8 +249,8 @@ const cpuResultSchema = z.object({
 
 type CpuResult = z.infer<typeof cpuResultSchema>;
 
-// Aggregated result
-const cpuAggregatedSchema = z.object({
+// Aggregated display schema (what's shown in charts)
+const cpuAggregatedDisplaySchema = z.object({
   avgUsagePercent: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg CPU Usage",
@@ -252,6 +258,12 @@ const cpuAggregatedSchema = z.object({
   }),
 });
 
+// Aggregated internal schema (includes state for incremental aggregation)
+const cpuAggregatedInternalSchema = z.object({
+  _usage: averageStateSchema, // Tracks sum, count, avg internally
+});
+
+const cpuAggregatedSchema = cpuAggregatedDisplaySchema.merge(cpuAggregatedInternalSchema);
 type CpuAggregatedResult = z.infer<typeof cpuAggregatedSchema>;
 
 // Collector implementation
@@ -293,16 +305,16 @@ export class CpuCollector
     return { result };
   }
 
-  aggregateResult(runs: HealthCheckRunForAggregation<CpuResult>[]): CpuAggregatedResult {
-    const usages = runs
-      .map((r) => r.metadata?.usagePercent)
-      .filter((v): v is number => typeof v === "number");
+  mergeResult(
+    existing: CpuAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<CpuResult>,
+  ): CpuAggregatedResult {
+    const metadata = run.metadata;
+    const usage = mergeAverage(existing?._usage, metadata?.usagePercent);
 
     return {
-      avgUsagePercent:
-        usages.length > 0
-          ? Math.round((usages.reduce((a, b) => a + b, 0) / usages.length) * 10) / 10
-          : 0,
+      _usage: usage,
+      avgUsagePercent: usage.avg,
     };
   }
 
