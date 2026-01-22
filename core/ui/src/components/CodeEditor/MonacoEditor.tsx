@@ -76,6 +76,75 @@ const languageMap: Record<string, string> = {
 let jsonTemplateLanguageRegistered = false;
 
 /**
+ * Default type definitions for backend TypeScript/JavaScript editors.
+ * Provides console and fetch APIs without DOM types.
+ * Used when no custom typeDefinitions are provided to the editor.
+ */
+const DEFAULT_BACKEND_TYPE_DEFINITIONS = `
+/** Expected return type for healthcheck scripts */
+interface HealthCheckScriptResult {
+  /** Whether the health check passed */
+  success: boolean;
+  /** Optional status message */
+  message?: string;
+  /** Optional numeric value for metrics */
+  value?: number;
+}
+
+/** Console for logging */
+declare const console: {
+  /** Log an info message */
+  log(...args: unknown[]): void;
+  /** Log a warning message */
+  warn(...args: unknown[]): void;
+  /** Log an error message */
+  error(...args: unknown[]): void;
+  /** Log an info message */
+  info(...args: unknown[]): void;
+};
+
+/** HTTP Request configuration */
+interface RequestInit {
+  method?: string;
+  headers?: Record<string, string> | Headers;
+  body?: string | FormData | URLSearchParams;
+  mode?: 'cors' | 'no-cors' | 'same-origin';
+  credentials?: 'omit' | 'same-origin' | 'include';
+  cache?: 'default' | 'no-store' | 'reload' | 'no-cache' | 'force-cache';
+  redirect?: 'follow' | 'error' | 'manual';
+  signal?: AbortSignal;
+}
+
+/** HTTP Response */
+interface Response {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly statusText: string;
+  readonly headers: Headers;
+  readonly url: string;
+  readonly redirected: boolean;
+  json(): Promise<unknown>;
+  text(): Promise<string>;
+  blob(): Promise<Blob>;
+  arrayBuffer(): Promise<ArrayBuffer>;
+  clone(): Response;
+}
+
+/** HTTP Headers */
+interface Headers {
+  get(name: string): string | null;
+  has(name: string): boolean;
+  set(name: string, value: string): void;
+  append(name: string, value: string): void;
+  delete(name: string): void;
+  forEach(callback: (value: string, key: string) => void): void;
+}
+
+/** Fetch API for making HTTP requests */
+declare function fetch(input: string | URL, init?: RequestInit): Promise<Response>;
+`;
+
+/**
  * A code editor component with syntax highlighting, IntelliSense, and template autocomplete.
  * Uses Monaco Editor (VS Code's editor) for full TypeScript/JavaScript language support.
  */
@@ -147,18 +216,38 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     monacoRef.current = monaco;
     setIsEditorMounted(true);
 
-    // Inject type definitions for TypeScript/JavaScript IntelliSense
-    if (
-      typeDefinitions &&
-      (language === "typescript" || language === "javascript")
-    ) {
+    // Configure TypeScript/JavaScript to exclude DOM types for backend scripts
+    // This prevents Web API autocompletions (AudioContext, Canvas, etc.)
+    if (language === "typescript" || language === "javascript") {
       const defaults =
         language === "typescript"
           ? monaco.languages.typescript.typescriptDefaults
           : monaco.languages.typescript.javascriptDefaults;
 
-      // Add custom type definitions
-      const lib = defaults.addExtraLib(typeDefinitions, "file:///context.d.ts");
+      // Configure compiler options to exclude DOM types but keep ES libs
+      // This gives us Promise, Array, etc. but not AudioContext, Canvas, etc.
+      defaults.setCompilerOptions({
+        target: monaco.languages.typescript.ScriptTarget.ESNext,
+        module: monaco.languages.typescript.ModuleKind.ESNext,
+        lib: ["esnext"], // Include ES libs but NOT DOM
+        allowNonTsExtensions: true,
+        noEmit: true,
+        strict: true,
+      });
+
+      // Suppress certain diagnostics that don't apply to our script context
+      // - 1108: "A 'return' statement can only be used within a function body"
+      //         Our scripts are wrapped in async function at runtime, so return is valid
+      defaults.setDiagnosticsOptions({
+        diagnosticCodesToIgnore: [1108],
+      });
+
+      // Disable fetching default lib content (prevents DOM types loading)
+      defaults.setEagerModelSync(true);
+
+      // Add custom type definitions if provided, otherwise add minimal defaults
+      const definitions = typeDefinitions ?? DEFAULT_BACKEND_TYPE_DEFINITIONS;
+      const lib = defaults.addExtraLib(definitions, "file:///context.d.ts");
       disposablesRef.current.push(lib);
     }
 
@@ -345,7 +434,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // Update type definitions when they change
   React.useEffect(() => {
-    if (!monacoRef.current || !typeDefinitions) return;
+    if (!monacoRef.current) return;
     if (language !== "typescript" && language !== "javascript") return;
 
     const monaco = monacoRef.current;
@@ -354,8 +443,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         ? monaco.languages.typescript.typescriptDefaults
         : monaco.languages.typescript.javascriptDefaults;
 
-    // Clear previous libs and add new ones
-    const lib = defaults.addExtraLib(typeDefinitions, "file:///context.d.ts");
+    // Configure compiler options to exclude DOM types but keep ES libs
+    defaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ESNext,
+      module: monaco.languages.typescript.ModuleKind.ESNext,
+      lib: ["esnext"], // Include ES libs but NOT DOM
+      allowNonTsExtensions: true,
+      noEmit: true,
+      strict: true,
+    });
+
+    // Suppress certain diagnostics that don't apply to our script context
+    defaults.setDiagnosticsOptions({
+      diagnosticCodesToIgnore: [1108], // "A 'return' statement can only be used within a function body"
+    });
+
+    // Add type definitions (custom or default)
+    const definitions = typeDefinitions ?? DEFAULT_BACKEND_TYPE_DEFINITIONS;
+    const lib = defaults.addExtraLib(definitions, "file:///context.d.ts");
     disposablesRef.current.push(lib);
 
     return () => {

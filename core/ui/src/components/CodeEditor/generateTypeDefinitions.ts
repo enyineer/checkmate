@@ -31,6 +31,14 @@ export function generateTypeDefinitions(options: GenerateTypesOptions): string {
     const payloadType = jsonSchemaToTypeScript(options.eventPayloadSchema);
 
     lines.push(`
+/** Expected return type for integration scripts */
+interface IntegrationScriptResult {
+  /** Optional external ID for tracking (e.g., ticket number, message ID) */
+  id?: string;
+  /** Optional external ID alias */
+  externalId?: string;
+}
+
 /** Event being delivered to this integration script */
 declare const context: {
   /** Event information */
@@ -60,6 +68,16 @@ declare const context: {
     const configType = jsonSchemaToTypeScript(options.collectorConfigSchema);
 
     lines.push(`
+/** Expected return type for healthcheck scripts */
+interface HealthCheckScriptResult {
+  /** Whether the health check passed */
+  success: boolean;
+  /** Optional status message */
+  message?: string;
+  /** Optional numeric value for metrics */
+  value?: number;
+}
+
 /** Context available in healthcheck inline scripts */
 declare const context: {
   /** Collector configuration */
