@@ -66,7 +66,7 @@ describe("DiskCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average and max disk usage", () => {
       const collector = new DiskCollector();
       const runs = [
@@ -102,7 +102,8 @@ describe("DiskCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgUsedPercent).toBe(40);
       expect(aggregated.maxUsedPercent).toBe(50);

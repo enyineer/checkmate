@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -49,7 +55,7 @@ const commandResultSchema = healthResultSchema({
 
 export type CommandResult = z.infer<typeof commandResultSchema>;
 
-const commandAggregatedSchema = healthResultSchema({
+const commandAggregatedDisplaySchema = healthResultSchema({
   avgExecutionTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Execution Time",
@@ -62,6 +68,17 @@ const commandAggregatedSchema = healthResultSchema({
   }),
 });
 
+const commandAggregatedInternalSchema = z.object({
+  _executionTime: averageStateSchema
+    .optional(),
+  _success: rateStateSchema
+    .optional(),
+});
+
+const commandAggregatedSchema = commandAggregatedDisplaySchema.merge(
+  commandAggregatedInternalSchema,
+);
+
 export type CommandAggregatedResult = z.infer<typeof commandAggregatedSchema>;
 
 // ============================================================================
@@ -73,15 +90,12 @@ export type CommandAggregatedResult = z.infer<typeof commandAggregatedSchema>;
  * Allows users to run arbitrary shell commands as check items.
  * This is the "basic mode" functionality exposed as a collector.
  */
-export class CommandCollector
-  implements
-    CollectorStrategy<
-      SshTransportClient,
-      CommandConfig,
-      CommandResult,
-      CommandAggregatedResult
-    >
-{
+export class CommandCollector implements CollectorStrategy<
+  SshTransportClient,
+  CommandConfig,
+  CommandResult,
+  CommandAggregatedResult
+> {
   /**
    * ID for this collector.
    * Built-in collectors are identified by ownerPlugin matching the strategy's plugin.
@@ -125,28 +139,28 @@ export class CommandCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<CommandResult>[]
+  mergeResult(
+    existing: CommandAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<CommandResult>,
   ): CommandAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.executionTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const exitCodes = runs
-      .map((r) => r.metadata?.exitCode)
-      .filter((v): v is number => typeof v === "number");
+    const executionTimeState = mergeAverage(
+      existing?._executionTime as AverageState | undefined,
+      metadata?.executionTimeMs,
+    );
 
-    const successCount = exitCodes.filter((code) => code === 0).length;
+    // Success is exit code 0
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.exitCode === 0,
+    );
 
     return {
-      avgExecutionTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      successRate:
-        exitCodes.length > 0
-          ? Math.round((successCount / exitCodes.length) * 100)
-          : 0,
+      avgExecutionTimeMs: executionTimeState.avg,
+      successRate: successState.rate,
+      _executionTime: executionTimeState,
+      _success: successState,
     };
   }
 }

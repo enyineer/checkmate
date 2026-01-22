@@ -76,7 +76,7 @@ Swap:          4096         512        3584`
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average and max memory usage", () => {
       const collector = new MemoryCollector();
       const runs = [
@@ -108,7 +108,8 @@ Swap:          4096         512        3584`
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgUsedPercent).toBe(50);
       expect(aggregated.maxUsedPercent).toBe(75);

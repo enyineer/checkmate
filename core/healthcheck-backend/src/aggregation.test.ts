@@ -62,8 +62,8 @@ describe("HealthCheckService.getAggregatedHistory", () => {
         config: { version: 1, schema: {} },
         aggregatedResult: { version: 1, schema: {} },
         execute: mock(),
-        aggregateResult: mock((runs: unknown[]) => ({
-          totalRuns: runs.length,
+        mergeResult: mock((existing: { totalRuns?: number } | undefined) => ({
+          totalRuns: (existing?.totalRuns ?? 0) + 1,
           customMetric: "aggregated",
         })),
       })),
@@ -243,7 +243,7 @@ describe("HealthCheckService.getAggregatedHistory", () => {
   });
 
   describe("strategy metadata aggregation", () => {
-    it("calls strategy.aggregateResult for each bucket", async () => {
+    it("calls strategy.mergeResult for each run in bucket", async () => {
       const runs = [
         {
           id: "run-1",
@@ -412,18 +412,23 @@ describe("HealthCheckService.getAggregatedHistory", () => {
           if (collectorId === "healthcheck-http.request") {
             return {
               collector: {
-                aggregateResult: (
-                  runsData: Array<{
+                mergeResult: (
+                  existing: Record<string, unknown> | undefined,
+                  newRun: {
                     status: string;
                     metadata?: Record<string, unknown>;
-                  }>,
+                  },
                 ) => {
-                  const times = runsData
-                    .map((r) => r.metadata?.responseTimeMs as number)
-                    .filter((v) => typeof v === "number");
+                  const prevSum = (existing?.sumResponseTimeMs as number) ?? 0;
+                  const prevCount = (existing?.count as number) ?? 0;
+                  const responseTime =
+                    (newRun.metadata?.responseTimeMs as number) ?? 0;
+                  const newSum = prevSum + responseTime;
+                  const newCount = prevCount + 1;
                   return {
-                    avgResponseTimeMs:
-                      times.reduce((a, b) => a + b, 0) / times.length,
+                    sumResponseTimeMs: newSum,
+                    count: newCount,
+                    avgResponseTimeMs: newSum / newCount,
                     successRate: 100,
                   };
                 },

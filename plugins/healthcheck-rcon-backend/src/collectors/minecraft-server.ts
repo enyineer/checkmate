@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeMinMax,
+  averageStateSchema,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -42,7 +48,7 @@ const minecraftServerResultSchema = z.object({
 
 export type MinecraftServerResult = z.infer<typeof minecraftServerResultSchema>;
 
-const minecraftServerAggregatedSchema = z.object({
+const minecraftServerAggregatedDisplaySchema = z.object({
   avgTps: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg TPS",
@@ -52,6 +58,16 @@ const minecraftServerAggregatedSchema = z.object({
     "x-chart-label": "Min TPS",
   }),
 });
+
+const minecraftServerAggregatedInternalSchema = z.object({
+  _tps: averageStateSchema.optional(),
+  _minTps: minMaxStateSchema.optional(),
+});
+
+const minecraftServerAggregatedSchema =
+  minecraftServerAggregatedDisplaySchema.merge(
+    minecraftServerAggregatedInternalSchema,
+  );
 
 export type MinecraftServerAggregatedResult = z.infer<
   typeof minecraftServerAggregatedSchema
@@ -65,15 +81,12 @@ export type MinecraftServerAggregatedResult = z.infer<
  * Minecraft server info collector.
  * Can optionally collect TPS for Paper/Spigot servers.
  */
-export class MinecraftServerCollector
-  implements
-    CollectorStrategy<
-      RconTransportClient,
-      MinecraftServerConfig,
-      MinecraftServerResult,
-      MinecraftServerAggregatedResult
-    >
-{
+export class MinecraftServerCollector implements CollectorStrategy<
+  RconTransportClient,
+  MinecraftServerConfig,
+  MinecraftServerResult,
+  MinecraftServerAggregatedResult
+> {
   id = "minecraft-server";
   displayName = "Minecraft Server";
   description =
@@ -140,21 +153,27 @@ export class MinecraftServerCollector
     return undefined;
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<MinecraftServerResult>[]
+  mergeResult(
+    existing: MinecraftServerAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<MinecraftServerResult>,
   ): MinecraftServerAggregatedResult {
-    const tpsValues = runs
-      .map((r) => r.metadata?.tps)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
+
+    const avgState = mergeAverage(
+      existing?._tps as AverageState | undefined,
+      metadata?.tps,
+    );
+
+    const minState = mergeMinMax(
+      existing?._minTps as MinMaxState | undefined,
+      metadata?.tps,
+    );
 
     return {
-      avgTps:
-        tpsValues.length > 0
-          ? Math.round(
-              (tpsValues.reduce((a, b) => a + b, 0) / tpsValues.length) * 10
-            ) / 10
-          : 0,
-      minTps: tpsValues.length > 0 ? Math.min(...tpsValues) : 0,
+      avgTps: Math.round(avgState.avg * 10) / 10,
+      minTps: minState.min,
+      _tps: avgState,
+      _minTps: minState,
     };
   }
 }

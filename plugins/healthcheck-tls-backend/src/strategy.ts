@@ -5,6 +5,14 @@ import {
   Versioned,
   z,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  mergeMinMax,
+  type AverageState,
+  type CounterState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -83,7 +91,7 @@ type TlsResult = z.infer<typeof tlsResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const tlsAggregatedSchema = healthResultSchema({
+const tlsAggregatedDisplaySchema = healthResultSchema({
   avgDaysUntilExpiry: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Days Until Expiry",
@@ -103,6 +111,19 @@ const tlsAggregatedSchema = healthResultSchema({
     "x-chart-label": "Errors",
   }),
 });
+
+const tlsAggregatedInternalSchema = z.object({
+  _daysUntilExpiry: averageStateSchema.optional(),
+  _minDaysUntilExpiry: z
+    .object({ min: z.number(), max: z.number() })
+    .optional(),
+  _invalid: counterStateSchema.optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const tlsAggregatedSchema = tlsAggregatedDisplaySchema.merge(
+  tlsAggregatedInternalSchema,
+);
 
 type TlsAggregatedResult = z.infer<typeof tlsAggregatedSchema>;
 
@@ -156,7 +177,7 @@ const defaultTlsClient: TlsClient = {
             getCipher: () => socket.getCipher(),
             end: () => socket.end(),
           });
-        }
+        },
       );
 
       socket.on("error", reject);
@@ -172,15 +193,12 @@ const defaultTlsClient: TlsClient = {
 // STRATEGY
 // ============================================================================
 
-export class TlsHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      TlsConfig,
-      TlsTransportClient,
-      TlsResult,
-      TlsAggregatedResult
-    >
-{
+export class TlsHealthCheckStrategy implements HealthCheckStrategy<
+  TlsConfig,
+  TlsTransportClient,
+  TlsResult,
+  TlsAggregatedResult
+> {
   id = "tls";
   displayName = "TLS/SSL Health Check";
   description = "SSL/TLS certificate validation and expiry monitoring";
@@ -222,50 +240,46 @@ export class TlsHealthCheckStrategy
     schema: tlsAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<TlsResult>[]
+  mergeResult(
+    existing: TlsAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<TlsResult>,
   ): TlsAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return {
-        avgDaysUntilExpiry: 0,
-        minDaysUntilExpiry: 0,
-        invalidCount: 0,
-        errorCount: 0,
-      };
-    }
+    const daysState = mergeAverage(
+      existing?._daysUntilExpiry as AverageState | undefined,
+      metadata?.daysUntilExpiry,
+    );
 
-    const daysValues = validRuns
-      .map((r) => r.metadata?.daysUntilExpiry)
-      .filter((d): d is number => typeof d === "number");
+    const minDaysState = mergeMinMax(
+      existing?._minDaysUntilExpiry as MinMaxState | undefined,
+      metadata?.daysUntilExpiry,
+    );
 
-    const avgDaysUntilExpiry =
-      daysValues.length > 0
-        ? Math.round(daysValues.reduce((a, b) => a + b, 0) / daysValues.length)
-        : 0;
+    const invalidState = mergeCounter(
+      existing?._invalid as CounterState | undefined,
+      metadata?.isValid === false,
+    );
 
-    const minDaysUntilExpiry =
-      daysValues.length > 0 ? Math.min(...daysValues) : 0;
-
-    const invalidCount = validRuns.filter(
-      (r) => r.metadata?.isValid === false
-    ).length;
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
     return {
-      avgDaysUntilExpiry,
-      minDaysUntilExpiry,
-      invalidCount,
-      errorCount,
+      avgDaysUntilExpiry: daysState.avg,
+      minDaysUntilExpiry: minDaysState.min,
+      invalidCount: invalidState.count,
+      errorCount: errorState.count,
+      _daysUntilExpiry: daysState,
+      _minDaysUntilExpiry: minDaysState,
+      _invalid: invalidState,
+      _errors: errorState,
     };
   }
 
   async createClient(
-    config: TlsConfig
+    config: TlsConfig,
   ): Promise<ConnectedClient<TlsTransportClient>> {
     const validatedConfig = this.config.validate(config);
 
@@ -280,7 +294,7 @@ export class TlsHealthCheckStrategy
     const cert = connection.getPeerCertificate();
     const validTo = new Date(cert.valid_to);
     const daysUntilExpiry = Math.floor(
-      (validTo.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      (validTo.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
     );
 
     const certInfo: TlsCertificateInfo = {

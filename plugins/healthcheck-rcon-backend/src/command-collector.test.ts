@@ -36,7 +36,7 @@ describe("CommandCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average execution time", () => {
       const collector = new CommandCollector();
       const runs = [
@@ -64,14 +64,23 @@ describe("CommandCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgExecutionTimeMs).toBe(75);
     });
 
-    it("should return zero for empty runs", () => {
+    it("should return zero for empty metadata", () => {
       const collector = new CommandCollector();
-      const aggregated = collector.aggregateResult([]);
+      const run = {
+        id: "1",
+        status: "healthy" as const,
+        latencyMs: 100,
+        checkId: "c1",
+        timestamp: new Date(),
+        metadata: { response: "", executionTimeMs: 0 },
+      };
+      const aggregated = collector.mergeResult(undefined, run);
 
       expect(aggregated.avgExecutionTimeMs).toBe(0);
     });

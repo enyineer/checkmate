@@ -5,6 +5,15 @@ import {
   Versioned,
   z,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -83,7 +92,7 @@ type GrpcResult = z.infer<typeof grpcResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const grpcAggregatedSchema = healthResultSchema({
+const grpcAggregatedDisplaySchema = healthResultSchema({
   avgResponseTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Response Time",
@@ -103,6 +112,19 @@ const grpcAggregatedSchema = healthResultSchema({
     "x-chart-label": "Serving",
   }),
 });
+
+const grpcAggregatedInternalSchema = z.object({
+  _responseTime: averageStateSchema
+    .optional(),
+  _success: rateStateSchema
+    .optional(),
+  _errors: counterStateSchema.optional(),
+  _serving: counterStateSchema.optional(),
+});
+
+const grpcAggregatedSchema = grpcAggregatedDisplaySchema.merge(
+  grpcAggregatedInternalSchema,
+);
 
 type GrpcAggregatedResult = z.infer<typeof grpcAggregatedSchema>;
 
@@ -176,7 +198,7 @@ const defaultGrpcClient: GrpcHealthClient = {
           resolve({
             status: statusMap[response?.status ?? 0] ?? "UNKNOWN",
           });
-        }
+        },
       );
     });
   },
@@ -186,15 +208,12 @@ const defaultGrpcClient: GrpcHealthClient = {
 // STRATEGY
 // ============================================================================
 
-export class GrpcHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      GrpcConfig,
-      GrpcTransportClient,
-      GrpcResult,
-      GrpcAggregatedResult
-    >
-{
+export class GrpcHealthCheckStrategy implements HealthCheckStrategy<
+  GrpcConfig,
+  GrpcTransportClient,
+  GrpcResult,
+  GrpcAggregatedResult
+> {
   id = "grpc";
   displayName = "gRPC Health Check";
   description =
@@ -237,50 +256,46 @@ export class GrpcHealthCheckStrategy
     schema: grpcAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<GrpcResult>[]
+  mergeResult(
+    existing: GrpcAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<GrpcResult>,
   ): GrpcAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return {
-        avgResponseTime: 0,
-        successRate: 0,
-        errorCount: 0,
-        servingCount: 0,
-      };
-    }
+    const responseTimeState = mergeAverage(
+      existing?._responseTime as AverageState | undefined,
+      metadata?.responseTimeMs,
+    );
 
-    const responseTimes = validRuns
-      .map((r) => r.metadata?.responseTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.status === "SERVING",
+    );
 
-    const avgResponseTime =
-      responseTimes.length > 0
-        ? Math.round(
-            responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-          )
-        : 0;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
-    const servingCount = validRuns.filter(
-      (r) => r.metadata?.status === "SERVING"
-    ).length;
-    const successRate = Math.round((servingCount / validRuns.length) * 100);
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
+    const servingState = mergeCounter(
+      existing?._serving as CounterState | undefined,
+      metadata?.status === "SERVING",
+    );
 
     return {
-      avgResponseTime,
-      successRate,
-      errorCount,
-      servingCount,
+      avgResponseTime: responseTimeState.avg,
+      successRate: successState.rate,
+      errorCount: errorState.count,
+      servingCount: servingState.count,
+      _responseTime: responseTimeState,
+      _success: successState,
+      _errors: errorState,
+      _serving: servingState,
     };
   }
 
   async createClient(
-    config: GrpcConfigInput
+    config: GrpcConfigInput,
   ): Promise<ConnectedClient<GrpcTransportClient>> {
     const validatedConfig = this.config.validate(config);
 

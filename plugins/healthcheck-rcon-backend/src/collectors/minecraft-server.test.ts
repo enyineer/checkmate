@@ -4,10 +4,10 @@ import type { RconTransportClient } from "@checkstack/healthcheck-rcon-common";
 
 describe("MinecraftServerCollector", () => {
   const createMockClient = (
-    responses: Record<string, string> = {}
+    responses: Record<string, string> = {},
   ): RconTransportClient => ({
     exec: mock((cmd: string) =>
-      Promise.resolve({ response: responses[cmd] ?? "" })
+      Promise.resolve({ response: responses[cmd] ?? "" }),
     ),
   });
 
@@ -72,7 +72,7 @@ describe("MinecraftServerCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average and min TPS", () => {
       const collector = new MinecraftServerCollector();
       const runs = [
@@ -98,15 +98,25 @@ describe("MinecraftServerCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      // Merge incrementally through all runs
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgTps).toBe(19.0);
       expect(aggregated.minTps).toBe(18.0);
     });
 
-    it("should return zeros for empty runs", () => {
+    it("should return zeros for undefined tps", () => {
       const collector = new MinecraftServerCollector();
-      const aggregated = collector.aggregateResult([]);
+      const run = {
+        id: "1",
+        status: "healthy" as const,
+        latencyMs: 100,
+        checkId: "c1",
+        timestamp: new Date(),
+        metadata: { tps: undefined },
+      };
+      const aggregated = collector.mergeResult(undefined, run);
 
       expect(aggregated.avgTps).toBe(0);
       expect(aggregated.minTps).toBe(0);

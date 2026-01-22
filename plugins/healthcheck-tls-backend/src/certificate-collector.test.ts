@@ -76,7 +76,7 @@ describe("CertificateCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average days remaining", () => {
       const collector = new CertificateCollector();
       const runs = [
@@ -112,7 +112,8 @@ describe("CertificateCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgDaysRemaining).toBe(45);
       expect(aggregated.validRate).toBe(100);
@@ -153,7 +154,8 @@ describe("CertificateCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.validRate).toBe(50);
     });

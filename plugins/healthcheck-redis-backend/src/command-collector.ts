@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -53,7 +59,7 @@ const commandResultSchema = healthResultSchema({
 
 export type CommandResult = z.infer<typeof commandResultSchema>;
 
-const commandAggregatedSchema = healthResultSchema({
+const commandAggregatedDisplaySchema = healthResultSchema({
   avgResponseTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Response Time",
@@ -66,6 +72,17 @@ const commandAggregatedSchema = healthResultSchema({
   }),
 });
 
+const commandAggregatedInternalSchema = z.object({
+  _responseTime: averageStateSchema
+    .optional(),
+  _success: rateStateSchema
+    .optional(),
+});
+
+const commandAggregatedSchema = commandAggregatedDisplaySchema.merge(
+  commandAggregatedInternalSchema,
+);
+
 export type CommandAggregatedResult = z.infer<typeof commandAggregatedSchema>;
 
 // ============================================================================
@@ -76,15 +93,12 @@ export type CommandAggregatedResult = z.infer<typeof commandAggregatedSchema>;
  * Built-in Redis command collector.
  * Executes Redis commands and checks results.
  */
-export class CommandCollector
-  implements
-    CollectorStrategy<
-      RedisTransportClient,
-      CommandConfig,
-      CommandResult,
-      CommandAggregatedResult
-    >
-{
+export class CommandCollector implements CollectorStrategy<
+  RedisTransportClient,
+  CommandConfig,
+  CommandResult,
+  CommandAggregatedResult
+> {
   id = "command";
   displayName = "Redis Command";
   description = "Execute a Redis command and check the result";
@@ -127,28 +141,27 @@ export class CommandCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<CommandResult>[]
+  mergeResult(
+    existing: CommandAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<CommandResult>,
   ): CommandAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.responseTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const successes = runs
-      .map((r) => r.metadata?.success)
-      .filter((v): v is boolean => typeof v === "boolean");
+    const responseTimeState = mergeAverage(
+      existing?._responseTime as AverageState | undefined,
+      metadata?.responseTimeMs,
+    );
 
-    const successCount = successes.filter(Boolean).length;
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.success,
+    );
 
     return {
-      avgResponseTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      successRate:
-        successes.length > 0
-          ? Math.round((successCount / successes.length) * 100)
-          : 0,
+      avgResponseTimeMs: responseTimeState.avg,
+      successRate: successState.rate,
+      _responseTime: responseTimeState,
+      _success: successState,
     };
   }
 }

@@ -111,7 +111,7 @@ describe("GrpcHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new GrpcHealthCheckStrategy();
       const runs = [
@@ -141,7 +141,8 @@ describe("GrpcHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgResponseTime).toBe(10);
       expect(aggregated.successRate).toBe(100);
@@ -179,7 +180,8 @@ describe("GrpcHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.errorCount).toBe(1);
       expect(aggregated.servingCount).toBe(0);

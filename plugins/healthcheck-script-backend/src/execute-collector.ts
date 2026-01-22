@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -69,7 +75,7 @@ const executeResultSchema = healthResultSchema({
 
 export type ExecuteResult = z.infer<typeof executeResultSchema>;
 
-const executeAggregatedSchema = healthResultSchema({
+const executeAggregatedDisplaySchema = healthResultSchema({
   avgExecutionTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Execution Time",
@@ -82,6 +88,17 @@ const executeAggregatedSchema = healthResultSchema({
   }),
 });
 
+const executeAggregatedInternalSchema = z.object({
+  _executionTime: averageStateSchema
+    .optional(),
+  _success: rateStateSchema
+    .optional(),
+});
+
+const executeAggregatedSchema = executeAggregatedDisplaySchema.merge(
+  executeAggregatedInternalSchema,
+);
+
 export type ExecuteAggregatedResult = z.infer<typeof executeAggregatedSchema>;
 
 // ============================================================================
@@ -92,15 +109,12 @@ export type ExecuteAggregatedResult = z.infer<typeof executeAggregatedSchema>;
  * Built-in Script execute collector.
  * Runs commands and checks results.
  */
-export class ExecuteCollector
-  implements
-    CollectorStrategy<
-      ScriptTransportClient,
-      ExecuteConfig,
-      ExecuteResult,
-      ExecuteAggregatedResult
-    >
-{
+export class ExecuteCollector implements CollectorStrategy<
+  ScriptTransportClient,
+  ExecuteConfig,
+  ExecuteResult,
+  ExecuteAggregatedResult
+> {
   id = "execute";
   displayName = "Execute Script";
   description = "Execute a command or script and check the result";
@@ -152,28 +166,27 @@ export class ExecuteCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<ExecuteResult>[]
+  mergeResult(
+    existing: ExecuteAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<ExecuteResult>,
   ): ExecuteAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.executionTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const successes = runs
-      .map((r) => r.metadata?.success)
-      .filter((v): v is boolean => typeof v === "boolean");
+    const executionTimeState = mergeAverage(
+      existing?._executionTime as AverageState | undefined,
+      metadata?.executionTimeMs,
+    );
 
-    const successCount = successes.filter(Boolean).length;
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.success,
+    );
 
     return {
-      avgExecutionTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      successRate:
-        successes.length > 0
-          ? Math.round((successCount / successes.length) * 100)
-          : 0,
+      avgExecutionTimeMs: executionTimeState.avg,
+      successRate: successState.rate,
+      _executionTime: executionTimeState,
+      _success: successState,
     };
   }
 }

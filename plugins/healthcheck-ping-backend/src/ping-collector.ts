@@ -4,6 +4,9 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  type AverageState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -71,7 +74,7 @@ const pingResultSchema = healthResultSchema({
 
 export type PingResult = z.infer<typeof pingResultSchema>;
 
-const pingAggregatedSchema = healthResultSchema({
+const pingAggregatedDisplaySchema = healthResultSchema({
   avgPacketLoss: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Avg Packet Loss",
@@ -84,6 +87,15 @@ const pingAggregatedSchema = healthResultSchema({
   }),
 });
 
+const pingAggregatedInternalSchema = z.object({
+  _packetLoss: averageStateSchema.optional(),
+  _latency: averageStateSchema.optional(),
+});
+
+const pingAggregatedSchema = pingAggregatedDisplaySchema.merge(
+  pingAggregatedInternalSchema,
+);
+
 export type PingAggregatedResult = z.infer<typeof pingAggregatedSchema>;
 
 // ============================================================================
@@ -94,15 +106,12 @@ export type PingAggregatedResult = z.infer<typeof pingAggregatedSchema>;
  * Built-in Ping collector.
  * Performs ICMP ping and checks latency.
  */
-export class PingCollector
-  implements
-    CollectorStrategy<
-      PingTransportClient,
-      PingConfig,
-      PingResult,
-      PingAggregatedResult
-    >
-{
+export class PingCollector implements CollectorStrategy<
+  PingTransportClient,
+  PingConfig,
+  PingResult,
+  PingAggregatedResult
+> {
   id = "ping";
   displayName = "ICMP Ping";
   description = "Ping a host and check latency";
@@ -145,30 +154,27 @@ export class PingCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<PingResult>[]
+  mergeResult(
+    existing: PingAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<PingResult>,
   ): PingAggregatedResult {
-    const losses = runs
-      .map((r) => r.metadata?.packetLoss)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const latencies = runs
-      .map((r) => r.metadata?.avgLatency)
-      .filter((v): v is number => typeof v === "number");
+    const lossState = mergeAverage(
+      existing?._packetLoss as AverageState | undefined,
+      metadata?.packetLoss,
+    );
+
+    const latencyState = mergeAverage(
+      existing?._latency as AverageState | undefined,
+      metadata?.avgLatency,
+    );
 
     return {
-      avgPacketLoss:
-        losses.length > 0
-          ? Math.round(
-              (losses.reduce((a, b) => a + b, 0) / losses.length) * 10
-            ) / 10
-          : 0,
-      avgLatency:
-        latencies.length > 0
-          ? Math.round(
-              (latencies.reduce((a, b) => a + b, 0) / latencies.length) * 10
-            ) / 10
-          : 0,
+      avgPacketLoss: Math.round(lossState.avg * 10) / 10,
+      avgLatency: Math.round(latencyState.avg * 10) / 10,
+      _packetLoss: lossState,
+      _latency: latencyState,
     };
   }
 }

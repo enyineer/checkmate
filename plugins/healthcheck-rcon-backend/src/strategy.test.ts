@@ -7,13 +7,13 @@ import {
 
 describe("RconHealthCheckStrategy", () => {
   const createMockRconClient = (
-    commandResponse: string = "OK"
+    commandResponse: string = "OK",
   ): RconClient => ({
     connect: mock(() =>
       Promise.resolve<RconConnection>({
         command: mock(() => Promise.resolve(commandResponse)),
         disconnect: mock(),
-      })
+      }),
     ),
   });
 
@@ -85,7 +85,7 @@ describe("RconHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages and success rate", () => {
       const strategy = new RconHealthCheckStrategy();
       const runs = [
@@ -113,7 +113,8 @@ describe("RconHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgConnectionTime).toBe(75);
       expect(aggregated.maxConnectionTime).toBe(100);
@@ -149,15 +150,24 @@ describe("RconHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.successRate).toBe(50);
       expect(aggregated.errorCount).toBe(1);
     });
 
-    it("should return zeros for empty runs", () => {
+    it("should return zeros for empty metadata", () => {
       const strategy = new RconHealthCheckStrategy();
-      const aggregated = strategy.aggregateResult([]);
+      const run = {
+        id: "1",
+        status: "healthy" as const,
+        latencyMs: 100,
+        checkId: "c1",
+        timestamp: new Date(),
+        metadata: { connected: false, connectionTimeMs: 0 },
+      };
+      const aggregated = strategy.mergeResult(undefined, run);
 
       expect(aggregated.avgConnectionTime).toBe(0);
       expect(aggregated.maxConnectionTime).toBe(0);

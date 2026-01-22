@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeMinMax,
+  averageStateSchema,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import { healthResultNumber } from "@checkstack/healthcheck-common";
 import {
@@ -67,7 +73,7 @@ const memoryResultSchema = z.object({
 
 export type MemoryResult = z.infer<typeof memoryResultSchema>;
 
-const memoryAggregatedSchema = z.object({
+const memoryAggregatedDisplaySchema = z.object({
   avgUsedPercent: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Memory Usage",
@@ -85,21 +91,28 @@ const memoryAggregatedSchema = z.object({
   }),
 });
 
+const memoryAggregatedInternalSchema = z.object({
+  _usedPercent: averageStateSchema.optional(),
+  _maxUsedPercent: minMaxStateSchema.optional(),
+  _usedMb: averageStateSchema.optional(),
+});
+
+const memoryAggregatedSchema = memoryAggregatedDisplaySchema.merge(
+  memoryAggregatedInternalSchema,
+);
+
 export type MemoryAggregatedResult = z.infer<typeof memoryAggregatedSchema>;
 
 // ============================================================================
 // MEMORY COLLECTOR
 // ============================================================================
 
-export class MemoryCollector
-  implements
-    CollectorStrategy<
-      SshTransportClient,
-      MemoryConfig,
-      MemoryResult,
-      MemoryAggregatedResult
-    >
-{
+export class MemoryCollector implements CollectorStrategy<
+  SshTransportClient,
+  MemoryConfig,
+  MemoryResult,
+  MemoryAggregatedResult
+> {
   id = "memory";
   displayName = "Memory Metrics";
   description = "Collects RAM and swap usage via SSH";
@@ -140,21 +153,34 @@ export class MemoryCollector
     return { result };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<MemoryResult>[]
+  mergeResult(
+    existing: MemoryAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<MemoryResult>,
   ): MemoryAggregatedResult {
-    const usedPercents = runs
-      .map((r) => r.metadata?.usedPercent)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const usedMbs = runs
-      .map((r) => r.metadata?.usedMb)
-      .filter((v): v is number => typeof v === "number");
+    const usedPercentState = mergeAverage(
+      existing?._usedPercent as AverageState | undefined,
+      metadata?.usedPercent,
+    );
+
+    const maxUsedPercentState = mergeMinMax(
+      existing?._maxUsedPercent as MinMaxState | undefined,
+      metadata?.usedPercent,
+    );
+
+    const usedMbState = mergeAverage(
+      existing?._usedMb as AverageState | undefined,
+      metadata?.usedMb,
+    );
 
     return {
-      avgUsedPercent: usedPercents.length > 0 ? this.avg(usedPercents) : 0,
-      maxUsedPercent: usedPercents.length > 0 ? Math.max(...usedPercents) : 0,
-      avgUsedMb: usedMbs.length > 0 ? this.avg(usedMbs) : 0,
+      avgUsedPercent: usedPercentState.avg,
+      maxUsedPercent: maxUsedPercentState.max,
+      avgUsedMb: usedMbState.avg,
+      _usedPercent: usedPercentState,
+      _maxUsedPercent: maxUsedPercentState,
+      _usedMb: usedMbState,
     };
   }
 

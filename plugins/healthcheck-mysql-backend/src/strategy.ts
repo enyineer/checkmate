@@ -7,6 +7,18 @@ import {
   configString,
   configNumber,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  mergeMinMax,
+  minMaxStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -71,7 +83,8 @@ type MysqlResult = z.infer<typeof mysqlResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const mysqlAggregatedSchema = healthResultSchema({
+// UI-visible aggregated fields (for charts)
+const mysqlAggregatedDisplaySchema = healthResultSchema({
   avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
@@ -92,6 +105,18 @@ const mysqlAggregatedSchema = healthResultSchema({
     "x-chart-label": "Errors",
   }),
 });
+
+// Internal state for incremental aggregation
+const mysqlAggregatedInternalSchema = z.object({
+  _connectionTime: averageStateSchema.optional(),
+  _maxConnectionTime: minMaxStateSchema.optional(),
+  _success: rateStateSchema.optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const mysqlAggregatedSchema = mysqlAggregatedDisplaySchema.merge(
+  mysqlAggregatedInternalSchema,
+);
 
 type MysqlAggregatedResult = z.infer<typeof mysqlAggregatedSchema>;
 
@@ -147,15 +172,12 @@ const defaultDbClient: DbClient = {
 // STRATEGY
 // ============================================================================
 
-export class MysqlHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      MysqlConfig,
-      MysqlTransportClient,
-      MysqlResult,
-      MysqlAggregatedResult
-    >
-{
+export class MysqlHealthCheckStrategy implements HealthCheckStrategy<
+  MysqlConfig,
+  MysqlTransportClient,
+  MysqlResult,
+  MysqlAggregatedResult
+> {
   id = "mysql";
   displayName = "MySQL Health Check";
   description = "MySQL database connectivity and query health check";
@@ -197,53 +219,50 @@ export class MysqlHealthCheckStrategy
     schema: mysqlAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<MysqlResult>[]
+  mergeResult(
+    existing: MysqlAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<MysqlResult>,
   ): MysqlAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return {
-        avgConnectionTime: 0,
-        maxConnectionTime: 0,
-        successRate: 0,
-        errorCount: 0,
-      };
-    }
+    // Merge connection time average
+    const connectionTimeState = mergeAverage(
+      existing?._connectionTime as AverageState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const connectionTimes = validRuns
-      .map((r) => r.metadata?.connectionTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    // Merge max connection time
+    const maxConnectionTimeState = mergeMinMax(
+      existing?._maxConnectionTime as MinMaxState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const avgConnectionTime =
-      connectionTimes.length > 0
-        ? Math.round(
-            connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length
-          )
-        : 0;
+    // Merge success rate
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.connected,
+    );
 
-    const maxConnectionTime =
-      connectionTimes.length > 0 ? Math.max(...connectionTimes) : 0;
-
-    const successCount = validRuns.filter(
-      (r) => r.metadata?.connected === true
-    ).length;
-    const successRate = Math.round((successCount / validRuns.length) * 100);
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
+    // Merge error count
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
     return {
-      avgConnectionTime,
-      maxConnectionTime,
-      successRate,
-      errorCount,
+      avgConnectionTime: connectionTimeState.avg,
+      maxConnectionTime: maxConnectionTimeState.max,
+      successRate: successState.rate,
+      errorCount: errorState.count,
+      _connectionTime: connectionTimeState,
+      _maxConnectionTime: maxConnectionTimeState,
+      _success: successState,
+      _errors: errorState,
     };
   }
 
   async createClient(
-    config: MysqlConfigInput
+    config: MysqlConfigInput,
   ): Promise<ConnectedClient<MysqlTransportClient>> {
     const validatedConfig = this.config.validate(config);
 

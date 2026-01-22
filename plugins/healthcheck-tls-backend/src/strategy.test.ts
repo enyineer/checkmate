@@ -164,7 +164,7 @@ describe("TlsHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new TlsHealthCheckStrategy();
       const runs = [
@@ -204,7 +204,8 @@ describe("TlsHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgDaysUntilExpiry).toBe(25);
       expect(aggregated.minDaysUntilExpiry).toBe(20);
@@ -252,7 +253,8 @@ describe("TlsHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.invalidCount).toBe(2);
       expect(aggregated.errorCount).toBe(1);

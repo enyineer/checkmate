@@ -82,7 +82,7 @@ describe("PingCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average packet loss and latency", () => {
       const collector = new PingCollector();
       const runs = [
@@ -114,7 +114,8 @@ describe("PingCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgPacketLoss).toBe(5);
       expect(aggregated.avgLatency).toBe(15);

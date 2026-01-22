@@ -41,7 +41,7 @@ describe("JenkinsHealthCheckStrategy", () => {
           status: 200,
           statusText: "OK",
           headers: { "X-Jenkins": "2.426.1" },
-        })
+        }),
       );
 
       const connectedClient = await strategy.createClient({
@@ -66,7 +66,7 @@ describe("JenkinsHealthCheckStrategy", () => {
     it("should include query parameters in request", async () => {
       let capturedUrl = "";
       spyOn(globalThis, "fetch").mockImplementation((async (
-        url: RequestInfo | URL
+        url: RequestInfo | URL,
       ) => {
         capturedUrl = url.toString();
         return new Response(JSON.stringify({}), { status: 200 });
@@ -94,7 +94,7 @@ describe("JenkinsHealthCheckStrategy", () => {
       let capturedHeaders: Record<string, string> | undefined;
       spyOn(globalThis, "fetch").mockImplementation((async (
         _url: RequestInfo | URL,
-        options?: RequestInit
+        options?: RequestInit,
       ) => {
         capturedHeaders = options?.headers as Record<string, string>;
         return new Response(JSON.stringify({}), { status: 200 });
@@ -112,7 +112,7 @@ describe("JenkinsHealthCheckStrategy", () => {
       expect(capturedHeaders?.["Authorization"]).toContain("Basic ");
       const decoded = Buffer.from(
         capturedHeaders?.["Authorization"]?.replace("Basic ", "") || "",
-        "base64"
+        "base64",
       ).toString();
       expect(decoded).toBe("admin:api-token-123");
 
@@ -121,7 +121,7 @@ describe("JenkinsHealthCheckStrategy", () => {
 
     it("should return error for HTTP error response", async () => {
       spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(null, { status: 401, statusText: "Unauthorized" })
+        new Response(null, { status: 401, statusText: "Unauthorized" }),
       );
 
       const connectedClient = await strategy.createClient({
@@ -160,9 +160,9 @@ describe("JenkinsHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate success rate from runs", () => {
-      const runs: Parameters<typeof strategy.aggregateResult>[0] = [
+      const runs: Parameters<typeof strategy.mergeResult>[1][] = [
         {
           status: "healthy" as const,
           latencyMs: 100,
@@ -180,18 +180,25 @@ describe("JenkinsHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
+      aggregated = strategy.mergeResult(aggregated, runs[2]);
 
       expect(aggregated.successRate).toBe(67); // 2/3
       expect(aggregated.avgResponseTimeMs).toBe(175); // (150+200)/2
       expect(aggregated.errorCount).toBe(1);
     });
 
-    it("should handle empty runs", () => {
-      const aggregated = strategy.aggregateResult([]);
+    it("should handle single run", () => {
+      const run = {
+        status: "healthy" as const,
+        latencyMs: 100,
+        metadata: { connected: true, responseTimeMs: 150 },
+      };
+      const aggregated = strategy.mergeResult(undefined, run);
 
-      expect(aggregated.successRate).toBe(0);
-      expect(aggregated.avgResponseTimeMs).toBe(0);
+      expect(aggregated.successRate).toBe(100);
+      expect(aggregated.avgResponseTimeMs).toBe(150);
       expect(aggregated.errorCount).toBe(0);
     });
   });

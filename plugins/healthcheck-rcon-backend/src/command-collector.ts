@@ -4,6 +4,9 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  type AverageState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -41,13 +44,22 @@ const commandResultSchema = healthResultSchema({
 
 export type CommandResult = z.infer<typeof commandResultSchema>;
 
-const commandAggregatedSchema = healthResultSchema({
+const commandAggregatedDisplaySchema = healthResultSchema({
   avgExecutionTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Execution Time",
     "x-chart-unit": "ms",
   }),
 });
+
+const commandAggregatedInternalSchema = z.object({
+  _executionTime: averageStateSchema
+    .optional(),
+});
+
+const commandAggregatedSchema = commandAggregatedDisplaySchema.merge(
+  commandAggregatedInternalSchema,
+);
 
 export type CommandAggregatedResult = z.infer<typeof commandAggregatedSchema>;
 
@@ -59,15 +71,12 @@ export type CommandAggregatedResult = z.infer<typeof commandAggregatedSchema>;
  * Generic RCON command collector.
  * Allows users to run arbitrary RCON commands as check items.
  */
-export class CommandCollector
-  implements
-    CollectorStrategy<
-      RconTransportClient,
-      CommandConfig,
-      CommandResult,
-      CommandAggregatedResult
-    >
-{
+export class CommandCollector implements CollectorStrategy<
+  RconTransportClient,
+  CommandConfig,
+  CommandResult,
+  CommandAggregatedResult
+> {
   id = "command";
   displayName = "RCON Command";
   description = "Execute an arbitrary RCON command and check the result";
@@ -104,18 +113,20 @@ export class CommandCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<CommandResult>[]
+  mergeResult(
+    existing: CommandAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<CommandResult>,
   ): CommandAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.executionTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
+
+    const executionTimeState = mergeAverage(
+      existing?._executionTime as AverageState | undefined,
+      metadata?.executionTimeMs,
+    );
 
     return {
-      avgExecutionTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
+      avgExecutionTimeMs: executionTimeState.avg,
+      _executionTime: executionTimeState,
     };
   }
 }

@@ -4,6 +4,7 @@ import {
   Versioned,
   z,
   type ConnectedClient,
+  mergeCounter,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -71,15 +72,12 @@ type HttpAggregatedMetadata = z.infer<typeof httpAggregatedMetadataSchema>;
 // STRATEGY
 // ============================================================================
 
-export class HttpHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      HttpHealthCheckConfig,
-      HttpTransportClient,
-      HttpResultMetadata,
-      HttpAggregatedMetadata
-    >
-{
+export class HttpHealthCheckStrategy implements HealthCheckStrategy<
+  HttpHealthCheckConfig,
+  HttpTransportClient,
+  HttpResultMetadata,
+  HttpAggregatedMetadata
+> {
   id = "http";
   displayName = "HTTP/HTTPS Health Check";
   description = "HTTP endpoint health monitoring";
@@ -119,18 +117,17 @@ export class HttpHealthCheckStrategy
     schema: httpAggregatedMetadataSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<HttpResultMetadata>[]
+  mergeResult(
+    existing: HttpAggregatedMetadata | undefined,
+    newRun: HealthCheckRunForAggregation<HttpResultMetadata>,
   ): HttpAggregatedMetadata {
-    let errorCount = 0;
-
-    for (const run of runs) {
-      if (run.metadata?.error) {
-        errorCount++;
-      }
-    }
-
-    return { errorCount };
+    const hasError = !!newRun.metadata?.error;
+    return {
+      errorCount: mergeCounter(
+        existing ? { count: existing.errorCount } : undefined,
+        hasError,
+      ).count,
+    };
   }
 
   /**
@@ -138,7 +135,7 @@ export class HttpHealthCheckStrategy
    * All request parameters come from the collector (RequestCollector).
    */
   async createClient(
-    config: HttpHealthCheckConfig
+    config: HttpHealthCheckConfig,
   ): Promise<ConnectedClient<HttpTransportClient>> {
     const validatedConfig = this.config.validate(config);
 
@@ -147,7 +144,7 @@ export class HttpHealthCheckStrategy
         const controller = new AbortController();
         const timeoutId = setTimeout(
           () => controller.abort(),
-          request.timeout ?? validatedConfig.timeout
+          request.timeout ?? validatedConfig.timeout,
         );
 
         try {

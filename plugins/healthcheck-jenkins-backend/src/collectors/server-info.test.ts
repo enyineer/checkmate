@@ -57,7 +57,7 @@ describe("ServerInfoCollector", () => {
   });
 
   it("should aggregate results correctly", () => {
-    const runs: Parameters<typeof collector.aggregateResult>[0] = [
+    const runs: Parameters<typeof collector.mergeResult>[1][] = [
       {
         status: "healthy" as const,
         latencyMs: 100,
@@ -82,7 +82,8 @@ describe("ServerInfoCollector", () => {
       },
     ];
 
-    const aggregated = collector.aggregateResult(runs);
+    let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
     expect(aggregated.avgExecutors).toBe(5);
     expect(aggregated.avgTotalJobs).toBe(11);

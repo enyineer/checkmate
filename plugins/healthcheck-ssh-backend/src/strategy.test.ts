@@ -10,7 +10,7 @@ describe("SshHealthCheckStrategy", () => {
       stderr?: string;
       execError?: Error;
       connectError?: Error;
-    } = {}
+    } = {},
   ): SshClient => ({
     connect: mock(() =>
       config.connectError
@@ -23,10 +23,10 @@ describe("SshHealthCheckStrategy", () => {
                     exitCode: config.exitCode ?? 0,
                     stdout: config.stdout ?? "",
                     stderr: config.stderr ?? "",
-                  })
+                  }),
             ),
             end: mock(() => {}),
-          })
+          }),
     ),
   });
 
@@ -51,7 +51,7 @@ describe("SshHealthCheckStrategy", () => {
 
     it("should throw for connection error", async () => {
       const strategy = new SshHealthCheckStrategy(
-        createMockClient({ connectError: new Error("Connection refused") })
+        createMockClient({ connectError: new Error("Connection refused") }),
       );
 
       await expect(
@@ -61,7 +61,7 @@ describe("SshHealthCheckStrategy", () => {
           username: "user",
           password: "secret",
           timeout: 5000,
-        })
+        }),
       ).rejects.toThrow("Connection refused");
     });
   });
@@ -69,7 +69,7 @@ describe("SshHealthCheckStrategy", () => {
   describe("client.exec", () => {
     it("should execute command successfully", async () => {
       const strategy = new SshHealthCheckStrategy(
-        createMockClient({ exitCode: 0, stdout: "OK" })
+        createMockClient({ exitCode: 0, stdout: "OK" }),
       );
       const connectedClient = await strategy.createClient({
         host: "localhost",
@@ -90,7 +90,7 @@ describe("SshHealthCheckStrategy", () => {
 
     it("should return non-zero exit code for failed command", async () => {
       const strategy = new SshHealthCheckStrategy(
-        createMockClient({ exitCode: 1, stderr: "Error" })
+        createMockClient({ exitCode: 1, stderr: "Error" }),
       );
       const connectedClient = await strategy.createClient({
         host: "localhost",
@@ -109,7 +109,7 @@ describe("SshHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new SshHealthCheckStrategy();
       const runs = [
@@ -139,7 +139,8 @@ describe("SshHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgConnectionTime).toBe(75);
       expect(aggregated.successRate).toBe(100);
@@ -148,22 +149,20 @@ describe("SshHealthCheckStrategy", () => {
 
     it("should count errors", () => {
       const strategy = new SshHealthCheckStrategy();
-      const runs = [
-        {
-          id: "1",
-          status: "unhealthy" as const,
-          latencyMs: 100,
-          checkId: "c1",
-          timestamp: new Date(),
-          metadata: {
-            connected: false,
-            connectionTimeMs: 100,
-            error: "Connection refused",
-          },
+      const run = {
+        id: "1",
+        status: "unhealthy" as const,
+        latencyMs: 100,
+        checkId: "c1",
+        timestamp: new Date(),
+        metadata: {
+          connected: false,
+          connectionTimeMs: 100,
+          error: "Connection refused",
         },
-      ];
+      };
 
-      const aggregated = strategy.aggregateResult(runs);
+      const aggregated = strategy.mergeResult(undefined, run);
 
       expect(aggregated.errorCount).toBe(1);
       expect(aggregated.successRate).toBe(0);

@@ -26,6 +26,7 @@ import { IncidentApi } from "@checkstack/incident-common";
 import { resolveRoute, type InferClient } from "@checkstack/common";
 import { HealthCheckService } from "./service";
 import { healthCheckHooks } from "./hooks";
+import { incrementHourlyAggregate } from "./realtime-aggregation";
 
 type Db = SafeDatabase<typeof schema>;
 type CatalogClient = InferClient<typeof CatalogApi>;
@@ -332,6 +333,18 @@ async function executeHealthCheckJob(props: {
         result: { ...result } as Record<string, unknown>,
       });
 
+      // Trigger incremental hourly aggregation
+      await incrementHourlyAggregate({
+        db,
+        systemId,
+        configurationId: configId,
+        status: result.status,
+        latencyMs: result.latencyMs,
+        runTimestamp: new Date(),
+        result: { ...result } as Record<string, unknown>,
+        collectorRegistry,
+      });
+
       logger.debug(
         `Health check ${configId} for system ${systemId} failed: ${errorMessage}`,
       );
@@ -481,6 +494,18 @@ async function executeHealthCheckJob(props: {
       result: { ...result } as Record<string, unknown>,
     });
 
+    // Trigger incremental hourly aggregation
+    await incrementHourlyAggregate({
+      db,
+      systemId,
+      configurationId: configId,
+      status: result.status,
+      latencyMs: result.latencyMs,
+      runTimestamp: new Date(),
+      result: { ...result } as Record<string, unknown>,
+      collectorRegistry,
+    });
+
     logger.debug(
       `Ran health check ${configId} for system ${systemId}: ${result.status}`,
     );
@@ -560,6 +585,18 @@ async function executeHealthCheckJob(props: {
       systemId,
       status: "unhealthy",
       result: { error: String(error) } as Record<string, unknown>,
+    });
+
+    // Trigger incremental hourly aggregation
+    await incrementHourlyAggregate({
+      db,
+      systemId,
+      configurationId: configId,
+      status: "unhealthy",
+      latencyMs: undefined,
+      runTimestamp: new Date(),
+      // No collector data for error cases
+      collectorRegistry,
     });
 
     // Try to fetch names for the enriched signal (best-effort)

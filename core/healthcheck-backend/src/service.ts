@@ -12,9 +12,10 @@ import {
   healthCheckRuns,
   healthCheckAggregates,
   VersionedStateThresholds,
+  DEFAULT_RETENTION_CONFIG,
 } from "./schema";
 import * as schema from "./schema";
-import { eq, and, InferSelectModel, desc, gte, lte } from "drizzle-orm";
+import { eq, and, InferSelectModel, desc, gte, lte, lt } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
 import { evaluateHealthStatus } from "./state-evaluator";
 import { stateThresholds } from "./state-thresholds-migrations";
@@ -649,7 +650,7 @@ export class HealthCheckService {
       .where(eq(healthCheckConfigurations.id, configurationId))
       .limit(1);
 
-    // Look up strategy for aggregateResult function (only if needed)
+    // Look up strategy for mergeResult function (only if needed)
     const strategy =
       options.includeAggregatedResult && config && this.registry
         ? this.registry.getStrategy(config.strategyId)
@@ -810,12 +811,13 @@ export class HealthCheckService {
     bucketIntervalMs: number;
     rangeStart: Date;
     strategy?: {
-      aggregateResult: (
-        runs: Array<{
+      mergeResult: (
+        existing: Record<string, unknown> | undefined,
+        newRun: {
           status: "healthy" | "unhealthy" | "degraded";
           latencyMs?: number;
           metadata?: unknown;
-        }>,
+        },
       ) => unknown;
     };
   }): NormalizedBucket[] {
@@ -871,13 +873,17 @@ export class HealthCheckService {
       const latencies = extractLatencies(bucket.runs);
       const latencyStats = calculateLatencyStats(latencies);
 
-      // Compute aggregatedResult if strategy is available
+      // Compute aggregatedResult if strategy is available (using incremental mergeResult)
       let aggregatedResult: Record<string, unknown> | undefined;
       if (strategy) {
-        const strategyResult = strategy.aggregateResult(bucket.runs) as Record<
-          string,
-          unknown
-        >;
+        // Incrementally merge each run's result
+        let strategyResult: Record<string, unknown> | undefined;
+        for (const run of bucket.runs) {
+          strategyResult = strategy.mergeResult(strategyResult, run) as Record<
+            string,
+            unknown
+          >;
+        }
 
         // Aggregate collector data if collector registry is available
         let collectorsAggregated: Record<string, unknown> | undefined;
@@ -920,6 +926,9 @@ export class HealthCheckService {
   /**
    * Get availability statistics for a health check over 31-day and 365-day periods.
    * Availability is calculated as (healthyCount / totalRunCount) * 100.
+   *
+   * With incremental real-time aggregation, hourly aggregates are always up-to-date
+   * (updated immediately on every run), so we don't need to query raw runs.
    */
   async getAvailabilityStats(props: {
     systemId: string;
@@ -933,11 +942,41 @@ export class HealthCheckService {
     const { systemId, configurationId } = props;
     const now = new Date();
 
+    // Get retention config to determine what data tiers are available
+    const { retentionConfig } = await this.getRetentionConfig(
+      systemId,
+      configurationId,
+    );
+    const config = retentionConfig ?? DEFAULT_RETENTION_CONFIG;
+
     // Calculate cutoff dates
     const cutoff31Days = new Date(now.getTime() - 31 * 24 * 60 * 60 * 1000);
     const cutoff365Days = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
 
-    // Query daily aggregates for the full 365-day period
+    // Cutoff for hourly aggregates based on retention config
+    const hourlyCutoff = new Date(
+      now.getTime() - config.hourlyRetentionDays * 24 * 60 * 60 * 1000,
+    );
+
+    // Query hourly aggregates for the period they cover (up to hourlyRetentionDays)
+    // These are always up-to-date due to incremental real-time aggregation
+    const hourlyAggregates = await this.db
+      .select({
+        bucketStart: healthCheckAggregates.bucketStart,
+        runCount: healthCheckAggregates.runCount,
+        healthyCount: healthCheckAggregates.healthyCount,
+      })
+      .from(healthCheckAggregates)
+      .where(
+        and(
+          eq(healthCheckAggregates.systemId, systemId),
+          eq(healthCheckAggregates.configurationId, configurationId),
+          eq(healthCheckAggregates.bucketSize, "hourly"),
+          gte(healthCheckAggregates.bucketStart, hourlyCutoff),
+        ),
+      );
+
+    // Query daily aggregates for data beyond hourly retention
     const dailyAggregates = await this.db
       .select({
         bucketStart: healthCheckAggregates.bucketStart,
@@ -951,32 +990,18 @@ export class HealthCheckService {
           eq(healthCheckAggregates.configurationId, configurationId),
           eq(healthCheckAggregates.bucketSize, "daily"),
           gte(healthCheckAggregates.bucketStart, cutoff365Days),
+          lt(healthCheckAggregates.bucketStart, hourlyCutoff),
         ),
       );
 
-    // Also query raw runs for the recent period not yet aggregated (typically last 7 days)
-    const recentRuns = await this.db
-      .select({
-        status: healthCheckRuns.status,
-        timestamp: healthCheckRuns.timestamp,
-      })
-      .from(healthCheckRuns)
-      .where(
-        and(
-          eq(healthCheckRuns.systemId, systemId),
-          eq(healthCheckRuns.configurationId, configurationId),
-          gte(healthCheckRuns.timestamp, cutoff365Days),
-        ),
-      );
-
-    // Separate data by period
+    // Aggregate counts
     let totalRuns31Days = 0;
     let healthyRuns31Days = 0;
     let totalRuns365Days = 0;
     let healthyRuns365Days = 0;
 
-    // Process daily aggregates
-    for (const agg of dailyAggregates) {
+    // Process hourly aggregates (fresh data within hourlyRetentionDays)
+    for (const agg of hourlyAggregates) {
       totalRuns365Days += agg.runCount;
       healthyRuns365Days += agg.healthyCount;
 
@@ -986,30 +1011,14 @@ export class HealthCheckService {
       }
     }
 
-    // Process recent raw runs (to include data not yet aggregated)
-    // Deduplicate by checking if a run's timestamp falls within an already-counted aggregate bucket
-    const aggregateBucketStarts = new Set(
-      dailyAggregates.map((a) => a.bucketStart.getTime()),
-    );
+    // Process daily aggregates (older data beyond hourly retention)
+    for (const agg of dailyAggregates) {
+      totalRuns365Days += agg.runCount;
+      healthyRuns365Days += agg.healthyCount;
 
-    for (const run of recentRuns) {
-      // Calculate which daily bucket this run would belong to
-      const runBucketStart = new Date(run.timestamp);
-      runBucketStart.setUTCHours(0, 0, 0, 0);
-
-      // Only count if this bucket isn't already in aggregates
-      if (!aggregateBucketStarts.has(runBucketStart.getTime())) {
-        totalRuns365Days += 1;
-        if (run.status === "healthy") {
-          healthyRuns365Days += 1;
-        }
-
-        if (run.timestamp >= cutoff31Days) {
-          totalRuns31Days += 1;
-          if (run.status === "healthy") {
-            healthyRuns31Days += 1;
-          }
-        }
+      if (agg.bucketStart >= cutoff31Days) {
+        totalRuns31Days += agg.runCount;
+        healthyRuns31Days += agg.healthyCount;
       }
     }
 

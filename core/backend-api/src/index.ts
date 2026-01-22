@@ -24,3 +24,4 @@ export * from "./chart-metadata";
 export * from "./transport-client";
 export * from "./collector-strategy";
 export * from "./collector-registry";
+export * from "./incremental-aggregation";

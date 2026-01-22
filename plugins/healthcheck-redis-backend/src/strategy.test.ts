@@ -12,17 +12,17 @@ describe("RedisHealthCheckStrategy", () => {
       pingResponse?: string;
       infoResponse?: string;
       pingError?: Error;
-    } = {}
+    } = {},
   ): RedisConnection => ({
     ping: mock(() =>
       config.pingError
         ? Promise.reject(config.pingError)
-        : Promise.resolve(config.pingResponse ?? "PONG")
+        : Promise.resolve(config.pingResponse ?? "PONG"),
     ),
     info: mock(() =>
       Promise.resolve(
-        config.infoResponse ?? "redis_version:7.0.0\r\nrole:master\r\n"
-      )
+        config.infoResponse ?? "redis_version:7.0.0\r\nrole:master\r\n",
+      ),
     ),
     get: mock(() => Promise.resolve(undefined)),
     quit: mock(() => Promise.resolve("OK")),
@@ -35,12 +35,12 @@ describe("RedisHealthCheckStrategy", () => {
       infoResponse?: string;
       pingError?: Error;
       connectError?: Error;
-    } = {}
+    } = {},
   ): RedisClient => ({
     connect: mock(() =>
       config.connectError
         ? Promise.reject(config.connectError)
-        : Promise.resolve(createMockConnection(config))
+        : Promise.resolve(createMockConnection(config)),
     ),
   });
 
@@ -63,7 +63,7 @@ describe("RedisHealthCheckStrategy", () => {
 
     it("should throw for connection error", async () => {
       const strategy = new RedisHealthCheckStrategy(
-        createMockClient({ connectError: new Error("Connection refused") })
+        createMockClient({ connectError: new Error("Connection refused") }),
       );
 
       await expect(
@@ -71,7 +71,7 @@ describe("RedisHealthCheckStrategy", () => {
           host: "localhost",
           port: 6379,
           timeout: 5000,
-        })
+        }),
       ).rejects.toThrow("Connection refused");
     });
   });
@@ -94,7 +94,7 @@ describe("RedisHealthCheckStrategy", () => {
 
     it("should return error for ping failure", async () => {
       const strategy = new RedisHealthCheckStrategy(
-        createMockClient({ pingError: new Error("NOAUTH") })
+        createMockClient({ pingError: new Error("NOAUTH") }),
       );
       const connectedClient = await strategy.createClient({
         host: "localhost",
@@ -128,7 +128,7 @@ describe("RedisHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new RedisHealthCheckStrategy();
       const runs = [
@@ -160,7 +160,8 @@ describe("RedisHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgConnectionTime).toBe(10);
       expect(aggregated.successRate).toBe(100);
@@ -169,23 +170,21 @@ describe("RedisHealthCheckStrategy", () => {
 
     it("should count errors", () => {
       const strategy = new RedisHealthCheckStrategy();
-      const runs = [
-        {
-          id: "1",
-          status: "unhealthy" as const,
-          latencyMs: 100,
-          checkId: "c1",
-          timestamp: new Date(),
-          metadata: {
-            connected: false,
-            connectionTimeMs: 100,
-            pingSuccess: false,
-            error: "Connection refused",
-          },
+      const run = {
+        id: "1",
+        status: "unhealthy" as const,
+        latencyMs: 100,
+        checkId: "c1",
+        timestamp: new Date(),
+        metadata: {
+          connected: false,
+          connectionTimeMs: 100,
+          pingSuccess: false,
+          error: "Connection refused",
         },
-      ];
+      };
 
-      const aggregated = strategy.aggregateResult(runs);
+      const aggregated = strategy.mergeResult(undefined, run);
 
       expect(aggregated.errorCount).toBe(1);
       expect(aggregated.successRate).toBe(0);

@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeMinMax,
+  averageStateSchema,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -64,7 +70,7 @@ const diskResultSchema = z.object({
 
 export type DiskResult = z.infer<typeof diskResultSchema>;
 
-const diskAggregatedSchema = z.object({
+const diskAggregatedDisplaySchema = z.object({
   avgUsedPercent: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Disk Usage",
@@ -77,21 +83,27 @@ const diskAggregatedSchema = z.object({
   }),
 });
 
+const diskAggregatedInternalSchema = z.object({
+  _usage: averageStateSchema.optional(),
+  _maxUsage: minMaxStateSchema.optional(),
+});
+
+const diskAggregatedSchema = diskAggregatedDisplaySchema.merge(
+  diskAggregatedInternalSchema,
+);
+
 export type DiskAggregatedResult = z.infer<typeof diskAggregatedSchema>;
 
 // ============================================================================
 // DISK COLLECTOR
 // ============================================================================
 
-export class DiskCollector
-  implements
-    CollectorStrategy<
-      SshTransportClient,
-      DiskConfig,
-      DiskResult,
-      DiskAggregatedResult
-    >
-{
+export class DiskCollector implements CollectorStrategy<
+  SshTransportClient,
+  DiskConfig,
+  DiskResult,
+  DiskAggregatedResult
+> {
   id = "disk";
   displayName = "Disk Metrics";
   description = "Collects disk usage for a specific mount point via SSH";
@@ -120,16 +132,27 @@ export class DiskCollector
     return { result: parsed };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<DiskResult>[]
+  mergeResult(
+    existing: DiskAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<DiskResult>,
   ): DiskAggregatedResult {
-    const usedPercents = runs
-      .map((r) => r.metadata?.usedPercent)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
+
+    const usageState = mergeAverage(
+      existing?._usage as AverageState | undefined,
+      metadata?.usedPercent,
+    );
+
+    const maxUsageState = mergeMinMax(
+      existing?._maxUsage as MinMaxState | undefined,
+      metadata?.usedPercent,
+    );
 
     return {
-      avgUsedPercent: usedPercents.length > 0 ? this.avg(usedPercents) : 0,
-      maxUsedPercent: usedPercents.length > 0 ? Math.max(...usedPercents) : 0,
+      avgUsedPercent: usageState.avg,
+      maxUsedPercent: maxUsageState.max,
+      _usage: usageState,
+      _maxUsage: maxUsageState,
     };
   }
 

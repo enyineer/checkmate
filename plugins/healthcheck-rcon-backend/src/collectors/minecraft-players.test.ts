@@ -79,7 +79,7 @@ describe("MinecraftPlayersCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average and max player counts", () => {
       const collector = new MinecraftPlayersCollector();
       const runs = [
@@ -109,7 +109,8 @@ describe("MinecraftPlayersCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgOnlinePlayers).toBe(10);
       expect(aggregated.maxOnlinePlayers).toBe(15);

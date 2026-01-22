@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeMinMax,
+  averageStateSchema,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -77,7 +83,7 @@ const nodeHealthResultSchema = z.object({
 
 export type NodeHealthResult = z.infer<typeof nodeHealthResultSchema>;
 
-const nodeHealthAggregatedSchema = z.object({
+const nodeHealthAggregatedDisplaySchema = z.object({
   avgOnlineNodes: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Online Nodes",
@@ -93,6 +99,16 @@ const nodeHealthAggregatedSchema = z.object({
   }),
 });
 
+const nodeHealthAggregatedInternalSchema = z.object({
+  _onlineNodes: averageStateSchema.optional(),
+  _utilization: averageStateSchema.optional(),
+  _minOnlineNodes: minMaxStateSchema.optional(),
+});
+
+const nodeHealthAggregatedSchema = nodeHealthAggregatedDisplaySchema.merge(
+  nodeHealthAggregatedInternalSchema,
+);
+
 export type NodeHealthAggregatedResult = z.infer<
   typeof nodeHealthAggregatedSchema
 >;
@@ -105,15 +121,12 @@ export type NodeHealthAggregatedResult = z.infer<
  * Collector for Jenkins node/agent health.
  * Monitors node availability and executor utilization.
  */
-export class NodeHealthCollector
-  implements
-    CollectorStrategy<
-      JenkinsTransportClient,
-      NodeHealthConfig,
-      NodeHealthResult,
-      NodeHealthAggregatedResult
-    >
-{
+export class NodeHealthCollector implements CollectorStrategy<
+  JenkinsTransportClient,
+  NodeHealthConfig,
+  NodeHealthResult,
+  NodeHealthAggregatedResult
+> {
   id = "node-health";
   displayName = "Node Health";
   description = "Monitor Jenkins agent/node availability and executor usage";
@@ -147,7 +160,7 @@ export class NodeHealthCollector
 
   private async executeForSingleNode(
     nodeName: string,
-    client: JenkinsTransportClient
+    client: JenkinsTransportClient,
   ): Promise<CollectorResult<NodeHealthResult>> {
     const encodedName = encodeURIComponent(nodeName);
     const response = await client.exec({
@@ -209,7 +222,7 @@ export class NodeHealthCollector
   }
 
   private async executeForAllNodes(
-    client: JenkinsTransportClient
+    client: JenkinsTransportClient,
   ): Promise<CollectorResult<NodeHealthResult>> {
     const response = await client.exec({
       path: "/computer/api/json",
@@ -275,31 +288,34 @@ export class NodeHealthCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<NodeHealthResult>[]
+  mergeResult(
+    existing: NodeHealthAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<NodeHealthResult>,
   ): NodeHealthAggregatedResult {
-    const onlineNodes = runs
-      .map((r) => r.metadata?.onlineNodes)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const utilizations = runs
-      .map((r) => r.metadata?.executorUtilization)
-      .filter((v): v is number => typeof v === "number");
+    const onlineNodesState = mergeAverage(
+      existing?._onlineNodes as AverageState | undefined,
+      metadata?.onlineNodes,
+    );
+
+    const utilizationState = mergeAverage(
+      existing?._utilization as AverageState | undefined,
+      metadata?.executorUtilization,
+    );
+
+    const minOnlineNodesState = mergeMinMax(
+      existing?._minOnlineNodes as MinMaxState | undefined,
+      metadata?.onlineNodes,
+    );
 
     return {
-      avgOnlineNodes:
-        onlineNodes.length > 0
-          ? Math.round(
-              onlineNodes.reduce((a, b) => a + b, 0) / onlineNodes.length
-            )
-          : 0,
-      avgUtilization:
-        utilizations.length > 0
-          ? Math.round(
-              utilizations.reduce((a, b) => a + b, 0) / utilizations.length
-            )
-          : 0,
-      minOnlineNodes: onlineNodes.length > 0 ? Math.min(...onlineNodes) : 0,
+      avgOnlineNodes: onlineNodesState.avg,
+      avgUtilization: utilizationState.avg,
+      minOnlineNodes: minOnlineNodesState.min,
+      _onlineNodes: onlineNodesState,
+      _utilization: utilizationState,
+      _minOnlineNodes: minOnlineNodesState,
     };
   }
 }

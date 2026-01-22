@@ -8,6 +8,18 @@ import {
   configNumber,
   configBoolean,
   type ConnectedClient,
+  mergeAverage,
+  mergeRate,
+  mergeCounter,
+  mergeMinMax,
+  averageStateSchema,
+  minMaxStateSchema,
+  rateStateSchema,
+  counterStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -73,7 +85,8 @@ type PostgresResult = z.infer<typeof postgresResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const postgresAggregatedSchema = healthResultSchema({
+// UI-visible aggregated fields (for charts)
+const postgresAggregatedDisplaySchema = healthResultSchema({
   avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
@@ -94,6 +107,18 @@ const postgresAggregatedSchema = healthResultSchema({
     "x-chart-label": "Errors",
   }),
 });
+
+// Internal state for incremental aggregation
+const postgresAggregatedInternalSchema = z.object({
+  _connectionTime: averageStateSchema.optional(),
+  _maxConnectionTime: minMaxStateSchema.optional(),
+  _success: rateStateSchema.optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const postgresAggregatedSchema = postgresAggregatedDisplaySchema.merge(
+  postgresAggregatedInternalSchema,
+);
 
 type PostgresAggregatedResult = z.infer<typeof postgresAggregatedSchema>;
 
@@ -133,15 +158,12 @@ const defaultDbClient: DbClient = {
 // STRATEGY
 // ============================================================================
 
-export class PostgresHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      PostgresConfig,
-      PostgresTransportClient,
-      PostgresResult,
-      PostgresAggregatedResult
-    >
-{
+export class PostgresHealthCheckStrategy implements HealthCheckStrategy<
+  PostgresConfig,
+  PostgresTransportClient,
+  PostgresResult,
+  PostgresAggregatedResult
+> {
   id = "postgres";
   displayName = "PostgreSQL Health Check";
   description = "PostgreSQL database connectivity and query health check";
@@ -183,53 +205,50 @@ export class PostgresHealthCheckStrategy
     schema: postgresAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<PostgresResult>[]
+  mergeResult(
+    existing: PostgresAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<PostgresResult>,
   ): PostgresAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return {
-        avgConnectionTime: 0,
-        maxConnectionTime: 0,
-        successRate: 0,
-        errorCount: 0,
-      };
-    }
+    // Merge connection time average
+    const connectionTimeState = mergeAverage(
+      existing?._connectionTime as AverageState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const connectionTimes = validRuns
-      .map((r) => r.metadata?.connectionTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    // Merge max connection time
+    const maxConnectionTimeState = mergeMinMax(
+      existing?._maxConnectionTime as MinMaxState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const avgConnectionTime =
-      connectionTimes.length > 0
-        ? Math.round(
-            connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length
-          )
-        : 0;
+    // Merge success rate
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.connected,
+    );
 
-    const maxConnectionTime =
-      connectionTimes.length > 0 ? Math.max(...connectionTimes) : 0;
-
-    const successCount = validRuns.filter(
-      (r) => r.metadata?.connected === true
-    ).length;
-    const successRate = Math.round((successCount / validRuns.length) * 100);
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
+    // Merge error count
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
     return {
-      avgConnectionTime,
-      maxConnectionTime,
-      successRate,
-      errorCount,
+      avgConnectionTime: connectionTimeState.avg,
+      maxConnectionTime: maxConnectionTimeState.max,
+      successRate: successState.rate,
+      errorCount: errorState.count,
+      _connectionTime: connectionTimeState,
+      _maxConnectionTime: maxConnectionTimeState,
+      _success: successState,
+      _errors: errorState,
     };
   }
 
   async createClient(
-    config: PostgresConfigInput
+    config: PostgresConfigInput,
   ): Promise<ConnectedClient<PostgresTransportClient>> {
     const validatedConfig = this.config.validate(config);
 

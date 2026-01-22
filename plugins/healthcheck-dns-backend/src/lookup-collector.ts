@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeRate,
+  averageStateSchema,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -50,7 +56,8 @@ const lookupResultSchema = healthResultSchema({
 
 export type LookupResult = z.infer<typeof lookupResultSchema>;
 
-const lookupAggregatedSchema = healthResultSchema({
+// UI-visible aggregated fields (for charts)
+const lookupAggregatedDisplaySchema = healthResultSchema({
   avgResolutionTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Resolution Time",
@@ -63,6 +70,17 @@ const lookupAggregatedSchema = healthResultSchema({
   }),
 });
 
+// Internal state for incremental aggregation (not shown in charts)
+const lookupAggregatedInternalSchema = z.object({
+  _resolutionTime: averageStateSchema.optional(),
+  _success: rateStateSchema.optional(),
+});
+
+// Combined schema for storage
+const lookupAggregatedSchema = lookupAggregatedDisplaySchema.merge(
+  lookupAggregatedInternalSchema,
+);
+
 export type LookupAggregatedResult = z.infer<typeof lookupAggregatedSchema>;
 
 // ============================================================================
@@ -73,15 +91,12 @@ export type LookupAggregatedResult = z.infer<typeof lookupAggregatedSchema>;
  * Built-in DNS lookup collector.
  * Resolves DNS records and checks results.
  */
-export class LookupCollector
-  implements
-    CollectorStrategy<
-      DnsTransportClient,
-      LookupConfig,
-      LookupResult,
-      LookupAggregatedResult
-    >
-{
+export class LookupCollector implements CollectorStrategy<
+  DnsTransportClient,
+  LookupConfig,
+  LookupResult,
+  LookupAggregatedResult
+> {
   id = "lookup";
   displayName = "DNS Lookup";
   description = "Resolve DNS records and check the results";
@@ -124,28 +139,30 @@ export class LookupCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<LookupResult>[]
+  mergeResult(
+    existing: LookupAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<LookupResult>,
   ): LookupAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.resolutionTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const recordCounts = runs
-      .map((r) => r.metadata?.recordCount)
-      .filter((v): v is number => typeof v === "number");
+    // Merge resolution time average
+    const resolutionTimeState = mergeAverage(
+      existing?._resolutionTime as AverageState | undefined,
+      metadata?.resolutionTimeMs,
+    );
 
-    const successCount = recordCounts.filter((c) => c > 0).length;
+    // Merge success rate (recordCount > 0 means success)
+    const isSuccess = (metadata?.recordCount ?? 0) > 0;
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      isSuccess,
+    );
 
     return {
-      avgResolutionTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      successRate:
-        recordCounts.length > 0
-          ? Math.round((successCount / recordCounts.length) * 100)
-          : 0,
+      avgResolutionTimeMs: resolutionTimeState.avg,
+      successRate: successState.rate,
+      _resolutionTime: resolutionTimeState,
+      _success: successState,
     };
   }
 }

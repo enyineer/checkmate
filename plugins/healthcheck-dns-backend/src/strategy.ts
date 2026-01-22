@@ -5,6 +5,12 @@ import {
   Versioned,
   z,
   type ConnectedClient,
+  mergeCounter,
+  mergeAverage,
+  averageStateSchema,
+  counterStateSchema,
+  type CounterState,
+  type AverageState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -73,7 +79,8 @@ type DnsResult = z.infer<typeof dnsResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const dnsAggregatedSchema = healthResultSchema({
+// UI-visible aggregated fields (for charts)
+const dnsAggregatedDisplaySchema = healthResultSchema({
   avgResolutionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Resolution Time",
@@ -89,6 +96,18 @@ const dnsAggregatedSchema = healthResultSchema({
   }),
 });
 
+// Internal state for incremental aggregation (not shown in charts)
+const dnsAggregatedInternalSchema = z.object({
+  _resolutionTime: averageStateSchema.optional(),
+  _failures: counterStateSchema.optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+// Combined schema for storage
+const dnsAggregatedSchema = dnsAggregatedDisplaySchema.merge(
+  dnsAggregatedInternalSchema,
+);
+
 type DnsAggregatedResult = z.infer<typeof dnsAggregatedSchema>;
 
 // ============================================================================
@@ -101,7 +120,7 @@ export interface DnsResolver {
   resolve6(hostname: string): Promise<string[]>;
   resolveCname(hostname: string): Promise<string[]>;
   resolveMx(
-    hostname: string
+    hostname: string,
   ): Promise<{ priority: number; exchange: string }[]>;
   resolveTxt(hostname: string): Promise<string[][]>;
   resolveNs(hostname: string): Promise<string[]>;
@@ -116,15 +135,12 @@ const defaultResolverFactory: ResolverFactory = () => new dns.Resolver();
 // STRATEGY
 // ============================================================================
 
-export class DnsHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      DnsConfig,
-      DnsTransportClient,
-      DnsResult,
-      DnsAggregatedResult
-    >
-{
+export class DnsHealthCheckStrategy implements HealthCheckStrategy<
+  DnsConfig,
+  DnsTransportClient,
+  DnsResult,
+  DnsAggregatedResult
+> {
   id = "dns";
   displayName = "DNS Health Check";
   description = "DNS record resolution with response validation";
@@ -169,39 +185,44 @@ export class DnsHealthCheckStrategy
     schema: dnsAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<DnsResult>[]
+  mergeResult(
+    existing: DnsAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<DnsResult>,
   ): DnsAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return { avgResolutionTime: 0, failureCount: 0, errorCount: 0 };
-    }
+    // Merge resolution time average
+    const resolutionTimeState = mergeAverage(
+      existing?._resolutionTime as AverageState | undefined,
+      metadata?.resolutionTimeMs,
+    );
 
-    const resolutionTimes = validRuns
-      .map((r) => r.metadata?.resolutionTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    // Merge failure count (recordCount === 0 means failure)
+    const isFailure = metadata?.recordCount === 0;
+    const failureState = mergeCounter(
+      existing?._failures as CounterState | undefined,
+      isFailure,
+    );
 
-    const avgResolutionTime =
-      resolutionTimes.length > 0
-        ? Math.round(
-            resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
-          )
-        : 0;
+    // Merge error count
+    const hasError = metadata?.error !== undefined;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      hasError,
+    );
 
-    const failureCount = validRuns.filter(
-      (r) => r.metadata?.recordCount === 0
-    ).length;
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
-
-    return { avgResolutionTime, failureCount, errorCount };
+    return {
+      avgResolutionTime: resolutionTimeState.avg,
+      failureCount: failureState.count,
+      errorCount: errorState.count,
+      _resolutionTime: resolutionTimeState,
+      _failures: failureState,
+      _errors: errorState,
+    };
   }
 
   async createClient(
-    config: DnsConfig
+    config: DnsConfig,
   ): Promise<ConnectedClient<DnsTransportClient>> {
     const validatedConfig = this.config.validate(config);
     const resolver = this.resolverFactory();
@@ -214,14 +235,17 @@ export class DnsHealthCheckStrategy
       exec: async (request: DnsLookupRequest): Promise<DnsLookupResult> => {
         const timeout = validatedConfig.timeout;
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("DNS resolution timeout")), timeout)
+          setTimeout(
+            () => reject(new Error("DNS resolution timeout")),
+            timeout,
+          ),
         );
 
         try {
           const resolvePromise = this.resolveRecords(
             resolver,
             request.hostname,
-            request.recordType
+            request.recordType,
           );
 
           const values = await Promise.race([resolvePromise, timeoutPromise]);
@@ -246,7 +270,7 @@ export class DnsHealthCheckStrategy
   private async resolveRecords(
     resolver: DnsResolver,
     hostname: string,
-    recordType: "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "NS"
+    recordType: "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "NS",
   ): Promise<string[]> {
     switch (recordType) {
       case "A": {

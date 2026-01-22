@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeMinMax,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -33,13 +39,13 @@ const sourcePlayersResultSchema = z.object({
     healthResultString({
       "x-chart-type": "text",
       "x-chart-label": "Player",
-    })
+    }),
   ),
 });
 
 export type SourcePlayersResult = z.infer<typeof sourcePlayersResultSchema>;
 
-const sourcePlayersAggregatedSchema = z.object({
+const sourcePlayersAggregatedDisplaySchema = z.object({
   avgPlayerCount: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Player Count",
@@ -49,6 +55,17 @@ const sourcePlayersAggregatedSchema = z.object({
     "x-chart-label": "Max Player Count",
   }),
 });
+
+const sourcePlayersAggregatedInternalSchema = z.object({
+  _playerCount: averageStateSchema
+    .optional(),
+  _maxPlayerCount: minMaxStateSchema.optional(),
+});
+
+const sourcePlayersAggregatedSchema =
+  sourcePlayersAggregatedDisplaySchema.merge(
+    sourcePlayersAggregatedInternalSchema,
+  );
 
 export type SourcePlayersAggregatedResult = z.infer<
   typeof sourcePlayersAggregatedSchema
@@ -66,15 +83,12 @@ export type SourcePlayersAggregatedResult = z.infer<
  * # userid name uniqueid connected ping loss state rate
  * # 2 "PlayerName" STEAM_1:0:12345678 05:23 42 0 active 196608
  */
-export class SourcePlayersCollector
-  implements
-    CollectorStrategy<
-      RconTransportClient,
-      SourcePlayersConfig,
-      SourcePlayersResult,
-      SourcePlayersAggregatedResult
-    >
-{
+export class SourcePlayersCollector implements CollectorStrategy<
+  RconTransportClient,
+  SourcePlayersConfig,
+  SourcePlayersResult,
+  SourcePlayersAggregatedResult
+> {
   id = "source-players";
   displayName = "Source Player List";
   description =
@@ -141,21 +155,27 @@ export class SourcePlayersCollector
     return playerNames;
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<SourcePlayersResult>[]
+  mergeResult(
+    existing: SourcePlayersAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<SourcePlayersResult>,
   ): SourcePlayersAggregatedResult {
-    const playerCounts = runs
-      .map((r) => r.metadata?.playerCount)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
+
+    const avgState = mergeAverage(
+      existing?._playerCount as AverageState | undefined,
+      metadata?.playerCount,
+    );
+
+    const maxState = mergeMinMax(
+      existing?._maxPlayerCount as MinMaxState | undefined,
+      metadata?.playerCount,
+    );
 
     return {
-      avgPlayerCount:
-        playerCounts.length > 0
-          ? Math.round(
-              playerCounts.reduce((a, b) => a + b, 0) / playerCounts.length
-            )
-          : 0,
-      maxPlayerCount: playerCounts.length > 0 ? Math.max(...playerCounts) : 0,
+      avgPlayerCount: avgState.avg,
+      maxPlayerCount: maxState.max,
+      _playerCount: avgState,
+      _maxPlayerCount: maxState,
     };
   }
 }

@@ -15,7 +15,7 @@ describe("DnsHealthCheckStrategy", () => {
       resolveMx?: { priority: number; exchange: string }[] | Error;
       resolveTxt?: string[][] | Error;
       resolveNs?: string[] | Error;
-    } = {}
+    } = {},
   ): ResolverFactory => {
     return () =>
       ({
@@ -23,34 +23,34 @@ describe("DnsHealthCheckStrategy", () => {
         resolve4: mock(() =>
           config.resolve4 instanceof Error
             ? Promise.reject(config.resolve4)
-            : Promise.resolve(config.resolve4 ?? [])
+            : Promise.resolve(config.resolve4 ?? []),
         ),
         resolve6: mock(() =>
           config.resolve6 instanceof Error
             ? Promise.reject(config.resolve6)
-            : Promise.resolve(config.resolve6 ?? [])
+            : Promise.resolve(config.resolve6 ?? []),
         ),
         resolveCname: mock(() =>
           config.resolveCname instanceof Error
             ? Promise.reject(config.resolveCname)
-            : Promise.resolve(config.resolveCname ?? [])
+            : Promise.resolve(config.resolveCname ?? []),
         ),
         resolveMx: mock(() =>
           config.resolveMx instanceof Error
             ? Promise.reject(config.resolveMx)
-            : Promise.resolve(config.resolveMx ?? [])
+            : Promise.resolve(config.resolveMx ?? []),
         ),
         resolveTxt: mock(() =>
           config.resolveTxt instanceof Error
             ? Promise.reject(config.resolveTxt)
-            : Promise.resolve(config.resolveTxt ?? [])
+            : Promise.resolve(config.resolveTxt ?? []),
         ),
         resolveNs: mock(() =>
           config.resolveNs instanceof Error
             ? Promise.reject(config.resolveNs)
-            : Promise.resolve(config.resolveNs ?? [])
+            : Promise.resolve(config.resolveNs ?? []),
         ),
-      } as DnsResolver);
+      }) as DnsResolver;
   };
 
   describe("createClient", () => {
@@ -102,7 +102,7 @@ describe("DnsHealthCheckStrategy", () => {
   describe("client.exec", () => {
     it("should return resolved values for successful A record resolution", async () => {
       const strategy = new DnsHealthCheckStrategy(
-        createMockResolver({ resolve4: ["1.2.3.4", "5.6.7.8"] })
+        createMockResolver({ resolve4: ["1.2.3.4", "5.6.7.8"] }),
       );
       const connectedClient = await strategy.createClient({ timeout: 5000 });
 
@@ -118,7 +118,7 @@ describe("DnsHealthCheckStrategy", () => {
 
     it("should return error for DNS error", async () => {
       const strategy = new DnsHealthCheckStrategy(
-        createMockResolver({ resolve4: new Error("NXDOMAIN") })
+        createMockResolver({ resolve4: new Error("NXDOMAIN") }),
       );
       const connectedClient = await strategy.createClient({ timeout: 5000 });
 
@@ -139,7 +139,7 @@ describe("DnsHealthCheckStrategy", () => {
             { priority: 0, exchange: "mail1.example.com" },
             { priority: 10, exchange: "mail2.example.com" },
           ],
-        })
+        }),
       );
       const connectedClient = await strategy.createClient({ timeout: 5000 });
 
@@ -154,7 +154,7 @@ describe("DnsHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new DnsHealthCheckStrategy();
       const runs = [
@@ -184,7 +184,9 @@ describe("DnsHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgResolutionTime).toBe(15);
       expect(aggregated.failureCount).toBe(0);
@@ -221,7 +223,9 @@ describe("DnsHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.errorCount).toBe(1);
       expect(aggregated.failureCount).toBe(2);

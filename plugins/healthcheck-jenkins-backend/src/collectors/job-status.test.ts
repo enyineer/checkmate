@@ -9,7 +9,7 @@ describe("JobStatusCollector", () => {
   const collector = new JobStatusCollector();
 
   const createMockClient = (
-    response: JenkinsResponse
+    response: JenkinsResponse,
   ): JenkinsTransportClient => ({
     exec: async () => response,
   });
@@ -93,12 +93,12 @@ describe("JobStatusCollector", () => {
     });
 
     expect(capturedPath).toBe(
-      "/job/folder/job/subfolder/job/nested-job/api/json"
+      "/job/folder/job/subfolder/job/nested-job/api/json",
     );
   });
 
   it("should aggregate success rate correctly", () => {
-    const runs: Parameters<typeof collector.aggregateResult>[0] = [
+    const runs: Parameters<typeof collector.mergeResult>[1][] = [
       {
         status: "healthy" as const,
         latencyMs: 100,
@@ -137,7 +137,9 @@ describe("JobStatusCollector", () => {
       },
     ];
 
-    const aggregated = collector.aggregateResult(runs);
+    let aggregated = collector.mergeResult(undefined, runs[0]);
+    aggregated = collector.mergeResult(aggregated, runs[1]);
+    aggregated = collector.mergeResult(aggregated, runs[2]);
 
     expect(aggregated.successRate).toBe(67); // 2/3
     expect(aggregated.avgBuildDurationMs).toBe(60000); // (60000+80000+40000)/3

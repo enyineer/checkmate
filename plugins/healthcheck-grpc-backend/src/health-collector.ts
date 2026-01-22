@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -49,7 +55,7 @@ const grpcHealthResultSchema = healthResultSchema({
 
 export type HealthResult = z.infer<typeof grpcHealthResultSchema>;
 
-const healthAggregatedSchema = healthResultSchema({
+const healthAggregatedDisplaySchema = healthResultSchema({
   avgResponseTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Response Time",
@@ -62,6 +68,17 @@ const healthAggregatedSchema = healthResultSchema({
   }),
 });
 
+const healthAggregatedInternalSchema = z.object({
+  _responseTime: averageStateSchema
+    .optional(),
+  _serving: rateStateSchema
+    .optional(),
+});
+
+const healthAggregatedSchema = healthAggregatedDisplaySchema.merge(
+  healthAggregatedInternalSchema,
+);
+
 export type HealthAggregatedResult = z.infer<typeof healthAggregatedSchema>;
 
 // ============================================================================
@@ -72,15 +89,12 @@ export type HealthAggregatedResult = z.infer<typeof healthAggregatedSchema>;
  * Built-in gRPC health collector.
  * Checks gRPC health status using the standard Health Checking Protocol.
  */
-export class HealthCollector
-  implements
-    CollectorStrategy<
-      GrpcTransportClient,
-      HealthConfig,
-      HealthResult,
-      HealthAggregatedResult
-    >
-{
+export class HealthCollector implements CollectorStrategy<
+  GrpcTransportClient,
+  HealthConfig,
+  HealthResult,
+  HealthAggregatedResult
+> {
   id = "health";
   displayName = "gRPC Health Check";
   description = "Check gRPC service health status";
@@ -124,28 +138,27 @@ export class HealthCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<HealthResult>[]
+  mergeResult(
+    existing: HealthAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<HealthResult>,
   ): HealthAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.responseTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const servingResults = runs
-      .map((r) => r.metadata?.serving)
-      .filter((v): v is boolean => typeof v === "boolean");
+    const responseTimeState = mergeAverage(
+      existing?._responseTime as AverageState | undefined,
+      metadata?.responseTimeMs,
+    );
 
-    const servingCount = servingResults.filter(Boolean).length;
+    const servingState = mergeRate(
+      existing?._serving as RateState | undefined,
+      metadata?.serving,
+    );
 
     return {
-      avgResponseTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      servingRate:
-        servingResults.length > 0
-          ? Math.round((servingCount / servingResults.length) * 100)
-          : 0,
+      avgResponseTimeMs: responseTimeState.avg,
+      servingRate: servingState.rate,
+      _responseTime: responseTimeState,
+      _serving: servingState,
     };
   }
 }

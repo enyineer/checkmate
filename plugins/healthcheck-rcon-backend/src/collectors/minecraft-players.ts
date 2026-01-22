@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeMinMax,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -39,7 +45,7 @@ const minecraftPlayersResultSchema = z.object({
     healthResultString({
       "x-chart-type": "text",
       "x-chart-label": "Player",
-    })
+    }),
   ),
 });
 
@@ -47,7 +53,7 @@ export type MinecraftPlayersResult = z.infer<
   typeof minecraftPlayersResultSchema
 >;
 
-const minecraftPlayersAggregatedSchema = z.object({
+const minecraftPlayersAggregatedDisplaySchema = z.object({
   avgOnlinePlayers: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Online Players",
@@ -57,6 +63,17 @@ const minecraftPlayersAggregatedSchema = z.object({
     "x-chart-label": "Max Online Players",
   }),
 });
+
+const minecraftPlayersAggregatedInternalSchema = z.object({
+  _onlinePlayers: averageStateSchema
+    .optional(),
+  _maxOnlinePlayers: minMaxStateSchema.optional(),
+});
+
+const minecraftPlayersAggregatedSchema =
+  minecraftPlayersAggregatedDisplaySchema.merge(
+    minecraftPlayersAggregatedInternalSchema,
+  );
 
 export type MinecraftPlayersAggregatedResult = z.infer<
   typeof minecraftPlayersAggregatedSchema
@@ -73,15 +90,12 @@ export type MinecraftPlayersAggregatedResult = z.infer<
  * Expected response format:
  * "There are X of a max of Y players online: Name1, Name2, ..."
  */
-export class MinecraftPlayersCollector
-  implements
-    CollectorStrategy<
-      RconTransportClient,
-      MinecraftPlayersConfig,
-      MinecraftPlayersResult,
-      MinecraftPlayersAggregatedResult
-    >
-{
+export class MinecraftPlayersCollector implements CollectorStrategy<
+  RconTransportClient,
+  MinecraftPlayersConfig,
+  MinecraftPlayersResult,
+  MinecraftPlayersAggregatedResult
+> {
   id = "minecraft-players";
   displayName = "Minecraft Players";
   description =
@@ -128,7 +142,7 @@ export class MinecraftPlayersCollector
   } {
     // Match: "There are X of a max of Y players online: ..."
     const countMatch = response.match(
-      /There are (\d+) of a max of (\d+) players online/i
+      /There are (\d+) of a max of (\d+) players online/i,
     );
 
     const onlinePlayers = countMatch ? Number.parseInt(countMatch[1], 10) : 0;
@@ -151,21 +165,27 @@ export class MinecraftPlayersCollector
     return { onlinePlayers, maxPlayers, playerNames };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<MinecraftPlayersResult>[]
+  mergeResult(
+    existing: MinecraftPlayersAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<MinecraftPlayersResult>,
   ): MinecraftPlayersAggregatedResult {
-    const playerCounts = runs
-      .map((r) => r.metadata?.onlinePlayers)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
+
+    const avgState = mergeAverage(
+      existing?._onlinePlayers as AverageState | undefined,
+      metadata?.onlinePlayers,
+    );
+
+    const maxState = mergeMinMax(
+      existing?._maxOnlinePlayers as MinMaxState | undefined,
+      metadata?.onlinePlayers,
+    );
 
     return {
-      avgOnlinePlayers:
-        playerCounts.length > 0
-          ? Math.round(
-              playerCounts.reduce((a, b) => a + b, 0) / playerCounts.length
-            )
-          : 0,
-      maxOnlinePlayers: playerCounts.length > 0 ? Math.max(...playerCounts) : 0,
+      avgOnlinePlayers: avgState.avg,
+      maxOnlinePlayers: maxState.max,
+      _onlinePlayers: avgState,
+      _maxOnlinePlayers: maxState,
     };
   }
 }

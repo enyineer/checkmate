@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeRate,
+  averageStateSchema,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -45,7 +51,7 @@ const queryResultSchema = healthResultSchema({
 
 export type QueryResult = z.infer<typeof queryResultSchema>;
 
-const queryAggregatedSchema = healthResultSchema({
+const queryAggregatedDisplaySchema = healthResultSchema({
   avgExecutionTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Execution Time",
@@ -58,6 +64,15 @@ const queryAggregatedSchema = healthResultSchema({
   }),
 });
 
+const queryAggregatedInternalSchema = z.object({
+  _executionTime: averageStateSchema.optional(),
+  _success: rateStateSchema.optional(),
+});
+
+const queryAggregatedSchema = queryAggregatedDisplaySchema.merge(
+  queryAggregatedInternalSchema,
+);
+
 export type QueryAggregatedResult = z.infer<typeof queryAggregatedSchema>;
 
 // ============================================================================
@@ -68,15 +83,12 @@ export type QueryAggregatedResult = z.infer<typeof queryAggregatedSchema>;
  * Built-in PostgreSQL query collector.
  * Executes SQL queries and checks results.
  */
-export class QueryCollector
-  implements
-    CollectorStrategy<
-      PostgresTransportClient,
-      QueryConfig,
-      QueryResult,
-      QueryAggregatedResult
-    >
-{
+export class QueryCollector implements CollectorStrategy<
+  PostgresTransportClient,
+  QueryConfig,
+  QueryResult,
+  QueryAggregatedResult
+> {
   id = "query";
   displayName = "SQL Query";
   description = "Execute a SQL query and check the result";
@@ -115,28 +127,27 @@ export class QueryCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<QueryResult>[]
+  mergeResult(
+    existing: QueryAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<QueryResult>,
   ): QueryAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.executionTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const successes = runs
-      .map((r) => r.metadata?.success)
-      .filter((v): v is boolean => typeof v === "boolean");
+    const executionTimeState = mergeAverage(
+      existing?._executionTime as AverageState | undefined,
+      metadata?.executionTimeMs,
+    );
 
-    const successCount = successes.filter(Boolean).length;
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.success,
+    );
 
     return {
-      avgExecutionTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      successRate:
-        successes.length > 0
-          ? Math.round((successCount / successes.length) * 100)
-          : 0,
+      avgExecutionTimeMs: executionTimeState.avg,
+      successRate: successState.rate,
+      _executionTime: executionTimeState,
+      _success: successState,
     };
   }
 }

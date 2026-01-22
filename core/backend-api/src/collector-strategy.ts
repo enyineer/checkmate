@@ -29,7 +29,7 @@ export interface CollectorStrategy<
   TClient extends TransportClient<unknown, unknown>,
   TConfig = unknown,
   TResult = Record<string, unknown>,
-  TAggregated = Record<string, unknown>
+  TAggregated = Record<string, unknown>,
 > {
   /** Unique identifier for this collector */
   id: string;
@@ -76,8 +76,15 @@ export interface CollectorStrategy<
   }): Promise<CollectorResult<TResult>>;
 
   /**
-   * Aggregate results from multiple runs into a summary.
-   * Called during retention processing.
+   * Incrementally merge new run data into an existing aggregate.
+   * Called after each health check run for real-time aggregation.
+   *
+   * @param existing - Existing aggregated result (undefined for first run in bucket)
+   * @param newRun - Data from the new run to merge
+   * @returns Updated aggregated result
    */
-  aggregateResult(runs: HealthCheckRunForAggregation<TResult>[]): TAggregated;
+  mergeResult(
+    existing: TAggregated | undefined,
+    newRun: HealthCheckRunForAggregation<TResult>,
+  ): TAggregated;
 }

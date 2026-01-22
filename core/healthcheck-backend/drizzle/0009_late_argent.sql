@@ -1,0 +1,1 @@
+ALTER TABLE "health_check_aggregates" ADD COLUMN "tdigest_state" jsonb;

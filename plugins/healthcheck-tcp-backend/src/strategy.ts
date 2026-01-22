@@ -4,6 +4,15 @@ import {
   Versioned,
   z,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -73,7 +82,8 @@ type TcpResult = z.infer<typeof tcpResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const tcpAggregatedSchema = healthResultSchema({
+// UI-visible aggregated fields
+const tcpAggregatedDisplaySchema = healthResultSchema({
   avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
@@ -89,6 +99,19 @@ const tcpAggregatedSchema = healthResultSchema({
     "x-chart-label": "Errors",
   }),
 });
+
+// Internal state for incremental aggregation
+const tcpAggregatedInternalSchema = z.object({
+  _connectionTime: averageStateSchema
+    .optional(),
+  _success: rateStateSchema
+    .optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const tcpAggregatedSchema = tcpAggregatedDisplaySchema.merge(
+  tcpAggregatedInternalSchema,
+);
 
 type TcpAggregatedResult = z.infer<typeof tcpAggregatedSchema>;
 
@@ -159,15 +182,12 @@ const defaultSocketFactory: SocketFactory = () => {
 // STRATEGY
 // ============================================================================
 
-export class TcpHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      TcpConfig,
-      TcpTransportClient,
-      TcpResult,
-      TcpAggregatedResult
-    >
-{
+export class TcpHealthCheckStrategy implements HealthCheckStrategy<
+  TcpConfig,
+  TcpTransportClient,
+  TcpResult,
+  TcpAggregatedResult
+> {
   id = "tcp";
   displayName = "TCP Health Check";
   description = "TCP port connectivity check with optional banner grab";
@@ -213,40 +233,39 @@ export class TcpHealthCheckStrategy
     schema: tcpAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<TcpResult>[]
+  mergeResult(
+    existing: TcpAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<TcpResult>,
   ): TcpAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return { avgConnectionTime: 0, successRate: 0, errorCount: 0 };
-    }
+    const connectionTimeState = mergeAverage(
+      existing?._connectionTime as AverageState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const connectionTimes = validRuns
-      .map((r) => r.metadata?.connectionTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.connected,
+    );
 
-    const avgConnectionTime =
-      connectionTimes.length > 0
-        ? Math.round(
-            connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length
-          )
-        : 0;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
-    const successCount = validRuns.filter(
-      (r) => r.metadata?.connected === true
-    ).length;
-    const successRate = Math.round((successCount / validRuns.length) * 100);
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
-
-    return { avgConnectionTime, successRate, errorCount };
+    return {
+      avgConnectionTime: connectionTimeState.avg,
+      successRate: successState.rate,
+      errorCount: errorState.count,
+      _connectionTime: connectionTimeState,
+      _success: successState,
+      _errors: errorState,
+    };
   }
 
   async createClient(
-    config: TcpConfig
+    config: TcpConfig,
   ): Promise<ConnectedClient<TcpTransportClient>> {
     const validatedConfig = this.config.validate(config);
     const socket = this.socketFactory();

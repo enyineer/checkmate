@@ -4,7 +4,9 @@ import type { DnsTransportClient } from "./transport-client";
 
 describe("LookupCollector", () => {
   const createMockClient = (
-    response: { values: string[]; error?: string } = { values: ["192.168.1.1"] }
+    response: { values: string[]; error?: string } = {
+      values: ["192.168.1.1"],
+    },
   ): DnsTransportClient => ({
     exec: mock(() => Promise.resolve(response)),
   });
@@ -59,7 +61,7 @@ describe("LookupCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average resolution time", () => {
       const collector = new LookupCollector();
       const runs = [
@@ -89,7 +91,9 @@ describe("LookupCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgResolutionTimeMs).toBe(75);
       expect(aggregated.successRate).toBe(100);
@@ -120,7 +124,9 @@ describe("LookupCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.successRate).toBe(50);
     });

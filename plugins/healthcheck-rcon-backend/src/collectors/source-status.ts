@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeMinMax,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -53,7 +59,7 @@ const sourceStatusResultSchema = z.object({
 
 export type SourceStatusResult = z.infer<typeof sourceStatusResultSchema>;
 
-const sourceStatusAggregatedSchema = z.object({
+const sourceStatusAggregatedDisplaySchema = z.object({
   avgHumanPlayers: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Human Players",
@@ -63,6 +69,16 @@ const sourceStatusAggregatedSchema = z.object({
     "x-chart-label": "Max Human Players",
   }),
 });
+
+const sourceStatusAggregatedInternalSchema = z.object({
+  _humanPlayers: averageStateSchema
+    .optional(),
+  _maxHumanPlayers: minMaxStateSchema.optional(),
+});
+
+const sourceStatusAggregatedSchema = sourceStatusAggregatedDisplaySchema.merge(
+  sourceStatusAggregatedInternalSchema,
+);
 
 export type SourceStatusAggregatedResult = z.infer<
   typeof sourceStatusAggregatedSchema
@@ -82,15 +98,12 @@ export type SourceStatusAggregatedResult = z.infer<
  * map     : de_dust2
  * players : X humans, Y bots (Z max)
  */
-export class SourceStatusCollector
-  implements
-    CollectorStrategy<
-      RconTransportClient,
-      SourceStatusConfig,
-      SourceStatusResult,
-      SourceStatusAggregatedResult
-    >
-{
+export class SourceStatusCollector implements CollectorStrategy<
+  RconTransportClient,
+  SourceStatusConfig,
+  SourceStatusResult,
+  SourceStatusAggregatedResult
+> {
   id = "source-status";
   displayName = "Source Server Status";
   description =
@@ -174,7 +187,7 @@ export class SourceStatusCollector
 
       // Parse players : X humans, Y bots (Z max)
       const playersMatch = trimmedLine.match(
-        /^players\s*:\s*(\d+)\s*humans?,\s*(\d+)\s*bots?\s*\((\d+)\s*max\)/i
+        /^players\s*:\s*(\d+)\s*humans?,\s*(\d+)\s*bots?\s*\((\d+)\s*max\)/i,
       );
       if (playersMatch) {
         humanPlayers = Number.parseInt(playersMatch[1], 10);
@@ -187,21 +200,27 @@ export class SourceStatusCollector
     return { hostname, version, map, humanPlayers, botPlayers, maxPlayers };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<SourceStatusResult>[]
+  mergeResult(
+    existing: SourceStatusAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<SourceStatusResult>,
   ): SourceStatusAggregatedResult {
-    const playerCounts = runs
-      .map((r) => r.metadata?.humanPlayers)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
+
+    const avgState = mergeAverage(
+      existing?._humanPlayers as AverageState | undefined,
+      metadata?.humanPlayers,
+    );
+
+    const maxState = mergeMinMax(
+      existing?._maxHumanPlayers as MinMaxState | undefined,
+      metadata?.humanPlayers,
+    );
 
     return {
-      avgHumanPlayers:
-        playerCounts.length > 0
-          ? Math.round(
-              playerCounts.reduce((a, b) => a + b, 0) / playerCounts.length
-            )
-          : 0,
-      maxHumanPlayers: playerCounts.length > 0 ? Math.max(...playerCounts) : 0,
+      avgHumanPlayers: avgState.avg,
+      maxHumanPlayers: maxState.max,
+      _humanPlayers: avgState,
+      _maxHumanPlayers: maxState,
     };
   }
 }

@@ -1,32 +1,18 @@
-import type {
-  HealthCheckRegistry,
-  Logger,
-  SafeDatabase,
-  CollectorRegistry,
-} from "@checkstack/backend-api";
+import type { Logger, SafeDatabase } from "@checkstack/backend-api";
 import * as schema from "./schema";
 import {
   healthCheckRuns,
   systemHealthChecks,
   healthCheckAggregates,
-  healthCheckConfigurations,
   DEFAULT_RETENTION_CONFIG,
 } from "./schema";
-import { eq, and, lt, sql } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
 import type { QueueManager } from "@checkstack/queue-api";
-import {
-  aggregateCollectorData,
-  calculateLatencyStats,
-  countStatuses,
-  extractLatencies,
-} from "./aggregation-utils";
 
 type Db = SafeDatabase<typeof schema>;
 
 interface RetentionJobDeps {
   db: Db;
-  registry: HealthCheckRegistry;
-  collectorRegistry: CollectorRegistry;
   logger: Logger;
   queueManager: QueueManager;
 }
@@ -44,7 +30,7 @@ interface RetentionJobPayload {
  * 3. Deletes expired daily aggregates
  */
 export async function setupRetentionJob(deps: RetentionJobDeps) {
-  const { queueManager, logger, db, registry, collectorRegistry } = deps;
+  const { queueManager, logger, db } = deps;
 
   const queue = queueManager.getQueue<RetentionJobPayload>(RETENTION_QUEUE);
 
@@ -54,8 +40,6 @@ export async function setupRetentionJob(deps: RetentionJobDeps) {
       logger.info("Starting health check retention job");
       await runRetentionJob({
         db,
-        registry,
-        collectorRegistry,
         logger,
         queueManager,
       });
@@ -80,7 +64,7 @@ export async function setupRetentionJob(deps: RetentionJobDeps) {
  * Main retention job logic
  */
 export async function runRetentionJob(deps: RetentionJobDeps) {
-  const { db, registry, collectorRegistry, logger } = deps;
+  const { db, logger } = deps;
 
   // Get all unique system-config assignments
   const assignments = await db.select().from(systemHealthChecks);
@@ -90,11 +74,9 @@ export async function runRetentionJob(deps: RetentionJobDeps) {
       assignment.retentionConfig ?? DEFAULT_RETENTION_CONFIG;
 
     try {
-      // 1. Aggregate old raw runs into hourly buckets
-      await aggregateRawRuns({
+      // 1. Delete expired raw runs (aggregation now happens in real-time)
+      await deleteExpiredRawRuns({
         db,
-        registry,
-        collectorRegistry,
         systemId: assignment.systemId,
         configurationId: assignment.configurationId,
         rawRetentionDays: retentionConfig.rawRetentionDays,
@@ -124,166 +106,32 @@ export async function runRetentionJob(deps: RetentionJobDeps) {
   }
 }
 
-interface AggregateRawRunsParams {
+interface DeleteExpiredRawRunsParams {
   db: Db;
-  registry: HealthCheckRegistry;
-  collectorRegistry: CollectorRegistry;
   systemId: string;
   configurationId: string;
   rawRetentionDays: number;
 }
 
 /**
- * Aggregates raw runs older than retention period into hourly buckets
+ * Deletes raw runs older than retention period.
+ * Aggregation now happens in real-time via incrementHourlyAggregate.
  */
-async function aggregateRawRuns(params: AggregateRawRunsParams) {
-  const {
-    db,
-    registry,
-    collectorRegistry,
-    systemId,
-    configurationId,
-    rawRetentionDays,
-  } = params;
+async function deleteExpiredRawRuns(params: DeleteExpiredRawRunsParams) {
+  const { db, systemId, configurationId, rawRetentionDays } = params;
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - rawRetentionDays);
-  cutoffDate.setHours(cutoffDate.getHours(), 0, 0, 0); // Round to hour
 
-  // Get strategy for metadata aggregation
-  const [config] = await db
-    .select()
-    .from(healthCheckConfigurations)
-    .where(eq(healthCheckConfigurations.id, configurationId))
-    .limit(1);
-  const strategy = config ? registry.getStrategy(config.strategyId) : undefined;
-
-  // Query raw runs older than cutoff, grouped by hour
-  const oldRuns = await db
-    .select()
-    .from(healthCheckRuns)
+  await db
+    .delete(healthCheckRuns)
     .where(
       and(
         eq(healthCheckRuns.systemId, systemId),
         eq(healthCheckRuns.configurationId, configurationId),
         lt(healthCheckRuns.timestamp, cutoffDate),
       ),
-    )
-    .orderBy(healthCheckRuns.timestamp);
-
-  if (oldRuns.length === 0) return;
-
-  // Group into hourly buckets
-  const buckets = new Map<
-    string,
-    {
-      bucketStart: Date;
-      runs: Array<{
-        status: "healthy" | "unhealthy" | "degraded";
-        latencyMs: number | undefined;
-        metadata?: Record<string, unknown>;
-      }>;
-      runIds: string[];
-    }
-  >();
-
-  for (const run of oldRuns) {
-    const bucketStart = new Date(run.timestamp);
-    bucketStart.setMinutes(0, 0, 0);
-    const key = bucketStart.toISOString();
-
-    if (!buckets.has(key)) {
-      buckets.set(key, { bucketStart, runs: [], runIds: [] });
-    }
-    const bucket = buckets.get(key)!;
-    bucket.runs.push({
-      status: run.status,
-      latencyMs: run.latencyMs ?? undefined,
-      metadata: run.result ?? undefined,
-    });
-    bucket.runIds.push(run.id);
-  }
-
-  // Create aggregates and delete raw runs
-  for (const [, bucket] of buckets) {
-    const runCount = bucket.runs.length;
-
-    // Calculate status counts
-    const { healthyCount, degradedCount, unhealthyCount } = countStatuses(
-      bucket.runs,
     );
-
-    // Calculate latency stats
-    const latencies = extractLatencies(bucket.runs);
-    const {
-      latencySumMs,
-      avgLatencyMs,
-      minLatencyMs,
-      maxLatencyMs,
-      p95LatencyMs,
-    } = calculateLatencyStats(latencies);
-
-    // Aggregate strategy result
-    let aggregatedResult: Record<string, unknown> | undefined;
-    if (strategy) {
-      const strategyResult = strategy.aggregateResult(bucket.runs) as Record<
-        string,
-        unknown
-      >;
-
-      // Aggregate collector data
-      const collectorsAggregated = aggregateCollectorData(
-        bucket.runs,
-        collectorRegistry,
-      );
-
-      aggregatedResult = {
-        ...strategyResult,
-        ...(Object.keys(collectorsAggregated).length > 0
-          ? { collectors: collectorsAggregated }
-          : {}),
-      };
-    }
-
-    // Insert or update aggregate
-    await db
-      .insert(healthCheckAggregates)
-      .values({
-        configurationId,
-        systemId,
-        bucketStart: bucket.bucketStart,
-        bucketSize: "hourly",
-        runCount,
-        healthyCount,
-        degradedCount,
-        unhealthyCount,
-        latencySumMs,
-        avgLatencyMs,
-        minLatencyMs,
-        maxLatencyMs,
-        p95LatencyMs,
-        aggregatedResult,
-      })
-      .onConflictDoUpdate({
-        target: [
-          healthCheckAggregates.configurationId,
-          healthCheckAggregates.systemId,
-          healthCheckAggregates.bucketStart,
-          healthCheckAggregates.bucketSize,
-        ],
-        set: {
-          runCount: sql`${healthCheckAggregates.runCount} + ${runCount}`,
-          healthyCount: sql`${healthCheckAggregates.healthyCount} + ${healthyCount}`,
-          degradedCount: sql`${healthCheckAggregates.degradedCount} + ${degradedCount}`,
-          unhealthyCount: sql`${healthCheckAggregates.unhealthyCount} + ${unhealthyCount}`,
-        },
-      });
-
-    // Delete processed raw runs
-    for (const runId of bucket.runIds) {
-      await db.delete(healthCheckRuns).where(eq(healthCheckRuns.id, runId));
-    }
-  }
 }
 
 interface RollupParams {

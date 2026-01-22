@@ -13,10 +13,10 @@ export interface HealthCheckResult<TMetadata = Record<string, unknown>> {
 }
 
 /**
- * Raw run data for aggregation (passed to aggregateMetadata function).
+ * Raw run data for aggregation (passed to mergeResult function).
  */
 export interface HealthCheckRunForAggregation<
-  TResultMetadata = Record<string, unknown>
+  TResultMetadata = Record<string, unknown>,
 > {
   status: "healthy" | "unhealthy" | "degraded";
   latencyMs?: number;
@@ -27,7 +27,7 @@ export interface HealthCheckRunForAggregation<
  * Connected transport client with cleanup capability.
  */
 export interface ConnectedClient<
-  TClient extends TransportClient<unknown, unknown>
+  TClient extends TransportClient<unknown, unknown>,
 > {
   /** The connected transport client */
   client: TClient;
@@ -54,7 +54,7 @@ export interface HealthCheckStrategy<
     unknown
   >,
   TResult = Record<string, unknown>,
-  TAggregatedResult = Record<string, unknown>
+  TAggregatedResult = Record<string, unknown>,
 > {
   id: string;
   displayName: string;
@@ -80,13 +80,18 @@ export interface HealthCheckStrategy<
   createClient(config: TConfig): Promise<ConnectedClient<TClient>>;
 
   /**
-   * Aggregate results from multiple runs into a summary for bucket storage.
-   * Called during retention processing when raw data is aggregated.
+   * Incrementally merge new run data into an existing aggregate.
+   * Called after each health check run for real-time aggregation.
    * Core metrics (counts, latency) are auto-calculated by platform.
    * This function only handles strategy-specific result aggregation.
+   *
+   * @param existing - Existing aggregated result (undefined for first run in bucket)
+   * @param newRun - Data from the new run to merge
+   * @returns Updated aggregated result
    */
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<TResult>[]
+  mergeResult(
+    existing: TAggregatedResult | undefined,
+    newRun: HealthCheckRunForAggregation<TResult>,
   ): TAggregatedResult;
 }
 
@@ -111,10 +116,10 @@ export interface HealthCheckRegistry {
       TransportClient<unknown, unknown>,
       unknown,
       unknown
-    >
+    >,
   ): void;
   getStrategy(
-    id: string
+    id: string,
   ):
     | HealthCheckStrategy<
         unknown,

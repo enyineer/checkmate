@@ -42,7 +42,7 @@ const createMockRegistry = (): HealthCheckRegistry => ({
       },
       close: mock(() => {}),
     })),
-    aggregateResult: mock(() => ({})),
+    mergeResult: mock(() => ({})),
   })),
   register: mock(() => {}),
   getStrategies: mock(() => []),

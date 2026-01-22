@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -58,7 +64,7 @@ const certificateResultSchema = healthResultSchema({
 
 export type CertificateResult = z.infer<typeof certificateResultSchema>;
 
-const certificateAggregatedSchema = healthResultSchema({
+const certificateAggregatedDisplaySchema = healthResultSchema({
   avgDaysRemaining: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Avg Days Remaining",
@@ -70,6 +76,17 @@ const certificateAggregatedSchema = healthResultSchema({
     "x-chart-unit": "%",
   }),
 });
+
+const certificateAggregatedInternalSchema = z.object({
+  _daysRemaining: averageStateSchema
+    .optional(),
+  _valid: rateStateSchema
+    .optional(),
+});
+
+const certificateAggregatedSchema = certificateAggregatedDisplaySchema.merge(
+  certificateAggregatedInternalSchema,
+);
 
 export type CertificateAggregatedResult = z.infer<
   typeof certificateAggregatedSchema
@@ -83,15 +100,12 @@ export type CertificateAggregatedResult = z.infer<
  * Built-in TLS certificate collector.
  * Returns certificate information from the TLS connection.
  */
-export class CertificateCollector
-  implements
-    CollectorStrategy<
-      TlsTransportClient,
-      CertificateConfig,
-      CertificateResult,
-      CertificateAggregatedResult
-    >
-{
+export class CertificateCollector implements CollectorStrategy<
+  TlsTransportClient,
+  CertificateConfig,
+  CertificateResult,
+  CertificateAggregatedResult
+> {
   id = "certificate";
   displayName = "TLS Certificate";
   description = "Check TLS certificate validity and expiration";
@@ -142,30 +156,27 @@ export class CertificateCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<CertificateResult>[]
+  mergeResult(
+    existing: CertificateAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<CertificateResult>,
   ): CertificateAggregatedResult {
-    const daysRemaining = runs
-      .map((r) => r.metadata?.daysRemaining)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const validResults = runs
-      .map((r) => r.metadata?.valid)
-      .filter((v): v is boolean => typeof v === "boolean");
+    const daysState = mergeAverage(
+      existing?._daysRemaining as AverageState | undefined,
+      metadata?.daysRemaining,
+    );
 
-    const validCount = validResults.filter(Boolean).length;
+    const validState = mergeRate(
+      existing?._valid as RateState | undefined,
+      metadata?.valid,
+    );
 
     return {
-      avgDaysRemaining:
-        daysRemaining.length > 0
-          ? Math.round(
-              daysRemaining.reduce((a, b) => a + b, 0) / daysRemaining.length
-            )
-          : 0,
-      validRate:
-        validResults.length > 0
-          ? Math.round((validCount / validResults.length) * 100)
-          : 0,
+      avgDaysRemaining: daysState.avg,
+      validRate: validState.rate,
+      _daysRemaining: daysState,
+      _valid: validState,
     };
   }
 }

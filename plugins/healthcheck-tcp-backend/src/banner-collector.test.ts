@@ -65,7 +65,7 @@ describe("BannerCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average read time and banner rate", () => {
       const collector = new BannerCollector();
       const runs = [
@@ -87,7 +87,8 @@ describe("BannerCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgReadTimeMs).toBe(75);
       expect(aggregated.bannerRate).toBe(50);

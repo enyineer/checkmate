@@ -65,7 +65,7 @@ describe("HealthCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average response time and serving rate", () => {
       const collector = new HealthCollector();
       const runs = [
@@ -87,7 +87,8 @@ describe("HealthCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgResponseTimeMs).toBe(75);
       expect(aggregated.servingRate).toBe(100);
@@ -118,7 +119,8 @@ describe("HealthCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.servingRate).toBe(50);
     });

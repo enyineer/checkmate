@@ -4,6 +4,9 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  type AverageState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -54,7 +57,7 @@ const serverInfoResultSchema = z.object({
 
 export type ServerInfoResult = z.infer<typeof serverInfoResultSchema>;
 
-const serverInfoAggregatedSchema = z.object({
+const serverInfoAggregatedDisplaySchema = z.object({
   avgExecutors: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Executors",
@@ -64,6 +67,15 @@ const serverInfoAggregatedSchema = z.object({
     "x-chart-label": "Avg Jobs",
   }),
 });
+
+const serverInfoAggregatedInternalSchema = z.object({
+  _executors: averageStateSchema.optional(),
+  _jobs: averageStateSchema.optional(),
+});
+
+const serverInfoAggregatedSchema = serverInfoAggregatedDisplaySchema.merge(
+  serverInfoAggregatedInternalSchema,
+);
 
 export type ServerInfoAggregatedResult = z.infer<
   typeof serverInfoAggregatedSchema
@@ -77,15 +89,12 @@ export type ServerInfoAggregatedResult = z.infer<
  * Built-in collector for Jenkins server information.
  * Fetches basic server health metrics via /api/json.
  */
-export class ServerInfoCollector
-  implements
-    CollectorStrategy<
-      JenkinsTransportClient,
-      ServerInfoConfig,
-      ServerInfoResult,
-      ServerInfoAggregatedResult
-    >
-{
+export class ServerInfoCollector implements CollectorStrategy<
+  JenkinsTransportClient,
+  ServerInfoConfig,
+  ServerInfoResult,
+  ServerInfoAggregatedResult
+> {
   id = "server-info";
   displayName = "Server Info";
   description = "Collects Jenkins server information and health metrics";
@@ -144,26 +153,27 @@ export class ServerInfoCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<ServerInfoResult>[]
+  mergeResult(
+    existing: ServerInfoAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<ServerInfoResult>,
   ): ServerInfoAggregatedResult {
-    const executors = runs
-      .map((r) => r.metadata?.numExecutors)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const jobs = runs
-      .map((r) => r.metadata?.totalJobs)
-      .filter((v): v is number => typeof v === "number");
+    const executorsState = mergeAverage(
+      existing?._executors as AverageState | undefined,
+      metadata?.numExecutors,
+    );
+
+    const jobsState = mergeAverage(
+      existing?._jobs as AverageState | undefined,
+      metadata?.totalJobs,
+    );
 
     return {
-      avgExecutors:
-        executors.length > 0
-          ? Math.round(executors.reduce((a, b) => a + b, 0) / executors.length)
-          : 0,
-      avgTotalJobs:
-        jobs.length > 0
-          ? Math.round(jobs.reduce((a, b) => a + b, 0) / jobs.length)
-          : 0,
+      avgExecutors: executorsState.avg,
+      avgTotalJobs: jobsState.avg,
+      _executors: executorsState,
+      _jobs: jobsState,
     };
   }
 }

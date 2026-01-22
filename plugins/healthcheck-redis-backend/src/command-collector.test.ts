@@ -79,7 +79,7 @@ describe("CommandCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average response time and success rate", () => {
       const collector = new CommandCollector();
       const runs = [
@@ -101,7 +101,8 @@ describe("CommandCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgResponseTimeMs).toBe(10);
       expect(aggregated.successRate).toBe(100);
@@ -128,7 +129,8 @@ describe("CommandCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.successRate).toBe(50);
     });

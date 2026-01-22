@@ -138,7 +138,7 @@ describe("ScriptHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new ScriptHealthCheckStrategy();
       const runs = [
@@ -172,7 +172,8 @@ describe("ScriptHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgExecutionTime).toBe(75);
       expect(aggregated.successRate).toBe(100);
@@ -213,7 +214,8 @@ describe("ScriptHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.errorCount).toBe(1);
       expect(aggregated.timeoutCount).toBe(1);

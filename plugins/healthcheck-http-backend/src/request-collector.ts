@@ -5,6 +5,10 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeRate,
+  averageStateSchema,
+  rateStateSchema,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -76,7 +80,8 @@ const requestResultSchema = healthResultSchema({
 
 export type RequestResult = z.infer<typeof requestResultSchema>;
 
-const requestAggregatedSchema = healthResultSchema({
+// UI-visible aggregated fields (for charts)
+const requestAggregatedDisplaySchema = healthResultSchema({
   avgResponseTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Response Time",
@@ -88,6 +93,17 @@ const requestAggregatedSchema = healthResultSchema({
     "x-chart-unit": "%",
   }),
 });
+
+// Internal state for incremental aggregation (not shown in charts)
+const requestAggregatedInternalSchema = z.object({
+  _responseTime: averageStateSchema.optional(),
+  _success: rateStateSchema.optional(),
+});
+
+// Combined schema for storage
+const requestAggregatedSchema = requestAggregatedDisplaySchema.and(
+  requestAggregatedInternalSchema,
+);
 
 export type RequestAggregatedResult = z.infer<typeof requestAggregatedSchema>;
 
@@ -162,28 +178,21 @@ export class RequestCollector implements CollectorStrategy<
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<RequestResult>[],
+  mergeResult(
+    existing: RequestAggregatedResult | undefined,
+    newRun: HealthCheckRunForAggregation<RequestResult>,
   ): RequestAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.responseTimeMs)
-      .filter((v): v is number => typeof v === "number");
-
-    const successes = runs
-      .map((r) => r.metadata?.success)
-      .filter((v): v is boolean => typeof v === "boolean");
-
-    const successCount = successes.filter(Boolean).length;
+    const responseTime = mergeAverage(
+      existing?._responseTime,
+      newRun.metadata?.responseTimeMs,
+    );
+    const success = mergeRate(existing?._success, newRun.metadata?.success);
 
     return {
-      avgResponseTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      successRate:
-        successes.length > 0
-          ? Math.round((successCount / successes.length) * 100)
-          : 0,
+      avgResponseTimeMs: responseTime.avg,
+      successRate: success.rate,
+      _responseTime: responseTime,
+      _success: success,
     };
   }
 }

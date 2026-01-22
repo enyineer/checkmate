@@ -8,6 +8,18 @@ import {
   configNumber,
   configBoolean,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  mergeMinMax,
+  minMaxStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -78,7 +90,8 @@ type RedisResult = z.infer<typeof redisResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const redisAggregatedSchema = healthResultSchema({
+// UI-visible aggregated fields
+const redisAggregatedDisplaySchema = healthResultSchema({
   avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
@@ -99,6 +112,20 @@ const redisAggregatedSchema = healthResultSchema({
     "x-chart-label": "Errors",
   }),
 });
+
+// Internal state for incremental aggregation
+const redisAggregatedInternalSchema = z.object({
+  _connectionTime: averageStateSchema
+    .optional(),
+  _maxConnectionTime: minMaxStateSchema.optional(),
+  _success: rateStateSchema
+    .optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const redisAggregatedSchema = redisAggregatedDisplaySchema.merge(
+  redisAggregatedInternalSchema,
+);
 
 type RedisAggregatedResult = z.infer<typeof redisAggregatedSchema>;
 
@@ -160,15 +187,12 @@ const defaultRedisClient: RedisClient = {
 // STRATEGY
 // ============================================================================
 
-export class RedisHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      RedisConfig,
-      RedisTransportClient,
-      RedisResult,
-      RedisAggregatedResult
-    >
-{
+export class RedisHealthCheckStrategy implements HealthCheckStrategy<
+  RedisConfig,
+  RedisTransportClient,
+  RedisResult,
+  RedisAggregatedResult
+> {
   id = "redis";
   displayName = "Redis Health Check";
   description = "Redis server connectivity and health monitoring";
@@ -210,53 +234,46 @@ export class RedisHealthCheckStrategy
     schema: redisAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<RedisResult>[]
+  mergeResult(
+    existing: RedisAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<RedisResult>,
   ): RedisAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return {
-        avgConnectionTime: 0,
-        maxConnectionTime: 0,
-        successRate: 0,
-        errorCount: 0,
-      };
-    }
+    const connectionTimeState = mergeAverage(
+      existing?._connectionTime as AverageState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const connectionTimes = validRuns
-      .map((r) => r.metadata?.connectionTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    const maxConnectionTimeState = mergeMinMax(
+      existing?._maxConnectionTime as MinMaxState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const avgConnectionTime =
-      connectionTimes.length > 0
-        ? Math.round(
-            connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length
-          )
-        : 0;
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.connected,
+    );
 
-    const maxConnectionTime =
-      connectionTimes.length > 0 ? Math.max(...connectionTimes) : 0;
-
-    const successCount = validRuns.filter(
-      (r) => r.metadata?.connected === true
-    ).length;
-    const successRate = Math.round((successCount / validRuns.length) * 100);
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
     return {
-      avgConnectionTime,
-      maxConnectionTime,
-      successRate,
-      errorCount,
+      avgConnectionTime: connectionTimeState.avg,
+      maxConnectionTime: maxConnectionTimeState.max,
+      successRate: successState.rate,
+      errorCount: errorState.count,
+      _connectionTime: connectionTimeState,
+      _maxConnectionTime: maxConnectionTimeState,
+      _success: successState,
+      _errors: errorState,
     };
   }
 
   async createClient(
-    config: RedisConfigInput
+    config: RedisConfigInput,
   ): Promise<ConnectedClient<RedisTransportClient>> {
     const validatedConfig = this.config.validate(config);
 

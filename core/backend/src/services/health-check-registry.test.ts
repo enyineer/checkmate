@@ -36,9 +36,9 @@ describe("CoreHealthCheckRegistry", () => {
       schema: z.record(z.string(), z.unknown()),
     }),
     createClient: mock(() =>
-      Promise.resolve({ client: { exec: async () => ({}) }, close: () => {} })
+      Promise.resolve({ client: { exec: async () => ({}) }, close: () => {} }),
     ),
-    aggregateResult: mock(() => ({})),
+    mergeResult: mock(() => ({})),
   };
 
   const mockStrategy2: HealthCheckStrategy = {
@@ -58,9 +58,9 @@ describe("CoreHealthCheckRegistry", () => {
       schema: z.record(z.string(), z.unknown()),
     }),
     createClient: mock(() =>
-      Promise.resolve({ client: { exec: async () => ({}) }, close: () => {} })
+      Promise.resolve({ client: { exec: async () => ({}) }, close: () => {} }),
     ),
-    aggregateResult: mock(() => ({})),
+    mergeResult: mock(() => ({})),
   };
 
   beforeEach(() => {

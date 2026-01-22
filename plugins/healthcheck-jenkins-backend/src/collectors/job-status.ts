@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeRate,
+  averageStateSchema,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -77,7 +83,7 @@ const jobStatusResultSchema = z.object({
 
 export type JobStatusResult = z.infer<typeof jobStatusResultSchema>;
 
-const jobStatusAggregatedSchema = z.object({
+const jobStatusAggregatedDisplaySchema = z.object({
   avgBuildDurationMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Build Duration",
@@ -95,6 +101,16 @@ const jobStatusAggregatedSchema = z.object({
   }),
 });
 
+const jobStatusAggregatedInternalSchema = z.object({
+  _duration: averageStateSchema.optional(),
+  _success: rateStateSchema.optional(),
+  _buildable: rateStateSchema.optional(),
+});
+
+const jobStatusAggregatedSchema = jobStatusAggregatedDisplaySchema.merge(
+  jobStatusAggregatedInternalSchema,
+);
+
 export type JobStatusAggregatedResult = z.infer<
   typeof jobStatusAggregatedSchema
 >;
@@ -107,15 +123,12 @@ export type JobStatusAggregatedResult = z.infer<
  * Collector for Jenkins job status.
  * Monitors individual job health and last build information.
  */
-export class JobStatusCollector
-  implements
-    CollectorStrategy<
-      JenkinsTransportClient,
-      JobStatusConfig,
-      JobStatusResult,
-      JobStatusAggregatedResult
-    >
-{
+export class JobStatusCollector implements CollectorStrategy<
+  JenkinsTransportClient,
+  JobStatusConfig,
+  JobStatusResult,
+  JobStatusAggregatedResult
+> {
   id = "job-status";
   displayName = "Job Status";
   description = "Monitor Jenkins job status and last build information";
@@ -205,37 +218,35 @@ export class JobStatusCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<JobStatusResult>[]
+  mergeResult(
+    existing: JobStatusAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<JobStatusResult>,
   ): JobStatusAggregatedResult {
-    const durations = runs
-      .map((r) => r.metadata?.lastBuildDurationMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const results = runs
-      .map((r) => r.metadata?.lastBuildResult)
-      .filter((v): v is string => typeof v === "string");
+    const durationState = mergeAverage(
+      existing?._duration as AverageState | undefined,
+      metadata?.lastBuildDurationMs,
+    );
 
-    const buildables = runs
-      .map((r) => r.metadata?.buildable)
-      .filter((v): v is boolean => typeof v === "boolean");
+    // Success is when lastBuildResult === "SUCCESS"
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.lastBuildResult === "SUCCESS",
+    );
 
-    const successCount = results.filter((r) => r === "SUCCESS").length;
-    const buildableCount = buildables.filter(Boolean).length;
+    const buildableState = mergeRate(
+      existing?._buildable as RateState | undefined,
+      metadata?.buildable,
+    );
 
     return {
-      avgBuildDurationMs:
-        durations.length > 0
-          ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-          : 0,
-      successRate:
-        results.length > 0
-          ? Math.round((successCount / results.length) * 100)
-          : 0,
-      buildableRate:
-        buildables.length > 0
-          ? Math.round((buildableCount / buildables.length) * 100)
-          : 0,
+      avgBuildDurationMs: durationState.avg,
+      successRate: successState.rate,
+      buildableRate: buildableState.rate,
+      _duration: durationState,
+      _success: successState,
+      _buildable: buildableState,
     };
   }
 }

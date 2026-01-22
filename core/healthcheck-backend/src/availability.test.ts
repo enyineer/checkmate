@@ -1,6 +1,6 @@
 import { describe, it, expect, mock, beforeEach } from "bun:test";
 import { HealthCheckService } from "./service";
-import { subDays } from "date-fns";
+import { subDays, subHours } from "date-fns";
 
 describe("HealthCheckService.getAvailabilityStats", () => {
   // Mock database
@@ -8,33 +8,41 @@ describe("HealthCheckService.getAvailabilityStats", () => {
   let service: HealthCheckService;
 
   // Store mock data for different queries
+  let mockHourlyAggregates: Array<{
+    bucketStart: Date;
+    runCount: number;
+    healthyCount: number;
+  }> = [];
   let mockDailyAggregates: Array<{
     bucketStart: Date;
     runCount: number;
     healthyCount: number;
   }> = [];
-  let mockRawRuns: Array<{
-    status: "healthy" | "unhealthy" | "degraded";
-    timestamp: Date;
-  }> = [];
-  let selectCallCount = 0;
+  let mockRetentionConfig: { retentionConfig: unknown } | undefined = undefined;
 
   function createMockDb() {
-    // Reset call counter on creation
-    selectCallCount = 0;
+    // Select call order for getAvailabilityStats:
+    // 1. getRetentionConfig (from systemHealthChecks) - uses .then() pattern
+    // 2. hourlyAggregates
+    // 3. dailyAggregates
+    let selectCallCount = 0;
 
-    // Create a mock that handles:
-    // 1. First select: daily aggregates
-    // 2. Second select: raw runs
     const createSelectChain = () => {
       const currentCall = selectCallCount++;
 
       return {
         from: mock(() => ({
           where: mock(() => {
-            // First call: daily aggregates, Second call: raw runs
-            if (currentCall === 0) return Promise.resolve(mockDailyAggregates);
-            return Promise.resolve(mockRawRuns);
+            // Call 0: retentionConfig - uses .then() pattern
+            if (currentCall === 0) {
+              const result = mockRetentionConfig ? [mockRetentionConfig] : [];
+              // Return a promise-like object with .then()
+              return Promise.resolve(result);
+            }
+            // Call 1: hourly aggregates
+            if (currentCall === 1) return Promise.resolve(mockHourlyAggregates);
+            // Call 2: daily aggregates
+            return Promise.resolve(mockDailyAggregates);
           }),
         })),
       };
@@ -47,14 +55,15 @@ describe("HealthCheckService.getAvailabilityStats", () => {
 
   beforeEach(() => {
     // Reset mock data
+    mockHourlyAggregates = [];
     mockDailyAggregates = [];
-    mockRawRuns = [];
+    mockRetentionConfig = undefined;
     mockDb = createMockDb();
     service = new HealthCheckService(mockDb as never);
   });
 
   describe("with no data", () => {
-    it("returns null availability when no aggregates or runs exist", async () => {
+    it("returns null availability when no aggregates exist", async () => {
       const result = await service.getAvailabilityStats({
         systemId: "sys-1",
         configurationId: "config-1",
@@ -67,13 +76,19 @@ describe("HealthCheckService.getAvailabilityStats", () => {
     });
   });
 
-  describe("with only daily aggregates", () => {
+  describe("with hourly aggregates (real-time incremental)", () => {
     it("calculates 100% availability when all runs are healthy", async () => {
-      const now = new Date();
-
-      mockDailyAggregates = [
-        { bucketStart: subDays(now, 10), runCount: 100, healthyCount: 100 },
-        { bucketStart: subDays(now, 20), runCount: 100, healthyCount: 100 },
+      mockHourlyAggregates = [
+        {
+          bucketStart: subHours(new Date(), 2),
+          runCount: 100,
+          healthyCount: 100,
+        },
+        {
+          bucketStart: subHours(new Date(), 5),
+          runCount: 100,
+          healthyCount: 100,
+        },
       ];
 
       const result = await service.getAvailabilityStats({
@@ -88,11 +103,17 @@ describe("HealthCheckService.getAvailabilityStats", () => {
     });
 
     it("calculates correct availability with mixed results", async () => {
-      const now = new Date();
-
-      mockDailyAggregates = [
-        { bucketStart: subDays(now, 10), runCount: 100, healthyCount: 90 }, // 90%
-        { bucketStart: subDays(now, 20), runCount: 100, healthyCount: 80 }, // 80%
+      mockHourlyAggregates = [
+        {
+          bucketStart: subHours(new Date(), 2),
+          runCount: 100,
+          healthyCount: 90,
+        },
+        {
+          bucketStart: subHours(new Date(), 5),
+          runCount: 100,
+          healthyCount: 80,
+        },
       ];
 
       const result = await service.getAvailabilityStats({
@@ -103,18 +124,14 @@ describe("HealthCheckService.getAvailabilityStats", () => {
       // 170 healthy / 200 total = 85%
       expect(result.availability31Days).toBe(85);
       expect(result.availability365Days).toBe(85);
-      expect(result.totalRuns31Days).toBe(200);
-      expect(result.totalRuns365Days).toBe(200);
     });
 
-    it("separates 31-day and 365-day data correctly", async () => {
-      const now = new Date();
+    it("includes current hour data since aggregates are updated incrementally", async () => {
+      const currentHourStart = new Date();
+      currentHourStart.setMinutes(0, 0, 0);
 
-      mockDailyAggregates = [
-        // Within 31 days
-        { bucketStart: subDays(now, 10), runCount: 100, healthyCount: 99 },
-        // Outside 31 days, but within 365 days
-        { bucketStart: subDays(now, 60), runCount: 100, healthyCount: 50 },
+      mockHourlyAggregates = [
+        { bucketStart: currentHourStart, runCount: 10, healthyCount: 9 },
       ];
 
       const result = await service.getAvailabilityStats({
@@ -122,7 +139,35 @@ describe("HealthCheckService.getAvailabilityStats", () => {
         configurationId: "config-1",
       });
 
-      // 31 days: 99/100 = 99%
+      expect(result.totalRuns31Days).toBe(10);
+      expect(result.availability31Days).toBe(90);
+    });
+  });
+
+  describe("with combined hourly and daily aggregates", () => {
+    it("combines hourly and daily data correctly", async () => {
+      mockHourlyAggregates = [
+        {
+          bucketStart: subHours(new Date(), 2),
+          runCount: 100,
+          healthyCount: 99,
+        },
+      ];
+
+      mockDailyAggregates = [
+        {
+          bucketStart: subDays(new Date(), 60),
+          runCount: 100,
+          healthyCount: 50,
+        },
+      ];
+
+      const result = await service.getAvailabilityStats({
+        systemId: "sys-1",
+        configurationId: "config-1",
+      });
+
+      // 31 days: only hourly (99/100) = 99%
       expect(result.availability31Days).toBe(99);
       expect(result.totalRuns31Days).toBe(100);
 
@@ -132,69 +177,14 @@ describe("HealthCheckService.getAvailabilityStats", () => {
     });
   });
 
-  describe("with raw runs (recent data not yet aggregated)", () => {
-    it("includes raw runs that are not in any aggregate bucket", async () => {
-      const now = new Date();
-
-      // No daily aggregates
-      mockDailyAggregates = [];
-
-      // Recent raw runs
-      mockRawRuns = [
-        { status: "healthy", timestamp: subDays(now, 1) },
-        { status: "healthy", timestamp: subDays(now, 2) },
-        { status: "unhealthy", timestamp: subDays(now, 3) },
-      ];
-
-      const result = await service.getAvailabilityStats({
-        systemId: "sys-1",
-        configurationId: "config-1",
-      });
-
-      // 2 healthy / 3 total = 66.67%
-      expect(result.availability31Days).toBeCloseTo(66.67, 1);
-      expect(result.availability365Days).toBeCloseTo(66.67, 1);
-      expect(result.totalRuns31Days).toBe(3);
-      expect(result.totalRuns365Days).toBe(3);
-    });
-
-    it("deduplicates raw runs when aggregate bucket exists", async () => {
-      const now = new Date();
-      const bucketDate = subDays(now, 5);
-      bucketDate.setUTCHours(0, 0, 0, 0);
-
-      // Aggregate bucket for that day
-      mockDailyAggregates = [
-        { bucketStart: bucketDate, runCount: 10, healthyCount: 9 },
-      ];
-
-      // Raw runs on the same day (should be deduplicated)
-      const runTimestamp = new Date(bucketDate);
-      runTimestamp.setUTCHours(12, 0, 0, 0); // Same day, different time
-      mockRawRuns = [
-        { status: "healthy", timestamp: runTimestamp },
-        { status: "healthy", timestamp: runTimestamp },
-      ];
-
-      const result = await service.getAvailabilityStats({
-        systemId: "sys-1",
-        configurationId: "config-1",
-      });
-
-      // Should only count the aggregate bucket, not the raw runs
-      expect(result.totalRuns31Days).toBe(10);
-      expect(result.totalRuns365Days).toBe(10);
-      expect(result.availability31Days).toBe(90);
-    });
-  });
-
   describe("99.9% availability calculation", () => {
     it("calculates precise availability for SLA tracking", async () => {
-      const now = new Date();
-
-      // Simulate a month with 1 failure out of 1000 runs
-      mockDailyAggregates = [
-        { bucketStart: subDays(now, 15), runCount: 1000, healthyCount: 999 },
+      mockHourlyAggregates = [
+        {
+          bucketStart: subHours(new Date(), 5),
+          runCount: 1000,
+          healthyCount: 999,
+        },
       ];
 
       const result = await service.getAvailabilityStats({
@@ -207,11 +197,12 @@ describe("HealthCheckService.getAvailabilityStats", () => {
     });
 
     it("calculates very high availability correctly", async () => {
-      const now = new Date();
-
-      // 99.99% availability
-      mockDailyAggregates = [
-        { bucketStart: subDays(now, 15), runCount: 10_000, healthyCount: 9999 },
+      mockHourlyAggregates = [
+        {
+          bucketStart: subHours(new Date(), 5),
+          runCount: 10_000,
+          healthyCount: 9999,
+        },
       ];
 
       const result = await service.getAvailabilityStats({
@@ -220,6 +211,26 @@ describe("HealthCheckService.getAvailabilityStats", () => {
       });
 
       expect(result.availability31Days).toBe(99.99);
+    });
+  });
+
+  describe("real-time incremental aggregation behavior", () => {
+    it("uses hourly aggregates directly without raw run queries", async () => {
+      mockHourlyAggregates = [
+        {
+          bucketStart: subHours(new Date(), 1),
+          runCount: 50,
+          healthyCount: 48,
+        },
+      ];
+
+      const result = await service.getAvailabilityStats({
+        systemId: "sys-1",
+        configurationId: "config-1",
+      });
+
+      expect(result.availability31Days).toBe(96);
+      expect(result.totalRuns31Days).toBe(50);
     });
   });
 });

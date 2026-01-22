@@ -7,6 +7,18 @@ import {
   configString,
   configNumber,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  mergeMinMax,
+  minMaxStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -66,7 +78,7 @@ type RconResult = z.infer<typeof rconResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const rconAggregatedSchema = healthResultSchema({
+const rconAggregatedDisplaySchema = healthResultSchema({
   avgConnectionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Connection Time",
@@ -87,6 +99,19 @@ const rconAggregatedSchema = healthResultSchema({
     "x-chart-label": "Errors",
   }),
 });
+
+const rconAggregatedInternalSchema = z.object({
+  _connectionTime: averageStateSchema
+    .optional(),
+  _maxConnectionTime: minMaxStateSchema.optional(),
+  _success: rateStateSchema
+    .optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const rconAggregatedSchema = rconAggregatedDisplaySchema.merge(
+  rconAggregatedInternalSchema,
+);
 
 type RconAggregatedResult = z.infer<typeof rconAggregatedSchema>;
 
@@ -136,15 +161,12 @@ const defaultRconClient: RconClient = {
 // STRATEGY
 // ============================================================================
 
-export class RconHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      RconConfig,
-      RconTransportClient,
-      RconResult,
-      RconAggregatedResult
-    >
-{
+export class RconHealthCheckStrategy implements HealthCheckStrategy<
+  RconConfig,
+  RconTransportClient,
+  RconResult,
+  RconAggregatedResult
+> {
   id = "rcon";
   displayName = "RCON Health Check";
   description =
@@ -171,48 +193,41 @@ export class RconHealthCheckStrategy
     schema: rconAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<RconResult>[]
+  mergeResult(
+    existing: RconAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<RconResult>,
   ): RconAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return {
-        avgConnectionTime: 0,
-        maxConnectionTime: 0,
-        successRate: 0,
-        errorCount: 0,
-      };
-    }
+    const connectionTimeState = mergeAverage(
+      existing?._connectionTime as AverageState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const connectionTimes = validRuns
-      .map((r) => r.metadata?.connectionTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    const maxConnectionTimeState = mergeMinMax(
+      existing?._maxConnectionTime as MinMaxState | undefined,
+      metadata?.connectionTimeMs,
+    );
 
-    const avgConnectionTime =
-      connectionTimes.length > 0
-        ? Math.round(
-            connectionTimes.reduce((a, b) => a + b, 0) / connectionTimes.length
-          )
-        : 0;
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.connected,
+    );
 
-    const maxConnectionTime =
-      connectionTimes.length > 0 ? Math.max(...connectionTimes) : 0;
-
-    const successCount = validRuns.filter(
-      (r) => r.metadata?.connected === true
-    ).length;
-    const successRate = Math.round((successCount / validRuns.length) * 100);
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
     return {
-      avgConnectionTime,
-      maxConnectionTime,
-      successRate,
-      errorCount,
+      avgConnectionTime: connectionTimeState.avg,
+      maxConnectionTime: maxConnectionTimeState.max,
+      successRate: successState.rate,
+      errorCount: errorState.count,
+      _connectionTime: connectionTimeState,
+      _maxConnectionTime: maxConnectionTimeState,
+      _success: successState,
+      _errors: errorState,
     };
   }
 
@@ -220,7 +235,7 @@ export class RconHealthCheckStrategy
    * Create a connected RCON transport client.
    */
   async createClient(
-    config: RconConfigInput
+    config: RconConfigInput,
   ): Promise<ConnectedClient<RconTransportClient>> {
     const validatedConfig = this.config.validate(config);
 

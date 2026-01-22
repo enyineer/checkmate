@@ -5,6 +5,15 @@ import {
   Versioned,
   z,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
 } from "@checkstack/backend-api";
 import {
   healthResultBoolean,
@@ -82,7 +91,7 @@ type ScriptResult = z.infer<typeof scriptResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const scriptAggregatedSchema = healthResultSchema({
+const scriptAggregatedDisplaySchema = healthResultSchema({
   avgExecutionTime: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Execution Time",
@@ -102,6 +111,19 @@ const scriptAggregatedSchema = healthResultSchema({
     "x-chart-label": "Timeouts",
   }),
 });
+
+const scriptAggregatedInternalSchema = z.object({
+  _executionTime: averageStateSchema
+    .optional(),
+  _success: rateStateSchema
+    .optional(),
+  _errors: counterStateSchema.optional(),
+  _timeouts: counterStateSchema.optional(),
+});
+
+const scriptAggregatedSchema = scriptAggregatedDisplaySchema.merge(
+  scriptAggregatedInternalSchema,
+);
 
 type ScriptAggregatedResult = z.infer<typeof scriptAggregatedSchema>;
 
@@ -182,15 +204,12 @@ const defaultScriptExecutor: ScriptExecutor = {
 // STRATEGY
 // ============================================================================
 
-export class ScriptHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      ScriptConfig,
-      ScriptTransportClient,
-      ScriptResult,
-      ScriptAggregatedResult
-    >
-{
+export class ScriptHealthCheckStrategy implements HealthCheckStrategy<
+  ScriptConfig,
+  ScriptTransportClient,
+  ScriptResult,
+  ScriptAggregatedResult
+> {
   id = "script";
   displayName = "Script Health Check";
   description = "Execute local scripts or commands for health checking";
@@ -234,54 +253,46 @@ export class ScriptHealthCheckStrategy
     schema: scriptAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<ScriptResult>[]
+  mergeResult(
+    existing: ScriptAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<ScriptResult>,
   ): ScriptAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return {
-        avgExecutionTime: 0,
-        successRate: 0,
-        errorCount: 0,
-        timeoutCount: 0,
-      };
-    }
+    const executionTimeState = mergeAverage(
+      existing?._executionTime as AverageState | undefined,
+      metadata?.executionTimeMs,
+    );
 
-    const executionTimes = validRuns
-      .map((r) => r.metadata?.executionTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.success,
+    );
 
-    const avgExecutionTime =
-      executionTimes.length > 0
-        ? Math.round(
-            executionTimes.reduce((a, b) => a + b, 0) / executionTimes.length
-          )
-        : 0;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
-    const successCount = validRuns.filter(
-      (r) => r.metadata?.success === true
-    ).length;
-    const successRate = Math.round((successCount / validRuns.length) * 100);
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
-
-    const timeoutCount = validRuns.filter(
-      (r) => r.metadata?.timedOut === true
-    ).length;
+    const timeoutState = mergeCounter(
+      existing?._timeouts as CounterState | undefined,
+      metadata?.timedOut === true,
+    );
 
     return {
-      avgExecutionTime,
-      successRate,
-      errorCount,
-      timeoutCount,
+      avgExecutionTime: executionTimeState.avg,
+      successRate: successState.rate,
+      errorCount: errorState.count,
+      timeoutCount: timeoutState.count,
+      _executionTime: executionTimeState,
+      _success: successState,
+      _errors: errorState,
+      _timeouts: timeoutState,
     };
   }
 
   async createClient(
-    _config: ScriptConfigInput
+    _config: ScriptConfigInput,
   ): Promise<ConnectedClient<ScriptTransportClient>> {
     const client: ScriptTransportClient = {
       exec: async (request: ScriptRequest): Promise<ScriptResultType> => {

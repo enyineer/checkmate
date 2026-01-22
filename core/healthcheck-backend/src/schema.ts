@@ -149,6 +149,8 @@ export const healthCheckAggregates = pgTable(
     // Strategy-specific aggregated result (versioned)
     aggregatedResult:
       jsonb("aggregated_result").$type<Record<string, unknown>>(),
+    /** Serialized t-digest state for incremental p95 calculation */
+    tdigestState: jsonb("tdigest_state").$type<number[]>(),
   },
   (t) => ({
     // Unique constraint for upsert operations

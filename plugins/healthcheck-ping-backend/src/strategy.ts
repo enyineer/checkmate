@@ -4,6 +4,15 @@ import {
   Versioned,
   z,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  mergeMinMax,
+  minMaxStateSchema,
+  type AverageState,
+  type CounterState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -84,7 +93,7 @@ type PingResult = z.infer<typeof pingResultSchema>;
 /**
  * Aggregated metadata for buckets.
  */
-const pingAggregatedSchema = healthResultSchema({
+const pingAggregatedDisplaySchema = healthResultSchema({
   avgPacketLoss: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Avg Packet Loss",
@@ -106,21 +115,29 @@ const pingAggregatedSchema = healthResultSchema({
   }),
 });
 
+const pingAggregatedInternalSchema = z.object({
+  _packetLoss: averageStateSchema.optional(),
+  _latency: averageStateSchema.optional(),
+  _maxLatency: minMaxStateSchema.optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const pingAggregatedSchema = pingAggregatedDisplaySchema.merge(
+  pingAggregatedInternalSchema,
+);
+
 type PingAggregatedResult = z.infer<typeof pingAggregatedSchema>;
 
 // ============================================================================
 // STRATEGY
 // ============================================================================
 
-export class PingHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      PingConfig,
-      PingTransportClient,
-      PingResult,
-      PingAggregatedResult
-    >
-{
+export class PingHealthCheckStrategy implements HealthCheckStrategy<
+  PingConfig,
+  PingTransportClient,
+  PingResult,
+  PingAggregatedResult
+> {
   id = "ping";
   displayName = "Ping Health Check";
   description = "ICMP ping check for network reachability and latency";
@@ -158,52 +175,46 @@ export class PingHealthCheckStrategy
     schema: pingAggregatedSchema,
   });
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<PingResult>[]
+  mergeResult(
+    existing: PingAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<PingResult>,
   ): PingAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return { avgPacketLoss: 0, avgLatency: 0, maxLatency: 0, errorCount: 0 };
-    }
+    const packetLossState = mergeAverage(
+      existing?._packetLoss as AverageState | undefined,
+      metadata?.packetLoss,
+    );
 
-    const packetLosses = validRuns
-      .map((r) => r.metadata?.packetLoss)
-      .filter((l): l is number => typeof l === "number");
+    const latencyState = mergeAverage(
+      existing?._latency as AverageState | undefined,
+      metadata?.avgLatency,
+    );
 
-    const avgPacketLoss =
-      packetLosses.length > 0
-        ? Math.round(
-            (packetLosses.reduce((a, b) => a + b, 0) / packetLosses.length) * 10
-          ) / 10
-        : 0;
+    const maxLatencyState = mergeMinMax(
+      existing?._maxLatency as MinMaxState | undefined,
+      metadata?.maxLatency,
+    );
 
-    const latencies = validRuns
-      .map((r) => r.metadata?.avgLatency)
-      .filter((l): l is number => typeof l === "number");
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
-    const avgLatency =
-      latencies.length > 0
-        ? Math.round(
-            (latencies.reduce((a, b) => a + b, 0) / latencies.length) * 10
-          ) / 10
-        : 0;
-
-    const maxLatencies = validRuns
-      .map((r) => r.metadata?.maxLatency)
-      .filter((l): l is number => typeof l === "number");
-
-    const maxLatency = maxLatencies.length > 0 ? Math.max(...maxLatencies) : 0;
-
-    const errorCount = validRuns.filter(
-      (r) => r.metadata?.error !== undefined
-    ).length;
-
-    return { avgPacketLoss, avgLatency, maxLatency, errorCount };
+    return {
+      avgPacketLoss: Math.round(packetLossState.avg * 10) / 10,
+      avgLatency: Math.round(latencyState.avg * 10) / 10,
+      maxLatency: maxLatencyState.max,
+      errorCount: errorState.count,
+      _packetLoss: packetLossState,
+      _latency: latencyState,
+      _maxLatency: maxLatencyState,
+      _errors: errorState,
+    };
   }
 
   async createClient(
-    config: PingConfig
+    config: PingConfig,
   ): Promise<ConnectedClient<PingTransportClient>> {
     const validatedConfig = this.config.validate(config);
 
@@ -212,7 +223,7 @@ export class PingHealthCheckStrategy
         return this.runPing(
           request.host,
           request.count,
-          request.timeout ?? validatedConfig.timeout
+          request.timeout ?? validatedConfig.timeout,
         );
       },
     };
@@ -228,7 +239,7 @@ export class PingHealthCheckStrategy
   private async runPing(
     host: string,
     count: number,
-    timeout: number
+    timeout: number,
   ): Promise<PingResultType> {
     const isMac = process.platform === "darwin";
     const args = isMac
@@ -260,11 +271,11 @@ export class PingHealthCheckStrategy
   private parsePingOutput(
     output: string,
     expectedCount: number,
-    _exitCode: number
+    _exitCode: number,
   ): PingResultType {
     // Parse packet statistics
     const statsMatch = output.match(
-      /(\d+) packets transmitted, (\d+) (?:packets )?received/
+      /(\d+) packets transmitted, (\d+) (?:packets )?received/,
     );
     const packetsSent = statsMatch
       ? Number.parseInt(statsMatch[1], 10)
@@ -279,7 +290,7 @@ export class PingHealthCheckStrategy
     // macOS: round-trip min/avg/max/stddev = 0.043/0.059/0.082/0.016 ms
     // Linux: rtt min/avg/max/mdev = 0.039/0.049/0.064/0.009 ms
     const latencyMatch = output.match(
-      /(?:round-trip|rtt) min\/avg\/max\/(?:stddev|mdev) = ([\d.]+)\/([\d.]+)\/([\d.]+)/
+      /(?:round-trip|rtt) min\/avg\/max\/(?:stddev|mdev) = ([\d.]+)\/([\d.]+)\/([\d.]+)/,
     );
 
     let minLatency: number | undefined;

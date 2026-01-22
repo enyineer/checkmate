@@ -8,7 +8,7 @@ describe("RequestCollector", () => {
       statusCode?: number;
       statusText?: string;
       body?: string;
-    } = {}
+    } = {},
   ): HttpTransportClient => ({
     exec: mock(() =>
       Promise.resolve({
@@ -16,7 +16,7 @@ describe("RequestCollector", () => {
         statusText: response.statusText ?? "OK",
         headers: {},
         body: response.body ?? "",
-      })
+      }),
     ),
   });
 
@@ -89,7 +89,7 @@ describe("RequestCollector", () => {
             "Content-Type": "application/json",
             Authorization: "Bearer token",
           },
-        })
+        }),
       );
     });
 
@@ -111,12 +111,12 @@ describe("RequestCollector", () => {
       expect(client.exec).toHaveBeenCalledWith(
         expect.objectContaining({
           body: '{"key":"value"}',
-        })
+        }),
       );
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average response time", () => {
       const collector = new RequestCollector();
       const runs = [
@@ -152,7 +152,9 @@ describe("RequestCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgResponseTimeMs).toBe(75);
       expect(aggregated.successRate).toBe(100);
@@ -193,7 +195,9 @@ describe("RequestCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.successRate).toBe(50);
     });

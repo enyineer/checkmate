@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  type AverageState,
+  type RateState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -50,7 +56,7 @@ const bannerResultSchema = healthResultSchema({
 
 export type BannerResult = z.infer<typeof bannerResultSchema>;
 
-const bannerAggregatedSchema = healthResultSchema({
+const bannerAggregatedDisplaySchema = healthResultSchema({
   avgReadTimeMs: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Read Time",
@@ -63,6 +69,17 @@ const bannerAggregatedSchema = healthResultSchema({
   }),
 });
 
+const bannerAggregatedInternalSchema = z.object({
+  _readTime: averageStateSchema
+    .optional(),
+  _banner: rateStateSchema
+    .optional(),
+});
+
+const bannerAggregatedSchema = bannerAggregatedDisplaySchema.merge(
+  bannerAggregatedInternalSchema,
+);
+
 export type BannerAggregatedResult = z.infer<typeof bannerAggregatedSchema>;
 
 // ============================================================================
@@ -73,15 +90,12 @@ export type BannerAggregatedResult = z.infer<typeof bannerAggregatedSchema>;
  * Built-in TCP banner collector.
  * Reads the initial banner/greeting from a TCP server.
  */
-export class BannerCollector
-  implements
-    CollectorStrategy<
-      TcpTransportClient,
-      BannerConfig,
-      BannerResult,
-      BannerAggregatedResult
-    >
-{
+export class BannerCollector implements CollectorStrategy<
+  TcpTransportClient,
+  BannerConfig,
+  BannerResult,
+  BannerAggregatedResult
+> {
   id = "banner";
   displayName = "TCP Banner";
   description = "Read the initial banner/greeting from the server";
@@ -123,28 +137,27 @@ export class BannerCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<BannerResult>[]
+  mergeResult(
+    existing: BannerAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<BannerResult>,
   ): BannerAggregatedResult {
-    const times = runs
-      .map((r) => r.metadata?.readTimeMs)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const hasBanners = runs
-      .map((r) => r.metadata?.hasBanner)
-      .filter((v): v is boolean => typeof v === "boolean");
+    const readTimeState = mergeAverage(
+      existing?._readTime as AverageState | undefined,
+      metadata?.readTimeMs,
+    );
 
-    const bannerCount = hasBanners.filter(Boolean).length;
+    const bannerState = mergeRate(
+      existing?._banner as RateState | undefined,
+      metadata?.hasBanner,
+    );
 
     return {
-      avgReadTimeMs:
-        times.length > 0
-          ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
-          : 0,
-      bannerRate:
-        hasBanners.length > 0
-          ? Math.round((bannerCount / hasBanners.length) * 100)
-          : 0,
+      avgReadTimeMs: readTimeState.avg,
+      bannerRate: bannerState.rate,
+      _readTime: readTimeState,
+      _banner: bannerState,
     };
   }
 }

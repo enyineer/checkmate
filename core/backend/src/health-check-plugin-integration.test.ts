@@ -55,7 +55,7 @@ describe("HealthCheck Plugin Integration", () => {
         schema: z.record(z.string(), z.unknown()),
       }),
       createClient: mockCreateClient,
-      aggregateResult: mock(() => ({})),
+      mergeResult: mock(() => ({})),
     };
 
     // 2. Define a mock plugin that registers this strategy

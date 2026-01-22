@@ -4,6 +4,9 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  averageStateSchema,
+  type AverageState,
 } from "@checkstack/backend-api";
 import { healthResultNumber } from "@checkstack/healthcheck-common";
 import { pluginMetadata } from "../plugin-metadata";
@@ -86,7 +89,7 @@ const buildHistoryResultSchema = z.object({
 
 export type BuildHistoryResult = z.infer<typeof buildHistoryResultSchema>;
 
-const buildHistoryAggregatedSchema = z.object({
+const buildHistoryAggregatedDisplaySchema = z.object({
   avgSuccessRate: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Avg Success Rate",
@@ -98,6 +101,17 @@ const buildHistoryAggregatedSchema = z.object({
     "x-chart-unit": "ms",
   }),
 });
+
+const buildHistoryAggregatedInternalSchema = z.object({
+  _successRate: averageStateSchema
+    .optional(),
+  _duration: averageStateSchema
+    .optional(),
+});
+
+const buildHistoryAggregatedSchema = buildHistoryAggregatedDisplaySchema.merge(
+  buildHistoryAggregatedInternalSchema,
+);
 
 export type BuildHistoryAggregatedResult = z.infer<
   typeof buildHistoryAggregatedSchema
@@ -111,15 +125,12 @@ export type BuildHistoryAggregatedResult = z.infer<
  * Collector for Jenkins build history.
  * Analyzes recent builds for trends and patterns.
  */
-export class BuildHistoryCollector
-  implements
-    CollectorStrategy<
-      JenkinsTransportClient,
-      BuildHistoryConfig,
-      BuildHistoryResult,
-      BuildHistoryAggregatedResult
-    >
-{
+export class BuildHistoryCollector implements CollectorStrategy<
+  JenkinsTransportClient,
+  BuildHistoryConfig,
+  BuildHistoryResult,
+  BuildHistoryAggregatedResult
+> {
   id = "build-history";
   displayName = "Build History";
   description = "Analyze recent build trends for a Jenkins job";
@@ -253,28 +264,27 @@ export class BuildHistoryCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<BuildHistoryResult>[]
+  mergeResult(
+    existing: BuildHistoryAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<BuildHistoryResult>,
   ): BuildHistoryAggregatedResult {
-    const successRates = runs
-      .map((r) => r.metadata?.successRate)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const durations = runs
-      .map((r) => r.metadata?.avgDurationMs)
-      .filter((v): v is number => typeof v === "number");
+    const successRateState = mergeAverage(
+      existing?._successRate as AverageState | undefined,
+      metadata?.successRate,
+    );
+
+    const durationState = mergeAverage(
+      existing?._duration as AverageState | undefined,
+      metadata?.avgDurationMs,
+    );
 
     return {
-      avgSuccessRate:
-        successRates.length > 0
-          ? Math.round(
-              successRates.reduce((a, b) => a + b, 0) / successRates.length
-            )
-          : 0,
-      avgBuildDuration:
-        durations.length > 0
-          ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-          : 0,
+      avgSuccessRate: successRateState.avg,
+      avgBuildDuration: durationState.avg,
+      _successRate: successRateState,
+      _duration: durationState,
     };
   }
 }

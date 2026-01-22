@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeMinMax,
+  averageStateSchema,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import { healthResultNumber } from "@checkstack/healthcheck-common";
 import {
@@ -58,7 +64,7 @@ const cpuResultSchema = z.object({
 
 export type CpuResult = z.infer<typeof cpuResultSchema>;
 
-const cpuAggregatedSchema = z.object({
+const cpuAggregatedDisplaySchema = z.object({
   avgUsagePercent: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg CPU Usage",
@@ -75,21 +81,28 @@ const cpuAggregatedSchema = z.object({
   }),
 });
 
+const cpuAggregatedInternalSchema = z.object({
+  _usage: averageStateSchema.optional(),
+  _maxUsage: minMaxStateSchema.optional(),
+  _load: averageStateSchema.optional(),
+});
+
+const cpuAggregatedSchema = cpuAggregatedDisplaySchema.merge(
+  cpuAggregatedInternalSchema,
+);
+
 export type CpuAggregatedResult = z.infer<typeof cpuAggregatedSchema>;
 
 // ============================================================================
 // CPU COLLECTOR
 // ============================================================================
 
-export class CpuCollector
-  implements
-    CollectorStrategy<
-      SshTransportClient,
-      CpuConfig,
-      CpuResult,
-      CpuAggregatedResult
-    >
-{
+export class CpuCollector implements CollectorStrategy<
+  SshTransportClient,
+  CpuConfig,
+  CpuResult,
+  CpuAggregatedResult
+> {
   id = "cpu";
   displayName = "CPU Metrics";
   description = "Collects CPU usage, load averages, and core count via SSH";
@@ -135,21 +148,34 @@ export class CpuCollector
     return { result };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<CpuResult>[]
+  mergeResult(
+    existing: CpuAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<CpuResult>,
   ): CpuAggregatedResult {
-    const usages = runs
-      .map((r) => r.metadata?.usagePercent)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const loads = runs
-      .map((r) => r.metadata?.loadAvg1m)
-      .filter((v): v is number => typeof v === "number");
+    const usageState = mergeAverage(
+      existing?._usage as AverageState | undefined,
+      metadata?.usagePercent,
+    );
+
+    const maxUsageState = mergeMinMax(
+      existing?._maxUsage as MinMaxState | undefined,
+      metadata?.usagePercent,
+    );
+
+    const loadState = mergeAverage(
+      existing?._load as AverageState | undefined,
+      metadata?.loadAvg1m,
+    );
 
     return {
-      avgUsagePercent: usages.length > 0 ? this.avg(usages) : 0,
-      maxUsagePercent: usages.length > 0 ? Math.max(...usages) : 0,
-      avgLoadAvg1m: loads.length > 0 ? this.avg(loads) : 0,
+      avgUsagePercent: usageState.avg,
+      maxUsagePercent: maxUsageState.max,
+      avgLoadAvg1m: loadState.avg,
+      _usage: usageState,
+      _maxUsage: maxUsageState,
+      _load: loadState,
     };
   }
 

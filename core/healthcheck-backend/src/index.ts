@@ -138,8 +138,6 @@ export default createBackendPlugin({
         // Setup retention job for tiered storage (daily aggregation)
         await setupRetentionJob({
           db: database,
-          registry: healthCheckRegistry,
-          collectorRegistry,
           logger,
           queueManager,
         });

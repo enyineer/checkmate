@@ -9,7 +9,7 @@ describe("CpuCollector", () => {
       stat2?: { stdout: string };
       loadavg?: { stdout: string };
       nproc?: { stdout: string };
-    } = {}
+    } = {},
   ): SshTransportClient => {
     let callCount = 0;
     return {
@@ -96,7 +96,7 @@ describe("CpuCollector", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate average and max CPU usage", () => {
       const collector = new CpuCollector();
       const runs = [
@@ -118,10 +118,12 @@ describe("CpuCollector", () => {
         },
       ];
 
-      const aggregated = collector.aggregateResult(runs);
+      let aggregated = collector.mergeResult(undefined, runs[0]);
+      aggregated = collector.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgUsagePercent).toBe(50);
       expect(aggregated.maxUsagePercent).toBe(75);
+      // (1.0 + 2.0) / 2 = 1.5
       expect(aggregated.avgLoadAvg1m).toBe(1.5);
     });
   });

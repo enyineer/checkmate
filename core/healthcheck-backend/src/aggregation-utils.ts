@@ -100,8 +100,8 @@ export function extractLatencies(
 // ===== Collector Aggregation =====
 
 /**
- * Aggregate collector data from runs in a bucket.
- * Groups by collector UUID and calls each collector's aggregateResult.
+ * Aggregate collector data from runs in a bucket using incremental mergeResult.
+ * Groups by collector UUID and calls each collector's mergeResult for each run.
  */
 export function aggregateCollectorData(
   runs: Array<{
@@ -111,12 +111,13 @@ export function aggregateCollectorData(
   }>,
   collectorRegistry: CollectorRegistry,
 ): Record<string, unknown> {
-  // Group collector data by UUID
-  const collectorDataByUuid = new Map<
+  // Track aggregated results by collector UUID
+  const aggregatedByUuid = new Map<
     string,
-    { collectorId: string; metadata: Record<string, unknown>[] }
+    { collectorId: string; aggregated: Record<string, unknown> }
   >();
 
+  // Process each run incrementally
   for (const run of runs) {
     const collectors = run.metadata?.collectors as
       | Record<string, Record<string, unknown>>
@@ -127,30 +128,32 @@ export function aggregateCollectorData(
       const collectorId = data._collectorId as string | undefined;
       if (!collectorId) continue;
 
-      if (!collectorDataByUuid.has(uuid)) {
-        collectorDataByUuid.set(uuid, { collectorId, metadata: [] });
-      }
+      const registered = collectorRegistry.getCollector(collectorId);
+      if (!registered?.collector.mergeResult) continue;
 
-      // Add metadata without internal fields
-      const { _collectorId, _assertionFailed, ...rest } = data;
-      collectorDataByUuid.get(uuid)!.metadata.push(rest);
+      // Get existing aggregate for this UUID (or undefined for first run)
+      const existing = aggregatedByUuid.get(uuid)?.aggregated;
+
+      // Strip internal fields from collector data
+      const { _collectorId, _assertionFailed, ...collectorMetadata } = data;
+
+      // Call mergeResult to incrementally aggregate
+      const merged = registered.collector.mergeResult(existing, {
+        status: run.status as "healthy" | "unhealthy" | "degraded",
+        latencyMs: run.latencyMs,
+        metadata: collectorMetadata,
+      });
+
+      aggregatedByUuid.set(uuid, {
+        collectorId,
+        aggregated: merged as Record<string, unknown>,
+      });
     }
   }
 
-  // Call aggregateResult for each collector
+  // Build final result
   const result: Record<string, unknown> = {};
-
-  for (const [uuid, { collectorId, metadata }] of collectorDataByUuid) {
-    const registered = collectorRegistry.getCollector(collectorId);
-    if (!registered?.collector.aggregateResult) continue;
-
-    // Transform metadata to the format expected by aggregateResult
-    const runsForAggregation = metadata.map((m) => ({
-      status: "healthy" as const,
-      metadata: m,
-    }));
-
-    const aggregated = registered.collector.aggregateResult(runsForAggregation);
+  for (const [uuid, { collectorId, aggregated }] of aggregatedByUuid) {
     result[uuid] = {
       _collectorId: collectorId,
       ...aggregated,

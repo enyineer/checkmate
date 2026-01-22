@@ -6,6 +6,15 @@ import {
   configString,
   configNumber,
   type ConnectedClient,
+  mergeAverage,
+  averageStateSchema,
+  mergeRate,
+  rateStateSchema,
+  mergeCounter,
+  counterStateSchema,
+  type AverageState,
+  type RateState,
+  type CounterState,
 } from "@checkstack/backend-api";
 import {
   healthResultNumber,
@@ -33,10 +42,10 @@ export const jenkinsConfigSchema = z.object({
     .url()
     .describe("Jenkins server URL (e.g., https://jenkins.example.com)"),
   username: configString({}).describe(
-    "Jenkins username for API authentication"
+    "Jenkins username for API authentication",
   ),
   apiToken: configString({ "x-secret": true }).describe(
-    "Jenkins API token (generate from User > Configure > API Token)"
+    "Jenkins API token (generate from User > Configure > API Token)",
   ),
   timeout: configNumber({})
     .int()
@@ -67,7 +76,7 @@ const jenkinsResultSchema = healthResultSchema({
 type JenkinsResult = z.infer<typeof jenkinsResultSchema>;
 
 /** Aggregated metadata for buckets */
-const jenkinsAggregatedSchema = healthResultSchema({
+const jenkinsAggregatedDisplaySchema = healthResultSchema({
   successRate: healthResultNumber({
     "x-chart-type": "gauge",
     "x-chart-label": "Success Rate",
@@ -84,21 +93,30 @@ const jenkinsAggregatedSchema = healthResultSchema({
   }),
 });
 
+const jenkinsAggregatedInternalSchema = z.object({
+  _responseTime: averageStateSchema
+    .optional(),
+  _success: rateStateSchema
+    .optional(),
+  _errors: counterStateSchema.optional(),
+});
+
+const jenkinsAggregatedSchema = jenkinsAggregatedDisplaySchema.merge(
+  jenkinsAggregatedInternalSchema,
+);
+
 type JenkinsAggregatedResult = z.infer<typeof jenkinsAggregatedSchema>;
 
 // ============================================================================
 // STRATEGY
 // ============================================================================
 
-export class JenkinsHealthCheckStrategy
-  implements
-    HealthCheckStrategy<
-      JenkinsConfig,
-      JenkinsTransportClient,
-      JenkinsResult,
-      JenkinsAggregatedResult
-    >
-{
+export class JenkinsHealthCheckStrategy implements HealthCheckStrategy<
+  JenkinsConfig,
+  JenkinsTransportClient,
+  JenkinsResult,
+  JenkinsAggregatedResult
+> {
   id = "jenkins";
   displayName = "Jenkins Health Check";
   description = "Monitor Jenkins CI/CD server health and job status";
@@ -122,14 +140,14 @@ export class JenkinsHealthCheckStrategy
    * Create a Jenkins transport client for API requests.
    */
   async createClient(
-    config: JenkinsConfig
+    config: JenkinsConfig,
   ): Promise<ConnectedClient<JenkinsTransportClient>> {
     const validatedConfig = this.config.validate(config);
     const baseUrl = validatedConfig.baseUrl.replace(/\/$/, ""); // Remove trailing slash
 
     // Create Basic Auth header
     const authHeader = `Basic ${Buffer.from(
-      `${validatedConfig.username}:${validatedConfig.apiToken}`
+      `${validatedConfig.username}:${validatedConfig.apiToken}`,
     ).toString("base64")}`;
 
     const client: JenkinsTransportClient = {
@@ -144,7 +162,7 @@ export class JenkinsHealthCheckStrategy
         const controller = new AbortController();
         const timeoutId = setTimeout(
           () => controller.abort(),
-          validatedConfig.timeout
+          validatedConfig.timeout,
         );
 
         try {
@@ -200,31 +218,34 @@ export class JenkinsHealthCheckStrategy
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<JenkinsResult>[]
+  mergeResult(
+    existing: JenkinsAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<JenkinsResult>,
   ): JenkinsAggregatedResult {
-    const validRuns = runs.filter((r) => r.metadata);
+    const metadata = run.metadata;
 
-    if (validRuns.length === 0) {
-      return { successRate: 0, avgResponseTimeMs: 0, errorCount: 0 };
-    }
+    const responseTimeState = mergeAverage(
+      existing?._responseTime as AverageState | undefined,
+      metadata?.responseTimeMs,
+    );
 
-    const responseTimes = validRuns
-      .map((r) => r.metadata?.responseTimeMs)
-      .filter((t): t is number => typeof t === "number");
+    const successState = mergeRate(
+      existing?._success as RateState | undefined,
+      metadata?.connected,
+    );
 
-    const successCount = validRuns.filter((r) => r.metadata?.connected).length;
-    const errorCount = validRuns.filter((r) => r.metadata?.error).length;
+    const errorState = mergeCounter(
+      existing?._errors as CounterState | undefined,
+      metadata?.error !== undefined,
+    );
 
     return {
-      successRate: Math.round((successCount / validRuns.length) * 100),
-      avgResponseTimeMs:
-        responseTimes.length > 0
-          ? Math.round(
-              responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-            )
-          : 0,
-      errorCount,
+      successRate: successState.rate,
+      avgResponseTimeMs: responseTimeState.avg,
+      errorCount: errorState.count,
+      _responseTime: responseTimeState,
+      _success: successState,
+      _errors: errorState,
     };
   }
 }

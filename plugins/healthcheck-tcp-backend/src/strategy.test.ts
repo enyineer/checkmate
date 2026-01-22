@@ -90,7 +90,7 @@ describe("TcpHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new TcpHealthCheckStrategy();
       const runs = [
@@ -118,7 +118,8 @@ describe("TcpHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgConnectionTime).toBe(15);
       expect(aggregated.successRate).toBe(100);
@@ -153,7 +154,8 @@ describe("TcpHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.successRate).toBe(50);
       expect(aggregated.errorCount).toBe(1);

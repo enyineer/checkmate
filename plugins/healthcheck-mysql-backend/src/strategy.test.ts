@@ -8,7 +8,7 @@ describe("MysqlHealthCheckStrategy", () => {
       rowCount?: number;
       queryError?: Error;
       connectError?: Error;
-    } = {}
+    } = {},
   ): DbClient => ({
     connect: mock(() =>
       config.connectError
@@ -17,10 +17,10 @@ describe("MysqlHealthCheckStrategy", () => {
             query: mock(() =>
               config.queryError
                 ? Promise.reject(config.queryError)
-                : Promise.resolve({ rowCount: config.rowCount ?? 1 })
+                : Promise.resolve({ rowCount: config.rowCount ?? 1 }),
             ),
             end: mock(() => Promise.resolve()),
-          })
+          }),
     ),
   });
 
@@ -46,7 +46,7 @@ describe("MysqlHealthCheckStrategy", () => {
 
     it("should throw for connection error", async () => {
       const strategy = new MysqlHealthCheckStrategy(
-        createMockClient({ connectError: new Error("Connection refused") })
+        createMockClient({ connectError: new Error("Connection refused") }),
       );
 
       await expect(
@@ -57,7 +57,7 @@ describe("MysqlHealthCheckStrategy", () => {
           user: "root",
           password: "secret",
           timeout: 5000,
-        })
+        }),
       ).rejects.toThrow("Connection refused");
     });
   });
@@ -85,7 +85,7 @@ describe("MysqlHealthCheckStrategy", () => {
 
     it("should return error for query error", async () => {
       const strategy = new MysqlHealthCheckStrategy(
-        createMockClient({ queryError: new Error("Syntax error") })
+        createMockClient({ queryError: new Error("Syntax error") }),
       );
       const connectedClient = await strategy.createClient({
         host: "localhost",
@@ -107,7 +107,7 @@ describe("MysqlHealthCheckStrategy", () => {
 
     it("should return custom row count", async () => {
       const strategy = new MysqlHealthCheckStrategy(
-        createMockClient({ rowCount: 5 })
+        createMockClient({ rowCount: 5 }),
       );
       const connectedClient = await strategy.createClient({
         host: "localhost",
@@ -128,7 +128,7 @@ describe("MysqlHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const strategy = new MysqlHealthCheckStrategy();
       const runs = [
@@ -158,7 +158,8 @@ describe("MysqlHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.avgConnectionTime).toBe(75);
       expect(aggregated.successRate).toBe(100);
@@ -167,22 +168,20 @@ describe("MysqlHealthCheckStrategy", () => {
 
     it("should count errors", () => {
       const strategy = new MysqlHealthCheckStrategy();
-      const runs = [
-        {
-          id: "1",
-          status: "unhealthy" as const,
-          latencyMs: 100,
-          checkId: "c1",
-          timestamp: new Date(),
-          metadata: {
-            connected: false,
-            connectionTimeMs: 100,
-            error: "Connection refused",
-          },
+      const run = {
+        id: "1",
+        status: "unhealthy" as const,
+        latencyMs: 100,
+        checkId: "c1",
+        timestamp: new Date(),
+        metadata: {
+          connected: false,
+          connectionTimeMs: 100,
+          error: "Connection refused",
         },
-      ];
+      };
 
-      const aggregated = strategy.aggregateResult(runs);
+      const aggregated = strategy.mergeResult(undefined, run);
 
       expect(aggregated.errorCount).toBe(1);
       expect(aggregated.successRate).toBe(0);

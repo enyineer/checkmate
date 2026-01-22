@@ -31,7 +31,7 @@ describe("HttpHealthCheckStrategy", () => {
           status: 200,
           statusText: "OK",
           headers: { "Content-Type": "application/json" },
-        })
+        }),
       );
 
       const connectedClient = await strategy.createClient({ timeout: 5000 });
@@ -50,7 +50,7 @@ describe("HttpHealthCheckStrategy", () => {
 
     it("should return 404 status for not found", async () => {
       spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(null, { status: 404, statusText: "Not Found" })
+        new Response(null, { status: 404, statusText: "Not Found" }),
       );
 
       const connectedClient = await strategy.createClient({ timeout: 5000 });
@@ -69,7 +69,7 @@ describe("HttpHealthCheckStrategy", () => {
       let capturedHeaders: Record<string, string> | undefined;
       spyOn(globalThis, "fetch").mockImplementation((async (
         _url: RequestInfo | URL,
-        options?: RequestInit
+        options?: RequestInit,
       ) => {
         capturedHeaders = options?.headers as Record<string, string>;
         return new Response(null, { status: 200 });
@@ -99,7 +99,7 @@ describe("HttpHealthCheckStrategy", () => {
         new Response(JSON.stringify(responseBody), {
           status: 200,
           headers: { "Content-Type": "application/json" },
-        })
+        }),
       );
 
       const connectedClient = await strategy.createClient({ timeout: 5000 });
@@ -119,7 +119,7 @@ describe("HttpHealthCheckStrategy", () => {
         new Response("Hello World", {
           status: 200,
           headers: { "Content-Type": "text/plain" },
-        })
+        }),
       );
 
       const connectedClient = await strategy.createClient({ timeout: 5000 });
@@ -138,7 +138,7 @@ describe("HttpHealthCheckStrategy", () => {
       let capturedBody: string | undefined;
       spyOn(globalThis, "fetch").mockImplementation((async (
         _url: RequestInfo | URL,
-        options?: RequestInit
+        options?: RequestInit,
       ) => {
         capturedBody = options?.body as string;
         return new Response(null, { status: 201 });
@@ -161,7 +161,7 @@ describe("HttpHealthCheckStrategy", () => {
       let capturedMethod: string | undefined;
       spyOn(globalThis, "fetch").mockImplementation((async (
         _url: RequestInfo | URL,
-        options?: RequestInit
+        options?: RequestInit,
       ) => {
         capturedMethod = options?.method;
         return new Response(null, { status: 200 });
@@ -180,7 +180,7 @@ describe("HttpHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should count errors correctly", () => {
       const runs = [
         {
@@ -213,7 +213,10 @@ describe("HttpHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
+      aggregated = strategy.mergeResult(aggregated, runs[2]);
 
       expect(aggregated.errorCount).toBe(2);
     });
@@ -238,7 +241,9 @@ describe("HttpHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      // Merge runs incrementally
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
       expect(aggregated.errorCount).toBe(0);
     });

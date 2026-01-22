@@ -14,8 +14,8 @@ const mockSpawn = mock(() => ({
 
 --- 8.8.8.8 ping statistics ---
 3 packets transmitted, 3 packets received, 0.0% packet loss
-round-trip min/avg/max/stddev = 10.123/11.456/12.456/0.957 ms`
-        )
+round-trip min/avg/max/stddev = 10.123/11.456/12.456/0.957 ms`,
+        ),
       );
       controller.close();
     },
@@ -83,8 +83,8 @@ describe("PingHealthCheckStrategy", () => {
                 `PING 10.0.0.1 (10.0.0.1): 56 data bytes
 
 --- 10.0.0.1 ping statistics ---
-3 packets transmitted, 0 packets received, 100.0% packet loss`
-              )
+3 packets transmitted, 0 packets received, 100.0% packet loss`,
+              ),
             );
             controller.close();
           },
@@ -139,7 +139,7 @@ describe("PingHealthCheckStrategy", () => {
     });
   });
 
-  describe("aggregateResult", () => {
+  describe("mergeResult", () => {
     it("should calculate averages correctly", () => {
       const runs = [
         {
@@ -172,8 +172,10 @@ describe("PingHealthCheckStrategy", () => {
         },
       ];
 
-      const aggregated = strategy.aggregateResult(runs);
+      let aggregated = strategy.mergeResult(undefined, runs[0]);
+      aggregated = strategy.mergeResult(aggregated, runs[1]);
 
+      // (0 + 33) / 2 = 16.5
       expect(aggregated.avgPacketLoss).toBeCloseTo(16.5, 1);
       expect(aggregated.avgLatency).toBeCloseTo(15, 1);
       expect(aggregated.maxLatency).toBe(25);
@@ -181,23 +183,21 @@ describe("PingHealthCheckStrategy", () => {
     });
 
     it("should count errors", () => {
-      const runs = [
-        {
-          id: "1",
-          status: "unhealthy" as const,
-          latencyMs: 0,
-          checkId: "c1",
-          timestamp: new Date(),
-          metadata: {
-            packetsSent: 3,
-            packetsReceived: 0,
-            packetLoss: 100,
-            error: "Timeout",
-          },
+      const run = {
+        id: "1",
+        status: "unhealthy" as const,
+        latencyMs: 0,
+        checkId: "c1",
+        timestamp: new Date(),
+        metadata: {
+          packetsSent: 3,
+          packetsReceived: 0,
+          packetLoss: 100,
+          error: "Timeout",
         },
-      ];
+      };
 
-      const aggregated = strategy.aggregateResult(runs);
+      const aggregated = strategy.mergeResult(undefined, run);
 
       expect(aggregated.errorCount).toBe(1);
     });

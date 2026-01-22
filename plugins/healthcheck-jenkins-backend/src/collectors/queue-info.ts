@@ -4,6 +4,12 @@ import {
   type HealthCheckRunForAggregation,
   type CollectorResult,
   type CollectorStrategy,
+  mergeAverage,
+  mergeMinMax,
+  averageStateSchema,
+  minMaxStateSchema,
+  type AverageState,
+  type MinMaxState,
 } from "@checkstack/backend-api";
 import { healthResultNumber } from "@checkstack/healthcheck-common";
 import { pluginMetadata } from "../plugin-metadata";
@@ -52,7 +58,7 @@ const queueInfoResultSchema = z.object({
 
 export type QueueInfoResult = z.infer<typeof queueInfoResultSchema>;
 
-const queueInfoAggregatedSchema = z.object({
+const queueInfoAggregatedDisplaySchema = z.object({
   avgQueueLength: healthResultNumber({
     "x-chart-type": "line",
     "x-chart-label": "Avg Queue Length",
@@ -68,6 +74,16 @@ const queueInfoAggregatedSchema = z.object({
   }),
 });
 
+const queueInfoAggregatedInternalSchema = z.object({
+  _queueLength: averageStateSchema.optional(),
+  _maxQueueLength: minMaxStateSchema.optional(),
+  _waitTime: averageStateSchema.optional(),
+});
+
+const queueInfoAggregatedSchema = queueInfoAggregatedDisplaySchema.merge(
+  queueInfoAggregatedInternalSchema,
+);
+
 export type QueueInfoAggregatedResult = z.infer<
   typeof queueInfoAggregatedSchema
 >;
@@ -80,15 +96,12 @@ export type QueueInfoAggregatedResult = z.infer<
  * Collector for Jenkins build queue.
  * Monitors queue length and wait times.
  */
-export class QueueInfoCollector
-  implements
-    CollectorStrategy<
-      JenkinsTransportClient,
-      QueueInfoConfig,
-      QueueInfoResult,
-      QueueInfoAggregatedResult
-    >
-{
+export class QueueInfoCollector implements CollectorStrategy<
+  JenkinsTransportClient,
+  QueueInfoConfig,
+  QueueInfoResult,
+  QueueInfoAggregatedResult
+> {
   id = "queue-info";
   displayName = "Queue Info";
   description = "Monitor Jenkins build queue length and wait times";
@@ -187,29 +200,34 @@ export class QueueInfoCollector
     };
   }
 
-  aggregateResult(
-    runs: HealthCheckRunForAggregation<QueueInfoResult>[]
+  mergeResult(
+    existing: QueueInfoAggregatedResult | undefined,
+    run: HealthCheckRunForAggregation<QueueInfoResult>,
   ): QueueInfoAggregatedResult {
-    const queueLengths = runs
-      .map((r) => r.metadata?.queueLength)
-      .filter((v): v is number => typeof v === "number");
+    const metadata = run.metadata;
 
-    const waitTimes = runs
-      .map((r) => r.metadata?.avgWaitingMs)
-      .filter((v): v is number => typeof v === "number");
+    const queueLengthState = mergeAverage(
+      existing?._queueLength as AverageState | undefined,
+      metadata?.queueLength,
+    );
+
+    const maxQueueLengthState = mergeMinMax(
+      existing?._maxQueueLength as MinMaxState | undefined,
+      metadata?.queueLength,
+    );
+
+    const waitTimeState = mergeAverage(
+      existing?._waitTime as AverageState | undefined,
+      metadata?.avgWaitingMs,
+    );
 
     return {
-      avgQueueLength:
-        queueLengths.length > 0
-          ? Math.round(
-              queueLengths.reduce((a, b) => a + b, 0) / queueLengths.length
-            )
-          : 0,
-      maxQueueLength: queueLengths.length > 0 ? Math.max(...queueLengths) : 0,
-      avgWaitTime:
-        waitTimes.length > 0
-          ? Math.round(waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length)
-          : 0,
+      avgQueueLength: queueLengthState.avg,
+      maxQueueLength: maxQueueLengthState.max,
+      avgWaitTime: waitTimeState.avg,
+      _queueLength: queueLengthState,
+      _maxQueueLength: maxQueueLengthState,
+      _waitTime: waitTimeState,
     };
   }
 }
