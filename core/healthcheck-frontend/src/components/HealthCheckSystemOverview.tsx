@@ -36,6 +36,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  AnimatedNumber,
 } from "@checkstack/ui";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -70,28 +71,21 @@ interface ExpandedRowProps {
   systemId: string;
 }
 
-// Helper to format availability percentage with color
-const formatAvailability = (
+// Helper to get color class for availability percentage
+const getAvailabilityColorClass = (
   value: number | null,
   totalRuns: number,
-): { text: string; className: string } => {
+): string => {
   if (value === null || totalRuns === 0) {
-    return { text: "N/A", className: "text-muted-foreground" };
+    return "text-muted-foreground";
   }
-  const formatted = value.toFixed(2) + "%";
   if (value >= 99.9) {
-    return {
-      text: formatted,
-      className: "text-green-600 dark:text-green-400",
-    };
+    return "text-green-600 dark:text-green-400";
   }
   if (value >= 99) {
-    return {
-      text: formatted,
-      className: "text-yellow-600 dark:text-yellow-400",
-    };
+    return "text-yellow-600 dark:text-yellow-400";
   }
-  return { text: formatted, className: "text-red-600 dark:text-red-400" };
+  return "text-red-600 dark:text-red-400";
 };
 
 const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
@@ -199,11 +193,12 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
   }
   const runs = displayRuns;
 
-  // Listen for realtime health check updates to refresh history table
+  // Listen for realtime health check updates to refresh history table and availability stats
   // Charts are refreshed automatically by useHealthCheckData
   useSignal(HEALTH_CHECK_RUN_COMPLETED, ({ systemId: changedId }) => {
     if (changedId === systemId) {
       void refetch();
+      void refetchAvailability();
     }
   });
 
@@ -214,7 +209,7 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
     : "Using default thresholds";
 
   // Fetch availability stats
-  const { data: availabilityData } =
+  const { data: availabilityData, refetch: refetchAvailability } =
     healthCheckClient.getAvailabilityStats.useQuery({
       systemId,
       configurationId: item.configurationId,
@@ -302,16 +297,11 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
               31-Day Availability
             </span>
             <div className="flex items-baseline gap-2">
-              <span
-                className={`text-2xl font-bold ${formatAvailability(availabilityData.availability31Days, availabilityData.totalRuns31Days).className}`}
-              >
-                {
-                  formatAvailability(
-                    availabilityData.availability31Days,
-                    availabilityData.totalRuns31Days,
-                  ).text
-                }
-              </span>
+              <AnimatedNumber
+                value={availabilityData.availability31Days ?? undefined}
+                suffix="%"
+                className={`text-2xl font-bold ${getAvailabilityColorClass(availabilityData.availability31Days, availabilityData.totalRuns31Days)}`}
+              />
               {availabilityData.totalRuns31Days > 0 && (
                 <span className="text-sm text-muted-foreground">
                   ({availabilityData.totalRuns31Days.toLocaleString()} runs)
@@ -324,16 +314,11 @@ const ExpandedDetails: React.FC<ExpandedRowProps> = ({ item, systemId }) => {
               365-Day Availability
             </span>
             <div className="flex items-baseline gap-2">
-              <span
-                className={`text-2xl font-bold ${formatAvailability(availabilityData.availability365Days, availabilityData.totalRuns365Days).className}`}
-              >
-                {
-                  formatAvailability(
-                    availabilityData.availability365Days,
-                    availabilityData.totalRuns365Days,
-                  ).text
-                }
-              </span>
+              <AnimatedNumber
+                value={availabilityData.availability365Days ?? undefined}
+                suffix="%"
+                className={`text-2xl font-bold ${getAvailabilityColorClass(availabilityData.availability365Days, availabilityData.totalRuns365Days)}`}
+              />
               {availabilityData.totalRuns365Days > 0 && (
                 <span className="text-sm text-muted-foreground">
                   ({availabilityData.totalRuns365Days.toLocaleString()} runs)

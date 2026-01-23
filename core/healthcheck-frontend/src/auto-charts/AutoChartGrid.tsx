@@ -465,15 +465,18 @@ function CounterRenderer({ field, context }: ChartRendererProps) {
   // Sort by count (descending) then by value
   entries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
-  // If there's only one unique value, show it prominently with count
+  // If there's only one unique value, show it prominently
+  // Only show count multiplier if > 1 (avoids confusing "(1×)" for aggregated counters)
   if (entries.length === 1) {
     const [value, count] = entries[0];
     return (
       <div className="text-2xl font-bold">
         {value}
-        <span className="text-sm font-normal text-muted-foreground ml-2">
-          ({count}×)
-        </span>
+        {count > 1 && (
+          <span className="text-sm font-normal text-muted-foreground ml-2">
+            ({count}×)
+          </span>
+        )}
       </div>
     );
   }
