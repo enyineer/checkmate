@@ -8,7 +8,11 @@ import {
   type ConfigService,
   toJsonSchema,
 } from "@checkstack/backend-api";
-import { authContract, passwordSchema } from "@checkstack/auth-common";
+import {
+  authContract,
+  passwordSchema,
+  authAccess,
+} from "@checkstack/auth-common";
 import { hashPassword } from "better-auth/crypto";
 import * as schema from "./schema";
 import { eq, inArray, and } from "drizzle-orm";
@@ -1369,6 +1373,42 @@ export const createAuthRouter = (
     };
   });
 
+  const checkTeamManagementAccess = async (
+    user: AuthUser | undefined,
+    teamId: string,
+  ) => {
+    if (!isRealUser(user)) {
+      throw new ORPCError("UNAUTHORIZED", { message: "Not authenticated" });
+    }
+
+    // Global Admin or Manage Permission (check for suffix because plugin prefix might vary)
+    const hasGlobalManage =
+      user.accessRules?.includes("*") ||
+      user.accessRules?.some((rule) =>
+        rule.endsWith(`.${authAccess.teams.manage.id}`),
+      );
+
+    if (hasGlobalManage) return;
+
+    // Check if Team Manager
+    const managers = await internalDb
+      .select()
+      .from(schema.teamManager)
+      .where(
+        and(
+          eq(schema.teamManager.userId, user.id),
+          eq(schema.teamManager.teamId, teamId),
+        ),
+      )
+      .limit(1);
+
+    if (managers.length === 0) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "You are not authorized to manage this team.",
+      });
+    }
+  };
+
   const createTeam = os.createTeam.handler(async ({ input, context }) => {
     const id = crypto.randomUUID();
     const now = new Date();
@@ -1385,7 +1425,9 @@ export const createAuthRouter = (
 
   const updateTeam = os.updateTeam.handler(async ({ input, context }) => {
     const { id, name, description } = input;
-    // TODO: Check if user is manager or has teamsManage access
+
+    await checkTeamManagementAccess(context.user, id);
+
     const updates: {
       name?: string;
       description?: string | null;
@@ -1419,7 +1461,9 @@ export const createAuthRouter = (
     context.logger.info(`[auth-backend] Deleted team: ${id}`);
   });
 
-  const addUserToTeam = os.addUserToTeam.handler(async ({ input }) => {
+  const addUserToTeam = os.addUserToTeam.handler(async ({ input, context }) => {
+    await checkTeamManagementAccess(context.user, input.teamId);
+
     await internalDb
       .insert(schema.userTeam)
       .values({ userId: input.userId, teamId: input.teamId })
@@ -1427,7 +1471,9 @@ export const createAuthRouter = (
   });
 
   const removeUserFromTeam = os.removeUserFromTeam.handler(
-    async ({ input }) => {
+    async ({ input, context }) => {
+      await checkTeamManagementAccess(context.user, input.teamId);
+
       await internalDb
         .delete(schema.userTeam)
         .where(
